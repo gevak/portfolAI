@@ -2,671 +2,1226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - Terminal Portfolio</title>
+    <title>Geva Kipper | Portfolio</title>
     <style>
         :root {
-            --bg-color: #121212;
-            --text-color: #33FF33;
-            --accent-color: #206620;
-            --highlight-color: #FFFFFF;
-            --link-color: #00AAFF;
-            --error-color: #FF3333;
-            --scanline-opacity: 0.15;
-        }
-        
-        body, html {
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Courier New', monospace;
-            height: 100%;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        #terminal {
-            height: 100%;
-            width: 100%;
-            padding: 20px;
-            box-sizing: border-box;
-            overflow-y: auto;
-            position: relative;
-            z-index: 1;
-        }
-        
-        #terminal-content {
-            margin-bottom: 60px;
-        }
-        
-        #input-line {
-            display: flex;
-            margin-top: 10px;
-        }
-        
-        #prompt {
-            white-space: nowrap;
-            color: var(--text-color);
-            margin-right: 8px;
-        }
-        
-        #command-input {
-            flex-grow: 1;
-            background: transparent;
-            border: none;
-            color: var(--text-color);
-            font-family: 'Courier New', monospace;
-            font-size: 16px;
-            outline: none;
-            caret-color: transparent;
-        }
-        
-        /* Cursor */
-        #cursor {
-            display: inline-block;
-            width: 10px;
-            height: 18px;
-            background-color: var(--text-color);
-            animation: blink 1s step-end infinite;
-            vertical-align: middle;
-            margin-left: -4px;
-        }
-        
-        @keyframes blink {
-            0%, 100% { opacity: 0; }
-            50% { opacity: 1; }
-        }
-        
-        /* CRT effects */
-        .scanlines {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(
-                to bottom,
-                rgba(255, 255, 255, 0) 0%,
-                rgba(255, 255, 255, var(--scanline-opacity)) 1%,
-                rgba(255, 255, 255, 0) 2%
-            );
-            background-size: 100% 4px;
-            z-index: 2;
-            pointer-events: none;
-            opacity: 0.3;
-        }
-        
-        .crt-dust {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 3;
-            pointer-events: none;
+            --bg-primary: #1e1e2e;
+            --bg-secondary: #181825;
+            --text-primary: #cdd6f4;
+            --text-secondary: #a6adc8;
+            --accent-blue: #89b4fa;
+            --accent-green: #a6e3a1;
+            --accent-pink: #f5c2e7;
+            --accent-yellow: #f9e2af;
+            --accent-red: #f38ba8;
+            --accent-purple: #cba6f7;
+            --line-number: #45475a;
         }
 
-        /* Footer */
-        #footer {
-            position: fixed;
-            bottom: 0;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @font-face {
+            font-family: 'JetBrainsMono';
+            src: url('https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono/web/woff2/JetBrainsMono-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'JetBrainsMono', monospace;
+            line-height: 1.6;
+            overflow-x: hidden;
+            transition: background-color 0.5s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            padding: 60px 0 30px;
+            position: relative;
+        }
+
+        .terminal-name {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            position: relative;
+            color: var(--accent-green);
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 12px;
+            height: 24px;
+            background-color: var(--accent-green);
+            margin-left: 5px;
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: var(--text-secondary);
+        }
+
+        .highlight-blue { color: var(--accent-blue); }
+        .highlight-green { color: var(--accent-green); }
+        .highlight-pink { color: var(--accent-pink); }
+        .highlight-yellow { color: var(--accent-yellow); }
+        .highlight-red { color: var(--accent-red); }
+        .highlight-purple { color: var(--accent-purple); }
+
+        .ai-info {
+            font-size: 0.9rem;
+            margin-top: 10px;
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        .version-indicator {
+            display: inline-block;
+            margin-left: 10px;
+            font-size: 0.8rem;
+            color: var(--accent-purple);
+        }
+
+        nav {
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .nav-bracket {
+            font-size: 2rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            display: inline-block;
+            color: var(--accent-yellow);
+            position: relative;
+        }
+
+        .nav-bracket:hover {
+            transform: scale(1.2);
+        }
+
+        .nav-menu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+            margin-left: 20px;
+            font-size: 1.1rem;
+        }
+
+        .nav-menu.open {
+            max-height: 500px;
+        }
+
+        .nav-item {
+            margin: 10px 0;
+            cursor: pointer;
+            position: relative;
+            padding-left: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item::before {
+            content: "//";
+            color: var(--accent-pink);
+            position: absolute;
             left: 0;
-            right: 0;
-            background-color: var(--bg-color);
-            border-top: 1px solid var(--accent-color);
-            padding: 8px;
+        }
+
+        .nav-item:hover {
+            color: var(--accent-blue);
+            transform: translateX(5px);
+        }
+
+        main {
+            margin: 40px 0;
+        }
+
+        .code-editor {
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 40px;
+            position: relative;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .editor-header {
             display: flex;
             justify-content: space-between;
-            font-size: 14px;
-            z-index: 10;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--line-number);
         }
-        
-        .footer-item {
-            opacity: 0.7;
+
+        .file-name {
+            font-weight: bold;
+            color: var(--accent-blue);
         }
-        
-        .footer-item:hover {
-            opacity: 1;
-            cursor: pointer;
-        }
-        
-        /* Links */
-        .terminal-link {
-            color: var(--link-color);
-            text-decoration: none;
-            background-color: rgba(0, 170, 255, 0.1);
-            padding: 0 5px;
-            border-radius: 3px;
-            cursor: pointer;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        
-        .terminal-link:hover {
-            background-color: rgba(0, 170, 255, 0.2);
-            color: var(--highlight-color);
-        }
-        
-        /* Command suggestions for mobile */
-        #command-suggestions {
-            display: none;
-            position: fixed;
-            bottom: 40px;
-            left: 0;
-            right: 0;
-            background-color: rgba(18, 18, 18, 0.9);
-            padding: 10px;
-            border-top: 1px solid var(--accent-color);
-            z-index: 9;
-        }
-        
-        .suggestion {
+
+        .editor-actions span {
             display: inline-block;
-            margin: 5px;
-            padding: 8px 12px;
-            background-color: var(--accent-color);
-            border-radius: 4px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 8px;
+        }
+
+        .editor-actions span:nth-child(1) {
+            background-color: var(--accent-red);
+        }
+
+        .editor-actions span:nth-child(2) {
+            background-color: var(--accent-yellow);
+        }
+
+        .editor-actions span:nth-child(3) {
+            background-color: var(--accent-green);
+        }
+
+        .code-content {
+            position: relative;
+            display: flex;
+        }
+
+        .line-numbers {
+            user-select: none;
+            text-align: right;
+            padding-right: 15px;
+            color: var(--line-number);
+            min-width: 40px;
+        }
+
+        .code-block {
+            flex: 1;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        code {
+            font-family: 'JetBrainsMono', monospace;
+            white-space: pre;
+            display: block;
+        }
+
+        .comment {
+            color: var(--accent-pink);
+            font-style: italic;
+        }
+
+        .string {
+            color: var(--accent-green);
+        }
+
+        .keyword {
+            color: var(--accent-purple);
+        }
+
+        .function {
+            color: var(--accent-blue);
+        }
+
+        .variable {
+            color: var(--accent-yellow);
+        }
+
+        .property {
+            color: var(--accent-red);
+        }
+
+        .number {
+            color: var(--accent-yellow);
+        }
+
+        .hidden-message {
+            position: absolute;
+            background-color: rgba(30, 30, 46, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 3px solid var(--accent-blue);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            max-width: 300px;
+        }
+
+        .project-link {
+            color: var(--accent-blue);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--accent-blue);
+            transition: color 0.3s ease;
             cursor: pointer;
         }
-        
-        .suggestion:hover {
-            background-color: var(--text-color);
-            color: var(--bg-color);
+
+        .project-link:hover {
+            color: var(--accent-pink);
+            border-bottom-color: var(--accent-pink);
         }
-        
-        /* Theme amber */
-        .theme-amber {
-            --text-color: #FFBF00;
-            --accent-color: #A67C00;
+
+        .code-folder {
+            cursor: pointer;
+            user-select: none;
         }
-        
-        /* Code syntax highlighting */
-        .keyword { color: #FF79C6; }
-        .function { color: #50FA7B; }
-        .string { color: #F1FA8C; }
-        .number { color: #BD93F9; }
-        
-        /* ASCII art */
-        pre {
+
+        .code-folder .folder-icon {
+            display: inline-block;
+            margin-right: 5px;
+            transition: transform 0.3s ease;
+        }
+
+        .code-folder.collapsed .folder-icon {
+            transform: rotate(-90deg);
+        }
+
+        .folder-content {
+            max-height: 1000px;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+        }
+
+        .code-folder.collapsed .folder-content {
+            max-height: 0;
+        }
+
+        .embed-container {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid var(--line-number);
+        }
+
+        .embed-container iframe {
+            width: 100%;
+            height: 315px;
+            border: none;
+        }
+
+        .ascii-art {
+            color: var(--accent-green);
             line-height: 1.2;
-            margin: 10px 0;
-            white-space: pre;
-            font-family: 'Courier New', monospace;
-            color: var(--text-color);
+            margin: 15px 0;
+            font-family: monospace;
         }
-        
+
+        .json-block {
+            padding-left: 20px;
+        }
+
+        .social-icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        footer {
+            padding: 30px 0;
+            border-top: 1px solid var(--line-number);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 60px;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .ai-credit {
+            margin-bottom: 10px;
+        }
+
+        .cmd-prompt {
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .cmd-prompt::before {
+            content: ">";
+            margin-right: 10px;
+            color: var(--accent-green);
+        }
+
+        #cmdInput {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-family: 'JetBrainsMono', monospace;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        #timer {
+            color: var(--accent-blue);
+            margin-bottom: 10px;
+        }
+
+        /* Mobile Styles */
         @media (max-width: 768px) {
-            #command-suggestions {
+            .terminal-name {
+                font-size: 1.8rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .nav-menu {
+                margin-left: 10px;
+            }
+
+            .code-editor {
+                padding: 15px 10px;
+            }
+
+            .line-numbers {
+                padding-right: 10px;
+                min-width: 30px;
+                font-size: 0.8rem;
+            }
+
+            code {
+                font-size: 0.8rem;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .folder-content code {
+                word-break: break-all;
+                white-space: pre-wrap;
+            }
+        }
+
+        .hamburger-menu {
+            display: none;
+            cursor: pointer;
+            color: var(--accent-pink);
+            font-size: 1.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .nav-menu {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                background: var(--bg-secondary);
+                width: 100%;
+                z-index: 100;
+                padding: 10px;
+                border-radius: 5px;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            }
+
+            .hamburger-menu {
                 display: block;
             }
-            
-            pre {
-                font-size: 12px;
-                overflow-x: auto;
-                white-space: pre;
+
+            .nav-bracket {
+                display: none;
             }
-            
-            #terminal {
+
+            .editor-tabs {
+                overflow-x: auto;
+                white-space: nowrap;
+                margin-bottom: 15px;
+                padding-bottom: 5px;
+                border-bottom: 1px solid var(--line-number);
+            }
+
+            .editor-tab {
+                display: inline-block;
+                margin-right: 15px;
+                cursor: pointer;
+                opacity: 0.6;
+                transition: opacity 0.3s ease;
+                font-size: 0.9rem;
+            }
+
+            .editor-tab.active {
+                opacity: 1;
+                color: var(--accent-blue);
+                border-bottom: 2px solid var(--accent-blue);
+            }
+
+            .mobile-hint {
+                text-align: center;
+                font-size: 0.8rem;
+                color: var(--text-secondary);
+                margin-top: 20px;
                 padding: 10px;
+                border-radius: 5px;
+                background-color: rgba(0, 0, 0, 0.2);
             }
         }
     </style>
 </head>
 <body>
-    <div class="scanlines"></div>
-    <div class="crt-dust" id="dust"></div>
-    
-    <div id="terminal">
-        <div id="terminal-content">
-            <!-- Boot sequence will be inserted here by JS -->
+    <div class="container">
+        <header>
+            <div class="terminal-name" id="typed-name"></div>
+            <div class="subtitle">Software Engineer at <span class="highlight-blue">Google</span> | Exploring <span class="highlight-green">data visualization</span> and <span class="highlight-yellow">interactive systems</span></div>
+            <div class="ai-info">
+                <span id="ai-subtitle"></span>
+                <span class="version-indicator" id="version-indicator"></span>
+            </div>
+        </header>
+
+        <nav>
+            <div class="hamburger-menu">// Menu</div>
+            <div class="nav-bracket" id="nav-opener">{</div>
+            <div class="nav-menu" id="nav-menu">
+                <div class="nav-item" data-target="glglstats">GlglStats.js</div>
+                <div class="nav-item" data-target="ahuzat">AhuzatDibuk.py</div>
+                <div class="nav-item" data-target="portfolio">Portfolio.html</div>
+                <div class="nav-item" data-target="contact">Contact.json</div>
+            </div>
+            <div class="nav-bracket" id="nav-closer">}</div>
+        </nav>
+
+        <div class="mobile-only editor-tabs">
+            <div class="editor-tab active" data-target="glglstats">GlglStats.js</div>
+            <div class="editor-tab" data-target="ahuzat">AhuzatDibuk.py</div>
+            <div class="editor-tab" data-target="portfolio">Portfolio.html</div>
+            <div class="editor-tab" data-target="contact">Contact.json</div>
         </div>
-        
-        <div id="input-line">
-            <div id="prompt">geva@portfolio:~$</div>
-            <span id="input-text"></span>
-            <span id="cursor"></span>
-            <input type="text" id="command-input" autofocus autocomplete="off">
+
+        <main>
+            <!-- GlglStats.js Section -->
+            <section class="code-editor" id="glglstats">
+                <div class="editor-header">
+                    <div class="file-name">GlglStats.js</div>
+                    <div class="editor-actions">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                <div class="code-content">
+                    <div class="line-numbers">
+                        <div>1</div>
+                        <div>2</div>
+                        <div>3</div>
+                        <div>4</div>
+                        <div>5</div>
+                        <div>6</div>
+                        <div>7</div>
+                        <div>8</div>
+                        <div>9</div>
+                        <div>10</div>
+                        <div>11</div>
+                        <div>12</div>
+                        <div>13</div>
+                        <div>14</div>
+                        <div>15</div>
+                        <div>16</div>
+                        <div>17</div>
+                        <div>18</div>
+                        <div>19</div>
+                        <div>20</div>
+                        <div>21</div>
+                        <div>22</div>
+                    </div>
+                    <div class="code-block">
+                        <code>
+<span class="comment">/**
+ * GlglStats: Music Analysis & Visualization
+ * ♩ ♪ ♫ ♬ A visual journey through musical patterns ♬ ♫ ♪ ♩
+ */</span>
+
+<span class="keyword">const</span> <span class="variable">glglProject</span> = {
+  <span class="property">title</span>: <span class="string">"GlglStats"</span>,
+  <span class="property">description</span>: <span class="string">"A music analytics platform that visualizes listening patterns"</span>,
+  <span class="property">technologies</span>: [<span class="string">"JavaScript"</span>, <span class="string">"D3.js"</span>, <span class="string">"Node.js"</span>, <span class="string">"Express"</span>],
+  
+  <span class="function">initialize</span>: <span class="keyword">function</span>() {
+    <span class="comment">// Music visualization algorithm follows the golden ratio</span>
+    <span class="keyword">return</span> <span class="variable">this</span>.<span class="function">analyzePatterns</span>(<span class="variable">userData</span>);
+  },
+  
+  <span class="function">displayProject</span>: <span class="keyword">function</span>() {
+    <span class="function">openProject</span>(<span class="string"><a href="https://glglstats.onrender.com/" class="project-link" target="_blank">https://glglstats.onrender.com/</a></span>);
+    <span class="function">watchPresentation</span>(<span class="string">"Conference Demo"</span>);
+  }
+};
+                        </code>
+                    </div>
+                </div>
+                
+                <div class="embed-container">
+                    <iframe src="https://www.youtube.com/embed/jrKAtOsj1Lo" title="GlglStats Conference Presentation" allowfullscreen></iframe>
+                </div>
+                
+                <div class="code-content">
+                    <div class="line-numbers">
+                        <div>23</div>
+                        <div>24</div>
+                        <div>25</div>
+                        <div>26</div>
+                        <div>27</div>
+                        <div>28</div>
+                        <div>29</div>
+                    </div>
+                    <div class="code-block">
+                        <code>
+<span class="comment">// Hidden visualization patterns revealed on interaction
+// Each segment of code represents different emotional qualities in music</span>
+
+<span class="keyword">export default</span> <span class="variable">glglProject</span>;
+                        </code>
+                        <div class="hidden-message" id="glgl-easter-egg">Music is just mathematics we can feel. Each visualization reveals the hidden architecture of emotion.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AhuzatDibuk.py Section -->
+            <section class="code-editor" id="ahuzat" style="display: none;">
+                <div class="editor-header">
+                    <div class="file-name">AhuzatDibuk.py</div>
+                    <div class="editor-actions">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                <div class="code-content">
+                    <div class="line-numbers">
+                        <div>1</div>
+                        <div>2</div>
+                        <div>3</div>
+                        <div>4</div>
+                        <div>5</div>
+                        <div>6</div>
+                        <div>7</div>
+                        <div>8</div>
+                        <div>9</div>
+                        <div>10</div>
+                        <div>11</div>
+                        <div>12</div>
+                        <div>13</div>
+                        <div>14</div>
+                        <div>15</div>
+                    </div>
+                    <div class="code-block">
+                        <code>
+<span class="comment">"""
+AhuzatDibuk: Parking Analytics System
+Data-driven approach to urban parking management
+"""</span>
+
+<span class="keyword">from</span> <span class="variable">urban_analysis</span> <span class="keyword">import</span> ParkingStatistics
+<span class="keyword">import</span> <span class="variable">news_coverage</span> <span class="keyword">as</span> <span class="variable">media</span>
+
+<span class="keyword">class</span> <span class="function">AhuzatDibukProject</span>:
+    <span class="keyword">def</span> <span class="function">__init__</span>(<span class="variable">self</span>):
+        <span class="variable">self</span>.location = <span class="string">"Tel Aviv, Israel"</span>
+        <span class="variable">self</span>.focus = <span class="string">"Urban parking optimization"</span>
+        <span class="variable">self</span>.data_points = <span class="number">14500</span>  <span class="comment"># Parking spots analyzed</span>
+                        </code>
+                    </div>
+                </div>
+
+                <div class="code-content">
+                    <div class="line-numbers">
+                        <div>16</div>
+                        <div>17</div>
+                        <div>18</div>
+                        <div>19</div>
+                        <div>20</div>
+                        <div>21</div>
+                        <div>22</div>
+                        <div>23</div>
+                        <div>24</div>
+                        <div>25</div>
+                    </div>
+                    <div class="code-block code-folder">
+                        <code><span class="folder-icon">▼</span> <span class="function">media_mentions</span>(<span class="variable">self</span>):</code>
+                        <div class="folder-content">
+                            <code>    <span class="comment"># Project media coverage</span>
+    <span class="variable">coverage</span> = [
+        <span class="variable">media</span>.<span class="function">Channel13</span>(<span class="string"><a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" class="project-link" target="_blank">https://13tv.co.il/item/news/domestic/internal/parking-902956407/</a></span>),
+        <span class="variable">media</span>.<span class="function">Mako</span>(<span class="string"><a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" class="project-link" target="_blank">https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm</a></span>),
+        <span class="variable">media</span>.<span class="function">Facebook</span>(<span class="string"><a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" class="project-link" target="_blank">https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943</a></span>)
+    ]
+    <span class="keyword">return</span> <span class="variable">coverage</span></code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="code-content">
+                    <div class="line-numbers">
+                        <div>26</div>
+                        <div>27</div>
+                        <div>28</div>
+                        <div>29</div>
+                        <div>30</div>
+                        <div>31</div>
+                        <div>32</div>
+                        <div>33</div>
+                        <div>34</div>
+                        <div>35</div>
+                        <div>36</div>
+                        <div>37</div>
+                    </div>
+                    <div class="code-block">
+                        <code>
+    <span class="keyword">def</span> <span class="function">visualization</span>(<span class="variable">self</span>):
+        <span class="comment">"""
+        ASCII visualization of parking efficiency
+        █ = occupied, ░ = available
+        """</span>
+        <span class="keyword">return</span> <span class="string">"""
+        <div class="ascii-art">
+        ░░█░░░░░█░█░░█░█░█░█░░░░█░█░░░░░░█░░█░░░█░█
+        █░█░░█░█░░░░░░░░░█░█░░█░░░█░█░░█░█░█░█░░█░
+        ░░░█░█░░█░░░░█░█░░░░░░░░░░░░░░░█░░█░░█░░░░
+        █░░░░░░░█░█░█░█░█░░░░█░░░█░█░░░█░░█░█░█░░█
         </div>
+        """</span>
+
+<span class="variable">project</span> = <span class="function">AhuzatDibukProject</span>()
+                        </code>
+                        <div class="hidden-message" id="ahuzat-easter-egg">Urban spaces are living organisms. The right data visualization can reveal their heartbeat.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Portfolio.html Section -->
+            <section class="code-editor" id="portfolio" style="display: none;">
+                <div class="editor-header">
+                    <div class="file-name">Portfolio.html</div>
+                    <div class="editor-actions">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                <div class="code-content">
+                    <div class="line-numbers">
+                        <div>1</div>
+                        <div>2</div>
+                        <div>3</div>
+                        <div>4</div>
+                        <div>5</div>
+                        <div>6</div>
+                        <div>7</div>
+                        <div>8</div>
+                        <div>9</div>
+                        <div>10</div>
+                        <div>11</div>
+                        <div>12</div>
+                        <div>13</div>
+                        <div>14</div>
+                        <div>15</div>
+                        <div>16</div>
+                        <div>17</div>
+                    </div>
+                    <div class="code-block">
+                        <code>
+<span class="comment">&lt;!-- 
+  Meta Portfolio: The very code you're viewing right now
+  This self-referential section demonstrates the portfolio's structure
+--></span>
+
+<span class="keyword">&lt;!DOCTYPE html></span>
+<span class="keyword">&lt;html</span> <span class="property">lang</span>=<span class="string">"en"</span><span class="keyword">></span>
+<span class="keyword">&lt;head></span>
+  <span class="keyword">&lt;meta</span> <span class="property">charset</span>=<span class="string">"UTF-8"</span><span class="keyword">></span>
+  <span class="keyword">&lt;title></span>Geva Kipper | Portfolio<span class="keyword">&lt;/title></span>
+  <span class="keyword">&lt;meta</span> <span class="property">name</span>=<span class="string">"description"</span> <span class="property">content</span>=<span class="string">"A code-themed portfolio showcasing Geva's projects"</span><span class="keyword">></span>
+  <span class="keyword">&lt;style></span>
+    <span class="comment">/* Styles create the code editor aesthetic */</span>
+    <span class="property">:root</span> { 
+      <span class="property">--syntax-theme</span>: <span class="string">"Syntax Illuminations"</span>;
+      <span class="property">--self-reference-level</span>: <span class="string">"infinite"</span>;
+    }
+  <span class="keyword">&lt;/style></span>
+<span class="keyword">&lt;/head></span>
+                        </code>
+                    </div>
+                </div>
+
+                <div class="code-content">
+                    <div class="line-numbers">
+                        <div>18</div>
+                        <div>19</div>
+                        <div>20</div>
+                        <div>21</div>
+                        <div>22</div>
+                        <div>23</div>
+                        <div>24</div>
+                        <div>25</div>
+                        <div>26</div>
+                        <div>27</div>
+                        <div>28</div>
+                        <div>29</div>
+                        <div>30</div>
+                        <div>31</div>
+                    </div>
+                    <div class="code-block">
+                        <code>
+<span class="keyword">&lt;body></span>
+  <span class="comment"><!-- This is actually what generates the site you're viewing --></span>
+  <span class="keyword">&lt;div</span> <span class="property">class</span>=<span class="string">"portfolio-container"</span><span class="keyword">></span>
+    <span class="keyword">&lt;header></span>
+      <span class="keyword">&lt;h1</span> <span class="property">id</span>=<span class="string">"typed-name"</span><span class="keyword">></span>Geva Kipper<span class="keyword">&lt;/h1></span>
+      <span class="keyword">&lt;div</span> <span class="property">class</span>=<span class="string">"subheading"</span><span class="keyword">></span>Software Engineer at Google<span class="keyword">&lt;/div></span>
+    <span class="keyword">&lt;/header></span>
+
+    <span class="comment"><!-- Projects are structured as code files --></span>
+    <span class="keyword">&lt;main></span>
+      <span class="keyword">&lt;section</span> <span class="property">id</span>=<span class="string">"project-files"</span><span class="keyword">></span>
+        <span class="comment"><!-- Each project appears as a different file type --></span>
+      <span class="keyword">&lt;/section></span>
+    <span class="keyword">&lt;/main></span>
+                        </code>
+                    </div>
+                </div>
+
+                <div class="code-content">
+                    <div class="line-numbers">
+                        <div>32</div>
+                        <div>33</div>
+                        <div>34</div>
+                        <div>35</div>
+                        <div>36</div>
+                        <div>37</div>
+                        <div>38</div>
+                        <div>39</div>
+                    </div>
+                    <div class="code-block">
+                        <code>
+    <span class="keyword">&lt;footer></span>
+      <span class="keyword">&lt;p></span>View source at <span class="keyword">&lt;a</span> <span class="property">href</span>=<span class="string">"<a href="https://portfolio-dor1.onrender.com/" class="project-link" target="_blank">https://portfolio-dor1.onrender.com/</a>"</span><span class="keyword">></span>portfolio-dor1.onrender.com<span class="keyword">&lt;/a>&lt;/p></span>
+    <span class="keyword">&lt;/footer></span>
+  <span class="keyword">&lt;/div></span>
+<span class="keyword">&lt;/body></span>
+<span class="keyword">&lt;/html></span>
+                        </code>
+                        <div class="hidden-message" id="portfolio-easter-egg">Good code tells a story. Great code makes you part of that story.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Contact.json Section -->
+            <section class="code-editor" id="contact" style="display: none;">
+                <div class="editor-header">
+                    <div class="file-name">Contact.json</div>
+                    <div class="editor-actions">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                <div class="code-content">
+                    <div class="line-numbers">
+                        <div>1</div>
+                        <div>2</div>
+                        <div>3</div>
+                        <div>4</div>
+                        <div>5</div>
+                        <div>6</div>
+                        <div>7</div>
+                        <div>8</div>
+                        <div>9</div>
+                        <div>10</div>
+                        <div>11</div>
+                        <div>12</div>
+                        <div>13</div>
+                        <div>14</div>
+                        <div>15</div>
+                        <div>16</div>
+                        <div>17</div>
+                        <div>18</div>
+                        <div>19</div>
+                        <div>20</div>
+                        <div>21</div>
+                        <div>22</div>
+                    </div>
+                    <div class="code-block">
+                        <code>
+{
+  <span class="property">"name"</span>: <span class="string">"Geva Kipper"</span>,
+  <span class="property">"profession"</span>: <span class="string">"Software Engineer"</span>,
+  <span class="property">"location"</span>: <span class="string">"Google"</span>,
+  <span class="property">"contact"</span>: {
+    <span class="property">"social"</span>: [
+      {
+        <span class="property">"platform"</span>: <span class="string">"GitHub"</span>,
+        <span class="property">"username"</span>: <span class="string">"gevak"</span>,
+        <span class="property">"url"</span>: <span class="string"><a href="https://github.com/gevak" class="project-link" target="_blank">https://github.com/gevak</a></span>,
+        <span class="property">"icon"</span>: <span class="string">"<svg class="social-icon" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>"</span>
+      },
+      {
+        <span class="property">"platform"</span>: <span class="string">"LinkedIn"</span>,
+        <span class="property">"username"</span>: <span class="string">"gevakip"</span>,
+        <span class="property">"url"</span>: <span class="string"><a href="https://linkedin.com/in/gevakip" class="project-link" target="_blank">https://linkedin.com/in/gevakip</a></span>,
+        <span class="property">"icon"</span>: <span class="string">"<svg class="social-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854V1.146zm4.943 12.248V6.169H2.542v7.225h2.401zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248-.822 0-1.359.54-1.359 1.248 0 .694.521 1.248 1.327 1.248h.016zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016a5.54 5.54 0 0 1 .016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225h2.4z"></path></svg>"</span>
+      },
+                        </code>
+                    </div>
+                </div>
+
+                <div class="code-content">
+                    <div class="line-numbers">
+                        <div>23</div>
+                        <div>24</div>
+                        <div>25</div>
+                        <div>26</div>
+                        <div>27</div>
+                        <div>28</div>
+                        <div>29</div>
+                        <div>30</div>
+                        <div>31</div>
+                        <div>32</div>
+                    </div>
+                    <div class="code-block">
+                        <code>
+      {
+        <span class="property">"platform"</span>: <span class="string">"Facebook"</span>,
+        <span class="property">"username"</span>: <span class="string">"geva.kipper"</span>,
+        <span class="property">"url"</span>: <span class="string"><a href="https://facebook.com/geva.kipper" class="project-link" target="_blank">https://facebook.com/geva.kipper</a></span>,
+        <span class="property">"icon"</span>: <span class="string">"<svg class="social-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M16 8.049c0-4.446-3.582-8.05-8-8.05C3.58 0-.002 3.603-.002 8.05c0 4.017 2.926 7.347 6.75 7.951v-5.625h-2.03V8.05H6.75V6.275c0-2.017 1.195-3.131 3.022-3.131.876 0 1.791.157 1.791.157v1.98h-1.009c-.993 0-1.303.621-1.303 1.258v1.51h2.218l-.354 2.326H9.25V16c3.824-.604 6.75-3.934 6.75-7.951z"></path></svg>"</span>
+      }
+    ]
+  }
+}
+                        </code>
+                        <div class="hidden-message" id="contact-easter-egg">Behind every JSON object is a real person. Let's connect!</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <div class="footer-content">
+                <div class="left-content">
+                    <div class="ai-credit">Generated by AI on <span id="generation-date"></span></div>
+                    <div id="timer">Site uptime: 0d 00h 00m 00s</div>
+                </div>
+                <div class="right-content">
+                    <div class="cmd-prompt">
+                        <input type="text" id="cmdInput" placeholder="type 'help' for options...">
+                    </div>
+                </div>
+            </div>
+            <div class="mobile-hint">Swipe to view other project tabs</div>
+        </footer>
     </div>
-    
-    <div id="command-suggestions">
-        <div class="suggestion" data-cmd="projects">projects</div>
-        <div class="suggestion" data-cmd="about">about</div>
-        <div class="suggestion" data-cmd="contact">contact</div>
-        <div class="suggestion" data-cmd="clear">clear</div>
-        <div class="suggestion" data-cmd="theme">theme</div>
-    </div>
-    
-    <div id="footer">
-        <div class="footer-item">Generated by GPT-4</div>
-        <div class="footer-item" id="session-time">Session: 00:00:00</div>
-        <div class="footer-item" id="terminal-info">
-            <span>[?]</span>
-        </div>
-    </div>
-    
+
     <script>
-        // Global variables
-        let soundEnabled = false;
-        const terminalContent = document.getElementById('terminal-content');
-        const commandInput = document.getElementById('command-input');
-        const inputText = document.getElementById('input-text');
-        const cursor = document.getElementById('cursor');
-        const startTime = new Date('2025-04-02T11:20:03');
-        let currentTheme = 'green'; // Default theme
+        // Initialize variables
+        const startDate = new Date('2023-09-01');
+        const version = {
+            current: Math.floor(Math.random() * 10) + 1,
+            total: 42
+        };
         
-        // Boot sequence
-        async function bootSequence() {
-            const messages = [
-                { text: "BIOS v3.14.15 Copyright (C) 2025", delay: 400 },
-                { text: "Checking system integrity...", delay: 800 },
-                { text: "CPU: Intel i9-15900K @ 6.8 GHz", delay: 300 },
-                { text: "Memory: 64 GB DDR6 @ 8400 MHz", delay: 300 },
-                { text: "Storage: Quantum SSD 8TB", delay: 300 },
-                { text: "Initializing network interfaces...", delay: 600 },
-                { text: "Setting up environment variables...", delay: 500 },
-                { text: "Loading portfolio assets...", delay: 1000 },
-                { text: "Starting terminal service...", delay: 800 },
-                { text: "Connecting to portfolio database...", delay: 700 },
-                { text: "System ready.", delay: 500 },
-            ];
-            
-            for (const message of messages) {
-                await typeText(message.text, 'boot-log');
-                await sleep(message.delay);
-            }
-            
-            await sleep(500);
-            
-            // Welcome message
-            await typeText("", 'clear');
-            await typeText("  ██████╗ ███████╗██╗   ██╗ █████╗     ██╗  ██╗██╗██████╗ ██████╗ ███████╗██████╗ ", 'welcome', 5);
-            await typeText("  ██╔════╝ ██╔════╝██║   ██║██╔══██╗    ██║ ██╔╝██║██╔══██╗██╔══██╗██╔════╝██╔══██╗", 'welcome', 5);
-            await typeText("  ██║  ███╗█████╗  ██║   ██║███████║    █████╔╝ ██║██████╔╝██████╔╝█████╗  ██████╔╝", 'welcome', 5);
-            await typeText("  ██║   ██║██╔══╝  ╚██╗ ██╔╝██╔══██║    ██╔═██╗ ██║██╔═══╝ ██╔═══╝ ██╔══╝  ██╔══██╗", 'welcome', 5);
-            await typeText("  ╚██████╔╝███████╗ ╚████╔╝ ██║  ██║    ██║  ██╗██║██║     ██║     ███████╗██║  ██║", 'welcome', 5);
-            await typeText("   ╚═════╝ ╚══════╝  ╚═══╝  ╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝╚═╝     ╚═╝     ╚══════╝╚═╝  ╚═╝", 'welcome', 5);
-            await sleep(300);
-            
-            typeText("Software Engineer at Google", 'subtitle');
-            await sleep(500);
-            
-            typeText("This website is re-designed daily by AI and is ever-changing.", 'description');
-            await sleep(500);
-            
-            typeText("Type 'help' to see available commands", 'help-text');
-            await sleep(300);
-        }
+        // Element references
+        const navOpener = document.getElementById('nav-opener');
+        const navCloser = document.getElementById('nav-closer');
+        const navMenu = document.getElementById('nav-menu');
+        const hamburgerMenu = document.querySelector('.hamburger-menu');
+        const cmdInput = document.getElementById('cmdInput');
+        const navItems = document.querySelectorAll('.nav-item');
+        const editorTabs = document.querySelectorAll('.editor-tab');
+        const sections = {
+            glglstats: document.getElementById('glglstats'),
+            ahuzat: document.getElementById('ahuzat'),
+            portfolio: document.getElementById('portfolio'),
+            contact: document.getElementById('contact')
+        };
+
+        // Easter eggs
+        const easterEggs = {
+            glgl: document.getElementById('glgl-easter-egg'),
+            ahuzat: document.getElementById('ahuzat-easter-egg'),
+            portfolio: document.getElementById('portfolio-easter-egg'),
+            contact: document.getElementById('contact-easter-egg')
+        };
+
+        // Subtitle variations
+        const subtitles = [
+            "This site regenerates daily via AI",
+            "AI crafts a new version every 24 hours",
+            "Daily AI-driven portfolio refresh",
+            "Code evolves daily through AI generation",
+            "AI rebuilds this experience daily"
+        ];
         
-        // Helper function for typing effect
-        async function typeText(text, className = '', speed = 20) {
-            return new Promise(resolve => {
-                const p = document.createElement('p');
-                if (className) p.className = className;
-                terminalContent.appendChild(p);
-                
-                if (className === 'clear') {
-                    terminalContent.innerHTML = '';
-                    resolve();
-                    return;
-                }
-                
-                let i = 0;
-                const typeInterval = setInterval(() => {
-                    if (i < text.length) {
-                        p.textContent += text.charAt(i);
-                        i++;
-                        if (soundEnabled && i % 3 === 0) playTypeSound();
-                        scrollToBottom();
-                    } else {
-                        clearInterval(typeInterval);
-                        resolve();
-                    }
-                }, speed);
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            initTypedName();
+            updateSubtitle();
+            updateUptime();
+            document.getElementById('generation-date').textContent = new Date().toLocaleDateString();
+            setupCodeFolders();
+            setupEasterEggs();
+        });
+
+        // Navigation functionality
+        navOpener.addEventListener('click', () => {
+            navMenu.classList.toggle('open');
+        });
+
+        navCloser.addEventListener('click', () => {
+            navMenu.classList.toggle('open');
+        });
+
+        hamburgerMenu.addEventListener('click', () => {
+            navMenu.classList.toggle('open');
+        });
+
+        // Navigation and tab switching
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const target = item.getAttribute('data-target');
+                switchSection(target);
+                navMenu.classList.remove('open');
             });
-        }
-        
-        // Play typing sound
-        function playTypeSound() {
-            const audio = new Audio('data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABMYXZmNTguMTMuMTAwAAAQAAAAAgAAAQBApAA=');
-            audio.volume = 0.1;
-            audio.play().catch(() => {}); // Ignore errors
-        }
-        
-        // Sleep function
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
-        
-        // Scroll to bottom of terminal
-        function scrollToBottom() {
-            document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
-        }
-        
-        // Initialize the dust particles
-        function initDust() {
-            const dustContainer = document.getElementById('dust');
-            for (let i = 0; i < 50; i++) {
-                const dust = document.createElement('div');
-                dust.style.position = 'absolute';
-                dust.style.width = `${Math.random() * 2}px`;
-                dust.style.height = dust.style.width;
-                dust.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-                dust.style.left = `${Math.random() * 100}%`;
-                dust.style.top = `${Math.random() * 100}%`;
-                dust.style.opacity = `${Math.random() * 0.5}`;
-                dustContainer.appendChild(dust);
+        });
+
+        editorTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.getAttribute('data-target');
+                switchSection(target);
                 
-                animateDust(dust);
+                // Update active tab
+                editorTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+            });
+        });
+
+        // Function to switch active section
+        function switchSection(targetId) {
+            Object.keys(sections).forEach(key => {
+                sections[key].style.display = 'none';
+            });
+            
+            if (sections[targetId]) {
+                sections[targetId].style.display = 'block';
             }
         }
-        
-        // Animate dust particles
-        function animateDust(dust) {
-            const duration = 5000 + Math.random() * 10000;
-            dust.style.transition = `opacity ${duration}ms linear, transform ${duration}ms linear`;
-            
-            setInterval(() => {
-                dust.style.opacity = (Math.random() * 0.5).toString();
-                dust.style.transform = `translate(${(Math.random() - 0.5) * 20}px, ${(Math.random() - 0.5) * 20}px)`;
-            }, duration);
-        }
-        
-        // Process commands
-        async function processCommand(cmd) {
-            cmd = cmd.toLowerCase().trim();
-            
-            // Add command to history
-            await typeText(`${document.getElementById('prompt').textContent} ${cmd}`, 'command-history');
-            
-            if (cmd === '') {
-                return;
-            } else if (cmd === 'help') {
-                await displayHelp();
-            } else if (cmd === 'about') {
-                await displayAbout();
-            } else if (cmd === 'projects') {
-                await displayProjects();
-            } else if (/^projects? \d+$/.test(cmd) || cmd === 'project 1' || cmd === 'project 2' || cmd === 'project 3') {
-                const num = parseInt(cmd.split(' ')[1]);
-                await displayProject(num);
-            } else if (cmd === 'glglstats' || cmd === 'project glglstats') {
-                await displayProject(1);
-            } else if (cmd === 'ahuzat dibuk' || cmd === 'project ahuzat dibuk') {
-                await displayProject(2);
-            } else if (cmd === 'portfolio' || cmd === 'project portfolio') {
-                await displayProject(3);
-            } else if (cmd === 'contact') {
-                await displayContact();
-            } else if (cmd.startsWith('connect ')) {
-                const platform = cmd.split(' ')[1];
-                if (platform === 'github') {
-                    window.open('https://github.com/gevak', '_blank');
-                    await typeText('Connecting to GitHub...', 'system-message');
-                } else if (platform === 'linkedin') {
-                    window.open('https://linkedin.com/in/gevakip', '_blank');
-                    await typeText('Connecting to LinkedIn...', 'system-message');
-                } else if (platform === 'facebook') {
-                    window.open('https://facebook.com/geva.kipper', '_blank');
-                    await typeText('Connecting to Facebook...', 'system-message');
-                } else {
-                    await typeText(`Error: Unknown platform '${platform}'`, 'error-message');
-                }
-            } else if (cmd === 'clear') {
-                terminalContent.innerHTML = '';
-            } else if (cmd === 'sound on') {
-                soundEnabled = true;
-                await typeText('Sound effects enabled', 'system-message');
-            } else if (cmd === 'sound off') {
-                soundEnabled = false;
-                await typeText('Sound effects disabled', 'system-message');
-            } else if (cmd === 'theme') {
-                await typeText('Available themes: green, amber', 'system-message');
-                await typeText('Usage: theme [green|amber]', 'system-message');
-            } else if (cmd === 'theme green') {
-                document.body.classList.remove('theme-amber');
-                currentTheme = 'green';
-                await typeText('Terminal theme set to green', 'system-message');
-            } else if (cmd === 'theme amber') {
-                document.body.classList.add('theme-amber');
-                currentTheme = 'amber';
-                await typeText('Terminal theme set to amber', 'system-message');
-            } else if (cmd === 'matrix') {
-                await typeText('Wake up, Neo...', 'easter-egg');
-                await sleep(1000);
-                await typeText('The Matrix has you...', 'easter-egg');
-                await sleep(1000);
-                await typeText('Follow the white rabbit.', 'easter-egg');
-                await sleep(1000);
-                await typeText('Knock, knock, Neo.', 'easter-egg');
-            } else if (cmd === 'coffee') {
-                await typeText('☕ Coffee brewing... Error: Coffee out of scope for this terminal', 'easter-egg');
-            } else {
-                await typeText(`Command not found: ${cmd}. Type 'help' for available commands.`, 'error-message');
+
+        // Terminal command input
+        cmdInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const command = cmdInput.value.trim().toLowerCase();
+                processCommand(command);
+                cmdInput.value = '';
             }
-        }
-        
-        // Display help
-        async function displayHelp() {
-            await typeText('Available commands:', 'help-title');
-            await typeText('  help        - Display this help message', 'help-item');
-            await typeText('  about       - Display information about Geva Kipper', 'help-item');
-            await typeText('  projects    - List all projects', 'help-item');
-            await typeText('  project <n> - Display specific project details', 'help-item');
-            await typeText('  contact     - Show contact information', 'help-item');
-            await typeText('  connect <platform> - Open social media link (github, linkedin, facebook)', 'help-item');
-            await typeText('  theme       - Change terminal color theme', 'help-item');
-            await typeText('  sound on/off - Toggle typing sounds', 'help-item');
-            await typeText('  clear       - Clear the terminal', 'help-item');
-        }
-        
-        // Display about
-        async function displayAbout() {
-            await typeText('About Geva Kipper:', 'about-title');
-            await typeText('Software Engineer at Google with expertise in full-stack development,', 'about-content');
-            await typeText('machine learning, and distributed systems.', 'about-content');
-            await typeText('', 'about-content');
-            await typeText('Professional interests:', 'about-section');
-            await typeText('- Data visualization and analytics', 'about-list');
-            await typeText('- Machine learning applications', 'about-list');
-            await typeText('- Distributed systems', 'about-list');
-            await typeText('- Public transportation optimization', 'about-list');
-            await typeText('', 'about-content');
-            await typeText('Type \'projects\' to explore my work or \'contact\' to reach out.', 'about-footer');
-        }
-        
-        // Display projects list
-        async function displayProjects() {
-            await typeText('Projects:', 'projects-title');
-            await typeText('1. GlglStats - Audio visualization platform', 'project-item');
-            await typeText('2. Ahuzat Dibuk - Parking navigation system for Tel Aviv', 'project-item');
-            await typeText('3. Portfolio Website - This terminal interface', 'project-item');
-            await typeText('', 'projects-space');
-            await typeText('Type \'project <number>\' or project name (e.g., \'project glglstats\') to view details', 'projects-help');
-        }
-        
-        // Display specific project
-        async function displayProject(num) {
-            switch(num) {
-                case 1:
-                    await typeText('Project: GlglStats', 'project-title');
-                    await typeText(`
-    ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
-    █                        █
-    █  ▁▁▁    ▄▄▄  ▂▂▂▂      █
-    █ █   █  █   █     ▂▂▂▂▂ █
-    █ █   █  █   █ ▂▂▂▂      █
-    █ █▄▄▄█  █▄▄▄█      ▂▂▂▂ █
-    █                        █
-    ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
-    `, 'ascii-art');
-                    
-                    await typeText('An advanced audio visualization platform using <span class="keyword">WebGL</span> and <span class="function">TensorFlow.js</span> to analyze music in real-time.', 'project-description');
-                    await typeText('The system processes audio using <span class="function">Fast Fourier Transform</span> algorithms and renders dynamic visualizations based on frequency analysis.', 'project-description');
-                    await typeText('', 'project-space');
-                    await typeText('Links:', 'project-links-title');
-                    await typeText('<a href="https://glglstats.onrender.com/" target="_blank" class="terminal-link">[WEBSITE]</a> - Live demo of the platform', 'project-link');
-                    await typeText('<a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="terminal-link">[VIDEO]</a> - Conference presentation', 'project-link');
+        });
+
+        // Process terminal commands
+        function processCommand(command) {
+            switch(command) {
+                case 'help':
+                    alert('Available commands:\nhelp - Show this help\nabout - About this portfolio\nprojects - List projects\neaster - Find easter eggs\ncontact - Contact information');
                     break;
-                    
-                case 2:
-                    await typeText('Project: Ahuzat Dibuk', 'project-title');
-                    await typeText(`
-    ╔════════════════════════╗
-    ║  ╔═══════╗   ┌─────┐   ║
-    ║  ║ DIZENGOFF  │ P ✓│   ║
-    ║  ╚═══════╝   └─────┘   ║
-    ║        │       │       ║
-    ║ ┌───┐  │  ┌────────┐   ║
-    ║ │ P │  │  │GORDON ST│   ║
-    ║ │ X │  │  └────────┘   ║
-    ║ └───┘  │       │       ║
-    ║        │    ┌─────┐    ║
-    ║   TEL AVIV  │ P ✓│     ║
-    ║            └─────┘     ║
-    ╚════════════════════════╝
-    `, 'ascii-art');
-                    
-                    await typeText('A real-time parking navigation system for Tel Aviv that crowdsources parking availability data.', 'project-description');
-                    await typeText('The system uses a combination of user reports, municipal data, and historical patterns to predict parking availability in high-congestion areas.', 'project-description');
-                    await typeText('', 'project-space');
-                    await typeText('Media Mentions:', 'project-links-title');
-                    await typeText('<a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="terminal-link">[NEWS_1]</a> - Channel 13 News coverage', 'project-link');
-                    await typeText('<a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="terminal-link">[NEWS_2]</a> - Mako News feature', 'project-link');
-                    await typeText('<a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="terminal-link">[ORIGINAL_POST]</a> - Original concept publication', 'project-link');
+                case 'about':
+                    alert('Portfolio: Syntax Illuminations\nCreated by AI for Geva Kipper\nA code-themed portfolio featuring interactive elements and hidden messages.');
                     break;
-                    
-                case 3:
-                    await typeText('Project: Portfolio Website', 'project-title');
-                    await typeText(`
-    ┌─────────────────────────────┐
-    │ geva@portfolio:~$           │
-    │                             │
-    │ ┌───────────────────────┐   │
-    │ │                       │   │
-    │ │  Terminal Portfolio   │   │
-    │ │                       │   │
-    │ │  [INCEPTION LEVEL 1]  │   │
-    │ │                       │   │
-    │ └───────────────────────┘   │
-    │                             │
-    └─────────────────────────────┘
-    `, 'ascii-art');
-                    
-                    await typeText('This terminal-based portfolio website that simulates a UNIX/Linux command-line environment.', 'project-description');
-                    await typeText('Built with vanilla JavaScript and modern HTML/CSS, featuring real terminal characteristics like command history, blinking cursor, and CRT effects.', 'project-description');
-                    await typeText('The meta interface is regenerated daily using AI to create an ever-evolving experience.', 'project-description');
-                    await typeText('', 'project-space');
-                    await typeText('Link:', 'project-links-title');
-                    await typeText('<a href="https://portfolio-dor1.onrender.com/" target="_blank" class="terminal-link">[CURRENT_SESSION]</a> - You are here', 'project-link');
+                case 'projects':
+                    alert('Projects:\nGlglStats - Music analytics visualization\nAhuzat Dibuk - Parking optimization system\nPortfolio - This self-referential website');
                     break;
-                    
+                case 'easter':
+                    alert('🥚 There are hidden messages throughout the code blocks.\nTry hovering over different parts of the code!');
+                    break;
+                case 'contact':
+                    alert('Connect with Geva Kipper:\nGitHub: github.com/gevak\nLinkedIn: linkedin.com/in/gevakip\nFacebook: facebook.com/geva.kipper');
+                    break;
+                case 'matrix':
+                    document.body.innerHTML = '<canvas id="matrix"></canvas>';
+                    initMatrix();
+                    setTimeout(() => window.location.reload(), 10000);
+                    break;
                 default:
-                    await typeText(`Error: Project ${num} not found. Valid project numbers are 1-3.`, 'error-message');
+                    if (command !== '') {
+                        alert(`Command not recognized: ${command}\nType 'help' for available commands.`);
+                    }
             }
         }
-        
-        // Display contact info
-        async function displayContact() {
-            await typeText('Contact Information:', 'contact-title');
-            await typeText('Network connections:', 'contact-subtitle');
-            await typeText('', 'contact-space');
+
+        // Matrix easter egg
+        function initMatrix() {
+            const canvas = document.getElementById('matrix');
+            const ctx = canvas.getContext('2d');
             
-            await typeText('GitHub    [<span style="color: lightgreen;">ONLINE</span>] <a href="https://github.com/gevak" target="_blank" class="terminal-link">github.com/gevak</a>', 'contact-item');
-            await sleep(300);
-            await typeText('LinkedIn  [<span style="color: lightgreen;">ONLINE</span>] <a href="https://linkedin.com/in/gevakip" target="_blank" class="terminal-link">linkedin.com/in/gevakip</a>', 'contact-item');
-            await sleep(300);
-            await typeText('Facebook  [<span style="color: lightgreen;">ONLINE</span>] <a href="https://facebook.com/geva.kipper" target="_blank" class="terminal-link">facebook.com/geva.kipper</a>', 'contact-item');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
             
-            await typeText('', 'contact-space');
-            await typeText('Type \'connect <platform>\' to open a connection (e.g., \'connect github\')', 'contact-help');
-        }
-        
-        // Update session time
-        function updateSessionTime() {
-            const sessionTimeElem = document.getElementById('session-time');
-            const now = new Date();
-            const diff = now - startTime;
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890@#$%^&*()_+{}[]|;:,.<>?/~`';
+            const fontSize = 16;
+            const columns = canvas.width / fontSize;
             
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            const drops = [];
+            for (let i = 0; i < columns; i++) {
+                drops[i] = 1;
+            }
             
-            let timeString = 'Session: ';
-            if (days > 0) timeString += `${days}d `;
-            timeString += `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            
-            sessionTimeElem.textContent = timeString;
-        }
-        
-        // Handle input events
-        function handleInput() {
-            // Show what's being typed
-            inputText.textContent = commandInput.value;
-            
-            // Keep the cursor at the end
-            commandInput.focus();
-            
-            // Focus the input when clicking anywhere on terminal
-            document.getElementById('terminal').addEventListener('click', () => {
-                commandInput.focus();
-            });
-            
-            // Process the command on Enter
-            commandInput.addEventListener('keypress', async function(e) {
-                if (e.key === 'Enter') {
-                    const cmd = commandInput.value;
-                    commandInput.value = '';
-                    inputText.textContent = '';
-                    await processCommand(cmd);
+            function draw() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#0f0';
+                ctx.font = `${fontSize}px monospace`;
+                
+                for (let i = 0; i < drops.length; i++) {
+                    const text = letters[Math.floor(Math.random() * letters.length)];
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                    
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    
+                    drops[i]++;
                 }
-            });
+                
+                requestAnimationFrame(draw);
+            }
             
-            // Mobile suggestions
-            document.querySelectorAll('.suggestion').forEach(suggestion => {
-                suggestion.addEventListener('click', async function() {
-                    const cmd = this.dataset.cmd;
-                    commandInput.value = '';
-                    inputText.textContent = '';
-                    await processCommand(cmd);
+            draw();
+        }
+
+        // Setup code folders (collapsible sections)
+        function setupCodeFolders() {
+            document.querySelectorAll('.code-folder').forEach(folder => {
+                folder.addEventListener('click', function() {
+                    this.classList.toggle('collapsed');
                 });
             });
+        }
+
+        // Setup easter eggs in code blocks
+        function setupEasterEggs() {
+            const codeBlocks = document.querySelectorAll('.code-block');
             
-            // Terminal info button
-            document.getElementById('terminal-info').addEventListener('click', async function() {
-                await processCommand('about');
+            codeBlocks.forEach(block => {
+                block.addEventListener('mousemove', function(e) {
+                    const rect = this.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    // Check which section we're in
+                    const section = this.closest('.code-editor').id;
+                    const easterEgg = easterEggs[section];
+                    
+                    if (easterEgg) {
+                        easterEgg.style.opacity = '1';
+                        easterEgg.style.left = `${x + 20}px`;
+                        easterEgg.style.top = `${y + 20}px`;
+                        
+                        // Hide after 3 seconds
+                        setTimeout(() => {
+                            easterEgg.style.opacity = '0';
+                        }, 3000);
+                    }
+                });
             });
         }
-        
-        // Initialize
-        async function init() {
-            // Set up input handling
-            handleInput();
+
+        // Typing animation for name
+        function initTypedName() {
+            const nameElement = document.getElementById('typed-name');
+            const name = "Geva Kipper";
+            let i = 0;
             
-            // Initialize CRT dust effect
-            initDust();
+            function typeWriter() {
+                if (i < name.length) {
+                    nameElement.innerHTML = name.substring(0, i + 1) + '<span class="cursor"></span>';
+                    i++;
+                    setTimeout(typeWriter, 100);
+                } else {
+                    nameElement.innerHTML = name + '<span class="cursor"></span>';
+                }
+            }
             
-            // Update session time every second
-            setInterval(updateSessionTime, 1000);
+            typeWriter();
+        }
+
+        // Update subtitle and version indicator
+        function updateSubtitle() {
+            const subtitleElement = document.getElementById('ai-subtitle');
+            const versionElement = document.getElementById('version-indicator');
             
-            // Start boot sequence
-            await bootSequence();
+            const randomSubtitle = subtitles[Math.floor(Math.random() * subtitles.length)];
+            subtitleElement.textContent = randomSubtitle;
+            versionElement.textContent = `v${version.current}/${version.total}`;
+        }
+
+        // Update uptime counter
+        function updateUptime() {
+            const timerElement = document.getElementById('timer');
             
-            // Make sure input is focused
-            commandInput.focus();
+            function updateTimer() {
+                const now = new Date();
+                const diff = now - startDate;
+                
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                timerElement.textContent = `Site uptime: ${days}d ${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+                
+                requestAnimationFrame(updateTimer);
+            }
             
-            // Update session time immediately
-            updateSessionTime();
+            updateTimer();
+        }
+
+        // Adjust site appearance based on time of day
+        function updateDaytimeTheme() {
+            const hour = new Date().getHours();
+            const root = document.documentElement;
+            
+            if (hour >= 6 && hour < 10) {  // Morning
+                root.style.setProperty('--bg-primary', '#2a273f');
+            } else if (hour >= 10 && hour < 16) {  // Midday
+                root.style.setProperty('--bg-primary', '#252535');
+            } else if (hour >= 16 && hour < 20) {  // Evening
+                root.style.setProperty('--bg-primary', '#1E2033');
+            } else {  // Night
+                root.style.setProperty('--bg-primary', '#181825');
+            }
         }
         
-        // Start everything
-        document.addEventListener('DOMContentLoaded', init);
+        updateDaytimeTheme();
+        setInterval(updateDaytimeTheme, 3600000); // Check every hour
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250402",
+          pageId: "20250403",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
