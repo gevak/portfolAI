@@ -6,7 +6,7 @@ from datetime import datetime
 import archive_utils
 import utils
 
-MODEL = 'openrouter/anthropic/claude-3.7-sonnet'
+MODEL = 'openrouter/google/gemini-2.5-pro-preview-03-25'
 
 LIKE_BUTTON_CODE = """<!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
