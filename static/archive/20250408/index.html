@@ -1,0 +1,1441 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper | Code That Builds</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --text-color: #e6edf3;
+            --comment-color: #8b949e;
+            --keyword-color: #ff7b72;
+            --function-color: #d2a8ff;
+            --string-color: #a5d6ff;
+            --variable-color: #79c0ff;
+            --number-color: #f2cc60;
+            --operator-color: #ff7b72;
+            --class-color: #7ee787;
+            --accent-color: #58a6ff;
+            --timeline-color: #30363d;
+            --section-bg: #161b22;
+            --line-number-color: #484f58;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f6f8fa;
+            --text-color: #24292f;
+            --comment-color: #6e7781;
+            --keyword-color: #cf222e;
+            --function-color: #8250df;
+            --string-color: #0a3069;
+            --variable-color: #0550ae;
+            --number-color: #953800;
+            --operator-color: #cf222e;
+            --class-color: #116329;
+            --accent-color: #0969da;
+            --timeline-color: #d0d7de;
+            --section-bg: #ffffff;
+            --line-number-color: #8c959f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Fira Code', monospace;
+            line-height: 1.6;
+            overflow-x: hidden;
+            transition: background-color 0.3s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Timeline */
+        .timeline {
+            position: fixed;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 80vh;
+            background-color: var(--timeline-color);
+            z-index: 10;
+        }
+
+        .timeline-marker {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            left: -4px;
+            transition: top 0.5s ease;
+            opacity: 0;
+        }
+
+        .timeline-label {
+            position: absolute;
+            left: 20px;
+            color: var(--comment-color);
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: all 0.3s ease;
+        }
+
+        .timeline-marker.active {
+            opacity: 1;
+        }
+
+        .timeline-marker.active + .timeline-label {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Terminal Header */
+        .terminal {
+            background-color: var(--section-bg);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 100px 0 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--timeline-color);
+            padding-bottom: 10px;
+        }
+
+        .terminal-controls {
+            display: flex;
+            gap: 8px;
+            margin-right: 15px;
+        }
+
+        .control {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .control.red { background-color: #ff5f56; }
+        .control.yellow { background-color: #ffbd2e; }
+        .control.green { background-color: #27c93f; }
+
+        .terminal-title {
+            flex-grow: 1;
+            text-align: center;
+            color: var(--comment-color);
+            font-size: 14px;
+        }
+
+        .terminal-content {
+            position: relative;
+        }
+
+        .line {
+            display: flex;
+            font-size: 16px;
+            margin-bottom: 8px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .line.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .line-number {
+            color: var(--line-number-color);
+            margin-right: 15px;
+            text-align: right;
+            min-width: 30px;
+            user-select: none;
+        }
+
+        .line-content {
+            flex-grow: 1;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background-color: var(--accent-color);
+            animation: blink 1s infinite;
+            vertical-align: middle;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Keywords and syntax highlighting */
+        .keyword { color: var(--keyword-color); }
+        .function { color: var(--function-color); }
+        .string { color: var(--string-color); }
+        .variable { color: var(--variable-color); }
+        .number { color: var(--number-color); }
+        .operator { color: var(--operator-color); }
+        .comment { color: var(--comment-color); }
+        .class { color: var(--class-color); }
+
+        /* Project Sections */
+        .section {
+            margin: 100px 0;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 1s ease, transform 1s ease;
+        }
+
+        .section.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .code-container {
+            background-color: var(--section-bg);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            overflow-x: auto;
+        }
+
+        .rendered-content {
+            background-color: var(--section-bg);
+            border-radius: 8px;
+            padding: 30px;
+            margin-top: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            font-family: 'Open Sans', sans-serif;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 1s ease 0.5s, transform 1s ease 0.5s;
+        }
+
+        .rendered-content.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .project-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: var(--accent-color);
+        }
+
+        .project-description {
+            margin-bottom: 20px;
+        }
+
+        .project-link {
+            display: inline-block;
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .project-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        /* Project-specific backgrounds */
+        .glglstats-bg {
+            background: linear-gradient(rgba(22, 27, 34, 0.9), rgba(22, 27, 34, 0.9)),
+                        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><path d="M0,100 Q50,70 100,100 T200,100 T300,100 T400,100" stroke="%2358a6ff" fill="none" stroke-width="1" opacity="0.2"/><path d="M0,120 Q50,90 100,120 T200,120 T300,120 T400,120" stroke="%2358a6ff" fill="none" stroke-width="1" opacity="0.1"/></svg>');
+        }
+
+        .ahuzat-bg {
+            background: linear-gradient(rgba(22, 27, 34, 0.9), rgba(22, 27, 34, 0.9)),
+                        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="0" y="0" width="50" height="50" fill="none" stroke="%2330363d" stroke-width="1" /><rect x="50" y="0" width="50" height="50" fill="none" stroke="%2330363d" stroke-width="1" /><rect x="0" y="50" width="50" height="50" fill="none" stroke="%2330363d" stroke-width="1" /><rect x="50" y="50" width="50" height="50" fill="none" stroke="%2330363d" stroke-width="1" /></svg>');
+        }
+
+        .orienting-bg {
+            background: linear-gradient(rgba(22, 27, 34, 0.9), rgba(22, 27, 34, 0.9)),
+                        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><polygon points="50,20 80,40 80,80 20,80 20,40" fill="none" stroke="%2330363d" stroke-width="1" opacity="0.2" /></svg>');
+        }
+
+        .portfolio-bg {
+            background: linear-gradient(rgba(22, 27, 34, 0.9), rgba(22, 27, 34, 0.9)),
+                        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="20" y="20" width="60" height="60" rx="2" ry="2" fill="none" stroke="%2330363d" stroke-width="1" /><rect x="30" y="30" width="40" height="40" rx="2" ry="2" fill="none" stroke="%2330363d" stroke-width="1" opacity="0.6" /><rect x="40" y="40" width="20" height="20" rx="2" ry="2" fill="none" stroke="%2330363d" stroke-width="1" opacity="0.3" /></svg>');
+        }
+
+        .contact-bg {
+            background: linear-gradient(rgba(22, 27, 34, 0.9), rgba(22, 27, 34, 0.9)),
+                        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="%2330363d" stroke-width="1" /><line x1="50" y1="10" x2="20" y2="80" stroke="%2330363d" stroke-width="1" /><line x1="50" y1="10" x2="80" y2="80" stroke="%2330363d" stroke-width="1" /><line x1="20" y1="80" x2="80" y2="80" stroke="%2330363d" stroke-width="1" /></svg>');
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            border-top: 1px solid var(--timeline-color);
+            margin-top: 100px;
+            color: var(--comment-color);
+            font-size: 14px;
+        }
+
+        .stopwatch-container {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        /* Controls */
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-button {
+            background-color: var(--section-bg);
+            border: 1px solid var(--timeline-color);
+            color: var(--text-color);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .control-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        /* SVG animations */
+        .svg-container {
+            width: 100%;
+            height: 200px;
+            margin: 20px 0;
+        }
+
+        /* Social icons */
+        .social-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--accent-color);
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: 1px solid var(--timeline-color);
+            transition: all 0.3s ease;
+        }
+
+        .social-link:hover {
+            background-color: rgba(88, 166, 255, 0.1);
+            transform: translateY(-3px);
+        }
+
+        .social-link svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        /* Easter eggs */
+        .easter-egg {
+            position: absolute;
+            background-color: var(--comment-color);
+            color: var(--bg-color);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            text-align: left;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .easter-egg-trigger:hover + .easter-egg {
+            opacity: 1;
+        }
+
+        /* Responsive Design */
+        @media screen and (max-width: 768px) {
+            .timeline {
+                display: none;
+            }
+
+            .terminal, .section {
+                margin: 60px 0;
+            }
+
+            .line {
+                font-size: 14px;
+            }
+
+            .controls {
+                bottom: 10px;
+                right: 10px;
+            }
+            
+            .line-number {
+                min-width: 20px;
+                margin-right: 10px;
+            }
+        }
+
+        /* Animation Effects */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes typewriter {
+            from {
+                width: 0;
+            }
+            to {
+                width: 100%;
+            }
+        }
+
+        .glgl-wave {
+            animation: wave 5s infinite linear;
+            transform-origin: 50% 50%;
+        }
+
+        @keyframes wave {
+            0% { transform: scaleY(1); }
+            50% { transform: scaleY(1.5); }
+            100% { transform: scaleY(1); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Timeline -->
+    <div class="timeline">
+        <div class="timeline-marker" id="header-marker"><div class="timeline-label">header.js</div></div>
+        <div class="timeline-marker" id="glglstats-marker"><div class="timeline-label">glglstats.py</div></div>
+        <div class="timeline-marker" id="ahuzat-marker"><div class="timeline-label">ahuzat.js</div></div>
+        <div class="timeline-marker" id="orienting-marker"><div class="timeline-label">orienting.cpp</div></div>
+        <div class="timeline-marker" id="portfolio-marker"><div class="timeline-label">portfolio.html</div></div>
+        <div class="timeline-marker" id="contact-marker"><div class="timeline-label">contact.js</div></div>
+        <div class="timeline-marker" id="footer-marker"><div class="timeline-label">footer.js</div></div>
+    </div>
+    
+    <div class="container">
+        <!-- Terminal Header -->
+        <header class="terminal" id="header">
+            <div class="terminal-header">
+                <div class="terminal-controls">
+                    <div class="control red"></div>
+                    <div class="control yellow"></div>
+                    <div class="control green"></div>
+                </div>
+                <div class="terminal-title">developer_profile.js</div>
+            </div>
+            <div class="terminal-content">
+                <div class="line" data-index="1">
+                    <div class="line-number">1</div>
+                    <div class="line-content"><span class="keyword">const</span> <span class="variable">developer</span> <span class="operator">=</span> <span class="string">"Geva Kipper"</span>;</div>
+                </div>
+                <div class="line" data-index="2">
+                    <div class="line-number">2</div>
+                    <div class="line-content"><span class="comment">// Currently engineering at Google, building tools that make the web better.</span></div>
+                </div>
+                <div class="line" data-index="3">
+                    <div class="line-number">3</div>
+                    <div class="line-content"><span class="comment">// This website is redesigned daily by AI and is ever-changing.</span></div>
+                </div>
+                <div class="line" data-index="4">
+                    <div class="line-number">4</div>
+                    <div class="line-content"><span class="cursor"></span></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- GlglStats Section -->
+        <section class="section" id="glglstats">
+            <div class="code-container glglstats-bg">
+                <div class="line" data-index="1">
+                    <div class="line-number">1</div>
+                    <div class="line-content"><span class="keyword">def</span> <span class="function">analyze_music_data</span>(data_source):</div>
+                </div>
+                <div class="line" data-index="2">
+                    <div class="line-number">2</div>
+                    <div class="line-content">    <span class="comment"># Extract audio patterns from large datasets</span></div>
+                </div>
+                <div class="line" data-index="3">
+                    <div class="line-number">3</div>
+                    <div class="line-content">    <span class="variable">patterns</span> = <span class="function">extract_patterns</span>(data_source)</div>
+                </div>
+                <div class="line" data-index="4">
+                    <div class="line-number">4</div>
+                    <div class="line-content">    <span class="variable">visualizations</span> = []</div>
+                </div>
+                <div class="line" data-index="5">
+                    <div class="line-number">5</div>
+                    <div class="line-content">    </div>
+                </div>
+                <div class="line" data-index="6">
+                    <div class="line-number">6</div>
+                    <div class="line-content">    <span class="keyword">for</span> pattern <span class="keyword">in</span> patterns:</div>
+                </div>
+                <div class="line" data-index="7">
+                    <div class="line-number">7</div>
+                    <div class="line-content">        <span class="variable">visualizations</span>.append(<span class="function">create_waveform</span>(pattern))</div>
+                </div>
+                <div class="line" data-index="8">
+                    <div class="line-number">8</div>
+                    <div class="line-content">    </div>
+                </div>
+                <div class="line" data-index="9">
+                    <div class="line-number">9</div>
+                    <div class="line-content">    <span class="function">render_project</span>(<span class="string">"GlglStats"</span>, {</div>
+                </div>
+                <div class="line" data-index="10">
+                    <div class="line-number">10</div>
+                    <div class="line-content">        <span class="string">"title"</span>: <span class="string">"GlglStats"</span>,</div>
+                </div>
+                <div class="line" data-index="11">
+                    <div class="line-number">11</div>
+                    <div class="line-content">        <span class="string">"description"</span>: <span class="string">"Audio analysis tool that visualizes music statistics and patterns, presented at the Audio Mostly conference."</span>,</div>
+                </div>
+                <div class="line" data-index="12">
+                    <div class="line-number">12</div>
+                    <div class="line-content">        <span class="string">"visualizations"</span>: <span class="variable">visualizations</span>,</div>
+                </div>
+                <div class="line" data-index="13">
+                    <div class="line-number">13</div>
+                    <div class="line-content">        <span class="string">"links"</span>: [</div>
+                </div>
+                <div class="line" data-index="14">
+                    <div class="line-number">14</div>
+                    <div class="line-content">            {<span class="string">"text"</span>: <span class="string">"Visit GlglStats"</span>, <span class="string">"url"</span>: <span class="string">"https://glglstats.onrender.com/"</span>},</div>
+                </div>
+                <div class="line" data-index="15">
+                    <div class="line-number">15</div>
+                    <div class="line-content">            {<span class="string">"text"</span>: <span class="string">"Conference Presentation"</span>, <span class="string">"url"</span>: <span class="string">"https://www.youtube.com/watch?v=jrKAtOsj1Lo"</span>}</div>
+                </div>
+                <div class="line" data-index="16">
+                    <div class="line-number">16</div>
+                    <div class="line-content">        ]</div>
+                </div>
+                <div class="line" data-index="17">
+                    <div class="line-number">17</div>
+                    <div class="line-content">    })</div>
+                </div>
+                <div class="line" data-index="18">
+                    <div class="line-number">18</div>
+                    <div class="line-content">    </div>
+                </div>
+                <div class="line" data-index="19">
+                    <div class="line-number">19</div>
+                    <div class="line-content">    <span class="keyword">return</span> <span class="variable">visualizations</span></div>
+                </div>
+            </div>
+            <div class="rendered-content">
+                <h2 class="project-title">GlglStats</h2>
+                <p class="project-description">Audio analysis tool that visualizes music statistics and patterns, presented at the Audio Mostly conference.</p>
+                <div class="svg-container">
+                    <svg width="100%" height="100%" viewBox="0 0 600 150">
+                        <g class="glgl-wave">
+                            <path d="M0,75 Q30,50 60,75 T120,75 T180,75 T240,75 T300,75 T360,75 T420,75 T480,75 T540,75 T600,75" stroke="#58a6ff" fill="none" stroke-width="2"></path>
+                            <path d="M0,75 Q30,40 60,75 T120,75 T180,75 T240,75 T300,75 T360,75 T420,75 T480,75 T540,75 T600,75" stroke="#58a6ff" fill="none" stroke-width="2" opacity="0.7" stroke-dasharray="5,5"></path>
+                            <path d="M0,75 Q30,30 60,75 T120,75 T180,75 T240,75 T300,75 T360,75 T420,75 T480,75 T540,75 T600,75" stroke="#58a6ff" fill="none" stroke-width="1" opacity="0.5"></path>
+                        </g>
+                    </svg>
+                </div>
+                <div>
+                    <a href="https://glglstats.onrender.com/" class="project-link" target="_blank">Visit GlglStats</a>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" class="project-link" target="_blank">Conference Presentation</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Ahuzat Dibuk Section -->
+        <section class="section" id="ahuzat">
+            <div class="code-container ahuzat-bg">
+                <div class="line" data-index="1">
+                    <div class="line-number">1</div>
+                    <div class="line-content"><span class="keyword">async function</span> <span class="function">analyzeParkingData</span>() {</div>
+                </div>
+                <div class="line" data-index="2">
+                    <div class="line-number">2</div>
+                    <div class="line-content">  <span class="comment">// Scrape data from Tel Aviv parking APIs</span></div>
+                </div>
+                <div class="line" data-index="3">
+                    <div class="line-number">3</div>
+                    <div class="line-content">  <span class="keyword">const</span> <span class="variable">parkingData</span> = <span class="keyword">await</span> <span class="function">fetchParkingData</span>();</div>
+                </div>
+                <div class="line" data-index="4">
+                    <div class="line-number">4</div>
+                    <div class="line-content">  <span class="keyword">const</span> <span class="variable">heatmapData</span> = <span class="function">processData</span>(<span class="variable">parkingData</span>);</div>
+                </div>
+                <div class="line" data-index="5">
+                    <div class="line-number">5</div>
+                    <div class="line-content">  </div>
+                </div>
+                <div class="line easter-egg-trigger" data-index="6">
+                    <div class="line-number">6</div>
+                    <div class="line-content">  <span class="comment">// Project started after I couldn't find parking for 45 minutes</span></div>
+                </div>
+                <div class="easter-egg">I created this after circling my neighborhood for 45 minutes looking for parking. Turns out data could solve the problem!</div>
+                <div class="line" data-index="7">
+                    <div class="line-number">7</div>
+                    <div class="line-content">  <span class="keyword">const</span> <span class="variable">mediaLinks</span> = [</div>
+                </div>
+                <div class="line" data-index="8">
+                    <div class="line-number">8</div>
+                    <div class="line-content">    <span class="string">"https://13tv.co.il/item/news/domestic/internal/parking-902956407/"</span>,</div>
+                </div>
+                <div class="line" data-index="9">
+                    <div class="line-number">9</div>
+                    <div class="line-content">    <span class="string">"https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm"</span></div>
+                </div>
+                <div class="line" data-index="10">
+                    <div class="line-number">10</div>
+                    <div class="line-content">  ];</div>
+                </div>
+                <div class="line" data-index="11">
+                    <div class="line-number">11</div>
+                    <div class="line-content">  </div>
+                </div>
+                <div class="line" data-index="12">
+                    <div class="line-number">12</div>
+                    <div class="line-content">  <span class="function">renderProject</span>({</div>
+                </div>
+                <div class="line" data-index="13">
+                    <div class="line-number">13</div>
+                    <div class="line-content">    <span class="variable">title</span>: <span class="string">"Ahuzat Dibuk"</span>,</div>
+                </div>
+                <div class="line" data-index="14">
+                    <div class="line-number">14</div>
+                    <div class="line-content">    <span class="variable">description</span>: <span class="string">"Data visualization tool showing real-time parking availability in Tel Aviv neighborhoods. Featured on Israeli TV and news."</span>,</div>
+                </div>
+                <div class="line" data-index="15">
+                    <div class="line-number">15</div>
+                    <div class="line-content">    <span class="variable">heatmap</span>: <span class="variable">heatmapData</span>,</div>
+                </div>
+                <div class="line" data-index="16">
+                    <div class="line-number">16</div>
+                    <div class="line-content">    <span class="variable">mediaLinks</span>: <span class="variable">mediaLinks</span>,</div>
+                </div>
+                <div class="line" data-index="17">
+                    <div class="line-number">17</div>
+                    <div class="line-content">    <span class="variable">publicationLink</span>: <span class="string">"https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943"</span></div>
+                </div>
+                <div class="line" data-index="18">
+                    <div class="line-number">18</div>
+                    <div class="line-content">  });</div>
+                </div>
+                <div class="line" data-index="19">
+                    <div class="line-number">19</div>
+                    <div class="line-content">}</div>
+                </div>
+            </div>
+            <div class="rendered-content">
+                <h2 class="project-title">Ahuzat Dibuk</h2>
+                <p class="project-description">Data visualization tool showing real-time parking availability in Tel Aviv neighborhoods. Featured on Israeli TV and news.</p>
+                <div class="svg-container">
+                    <svg width="100%" height="100%" viewBox="0 0 400 100">
+                        <!-- Heat map grid with dynamic colors -->
+                        <g id="heatmap" transform="translate(50, 10)">
+                            <!-- This will be populated by JavaScript -->
+                        </g>
+                    </svg>
+                </div>
+                <div>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" class="project-link" target="_blank">Secret Tel Aviv Publication</a>
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" class="project-link" target="_blank">Channel 13 News Feature</a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" class="project-link" target="_blank">Mako News Feature</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2D Part Orienting Section -->
+        <section class="section" id="orienting">
+            <div class="code-container orienting-bg">
+                <div class="line" data-index="1">
+                    <div class="line-number">1</div>
+                    <div class="line-content"><span class="keyword">class</span> <span class="class">PartOrienter</span> {</div>
+                </div>
+                <div class="line" data-index="2">
+                    <div class="line-number">2</div>
+                    <div class="line-content"><span class="keyword">public</span>:</div>
+                </div>
+                <div class="line" data-index="3">
+                    <div class="line-number">3</div>
+                    <div class="line-content">    <span class="function">PartOrienter</span>(<span class="keyword">const</span> <span class="class">Polygon</span>& polygon) : m_polygon(polygon) {}</div>
+                </div>
+                <div class="line" data-index="4">
+                    <div class="line-number">4</div>
+                    <div class="line-content">    </div>
+                </div>
+                <div class="line" data-index="5">
+                    <div class="line-number">5</div>
+                    <div class="line-content">    <span class="keyword">bool</span> <span class="function">computeOrientingPushes</span>() {</div>
+                </div>
+                <div class="line" data-index="6">
+                    <div class="line-number">6</div>
+                    <div class="line-content">        <span class="comment">// Implement geometric algorithm to orient parts with minimal pushes</span></div>
+                </div>
+                <div class="line" data-index="7">
+                    <div class="line-number">7</div>
+                    <div class="line-content">        <span class="class">Vector2D</span> <span class="variable">push</span>;</div>
+                </div>
+                <div class="line" data-index="8">
+                    <div class="line-number">8</div>
+                    <div class="line-content">        </div>
+                </div>
+                <div class="line" data-index="9">
+                    <div class="line-number">9</div>
+                    <div class="line-content">        <span class="keyword">for</span> (<span class="keyword">int</span> <span class="variable">i</span> = <span class="number">0</span>; <span class="variable">i</span> < <span class="number">3</span>; <span class="variable">i</span>++) {</div>
+                </div>
+                <div class="line" data-index="10">
+                    <div class="line-number">10</div>
+                    <div class="line-content">            <span class="variable">push</span> = <span class="function">computeOptimalPush</span>(<span class="variable">m_polygon</span>);</div>
+                </div>
+                <div class="line" data-index="11">
+                    <div class="line-number">11</div>
+                    <div class="line-content">            <span class="function">applyPush</span>(<span class="variable">m_polygon</span>, <span class="variable">push</span>);</div>
+                </div>
+                <div class="line" data-index="12">
+                    <div class="line-number">12</div>
+                    <div class="line-content">            <span class="variable">m_pushes</span>.push_back(<span class="variable">push</span>);</div>
+                </div>
+                <div class="line" data-index="13">
+                    <div class="line-number">13</div>
+                    <div class="line-content">        }</div>
+                </div>
+                <div class="line" data-index="14">
+                    <div class="line-number">14</div>
+                    <div class="line-content">        </div>
+                </div>
+                <div class="line" data-index="15">
+                    <div class="line-number">15</div>
+                    <div class="line-content">        <span class="keyword">return</span> <span class="function">isOriented</span>(<span class="variable">m_polygon</span>);</div>
+                </div>
+                <div class="line" data-index="16">
+                    <div class="line-number">16</div>
+                    <div class="line-content">    }</div>
+                </div>
+                <div class="line" data-index="17">
+                    <div class="line-number">17</div>
+                    <div class="line-content">    </div>
+                </div>
+                <div class="line" data-index="18">
+                    <div class="line-number">18</div>
+                    <div class="line-content">    <span class="keyword">void</span> <span class="function">renderResults</span>() <span class="keyword">const</span> {</div>
+                </div>
+                <div class="line" data-index="19">
+                    <div class="line-number">19</div>
+                    <div class="line-content">        <span class="function">displayProject</span>({</div>
+                </div>
+                <div class="line" data-index="20">
+                    <div class="line-number">20</div>
+                    <div class="line-content">            <span class="string">"title"</span>: <span class="string">"2D Part Orienting"</span>,</div>
+                </div>
+                <div class="line" data-index="21">
+                    <div class="line-number">21</div>
+                    <div class="line-content">            <span class="string">"description"</span>: <span class="string">"Geometric algorithm research at Tel Aviv University that orients parts using a minimal number of pushing operations."</span>,</div>
+                </div>
+                <div class="line" data-index="22">
+                    <div class="line-number">22</div>
+                    <div class="line-content">            <span class="string">"polygon"</span>: <span class="variable">m_polygon</span>,</div>
+                </div>
+                <div class="line" data-index="23">
+                    <div class="line-number">23</div>
+                    <div class="line-content">            <span class="string">"pushes"</span>: <span class="variable">m_pushes</span>,</div>
+                </div>
+                <div class="line" data-index="24">
+                    <div class="line-number">24</div>
+                    <div class="line-content">            <span class="string">"link"</span>: <span class="string">"https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/"</span></div>
+                </div>
+                <div class="line" data-index="25">
+                    <div class="line-number">25</div>
+                    <div class="line-content">        });</div>
+                </div>
+                <div class="line" data-index="26">
+                    <div class="line-number">26</div>
+                    <div class="line-content">    }</div>
+                </div>
+                <div class="line" data-index="27">
+                    <div class="line-number">27</div>
+                    <div class="line-content">    </div>
+                </div>
+                <div class="line" data-index="28">
+                    <div class="line-number">28</div>
+                    <div class="line-content"><span class="keyword">private</span>:</div>
+                </div>
+                <div class="line" data-index="29">
+                    <div class="line-number">29</div>
+                    <div class="line-content">    <span class="class">Polygon</span> <span class="variable">m_polygon</span>;</div>
+                </div>
+                <div class="line" data-index="30">
+                    <div class="line-number">30</div>
+                    <div class="line-content">    <span class="class">std::vector</span><<span class="class">Vector2D</span>> <span class="variable">m_pushes</span>;</div>
+                </div>
+                <div class="line" data-index="31">
+                    <div class="line-number">31</div>
+                    <div class="line-content">};</div>
+                </div>
+            </div>
+            <div class="rendered-content">
+                <h2 class="project-title">2D Part Orienting</h2>
+                <p class="project-description">Geometric algorithm research at Tel Aviv University that orients parts using a minimal number of pushing operations.</p>
+                <div class="svg-container">
+                    <svg width="100%" height="100%" viewBox="0 0 400 100" id="orienting-svg">
+                        <polygon id="part" points="200,20 230,40 230,70 170,70 170,40" fill="none" stroke="#58a6ff" stroke-width="2"></polygon>
+                        <line id="push-arrow" x1="250" y1="50" x2="300" y2="50" stroke="#f2cc60" stroke-width="2" marker-end="url(#arrowhead)"></line>
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#f2cc60" />
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+                <div>
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" class="project-link" target="_blank">View Research Project</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Portfolio Website Section -->
+        <section class="section" id="portfolio">
+            <div class="code-container portfolio-bg">
+                <div class="line" data-index="1">
+                    <div class="line-number">1</div>
+                    <div class="line-content"><span class="operator">&lt;!</span><span class="keyword">DOCTYPE</span> <span class="variable">html</span><span class="operator">&gt;</span></div>
+                </div>
+                <div class="line" data-index="2">
+                    <div class="line-number">2</div>
+                    <div class="line-content"><span class="operator">&lt;</span><span class="keyword">html</span> <span class="variable">lang</span><span class="operator">=</span><span class="string">"en"</span><span class="operator">&gt;</span></div>
+                </div>
+                <div class="line" data-index="3">
+                    <div class="line-number">3</div>
+                    <div class="line-content"><span class="operator">&lt;</span><span class="keyword">head</span><span class="operator">&gt;</span></div>
+                </div>
+                <div class="line" data-index="4">
+                    <div class="line-number">4</div>
+                    <div class="line-content">  <span class="operator">&lt;</span><span class="keyword">title</span><span class="operator">&gt;</span>Code That Builds<span class="operator">&lt;/</span><span class="keyword">title</span><span class="operator">&gt;</span></div>
+                </div>
+                <div class="line" data-index="5">
+                    <div class="line-number">5</div>
+                    <div class="line-content">  <span class="comment">&lt;!-- Self-building portfolio website that rewrites itself daily --&gt;</span></div>
+                </div>
+                <div class="line" data-index="6">
+                    <div class="line-number">6</div>
+                    <div class="line-content">  <span class="operator">&lt;</span><span class="keyword">meta</span> <span class="variable">name</span><span class="operator">=</span><span class="string">"description"</span> <span class="variable">content</span><span class="operator">=</span><span class="string">"A portfolio site that builds itself before your eyes"</span><span class="operator">&gt;</span></div>
+                </div>
+                <div class="line" data-index="7">
+                    <div class="line-number">7</div>
+                    <div class="line-content">  <span class="operator">&lt;</span><span class="keyword">style</span><span class="operator">&gt;</span></div>
+                </div>
+                <div class="line" data-index="8">
+                    <div class="line-number">8</div>
+                    <div class="line-content">    <span class="variable">:root</span> { <span class="variable">--animation-speed</span>: <span class="number">1</span>s; }</div>
+                </div>
+                <div class="line" data-index="9">
+                    <div class="line-number">9</div>
+                    <div class="line-content">    <span class="variable">.section</span> { <span class="variable">animation</span>: <span class="variable">reveal</span> <span class="variable">var</span>(--animation-speed) <span class="variable">ease</span>; }</div>
+                </div>
+                <div class="line" data-index="10">
+                    <div class="line-number">10</div>
+                    <div class="line-content">  <span class="operator">&lt;/</span><span class="keyword">style</span><span class="operator">&gt;</span></div>
+                </div>
+                <div class="line" data-index="11">
+                    <div class="line-number">11</div>
+                    <div class="line-content"><span class="operator">&lt;/</span><span class="keyword">head</span><span class="operator">&gt;</span></div>
+                </div>
+                <div class="line" data-index="12">
+                    <div class="line-number">12</div>
+                    <div class="line-content"><span class="operator">&lt;</span><span class="keyword">body</span><span class="operator">&gt;</span></div>
+                </div>
+                <div class="line" data-index="13">
+                    <div class="line-number">13</div>
+                    <div class="line-content">  <span class="operator">&lt;</span><span class="keyword">div</span> <span class="variable">class</span><span class="operator">=</span><span class="string">"container"</span><span class="operator">&gt;</span></div>
+                </div>
+                <div class="line" data-index="14">
+                    <div class="line-number">14</div>
+                    <div class="line-content">    <span class="operator">&lt;</span><span class="keyword">section</span> <span class="variable">id</span><span class="operator">=</span><span class="string">"portfolio"</span><span class="operator">&gt;</span></div>
+                </div>
+                <div class="line" data-index="15">
+                    <div class="line-number">15</div>
+                    <div class="line-content">      <span class="function">createPortfolio</span>({</div>
+                </div>
+                <div class="line" data-index="16">
+                    <div class="line-number">16</div>
+                    <div class="line-content">        <span class="variable">title</span>: <span class="string">"Portfolio Website"</span>,</div>
+                </div>
+                <div class="line" data-index="17">
+                    <div class="line-number">17</div>
+                    <div class="line-content">        <span class="variable">description</span>: <span class="string">"A self-building portfolio website that uses AI to redesign itself daily, creating a unique visual experience every time."</span>,</div>
+                </div>
+                <div class="line" data-index="18">
+                    <div class="line-number">18</div>
+                    <div class="line-content">        <span class="variable">link</span>: <span class="string">"https://portfolio-dor1.onrender.com/"</span></div>
+                </div>
+                <div class="line" data-index="19">
+                    <div class="line-number">19</div>
+                    <div class="line-content">      });</div>
+                </div>
+                <div class="line" data-index="20">
+                    <div class="line-number">20</div>
+                    <div class="line-content">    <span class="operator">&lt;/</span><span class="keyword">section</span><span class="operator">&gt;</span></div>
+                </div>
+                <div class="line" data-index="21">
+                    <div class="line-number">21</div>
+                    <div class="line-content">  <span class="operator">&lt;/</span><span class="keyword">div</span><span class="operator">&gt;</span></div>
+                </div>
+                <div class="line" data-index="22">
+                    <div class="line-number">22</div>
+                    <div class="line-content"><span class="operator">&lt;/</span><span class="keyword">body</span><span class="operator">&gt;</span></div>
+                </div>
+                <div class="line" data-index="23">
+                    <div class="line-number">23</div>
+                    <div class="line-content"><span class="operator">&lt;/</span><span class="keyword">html</span><span class="operator">&gt;</span></div>
+                </div>
+            </div>
+            <div class="rendered-content">
+                <h2 class="project-title">Portfolio Website</h2>
+                <p class="project-description">A self-building portfolio website that uses AI to redesign itself daily, creating a unique visual experience every time.</p>
+                <div class="svg-container">
+                    <svg width="100%" height="100%" viewBox="0 0 400 100">
+                        <rect x="100" y="20" width="200" height="60" rx="4" ry="4" fill="none" stroke="#58a6ff" stroke-width="2"></rect>
+                        <rect x="120" y="35" width="160" height="10" rx="2" ry="2" fill="#58a6ff" opacity="0.3"></rect>
+                        <rect x="120" y="55" width="120" height="10" rx="2" ry="2" fill="#58a6ff" opacity="0.3"></rect>
+                        
+                        <!-- Tiny code editor with moving cursor -->
+                        <rect x="125" y="37" width="2" height="6" fill="#f2cc60">
+                            <animate attributeName="x" values="125;275;125" dur="5s" repeatCount="indefinite" />
+                        </rect>
+                    </svg>
+                </div>
+                <div>
+                    <a href="https://portfolio-dor1.onrender.com/" class="project-link" target="_blank">Visit This Website</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Links Section -->
+        <section class="section" id="contact">
+            <div class="code-container contact-bg">
+                <div class="line" data-index="1">
+                    <div class="line-number">1</div>
+                    <div class="line-content"><span class="keyword">function</span> <span class="function">generateContactLinks</span>() {</div>
+                </div>
+                <div class="line" data-index="2">
+                    <div class="line-number">2</div>
+                    <div class="line-content">  <span class="keyword">const</span> <span class="variable">socialProfiles</span> = [</div>
+                </div>
+                <div class="line" data-index="3">
+                    <div class="line-number">3</div>
+                    <div class="line-content">    {</div>
+                </div>
+                <div class="line" data-index="4">
+                    <div class="line-number">4</div>
+                    <div class="line-content">      <span class="variable">platform</span>: <span class="string">"GitHub"</span>,</div>
+                </div>
+                <div class="line" data-index="5">
+                    <div class="line-number">5</div>
+                    <div class="line-content">      <span class="variable">url</span>: <span class="string">"https://github.com/gevak"</span>,</div>
+                </div>
+                <div class="line" data-index="6">
+                    <div class="line-number">6</div>
+                    <div class="line-content">      <span class="variable">icon</span>: <span class="string">`&lt;svg viewBox="0 0 24 24"&gt;&lt;path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.2-1.8-1.2-1.8-1-.7.1-.7.1-.7 1.2.2 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"&gt;&lt;/path&gt;&lt;/svg&gt;`</span></div>
+                </div>
+                <div class="line" data-index="7">
+                    <div class="line-number">7</div>
+                    <div class="line-content">    },</div>
+                </div>
+                <div class="line" data-index="8">
+                    <div class="line-number">8</div>
+                    <div class="line-content">    {</div>
+                </div>
+                <div class="line" data-index="9">
+                    <div class="line-number">9</div>
+                    <div class="line-content">      <span class="variable">platform</span>: <span class="string">"LinkedIn"</span>,</div>
+                </div>
+                <div class="line" data-index="10">
+                    <div class="line-number">10</div>
+                    <div class="line-content">      <span class="variable">url</span>: <span class="string">"https://linkedin.com/in/gevakip"</span>,</div>
+                </div>
+                <div class="line" data-index="11">
+                    <div class="line-number">11</div>
+                    <div class="line-content">      <span class="variable">icon</span>: <span class="string">`&lt;svg viewBox="0 0 24 24"&gt;&lt;path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"&gt;&lt;/path&gt;&lt;/svg&gt;`</span></div>
+                </div>
+                <div class="line" data-index="12">
+                    <div class="line-number">12</div>
+                    <div class="line-content">    },</div>
+                </div>
+                <div class="line" data-index="13">
+                    <div class="line-number">13</div>
+                    <div class="line-content">    {</div>
+                </div>
+                <div class="line" data-index="14">
+                    <div class="line-number">14</div>
+                    <div class="line-content">      <span class="variable">platform</span>: <span class="string">"Facebook"</span>,</div>
+                </div>
+                <div class="line" data-index="15">
+                    <div class="line-number">15</div>
+                    <div class="line-content">      <span class="variable">url</span>: <span class="string">"https://facebook.com/geva.kipper"</span>,</div>
+                </div>
+                <div class="line" data-index="16">
+                    <div class="line-number">16</div>
+                    <div class="line-content">      <span class="variable">icon</span>: <span class="string">`&lt;svg viewBox="0 0 24 24"&gt;&lt;path d="M24 12.07C24 5.41 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.04V9.41c0-3.02 1.8-4.7 4.54-4.7 1.31 0 2.68.24 2.68.24v2.97h-1.5c-1.5 0-1.96.93-1.96 1.89v2.26h3.32l-.53 3.5h-2.8V24C19.62 23.1 24 18.1 24 12.07"&gt;&lt;/path&gt;&lt;/svg&gt;`</span></div>
+                </div>
+                <div class="line" data-index="17">
+                    <div class="line-number">17</div>
+                    <div class="line-content">    }</div>
+                </div>
+                <div class="line" data-index="18">
+                    <div class="line-number">18</div>
+                    <div class="line-content">  ];</div>
+                </div>
+                <div class="line" data-index="19">
+                    <div class="line-number">19</div>
+                    <div class="line-content">  </div>
+                </div>
+                <div class="line" data-index="20">
+                    <div class="line-number">20</div>
+                    <div class="line-content">  <span class="keyword">const</span> <span class="variable">contactElement</span> = <span class="function">document.createElement</span>(<span class="string">'div'</span>);</div>
+                </div>
+                <div class="line" data-index="21">
+                    <div class="line-number">21</div>
+                    <div class="line-content">  <span class="variable">contactElement</span>.innerHTML = <span class="string">`</span></div>
+                </div>
+                <div class="line" data-index="22">
+                    <div class="line-number">22</div>
+                    <div class="line-content">    <span class="string">&lt;h2 class="project-title"&gt;Let's Connect&lt;/h2&gt;</span></div>
+                </div>
+                <div class="line" data-index="23">
+                    <div class="line-number">23</div>
+                    <div class="line-content">    <span class="string">&lt;p class="project-description"&gt;Find me on these platforms or drop me a line at my email.&lt;/p&gt;</span></div>
+                </div>
+                <div class="line" data-index="24">
+                    <div class="line-number">24</div>
+                    <div class="line-content">  <span class="string">`</span>;</div>
+                </div>
+                <div class="line" data-index="25">
+                    <div class="line-number">25</div>
+                    <div class="line-content">  </div>
+                </div>
+                <div class="line" data-index="26">
+                    <div class="line-number">26</div>
+                    <div class="line-content">  <span class="keyword">const</span> <span class="variable">linksContainer</span> = <span class="function">document.createElement</span>(<span class="string">'div'</span>);</div>
+                </div>
+                <div class="line" data-index="27">
+                    <div class="line-number">27</div>
+                    <div class="line-content">  <span class="variable">linksContainer</span>.className = <span class="string">'social-links'</span>;</div>
+                </div>
+                <div class="line" data-index="28">
+                    <div class="line-number">28</div>
+                    <div class="line-content">  </div>
+                </div>
+                <div class="line" data-index="29">
+                    <div class="line-number">29</div>
+                    <div class="line-content">  <span class="variable">socialProfiles</span>.forEach(<span class="variable">profile</span> => {</div>
+                </div>
+                <div class="line" data-index="30">
+                    <div class="line-number">30</div>
+                    <div class="line-content">    <span class="keyword">const</span> <span class="variable">link</span> = <span class="function">document.createElement</span>(<span class="string">'a'</span>);</div>
+                </div>
+                <div class="line" data-index="31">
+                    <div class="line-number">31</div>
+                    <div class="line-content">    <span class="variable">link</span>.href = <span class="variable">profile</span>.url;</div>
+                </div>
+                <div class="line" data-index="32">
+                    <div class="line-number">32</div>
+                    <div class="line-content">    <span class="variable">link</span>.className = <span class="string">'social-link'</span>;</div>
+                </div>
+                <div class="line" data-index="33">
+                    <div class="line-number">33</div>
+                    <div class="line-content">    <span class="variable">link</span>.innerHTML = <span class="variable">profile</span>.icon + <span class="variable">profile</span>.platform;</div>
+                </div>
+                <div class="line" data-index="34">
+                    <div class="line-number">34</div>
+                    <div class="line-content">    <span class="variable">linksContainer</span>.appendChild(<span class="variable">link</span>);</div>
+                </div>
+                <div class="line" data-index="35">
+                    <div class="line-number">35</div>
+                    <div class="line-content">  });</div>
+                </div>
+                <div class="line" data-index="36">
+                    <div class="line-number">36</div>
+                    <div class="line-content">  </div>
+                </div>
+                <div class="line" data-index="37">
+                    <div class="line-number">37</div>
+                    <div class="line-content">  <span class="variable">contactElement</span>.appendChild(<span class="variable">linksContainer</span>);</div>
+                </div>
+                <div class="line" data-index="38">
+                    <div class="line-number">38</div>
+                    <div class="line-content">  <span class="keyword">return</span> <span class="variable">contactElement</span>;</div>
+                </div>
+                <div class="line" data-index="39">
+                    <div class="line-number">39</div>
+                    <div class="line-content">}</div>
+                </div>
+            </div>
+            <div class="rendered-content">
+                <h2 class="project-title">Let's Connect</h2>
+                <p class="project-description">Find me on these platforms or drop me a line at my email.</p>
+                <div class="social-links">
+                    <a href="https://github.com/gevak" class="social-link" target="_blank">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.2-1.8-1.2-1.8-1-.7.1-.7.1-.7 1.2.2 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"></path>
+                        </svg>
+                        GitHub
+                    </a>
+                    <a href="https://linkedin.com/in/gevakip" class="social-link" target="_blank">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"></path>
+                        </svg>
+                        LinkedIn
+                    </a>
+                    <a href="https://facebook.com/geva.kipper" class="social-link" target="_blank">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path d="M24 12.07C24 5.41 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.04V9.41c0-3.02 1.8-4.7 4.54-4.7 1.31 0 2.68.24 2.68.24v2.97h-1.5c-1.5 0-1.96.93-1.96 1.89v2.26h3.32l-.53 3.5h-2.8V24C19.62 23.1 24 18.1 24 12.07"></path>
+                        </svg>
+                        Facebook
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer Section -->
+        <footer id="footer">
+            <div class="line">
+                <div class="line-content"><span class="comment">// Designed by Claude AI</span></div>
+            </div>
+            <div class="stopwatch-container">
+                <div class="line">
+                    <div class="line-content">
+                        <span class="keyword">const</span> <span class="variable">siteRuntime</span> = <span id="stopwatch">00:00:00:00</span>;
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <div class="control-button" id="debug-button" title="Pause/Resume Animations">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+        </div>
+        <div class="control-button" id="theme-toggle" title="Toggle Light/Dark Mode">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let isAnimationPaused = false;
+        const startTime = new Date(2025, 3, 8, 1, 3, 48); // April 8, 2025, 01:03:48
+        let currentTheme = 'dark';
+        
+        // DOM elements
+        const themeToggle = document.getElementById('theme-toggle');
+        const debugButton = document.getElementById('debug-button');
+        const stopwatchElement = document.getElementById('stopwatch');
+        
+        // Initialize timeline markers
+        const timelineMarkers = {
+            'header-marker': { element: document.getElementById('header-marker'), section: document.getElementById('header') },
+            'glglstats-marker': { element: document.getElementById('glglstats-marker'), section: document.getElementById('glglstats') },
+            'ahuzat-marker': { element: document.getElementById('ahuzat-marker'), section: document.getElementById('ahuzat') },
+            'orienting-marker': { element: document.getElementById('orienting-marker'), section: document.getElementById('orienting') },
+            'portfolio-marker': { element: document.getElementById('portfolio-marker'), section: document.getElementById('portfolio') },
+            'contact-marker': { element: document.getElementById('contact-marker'), section: document.getElementById('contact') },
+            'footer-marker': { element: document.getElementById('footer-marker'), section: document.getElementById('footer') }
+        };
+
+        // Type out the header lines
+        function typeHeader() {
+            const lines = document.querySelectorAll('#header .line');
+            let delay = 500;
+            
+            lines.forEach((line, index) => {
+                setTimeout(() => {
+                    line.classList.add('active');
+                    if (index === lines.length - 1) {
+                        const cursor = line.querySelector('.cursor');
+                        if (cursor) {
+                            cursor.style.animation = 'blink 1s infinite';
+                        }
+                    }
+                }, delay);
+                delay += 1000;
+            });
+        }
+
+        // Animate code typing
+        function animateCode(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (!section) return;
+            
+            const lines = section.querySelectorAll('.code-container .line');
+            let delay = 100;
+            
+            lines.forEach(line => {
+                setTimeout(() => {
+                    if (!isAnimationPaused) {
+                        line.classList.add('active');
+                    }
+                }, delay);
+                delay += 50;
+            });
+            
+            // Animate the rendered content after the code is typed
+            setTimeout(() => {
+                if (!isAnimationPaused) {
+                    const renderedContent = section.querySelector('.rendered-content');
+                    if (renderedContent) {
+                        renderedContent.classList.add('active');
+                    }
+                }
+            }, delay + 500);
+            
+            return delay + 1000; // Return total animation time
+        }
+
+        // Update stopwatch
+        function updateStopwatch() {
+            const now = new Date();
+            const diff = now - startTime;
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            stopwatchElement.textContent = `${String(days).padStart(2, '0')}:${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        // Initialize the heat map for the Ahuzat Dibuk section
+        function initHeatmap() {
+            const heatmap = document.getElementById('heatmap');
+            if (!heatmap) return;
+            
+            const colors = ['#58a6ff', '#7ee787', '#f2cc60', '#ff7b72'];
+            const rows = 5;
+            const cols = 12;
+            const cellSize = 20;
+            
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    const opacity = Math.random() * 0.8 + 0.2;
+                    const colorIndex = Math.floor(Math.random() * colors.length);
+                    
+                    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                    rect.setAttribute("x", j * cellSize);
+                    rect.setAttribute("y", i * cellSize);
+                    rect.setAttribute("width", cellSize - 2);
+                    rect.setAttribute("height", cellSize - 2);
+                    rect.setAttribute("fill", colors[colorIndex]);
+                    rect.setAttribute("opacity", opacity);
+                    rect.setAttribute("rx", "2");
+                    rect.setAttribute("ry", "2");
+                    
+                    heatmap.appendChild(rect);
+                }
+            }
+        }
+
+        // Animate the part orienting
+        function animatePartOrienting() {
+            const polygon = document.getElementById('part');
+            const arrow = document.getElementById('push-arrow');
+            if (!polygon || !arrow) return;
+            
+            // Initial position
+            let angle = 0;
+            let tx = 0;
+            
+            // Animation function
+            function rotate() {
+                angle += 2;
+                tx += 0.5;
+                if (angle > 360) angle = 0;
+                if (tx > 50) tx = 0;
+                
+                polygon.setAttribute('transform', `rotate(${angle}, 200, 50) translate(${tx}, 0)`);
+                requestAnimationFrame(rotate);
+            }
+            
+            // Start animation
+            rotate();
+        }
+
+        // Scroll event handler
+        function handleScroll() {
+            const scrollPosition = window.scrollY + window.innerHeight / 2;
+            
+            // Update timeline markers
+            for (const id in timelineMarkers) {
+                const { element, section } = timelineMarkers[id];
+                if (!section) continue;
+                
+                const sectionTop = section.offsetTop;
+                const sectionBottom = sectionTop + section.offsetHeight;
+                
+                if (scrollPosition >= sectionTop && scrollPosition <= sectionBottom) {
+                    element.classList.add('active');
+                    element.style.top = `${(scrollPosition - sectionTop) / (sectionBottom - sectionTop) * 100}%`;
+                    
+                    // If section just became visible, animate it
+                    if (!section.classList.contains('active') && !isAnimationPaused) {
+                        section.classList.add('active');
+                        if (id !== 'header-marker' && id !== 'footer-marker') {
+                            animateCode(section.id);
+                        }
+                        
+                        // Initialize project-specific animations
+                        if (id === 'ahuzat-marker') {
+                            initHeatmap();
+                        } else if (id === 'orienting-marker') {
+                            animatePartOrienting();
+                        }
+                    }
+                } else {
+                    element.classList.remove('active');
+                }
+            }
+        }
+
+        // Toggle animations
+        function toggleAnimations() {
+            isAnimationPaused = !isAnimationPaused;
+            document.body.style.setProperty('--animation-speed', isAnimationPaused ? '0s' : '1s');
+            
+            // Update button icon
+            const buttonIcon = debugButton.querySelector('svg');
+            if (isAnimationPaused) {
+                buttonIcon.innerHTML = `
+                    <polygon points="5,3 19,12 5,21" fill="currentColor"></polygon>
+                `;
+            } else {
+                buttonIcon.innerHTML = `
+                    <rect x="6" y="4" width="4" height="16"></rect>
+                    <rect x="14" y="4" width="4" height="16"></rect>
+                `;
+            }
+        }
+
+        // Toggle theme
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            
+            // Update button icon
+            const icon = themeToggle.querySelector('svg');
+            if (currentTheme === 'light') {
+                icon.innerHTML = `<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>`;
+            } else {
+                icon.innerHTML = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
+            }
+        }
+
+        // Add event listeners
+        window.addEventListener('scroll', handleScroll);
+        debugButton.addEventListener('click', toggleAnimations);
+        themeToggle.addEventListener('click', toggleTheme);
+
+        // Console Easter Egg
+        console.log("%c👋 Hello curious developer!", "font-size: 20px; font-weight: bold; color: #58a6ff;");
+        console.log("%cLooks like you found one of the easter eggs! Here's a secret: Try clicking on different parts of the code.", "font-size: 14px;");
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set initial theme
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            
+            // Start typing the header
+            setTimeout(typeHeader, 1000);
+            
+            // Initial scroll handler call
+            handleScroll();
+            
+            // Start the stopwatch
+            setInterval(updateStopwatch, 1000);
+            updateStopwatch();
+            
+            // Initialize section animations
+            document.querySelectorAll('.section').forEach(section => {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting && !isAnimationPaused) {
+                            section.classList.add('active');
+                        }
+                    });
+                }, { threshold: 0.3 });
+                
+                observer.observe(section);
+            });
+        });
+    </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250408",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>
