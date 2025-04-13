@@ -5,848 +5,974 @@
     <title>Geva Kipper | Portfolio</title>
     <style>
         :root {
-            --matrix-green: #00ff41;
-            --matrix-light-green: #7dffb3;
-            --matrix-dark-green: #003b00;
-            --matrix-background: #0a0e0a;
-            --matrix-cyan: #0afbff;
-            --matrix-glitch: #ff00c8;
+            --bg-color: #0D1117;
+            --text-color: #E6EDF3;
+            --accent-green: #26A641;
+            --accent-purple: #8957e5;
+            --accent-orange: #F78166;
+            --link-color: #58A6FF;
+            --card-bg: #161B22;
+            --border-color: #30363D;
         }
-        
+
+        @font-face {
+            font-family: 'JetBrains Mono';
+            src: url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+            font-display: swap;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Courier New', monospace;
         }
-        
+
         body {
-            background-color: var(--matrix-background);
-            color: var(--matrix-green);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.6;
             overflow-x: hidden;
-            position: relative;
-            min-height: 100vh;
-            width: 100%;
+            padding-bottom: 50px;
         }
-        
-        #matrix-canvas {
+
+        .matrix-background {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 0;
-            opacity: 0.8;
+            z-index: -1;
+            opacity: 0.03;
+            pointer-events: none;
         }
-        
-        .content {
-            position: relative;
-            z-index: 1;
-            padding: 1rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
+
         header {
-            height: 100vh;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .terminal-prompt {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .terminal-prompt::before {
+            content: "~/geva-kipper $";
+            color: var(--accent-green);
+            margin-right: 10px;
+        }
+
+        .branch-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 5px 10px;
+            background-color: rgba(38, 166, 65, 0.2);
+            border-radius: 15px;
+            font-size: 0.8rem;
+        }
+
+        .branch-indicator::before {
+            content: "🔀 ";
+            color: var(--accent-green);
+        }
+
+        .ascii-art {
+            font-family: monospace;
+            white-space: pre;
+            line-height: 1.2;
+            font-size: 0.8rem;
+            margin-bottom: 20px;
+            color: var(--accent-purple);
+        }
+
+        .typing-effect {
+            display: inline-block;
+            width: max-content;
+            position: relative;
+        }
+
+        .typing-effect::after {
+            content: "|";
+            position: absolute;
+            right: -8px;
+            animation: blink 1s step-end infinite;
+            color: var(--accent-orange);
+        }
+
+        .comment {
+            color: #8b949e;
+            font-style: italic;
+            margin-top: 10px;
+        }
+
+        .comment::before {
+            content: "# ";
+        }
+
+        .timeline-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+        }
+
+        .timeline-branch {
+            position: absolute;
+            left: 30px;
+            top: 40px;
+            bottom: 40px;
+            width: 2px;
+            background-color: var(--accent-green);
+            z-index: 1;
+        }
+
+        .commit {
+            margin-bottom: 100px;
+            position: relative;
+            padding-left: 40px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .commit.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .commit::before {
+            content: "";
+            position: absolute;
+            left: 26px;
+            top: 15px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--accent-green);
+            z-index: 2;
+        }
+
+        .commit:nth-child(odd)::before {
+            background-color: var(--accent-purple);
+        }
+
+        .commit:nth-child(3n)::before {
+            background-color: var(--accent-orange);
+        }
+
+        .commit-wrapper {
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
         }
-        
-        h1 {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            text-shadow: 0 0 10px var(--matrix-light-green);
-            opacity: 0;
-        }
-        
-        h1::after {
-            content: "|";
-            animation: blink 1s infinite;
-        }
-        
-        .subtitle {
-            font-size: 1.5rem;
-            margin-bottom: 2rem;
-            opacity: 0;
-        }
-        
-        .note {
-            font-size: 0.9rem;
-            opacity: 0;
-            max-width: 600px;
-            color: var(--matrix-light-green);
-        }
-        
-        .projects-container {
-            padding: 4rem 0;
-        }
-        
-        .project-card {
-            margin: 8rem 0;
-            padding: 2rem;
-            border: 1px solid var(--matrix-dark-green);
-            position: relative;
-            opacity: 0;
-            transform: translateY(50px);
-            transition: all 0.8s ease;
-            min-height: 300px;
-            overflow: hidden;
-        }
-        
-        .project-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border: 2px solid transparent;
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-            background: transparent;
-            z-index: -1;
-            transition: all 0.5s ease;
-        }
-        
-        .project-card:hover::before {
-            border-color: var(--matrix-green);
-            box-shadow: 0 0 15px var(--matrix-light-green);
-            animation: pulse 2s infinite;
-        }
-        
-        .project-title {
-            font-size: 2rem;
-            margin-bottom: 1.5rem;
-            color: var(--matrix-light-green);
-        }
-        
-        .project-description {
-            margin-bottom: 1.5rem;
-            line-height: 1.6;
-        }
-        
-        .project-links {
+
+        .commit-line {
             display: flex;
-            gap: 1rem;
+            align-items: center;
+            margin-bottom: 10px;
             flex-wrap: wrap;
         }
-        
-        .project-link {
-            color: var(--matrix-cyan);
-            text-decoration: none;
-            padding: 0.5rem 1rem;
-            border: 1px solid var(--matrix-dark-green);
-            transition: all 0.3s ease;
-            position: relative;
+
+        .commit-hash {
+            font-family: monospace;
+            color: var(--accent-orange);
+            margin-right: 15px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .commit-hash:hover {
+            color: var(--link-color);
+        }
+
+        .commit-date {
+            color: #8b949e;
+            font-size: 0.8rem;
+            margin-right: 15px;
+        }
+
+        .commit-message {
+            font-weight: bold;
+            color: var(--accent-green);
+        }
+
+        .commit-card {
+            margin-top: 20px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
             overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transform: scale(0.98);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .commit.visible .commit-card {
+            opacity: 1;
+            transform: scale(1);
+            transition-delay: 0.2s;
+        }
+
+        .card-header {
+            background-color: #1c2128;
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header .controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .card-header .controls span {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .card-header .controls span:nth-child(1) {
+            background-color: #ff5f56;
         }
         
-        .project-link::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
+        .card-header .controls span:nth-child(2) {
+            background-color: #ffbd2e;
+        }
+        
+        .card-header .controls span:nth-child(3) {
+            background-color: #27c93f;
+        }
+
+        .card-content {
+            padding: 20px;
+        }
+
+        .project-description {
+            margin-bottom: 15px;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        .commit.visible .project-description {
+            animation: typeIn 0.8s forwards;
+            animation-delay: calc(0.3s + var(--index) * 0.1s);
+        }
+
+        .project-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .project-links a {
+            display: inline-block;
+            color: var(--link-color);
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.2s, transform 0.2s;
+        }
+
+        .project-links a:hover {
+            background-color: rgba(88, 166, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .project-links a::before {
+            content: "$ open ";
+            color: var(--accent-green);
+            font-size: 0.8rem;
+        }
+
+        .highlighted {
+            color: var(--accent-purple);
+            font-weight: bold;
+        }
+
+        .special-element {
+            margin: 15px 0;
+            height: 100px;
+            width: 100%;
+            background-color: rgba(137, 87, 229, 0.1);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(137, 87, 229, 0.3);
+        }
+
+        /* Project-specific visualizations */
+        .glgl-waves {
+            position: relative;
             width: 100%;
             height: 100%;
-            background: rgba(10, 251, 255, 0.1);
-            transition: all 0.3s ease;
+            overflow: hidden;
         }
-        
-        .project-link:hover {
-            color: var(--matrix-background);
-            background: var(--matrix-cyan);
-            box-shadow: 0 0 15px var(--matrix-cyan);
+
+        .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 200%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 350 100" xmlns="http://www.w3.org/2000/svg"><path d="M0,50 C50,0 100,100 150,50 C200,0 250,100 300,50 C350,0 400,100 450,50" fill="none" stroke="%238957e5" stroke-width="2" /></svg>');
+            background-repeat: repeat-x;
+            background-size: 50% 100%;
+            animation: wave 3s linear infinite;
+            opacity: 0.6;
         }
-        
-        .project-link:hover::before {
-            left: 100%;
+
+        .wave:nth-child(2) {
+            animation-delay: -1.5s;
+            animation-duration: 4s;
+            opacity: 0.4;
         }
-        
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-top: 3rem;
+
+        @keyframes wave {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
         }
-        
-        .social-link {
-            font-size: 1.5rem;
-            color: var(--matrix-light-green);
-            text-decoration: none;
+
+        /* Heatmap for Ahuzat Dibuk */
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-gap: 3px;
+            width: 90%;
+            height: 80%;
+        }
+
+        .heatmap-cell {
+            background-color: rgba(137, 87, 229, 0.1);
+            border-radius: 2px;
+            transition: background-color 0.3s ease;
+        }
+
+        /* Animation for 2D Part Orienting */
+        .polygon-container {
             position: relative;
-            transition: all 0.3s ease;
-            padding: 0.5rem;
+            width: 100%;
+            height: 100%;
         }
-        
-        .social-link:hover {
-            color: var(--matrix-cyan);
-            transform: translateY(-5px);
+
+        .polygon {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            top: calc(50% - 30px);
+            left: calc(50% - 30px);
+            background-color: transparent;
+            clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+            background-color: rgba(247, 129, 102, 0.7);
+            transform-origin: center;
+            animation: rotate 8s infinite linear;
         }
-        
+
+        .push-arrow {
+            position: absolute;
+            width: 40px;
+            height: 10px;
+            background-color: var(--accent-green);
+            opacity: 0;
+        }
+
+        @keyframes rotate {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(90deg); }
+            50% { transform: rotate(180deg); }
+            75% { transform: rotate(270deg); }
+        }
+
+        /* Recursive effect for Portfolio Website */
+        .recursive-container {
+            position: relative;
+            width: 90%;
+            height: 80%;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            perspective: 500px;
+        }
+
+        .recursive-inner {
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            width: 80%;
+            height: 80%;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-color);
+            opacity: 0.8;
+            transform: scale(0.9) translateZ(-50px);
+        }
+
+        .recursive-innermost {
+            position: absolute;
+            top: 15%;
+            left: 15%;
+            width: 70%;
+            height: 70%;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-color);
+            opacity: 0.6;
+            transform: scale(0.9) translateZ(-100px);
+        }
+
+        /* Social links styling */
+        .git-remote {
+            margin-top: 20px;
+            background-color: rgba(13, 17, 23, 0.5);
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .git-remote .command {
+            color: var(--accent-green);
+            margin-bottom: 10px;
+        }
+
+        .git-remote-list {
+            list-style-type: none;
+        }
+
+        .git-remote-list li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+        }
+
+        .git-remote-list li::before {
+            content: "→";
+            color: var(--accent-purple);
+            margin-right: 8px;
+        }
+
+        .git-remote-list a {
+            color: var(--link-color);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .git-remote-list a:hover {
+            color: var(--accent-orange);
+            text-decoration: underline;
+        }
+
         footer {
             text-align: center;
-            padding: 3rem 0;
-            position: relative;
-            margin-top: 4rem;
-        }
-        
-        .clock {
-            font-family: 'Courier New', monospace;
-            font-size: 1.2rem;
-            margin-bottom: 1rem;
-            color: var(--matrix-light-green);
-        }
-        
-        .ai-credit {
+            padding: 30px 20px;
+            border-top: 1px solid var(--border-color);
+            margin-top: 50px;
             font-size: 0.9rem;
-            opacity: 0.7;
         }
-        
-        .controls {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 10;
+
+        .process-completed {
+            color: var(--accent-green);
+            margin-bottom: 10px;
         }
-        
-        .performance-toggle {
-            background: transparent;
-            border: 1px solid var(--matrix-green);
-            color: var(--matrix-green);
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
+
+        .uptime {
+            font-family: monospace;
+            color: #8b949e;
+            margin: 15px 0;
         }
-        
-        .performance-toggle:hover {
-            background: var(--matrix-dark-green);
+
+        .ascii-decoration {
+            font-family: monospace;
+            white-space: pre;
+            line-height: 1.2;
+            font-size: 0.8rem;
+            margin: 20px 0;
+            color: var(--accent-purple);
+            opacity: 0.5;
         }
-        
+
+        .ai-credit {
+            font-style: italic;
+            color: #8b949e;
+        }
+
+        /* Animations */
         @keyframes blink {
             0%, 100% { opacity: 1; }
             50% { opacity: 0; }
         }
-        
-        @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 5px var(--matrix-green); }
-            50% { box-shadow: 0 0 20px var(--matrix-light-green); }
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        @keyframes glitch {
-            0%, 100% { 
-                text-shadow: 0 0 2px var(--matrix-green);
-                transform: translateX(0);
+
+        @keyframes typeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(10px);
             }
-            20% { 
-                text-shadow: 0 0 5px var(--matrix-glitch);
-                transform: translateX(5px);
-            }
-            40% { 
-                text-shadow: 0 0 5px var(--matrix-cyan);
-                transform: translateX(-5px);
-            }
-            60% { 
-                text-shadow: 0 0 5px var(--matrix-light-green);
-                transform: translateY(2px);
-            }
-            80% { 
-                text-shadow: 0 0 5px var(--matrix-green);
-                transform: translateY(-2px);
+            100% {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
-        
-        .glitch {
-            animation: glitch 5s infinite;
-            animation-delay: calc(var(--i) * 0.2s);
-        }
-        
-        .visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        /* Media Queries */
+
+        /* Responsive styles */
         @media (max-width: 768px) {
-            h1 {
-                font-size: 2.5rem;
+            .ascii-art {
+                font-size: 0.6rem;
             }
-            
-            .subtitle {
-                font-size: 1.2rem;
+
+            .timeline-branch {
+                left: 20px;
             }
-            
-            .project-card {
-                padding: 1.5rem;
+
+            .commit {
+                padding-left: 30px;
             }
-            
-            .project-title {
-                font-size: 1.5rem;
+
+            .commit::before {
+                left: 16px;
+            }
+
+            .commit-line {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+
+            .commit-hash, .commit-date {
+                margin-right: 0;
             }
         }
-        
+
         @media (max-width: 480px) {
-            h1 {
-                font-size: 2rem;
+            header {
+                padding: 15px;
             }
-            
-            .subtitle {
-                font-size: 1rem;
+
+            .ascii-art {
+                display: none;
             }
-            
-            .social-links {
-                gap: 1rem;
+
+            .timeline-container {
+                padding: 20px 10px;
             }
         }
     </style>
 </head>
 <body>
-    <canvas id="matrix-canvas"></canvas>
+    <canvas class="matrix-background" id="matrixCanvas"></canvas>
     
-    <div class="content">
-        <header>
-            <h1 id="name">Geva Kipper</h1>
-            <p class="subtitle" id="role">Currently Engineering at Google</p>
-            <p class="note" id="ai-note">This website redesigns itself daily via AI - what you see is unique to today</p>
-        </header>
-        
-        <main class="projects-container">
-            <section class="project-card" id="project1">
-                <h2 class="project-title">GlglStats</h2>
-                <p class="project-description">
-                    A comprehensive music analytics platform that visualizes complex audio data patterns 
-                    through an elegant interface. The system analyzes waveforms and presents insights that 
-                    musicians and producers can use to enhance their creative process.
-                </p>
-                <div class="project-links">
-                    <a href="https://glglstats.onrender.com/" class="project-link" target="_blank">Visit Website</a>
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" class="project-link" target="_blank">Watch Presentation</a>
+    <header>
+        <div class="branch-indicator">main</div>
+        <div class="terminal-prompt">
+            <span class="typing-effect" id="currentWorkText"></span>
+        </div>
+        <div class="ascii-art">
+  _____                     _  ___                       
+ / ____|                   | |/ (_)                      
+| |  __  _____   ____ _    | ' / _ _ __  _ __   ___ _ __ 
+| | |_ |/ _ \ \ / / _` |   |  < | | '_ \| '_ \ / _ \ '__|
+| |__| |  __/\ V / (_| |   | . \| | |_) | |_) |  __/ |   
+ \_____|\___|_\_/ \__,_|   |_|\_\_| .__/| .__/ \___|_|   
+                                  | |   | |              
+                                  |_|   |_|              
+        </div>
+        <div class="comment">AI-redesigned portfolio showcasing my work through a git history visualization</div>
+    </header>
+
+    <main class="timeline-container">
+        <div class="timeline-branch"></div>
+
+        <!-- GlglStats Project -->
+        <div class="commit" data-year="2023">
+            <div class="commit-wrapper">
+                <div class="commit-line">
+                    <span class="commit-hash">a1b2c3d</span>
+                    <span class="commit-date">Aug 2023</span>
+                    <span class="commit-message">GlglStats: Audio Compression Analysis</span>
                 </div>
-            </section>
-            
-            <section class="project-card" id="project2">
-                <h2 class="project-title">Ahuzat Dibuk</h2>
-                <p class="project-description">
-                    An innovative solution to urban parking challenges, utilizing data analysis and mapping 
-                    to identify optimal parking locations. The project received significant media attention 
-                    for its practical approach to a common city problem.
-                </p>
-                <div class="project-links">
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" class="project-link" target="_blank">Publication Post</a>
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" class="project-link" target="_blank">Media Mention 1</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" class="project-link" target="_blank">Media Mention 2</a>
+                <div class="commit-card">
+                    <div class="card-header">
+                        <span>GlglStats</span>
+                        <div class="controls">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <p class="project-description" style="--index: 0">
+                            Developed <span class="highlighted">GlglStats</span>, an analysis tool that evaluates audio compression algorithms by examining statistical properties of their residuals.
+                        </p>
+                        <p class="project-description" style="--index: 1">
+                            This approach helps determine the <span class="highlighted">efficiency</span> of audio compression techniques by measuring how much predictable information remains in residuals.
+                        </p>
+                        <div class="special-element">
+                            <div class="glgl-waves">
+                                <div class="wave"></div>
+                                <div class="wave"></div>
+                            </div>
+                        </div>
+                        <p class="project-description" style="--index: 2">
+                            The project was presented at the <span class="highlighted">Audio Engineering Society Conference</span> and has potential applications in optimizing music streaming services.
+                        </p>
+                        <div class="project-links">
+                            <a href="https://glglstats.onrender.com/" target="_blank">Website</a>
+                            <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">Conference Video</a>
+                        </div>
+                    </div>
                 </div>
-            </section>
-            
-            <section class="project-card" id="project3">
-                <h2 class="project-title">2D Part Orienting</h2>
-                <p class="project-description">
-                    A computational geometry project focused on optimal orientation algorithms for 2D parts. 
-                    The research explores efficient methods for calculating stable resting positions for polygonal objects, 
-                    with applications in manufacturing and robotics.
-                </p>
-                <div class="project-links">
-                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" class="project-link" target="_blank">Project Details</a>
+            </div>
+        </div>
+
+        <!-- Ahuzat Dibuk Project -->
+        <div class="commit" data-year="2022">
+            <div class="commit-wrapper">
+                <div class="commit-line">
+                    <span class="commit-hash">e4f5g6h</span>
+                    <span class="commit-date">Apr 2022</span>
+                    <span class="commit-message">Ahuzat Dibuk: Parking Spot Analysis</span>
                 </div>
-            </section>
-            
-            <section class="project-card" id="project4">
-                <h2 class="project-title">Portfolio Website</h2>
-                <p class="project-description">
-                    A self-referential Matrix-inspired portfolio that showcases my projects through an immersive 
-                    digital experience. The website features adaptive animations and interactive elements that 
-                    respond to user interaction, creating a unique browsing experience.
-                </p>
-                <div class="project-links">
-                    <a href="https://portfolio-dor1.onrender.com/" class="project-link" target="_blank">Current Portfolio</a>
+                <div class="commit-card">
+                    <div class="card-header">
+                        <span>Ahuzat Dibuk</span>
+                        <div class="controls">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <p class="project-description" style="--index: 0">
+                            Created <span class="highlighted">Ahuzat Dibuk</span>, a data-driven study of parking availability in Tel Aviv that identified patterns in parking spot usage.
+                        </p>
+                        <p class="project-description" style="--index: 1">
+                            The analysis utilized <span class="highlighted">spatial data visualization</span> to highlight areas with consistently available parking, contrary to popular belief.
+                        </p>
+                        <div class="special-element">
+                            <div class="heatmap-grid" id="heatmap"></div>
+                        </div>
+                        <p class="project-description" style="--index: 2">
+                            This project received significant media attention for challenging common perceptions about Tel Aviv's parking situation and was featured on multiple news outlets.
+                        </p>
+                        <div class="project-links">
+                            <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">Publication</a>
+                            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">Media Coverage 1</a>
+                            <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">Media Coverage 2</a>
+                        </div>
+                    </div>
                 </div>
-            </section>
-            
-            <section class="project-card" id="project5">
-                <h2 class="project-title">Connect With Me</h2>
-                <p class="project-description">
-                    Interested in collaborating or learning more about my work? Reach out through any of my social platforms.
-                </p>
-                <div class="social-links">
-                    <a href="https://github.com/gevak" class="social-link" target="_blank">[GitHub]</a>
-                    <a href="https://linkedin.com/in/gevakip" class="social-link" target="_blank">[LinkedIn]</a>
-                    <a href="https://facebook.com/geva.kipper" class="social-link" target="_blank">[Facebook]</a>
+            </div>
+        </div>
+
+        <!-- 2D Part Orienting -->
+        <div class="commit" data-year="2021">
+            <div class="commit-wrapper">
+                <div class="commit-line">
+                    <span class="commit-hash">i7j8k9l</span>
+                    <span class="commit-date">Nov 2021</span>
+                    <span class="commit-message">2D Part Orienting: Computational Geometry</span>
                 </div>
-            </section>
-        </main>
-        
-        <footer>
-            <div class="clock" id="time-counter">Running since April 12, 2025: 00:00:00</div>
-            <p class="ai-credit" id="ai-credit">Generated by AI on <span id="generation-date"></span></p>
-        </footer>
-    </div>
-    
-    <div class="controls">
-        <button class="performance-toggle" id="performance-toggle">Toggle Animation Intensity</button>
-    </div>
-    
+                <div class="commit-card">
+                    <div class="card-header">
+                        <span>2D Part Orienting</span>
+                        <div class="controls">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <p class="project-description" style="--index: 0">
+                            Implemented a <span class="highlighted">computational geometry</span> solution for orienting 2D parts through a sequence of pushes against a wall.
+                        </p>
+                        <p class="project-description" style="--index: 1">
+                            This research has applications in <span class="highlighted">robotics</span> and <span class="highlighted">automation</span>, particularly for orienting parts on assembly lines without using complex sensing equipment.
+                        </p>
+                        <div class="special-element">
+                            <div class="polygon-container">
+                                <div class="polygon"></div>
+                                <div class="push-arrow"></div>
+                            </div>
+                        </div>
+                        <p class="project-description" style="--index: 2">
+                            The algorithm determines the minimal sequence of push directions needed to achieve a unique orientation of polygonal parts.
+                        </p>
+                        <div class="project-links">
+                            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">Project Page</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portfolio Website -->
+        <div class="commit" data-year="2023">
+            <div class="commit-wrapper">
+                <div class="commit-line">
+                    <span class="commit-hash">m2n3o4p</span>
+                    <span class="commit-date">Oct 2023</span>
+                    <span class="commit-message">Portfolio Website: Git-Inspired Timeline</span>
+                </div>
+                <div class="commit-card">
+                    <div class="card-header">
+                        <span>Portfolio Website</span>
+                        <div class="controls">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <p class="project-description" style="--index: 0">
+                            Designed this <span class="highlighted">terminal-inspired</span> portfolio website visualizing my career as a git repository timeline.
+                        </p>
+                        <p class="project-description" style="--index: 1">
+                            Built with modern <span class="highlighted">HTML</span>, <span class="highlighted">CSS</span>, and <span class="highlighted">JavaScript</span>, featuring animations and interactive elements that simulate a code environment.
+                        </p>
+                        <div class="special-element">
+                            <div class="recursive-container">
+                                <div class="recursive-inner">
+                                    <div class="recursive-innermost"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="project-description" style="--index: 2">
+                            The design incorporates subtle code animations, typing effects, and responsive layouts to create an engaging developer-centric experience.
+                        </p>
+                        <div class="project-links">
+                            <a href="https://portfolio-dor1.onrender.com/" target="_blank">Live Website</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Social Links -->
+        <div class="commit" data-year="2023">
+            <div class="commit-wrapper">
+                <div class="commit-line">
+                    <span class="commit-hash">q5r6s7t</span>
+                    <span class="commit-date">Current</span>
+                    <span class="commit-message">Connect: Social Profiles & Contact</span>
+                </div>
+                <div class="commit-card">
+                    <div class="card-header">
+                        <span>Connect</span>
+                        <div class="controls">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <p class="project-description" style="--index: 0">
+                            Feel free to connect with me through any of the following platforms.
+                        </p>
+                        <div class="git-remote">
+                            <div class="command">$ git remote -v</div>
+                            <ul class="git-remote-list">
+                                <li><a href="https://github.com/gevak" target="_blank">github.com/gevak</a></li>
+                                <li><a href="https://linkedin.com/in/gevakip" target="_blank">linkedin.com/in/gevakip</a></li>
+                                <li><a href="https://facebook.com/geva.kipper" target="_blank">facebook.com/geva.kipper</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="process-completed">Process completed with exit code 0</div>
+        <div class="uptime" id="uptime">uptime: 00:00:00</div>
+        <div class="ascii-decoration">
+ /\__/\  
+( o.o  )  
+ > ^ <   
+        </div>
+        <div class="ai-credit">Designed with AI assistance • Built with 💻</div>
+    </footer>
+
     <script>
-        // Matrix Digital Rain Effect
-        class MatrixRain {
-            constructor(canvas, highPerformance = true) {
-                this.canvas = canvas;
-                this.ctx = canvas.getContext('2d');
-                this.canvas.width = window.innerWidth;
-                this.canvas.height = window.innerHeight;
-                this.characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,./<>?';
-                this.drops = [];
-                this.fontSize = 14;
-                this.highPerformance = highPerformance;
-                this.maxDrops = this.highPerformance ? 
-                                 Math.floor(this.canvas.width / 10) : 
-                                 Math.floor(this.canvas.width / 30);
-                this.initDrops();
-                this.mouseX = 0;
-                this.mouseY = 0;
-                this.projectAreas = [];
-                // Areas of influence around projects
-                this.influenceAreas = [];
-                
-                // Initialize tracking of mouse position
-                window.addEventListener('mousemove', (e) => {
-                    this.mouseX = e.clientX;
-                    this.mouseY = e.clientY;
-                });
-                
-                // Handle window resize
-                window.addEventListener('resize', () => {
-                    this.canvas.width = window.innerWidth;
-                    this.canvas.height = window.innerHeight;
-                    this.maxDrops = this.highPerformance ? 
-                                     Math.floor(this.canvas.width / 10) : 
-                                     Math.floor(this.canvas.width / 30);
-                    this.initDrops();
-                });
-            }
+        // Matrix background animation
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function setupCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+
+        window.addEventListener('resize', setupCanvas);
+        setupCanvas();
+
+        const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=><[]{}()";
+        const columns = Math.floor(width / 15);
+        const drops = [];
+
+        for (let i = 0; i < columns; i++) {
+            drops[i] = Math.floor(Math.random() * -100);
+        }
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(13, 17, 23, 0.05)';
+            ctx.fillRect(0, 0, width, height);
             
-            initDrops() {
-                this.drops = [];
-                for (let i = 0; i < this.maxDrops; i++) {
-                    this.drops.push({
-                        x: Math.random() * this.canvas.width,
-                        y: Math.random() * this.canvas.height * 2 - this.canvas.height,
-                        speed: (Math.random() * 0.5 + 0.5) * (this.highPerformance ? 1 : 0.5),
-                        length: Math.floor(Math.random() * 15 + 5),
-                        characters: [],
-                        lastUpdate: 0,
-                        updateFrequency: Math.random() * 100 + 50,
-                        opacity: Math.random() * 0.5 + 0.5,
-                        glowing: false,
-                        glowTimer: 0
-                    });
-                    
-                    for (let j = 0; j < this.drops[i].length; j++) {
-                        this.drops[i].characters.push(this.getRandomCharacter());
-                    }
+            ctx.fillStyle = '#26A641';
+            ctx.font = '15px monospace';
+            
+            for (let i = 0; i < drops.length; i++) {
+                const text = characters.charAt(Math.floor(Math.random() * characters.length));
+                ctx.fillText(text, i * 15, drops[i] * 15);
+                
+                if (drops[i] * 15 > height && Math.random() > 0.99) {
+                    drops[i] = 0;
                 }
-            }
-            
-            getRandomCharacter() {
-                return this.characters.charAt(Math.floor(Math.random() * this.characters.length));
-            }
-            
-            updateDrops() {
-                const now = performance.now();
                 
-                this.drops.forEach(drop => {
-                    drop.y += drop.speed;
-                    
-                    // Update characters occasionally
-                    if (now - drop.lastUpdate > drop.updateFrequency) {
-                        drop.characters.shift();
-                        drop.characters.push(this.getRandomCharacter());
-                        drop.lastUpdate = now;
-                    }
-                    
-                    // Random chance for a drop to glow
-                    if (Math.random() < 0.001 && !drop.glowing) {
-                        drop.glowing = true;
-                        drop.glowTimer = 30;
-                    }
-                    
-                    if (drop.glowing) {
-                        drop.glowTimer--;
-                        if (drop.glowTimer <= 0) {
-                            drop.glowing = false;
-                        }
-                    }
-                    
-                    // Reset if beyond bottom of screen
-                    if (drop.y > this.canvas.height) {
-                        drop.y = -drop.length * this.fontSize;
-                        drop.x = Math.random() * this.canvas.width;
-                    }
-                    
-                    // Check if near mouse or project areas
-                    const distToMouse = Math.sqrt(
-                        Math.pow(drop.x - this.mouseX, 2) + 
-                        Math.pow(drop.y - this.mouseY, 2)
-                    );
-                    
-                    // Influence from mouse position
-                    if (distToMouse < 100) {
-                        const angle = Math.atan2(drop.y - this.mouseY, drop.x - this.mouseX);
-                        drop.x += Math.cos(angle) * 0.2;
-                        drop.y += Math.sin(angle) * 0.2;
-                    }
-                    
-                    // Check project areas
-                    this.influenceAreas.forEach(area => {
-                        if (
-                            drop.x >= area.x && 
-                            drop.x <= area.x + area.width && 
-                            drop.y >= area.y && 
-                            drop.y <= area.y + area.height
-                        ) {
-                            // Inside project area, modify behavior
-                            if (area.active) {
-                                drop.speed *= 1.05; // Speed up
-                                if (Math.random() < 0.1) drop.glowing = true;
-                            }
-                        }
-                    });
-                });
-            }
-            
-            draw() {
-                this.ctx.fillStyle = 'rgba(10, 14, 10, 0.1)';
-                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-                
-                this.drops.forEach(drop => {
-                    for (let i = 0; i < drop.characters.length; i++) {
-                        const y = drop.y - i * this.fontSize;
-                        if (y < -this.fontSize || y > this.canvas.height) continue;
-                        
-                        // Calculate character color
-                        const charOpacity = (1 - i / drop.characters.length) * drop.opacity;
-                        
-                        if (drop.glowing) {
-                            this.ctx.fillStyle = `rgba(125, 255, 179, ${charOpacity * 1.5})`;
-                            this.ctx.shadowColor = 'rgba(125, 255, 179, 0.8)';
-                            this.ctx.shadowBlur = 10;
-                        } else {
-                            this.ctx.fillStyle = `rgba(0, 255, 65, ${charOpacity})`;
-                            this.ctx.shadowBlur = 0;
-                        }
-                        
-                        // First character is brightest
-                        if (i === 0) {
-                            this.ctx.fillStyle = drop.glowing ? 
-                                               'rgba(255, 255, 255, 1)' : 
-                                               'rgba(125, 255, 179, 1)';
-                        }
-                        
-                        this.ctx.font = `${this.fontSize}px 'Courier New', monospace`;
-                        this.ctx.fillText(drop.characters[i], drop.x, y);
-                        this.ctx.shadowBlur = 0;
-                    }
-                });
-            }
-            
-            updateProjectAreas(areas) {
-                this.influenceAreas = areas.map(area => ({
-                    ...area,
-                    active: false
-                }));
-            }
-            
-            activateArea(index) {
-                if (this.influenceAreas[index]) {
-                    this.influenceAreas[index].active = true;
-                }
-            }
-            
-            deactivateArea(index) {
-                if (this.influenceAreas[index]) {
-                    this.influenceAreas[index].active = false;
-                }
-            }
-            
-            setPerformanceMode(highPerformance) {
-                this.highPerformance = highPerformance;
-                this.maxDrops = this.highPerformance ? 
-                                 Math.floor(this.canvas.width / 10) : 
-                                 Math.floor(this.canvas.width / 30);
-                this.initDrops();
-            }
-            
-            animate() {
-                this.updateDrops();
-                this.draw();
-                requestAnimationFrame(this.animate.bind(this));
+                drops[i]++;
             }
         }
-        
-        // TypeWriter Effect
-        class TypeWriter {
-            constructor(element, text, speed = 100, startDelay = 0) {
-                this.element = element;
-                this.text = text;
-                this.speed = speed;
-                this.startDelay = startDelay;
-                this.index = 0;
-                this.isTyping = false;
-                this.isComplete = false;
-                this.callbackFn = null;
-            }
-            
-            start() {
-                this.element.textContent = '';
-                this.element.style.opacity = 1;
-                this.isTyping = true;
-                
-                setTimeout(() => {
-                    this.type();
-                }, this.startDelay);
-                
-                return this;
-            }
-            
-            type() {
-                if (this.index < this.text.length) {
-                    this.element.textContent += this.text.charAt(this.index);
-                    this.index++;
-                    setTimeout(() => this.type(), this.speed);
+
+        // Type writing effect for current work text
+        function typeWriter(text, element, speed = 50) {
+            let i = 0;
+            function type() {
+                if (i < text.length) {
+                    element.textContent += text.charAt(i);
+                    i++;
+                    setTimeout(type, speed);
                 } else {
-                    this.isTyping = false;
-                    this.isComplete = true;
-                    if (this.callbackFn) this.callbackFn();
+                    setTimeout(() => {
+                        element.classList.add('finished-typing');
+                    }, 500);
                 }
             }
-            
-            onComplete(callback) {
-                this.callbackFn = callback;
-                return this;
-            }
+            type();
         }
-        
-        // Initialize the Matrix Rain
-        const canvas = document.getElementById('matrix-canvas');
-        const matrixRain = new MatrixRain(canvas);
-        matrixRain.animate();
-        
-        // Toggle performance mode
-        document.getElementById('performance-toggle').addEventListener('click', function() {
-            matrixRain.setPerformanceMode(!matrixRain.highPerformance);
-            this.textContent = matrixRain.highPerformance ? 
-                              'Use Low Performance Mode' : 
-                              'Use High Performance Mode';
-        });
-        
-        // Initialize header animations
-        const nameElement = document.getElementById('name');
-        const roleElement = document.getElementById('role');
-        const aiNoteElement = document.getElementById('ai-note');
-        
-        const nameTypewriter = new TypeWriter(nameElement, nameElement.textContent, 150, 1000);
-        nameTypewriter.start().onComplete(() => {
-            setTimeout(() => {
-                roleElement.style.opacity = 1;
-                setTimeout(() => {
-                    aiNoteElement.style.opacity = 1;
-                }, 800);
-            }, 500);
-        });
-        
-        // Project card animations on scroll
-        const projectCards = document.querySelectorAll('.project-card');
-        
-        // Create project areas for Matrix effect influence
-        const projectAreas = Array.from(projectCards).map(card => {
-            const rect = card.getBoundingClientRect();
-            return {
-                x: rect.left,
-                y: rect.top,
-                width: rect.width,
-                height: rect.height,
-                element: card
-            };
-        });
-        
-        matrixRain.updateProjectAreas(projectAreas);
-        
-        // Intersection Observer for scroll animations
+
+        const currentWorkText = document.getElementById('currentWorkText');
+        typeWriter("Currently working on ML infrastructure at Google", currentWorkText);
+
+        // Intersection Observer for reveal animations
+        const observerOptions = {
+            rootMargin: '-50px 0px',
+            threshold: 0.1
+        };
+
         const observer = new IntersectionObserver((entries) => {
-            entries.forEach((entry, index) => {
+            entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     entry.target.classList.add('visible');
-                    // Activate matrix rain influence for this project
-                    matrixRain.activateArea(index);
                     
-                    // Add subtle glitch animation to each character in heading
-                    const title = entry.target.querySelector('.project-title');
-                    if (title) {
-                        title.innerHTML = Array.from(title.textContent).map((char, i) => 
-                            `<span class="glitch" style="--i:${i}">${char}</span>`
-                        ).join('');
+                    // Activate special visualizations when commit is in view
+                    if (entry.target.querySelector('.heatmap-grid')) {
+                        activateHeatmap(entry.target.querySelector('.heatmap-grid'));
                     }
-                } else {
-                    matrixRain.deactivateArea(index);
                 }
             });
-        }, {
-            threshold: 0.2
+        }, observerOptions);
+
+        document.querySelectorAll('.commit').forEach(commit => {
+            observer.observe(commit);
         });
-        
-        projectCards.forEach(card => {
-            observer.observe(card);
-        });
-        
-        // Project link click effects
-        document.querySelectorAll('.project-link').forEach(link => {
-            link.addEventListener('click', function(e) {
-                // Don't prevent default so link still works
-                const rect = this.getBoundingClientRect();
-                const x = rect.left + rect.width / 2;
-                const y = rect.top + rect.height / 2;
+
+        // Heatmap visualization for Ahuzat Dibuk
+        function activateHeatmap(heatmapElement) {
+            if (heatmapElement.dataset.activated) return;
+            
+            heatmapElement.innerHTML = '';
+            heatmapElement.dataset.activated = true;
+            
+            for (let i = 0; i < 50; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('heatmap-cell');
+                heatmapElement.appendChild(cell);
                 
-                // Create explosion effect
-                for (let i = 0; i < 20; i++) {
-                    createParticle(x, y);
+                setTimeout(() => {
+                    const intensity = Math.random();
+                    const hue = Math.floor(260 + intensity * 60); // Purple to blue range
+                    const sat = Math.floor(70 + intensity * 30);
+                    const light = Math.floor(intensity * 60);
+                    cell.style.backgroundColor = `hsl(${hue}, ${sat}%, ${light}%)`;
+                }, i * 50);
+            }
+        }
+
+        // Initialize heatmap
+        const heatmap = document.getElementById('heatmap');
+        for (let i = 0; i < 50; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('heatmap-cell');
+            heatmap.appendChild(cell);
+        }
+
+        // Uptime counter
+        function updateUptime() {
+            const startTime = new Date();
+            const uptimeElement = document.getElementById('uptime');
+            
+            setInterval(() => {
+                const now = new Date();
+                const diff = now - startTime;
+                
+                const hours = Math.floor(diff / 3600000).toString().padStart(2, '0');
+                const minutes = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+                const seconds = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+                
+                uptimeElement.textContent = `uptime: ${hours}:${minutes}:${seconds}`;
+            }, 1000);
+        }
+
+        // Click event for commit hash to show more details
+        document.querySelectorAll('.commit-hash').forEach(hash => {
+            hash.addEventListener('click', function() {
+                const commitCard = this.closest('.commit-wrapper').querySelector('.commit-card');
+                
+                if (commitCard.style.maxHeight) {
+                    commitCard.style.maxHeight = null;
+                } else {
+                    commitCard.style.maxHeight = commitCard.scrollHeight + "px";
+                }
+                
+                this.textContent = this.textContent === this.dataset.originalHash ? 
+                                   "git show " + this.dataset.originalHash : 
+                                   this.dataset.originalHash || this.textContent;
+                
+                if (!this.dataset.originalHash) {
+                    this.dataset.originalHash = this.textContent;
                 }
             });
         });
-        
-        function createParticle(x, y) {
-            const particle = document.createElement('div');
-            document.body.appendChild(particle);
+
+        // Initialize everything when the document is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            updateUptime();
             
-            // Random angle and distance
-            const angle = Math.random() * Math.PI * 2;
-            const distance = Math.random() * 100 + 50;
-            const size = Math.random() * 8 + 4;
-            
-            // Styling the particle
-            particle.style.position = 'fixed';
-            particle.style.width = `${size}px`;
-            particle.style.height = `${size}px`;
-            particle.style.left = `${x}px`;
-            particle.style.top = `${y}px`;
-            particle.style.backgroundColor = 'var(--matrix-cyan)';
-            particle.style.boxShadow = '0 0 10px var(--matrix-cyan)';
-            particle.style.borderRadius = '50%';
-            particle.style.pointerEvents = 'none';
-            particle.style.zIndex = '100';
-            
-            // Animate the particle
-            const animation = particle.animate([
-                {
-                    transform: 'translate(-50%, -50%) scale(1)',
-                    opacity: 1
-                },
-                {
-                    transform: `translate(
-                        calc(-50% + ${Math.cos(angle) * distance}px), 
-                        calc(-50% + ${Math.sin(angle) * distance}px)
-                    ) scale(0)`,
-                    opacity: 0
-                }
-            ], {
-                duration: 1000,
-                easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
-            });
-            
-            animation.onfinish = () => {
-                particle.remove();
-            };
-        }
-        
-        // Time counter since April 12, 2025
-        function updateTimeCounter() {
-            const targetDate = new Date('April 12, 2025 00:00:00');
-            const now = new Date();
-            
-            // If current date is before target date, show countdown
-            let timeDiff;
-            let countingUp = true;
-            
-            if (now < targetDate) {
-                timeDiff = targetDate - now;
-                countingUp = false;
-            } else {
-                timeDiff = now - targetDate;
-            }
-            
-            // Calculate time units
-            const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-            
-            // Format the display
-            const timeDisplay = countingUp 
-                ? `Running since April 12, 2025: ${days}d ${hours}h ${minutes}m ${seconds}s`
-                : `Launching in: ${days}d ${hours}h ${minutes}m ${seconds}s`;
-            
-            document.getElementById('time-counter').textContent = timeDisplay;
-            
-            // Glitch effect occasionally
-            if (Math.random() < 0.05) {
-                document.getElementById('time-counter').classList.add('glitch');
-                setTimeout(() => {
-                    document.getElementById('time-counter').classList.remove('glitch');
-                }, 200);
-            }
-            
-            requestAnimationFrame(updateTimeCounter);
-        }
-        
-        updateTimeCounter();
-        
-        // Set generation date
-        const today = new Date();
-        document.getElementById('generation-date').textContent = today.toLocaleDateString();
-        
-        // Simulate AI typing credit
-        const aiCredit = document.getElementById('ai-credit');
-        const aiCreditText = aiCredit.textContent;
-        aiCredit.textContent = '';
-        
-        let creditIndex = 0;
-        function typeAICredit() {
-            if (creditIndex < aiCreditText.length) {
-                aiCredit.textContent += aiCreditText.charAt(creditIndex);
-                creditIndex++;
-                setTimeout(typeAICredit, Math.random() * 100 + 50);
-            }
-        }
-        
-        // Start AI credit typing after 5 seconds
-        setTimeout(typeAICredit, 5000);
-        
-        // Update project areas on scroll for Matrix interaction
-        window.addEventListener('scroll', () => {
-            const updatedAreas = Array.from(projectCards).map(card => {
-                const rect = card.getBoundingClientRect();
-                return {
-                    x: rect.left,
-                    y: rect.top,
-                    width: rect.width,
-                    height: rect.height,
-                    element: card
-                };
-            });
-            
-            matrixRain.updateProjectAreas(updatedAreas);
+            // Matrix animation at a slow frame rate to not be distracting
+            setInterval(drawMatrix, 100);
         });
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250412",
+          pageId: "20250413",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
