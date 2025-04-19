@@ -2,520 +2,849 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - Portfolio</title>
-
-    <!-- A-Frame and AR.js Libraries -->
-    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-
+    <title>Geva Kipper - Code That Writes Itself</title>
     <style>
-        /* --- Global Styles & Variables --- */
         :root {
-            --background-color: #f8f9fa; /* Off-white */
-            --text-color: #333;
-            --header-color: #222;
-            --subtle-text-color: #6c757d;
-            --border-color: #e0e0e0;
-            --accent-color: #007bff; /* Example accent color - could be part of 'AI change' */
-            --card-background: #ffffff;
-            --font-main: 'Inter', sans-serif;
+            --bg-color: #1e1e2e;
+            --text-color: #cdd6f4;
+            --highlight-color: #89b4fa;
+            --comment-color: #6c7086;
+            --function-color: #f5c2e7;
+            --string-color: #a6e3a1;
+            --number-color: #fab387;
+            --keyword-color: #f38ba8;
+            --property-color: #89dceb;
+            --glass-bg: rgba(30, 30, 46, 0.7);
+            --glass-border: rgba(137, 180, 250, 0.3);
+            --terminal-green: #a6e3a1;
+            --cursor-blink-time: 0.8s;
         }
 
-        html {
-            scroll-behavior: smooth;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Fira Code', 'Cascadia Code', 'Source Code Pro', monospace;
         }
 
         body {
-            font-family: var(--font-main);
-            background-color: var(--background-color);
+            background-color: var(--bg-color);
             color: var(--text-color);
-            margin: 0;
-            padding: 0;
             line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .code-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header {
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 20px;
-            flex-grow: 1; /* Pushes footer down */
-        }
-
-        /* --- Header --- */
-        header {
-            text-align: center;
-            margin-bottom: 50px;
-            padding-top: 40px;
-            position: relative; /* For AR hint positioning */
-        }
-
-        header h1 {
-            font-size: 2.5rem;
-            font-weight: 500;
-            color: var(--header-color);
-            margin: 0 0 5px 0;
-        }
-
-        header .job-title {
-            font-size: 1.2rem;
-            font-weight: 400;
-            color: var(--text-color);
-            margin: 0 0 10px 0;
-        }
-
-        header .ai-disclaimer {
-            font-size: 0.9rem;
-            font-weight: 300;
-            color: var(--subtle-text-color);
-            font-style: italic;
-            margin: 0;
-        }
-
-        .ar-hint {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 1.5rem;
-            color: var(--subtle-text-color);
-            cursor: pointer;
-            z-index: 1001; /* Above AR scene initially */
-        }
-
-        .ar-hint .tooltip {
-            visibility: hidden;
-            width: 140px;
-            background-color: #555;
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-            padding: 5px 0;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%; /* Position above the icon */
-            left: 50%;
-            margin-left: -70px; /* Center the tooltip */
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 0.8rem;
-        }
-
-        .ar-hint:hover .tooltip {
-            visibility: visible;
-            opacity: 1;
-        }
-        /* Simple camera icon using unicode */
-        .ar-hint::before {
-             content: "\1F4F7"; /* Camera emoji - replace with SVG/Icon font if preferred */
-        }
-
-
-        /* --- Sections Grid --- */
-        .sections-grid {
-            display: grid;
-            gap: 25px;
-            /* Default: 2 columns, aiming for 2/3 + 1/3 on wider screens */
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        }
-
-        /* --- Section Card Styling --- */
-        .section-card {
-            background-color: var(--card-background);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 25px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            display: flex;
-            flex-direction: column; /* Ensure content stacks vertically */
-        }
-
-        .section-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .section-card h2 {
-            font-size: 1.5rem;
-            font-weight: 500;
-            color: var(--header-color);
-            margin: 0 0 10px 0;
-        }
-
-        .section-card p {
-            margin: 0 0 15px 0;
-            flex-grow: 1; /* Push links to the bottom */
-            font-size: 0.95rem;
-        }
-
-        .section-links {
-            margin-top: auto; /* Pushes to bottom */
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap; /* Wrap links if they don't fit */
-            align-items: center; /* Align items vertically */
-        }
-
-        .section-links a {
-            color: var(--accent-color);
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.9rem;
-            transition: color 0.2s ease;
-        }
-
-        .section-links a:hover {
-            color: #0056b3; /* Darker accent */
-            text-decoration: underline;
-        }
-
-        /* --- AR Trigger Visual Cue --- */
-        .ar-trigger-icon {
-            width: 30px;
-            height: 30px;
-            margin-left: auto; /* Position to the right */
-            opacity: 0.6;
-            /* Placeholder style - replace with actual icon */
-             /* background-color: #eee;
-            border: 1px dashed var(--subtle-text-color);
-            display: inline-flex;
-            align-items: center;
             justify-content: center;
-            font-size: 0.7rem;
-            color: var(--subtle-text-color); */
-            vertical-align: middle; /* Align with link text */
-            display: block; /* Make it take space */
-            margin-top: 10px; /* Space above */
-        }
-        /* Example specific icons (using simple background images or unicode) */
-         #glglstats-trigger { content:"🎶"; font-size: 24px; } /* Music note */
-         #ahuzat-trigger { content:"🅿️"; font-size: 24px;  } /* Parking sign */
-         #orienting-trigger { content:"⚙️"; font-size: 24px; } /* Gear / Polygon */
-         #portfolio-trigger { content:"✨"; font-size: 24px; } /* Sparkles / AI */
-
-
-        /* --- Connect Section --- */
-        .connect-icons {
-            display: flex;
-            gap: 20px;
-            margin-top: 10px; /* Add some space above icons */
-        }
-
-        .connect-icons a {
-            font-size: 1.8rem; /* Icon size */
-            color: var(--text-color);
-            transition: color 0.2s ease, transform 0.2s ease;
-        }
-
-        .connect-icons a:hover {
-            color: var(--accent-color);
-            transform: scale(1.1);
-        }
-
-        /* --- Footer --- */
-        footer {
+            align-items: center;
             text-align: center;
-            margin-top: 60px;
-            padding: 20px;
-            font-size: 0.85rem;
-            color: var(--subtle-text-color);
-            border-top: 1px solid var(--border-color);
+            padding: 2rem;
         }
 
-        #stopwatch {
-            font-weight: 500;
-            color: var(--text-color); /* Make stopwatch stand out slightly */
+        .terminal-text {
+            font-size: clamp(2rem, 5vw, 4rem);
+            margin-bottom: 1rem;
+            color: var(--terminal-green);
+            position: relative;
         }
 
-        /* --- AR Scene Styling --- */
-        #ar-scene {
-             /* Position fixed to overlay the page */
-            position: fixed;
-            top: 0;
-            left: 0;
+        .terminal-text::after {
+            content: '|';
+            position: absolute;
+            color: var(--highlight-color);
+            animation: cursor-blink var(--cursor-blink-time) infinite;
+        }
+
+        @keyframes cursor-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .subtitle {
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            color: var(--comment-color);
+            margin-bottom: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1s ease, transform 1s ease;
+        }
+
+        .code-line {
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            margin: 0.3rem 0;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            position: relative;
+            display: block;
+        }
+
+        .visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .indent-1 { margin-left: 2rem; }
+        .indent-2 { margin-left: 4rem; }
+        .indent-3 { margin-left: 6rem; }
+
+        .comment { color: var(--comment-color); }
+        .function { color: var(--function-color); }
+        .string { color: var(--string-color); }
+        .number { color: var(--number-color); }
+        .keyword { color: var(--keyword-color); }
+        .property { color: var(--property-color); }
+
+        .project-card {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            background-color: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+            transform-origin: top left;
+            transform: scale(0.95) translateY(20px);
+            opacity: 0;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .project-card.visible {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        .project-card h2 {
+            color: var(--highlight-color);
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+        }
+
+        .project-card p {
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .project-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .project-links a {
+            color: var(--highlight-color);
+            text-decoration: none;
+            border: 1px solid var(--highlight-color);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .project-links a:hover {
+            background-color: var(--highlight-color);
+            color: var(--bg-color);
+        }
+
+        .sound-wave {
+            height: 100px;
+            width: 100%;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+        }
+
+        .wave-bar {
+            height: 5px;
+            width: 8px;
+            background-color: var(--highlight-color);
+            border-radius: 2px;
+            transition: height 0.2s ease;
+        }
+
+        .heatmap-container {
+            height: 150px;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .heatmap-dot {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: var(--keyword-color);
+            opacity: 0.6;
+            filter: blur(8px);
+            transform: scale(0);
+            transition: transform 1s ease;
+        }
+
+        .interactive-polygon {
+            width: 100%;
+            height: 200px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            margin: 1rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .polygon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: transform 0.3s ease;
+        }
+
+        .social-network {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 2rem 0;
+        }
+
+        .network-node {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .network-node:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px var(--highlight-color);
+        }
+
+        .network-node a {
+            color: var(--highlight-color);
+            text-decoration: none;
             width: 100%;
             height: 100%;
-            z-index: -1; /* Start behind content */
-            opacity: 0; /* Start hidden */
-            background-color: rgba(0,0,0,0.3); /* Dim background slightly when active */
-            transition: opacity 0.5s ease, z-index 0.5s step-end; /* Transition visibility */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        #ar-scene.active {
-            opacity: 1;
-            z-index: 1000; /* Bring in front of content */
-             transition: opacity 0.5s ease, z-index 0.5s step-start;
+        .network-line {
+            position: absolute;
+            height: 1px;
+            background-color: var(--glass-border);
+            transform-origin: left center;
+            z-index: -1;
         }
 
-        /* --- Responsiveness --- */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .footer-code {
+            display: inline-block;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .stopwatch {
+            font-family: 'Consolas', monospace;
+            color: var(--number-color);
+        }
+
+        .code-folding {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .fold-button {
+            background-color: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--highlight-color);
+            padding: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: background-color 0.3s;
+        }
+
+        .fold-button:hover {
+            background-color: rgba(137, 180, 250, 0.1);
+        }
+
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(137, 180, 250, 0.2);
+            transform: scale(0);
+            animation: ripple-effect 0.8s linear;
+            pointer-events: none;
+        }
+
+        @keyframes ripple-effect {
+            to {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+
         @media (max-width: 768px) {
-            header h1 {
-                font-size: 2rem;
+            .code-line {
+                font-size: 0.9rem;
             }
-            header .job-title {
-                font-size: 1rem;
-            }
-            .sections-grid {
-                 /* Stack columns on smaller screens */
-                grid-template-columns: 1fr;
-            }
-            .ar-hint {
-                position: static; /* Put hint in flow on mobile */
-                margin: 15px auto; /* Center it */
-                text-align: center;
-            }
-             .ar-hint .tooltip { display: none;} /* Hide complex tooltip on mobile */
-        }
 
+            .indent-1 { margin-left: 1rem; }
+            .indent-2 { margin-left: 2rem; }
+            .indent-3 { margin-left: 3rem; }
+
+            .project-card {
+                padding: 1.5rem;
+            }
+        }
     </style>
 </head>
 <body>
-
-    <!-- AR Scene Definition (Initially Hidden) -->
-    <!-- vr-mode-ui disabled to prevent VR button; detectionMode/matrixCodeType needed for barcode markers -->
-    <a-scene id="ar-scene" embedded arjs='sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;' vr-mode-ui="enabled: false">
-
-        <!-- AR Marker 1: GlglStats (HIRO) -->
-        <a-marker preset='hiro'>
-            <!-- Rotating waveform graph representation -->
-            <a-entity position="0 0.5 0" scale="0.5 0.5 0.5">
-                <a-cylinder color="#FFC107" height="1.5" radius="0.1" rotation="0 0 90"></a-cylinder>
-                <a-cylinder color="#FF9800" height="1.0" radius="0.1" position="0.3 0 0" rotation="0 0 90"></a-cylinder>
-                <a-cylinder color="#F44336" height="1.8" radius="0.1" position="-0.3 0 0" rotation="0 0 90"></a-cylinder>
-                <a-animation attribute="rotation" dur="5000" to="0 360 90" repeat="indefinite" easing="linear"></a-animation>
-            </a-entity>
-        </a-marker>
-
-        <!-- AR Marker 2: Ahuzat Dibuk (KANJI) -->
-        <a-marker preset='kanji'>
-            <!-- Simple 3D heatmap layer -->
-             <a-entity position="0 0.1 0" scale="0.7 0.7 0.7">
-                <a-plane width="1.5" height="1.5" rotation="-90 0 0" material="shader: flat; src: #heatmap_gradient; side: double; transparent: true; opacity: 0.8"></a-plane>
-                <!-- We'd need to update the texture source dynamically for a real heatmap -->
-                <!-- Placeholder: simple colored planes -->
-                <a-box depth="0.1" height="0.4" width="0.4" position="-0.4 0 -0.4" color="#2ecc71"></a-box>
-                <a-box depth="0.1" height="0.8" width="0.4" position="0.4 0 -0.4" color="#f1c40f"></a-box>
-                <a-box depth="0.1" height="0.6" width="0.4" position="-0.4 0 0.4" color="#e67e22"></a-box>
-                <a-box depth="0.1" height="1.0" width="0.4" position="0.4 0 0.4" color="#e74c3c"></a-box>
-                <a-animation attribute="scale" dur="3000" from="0.7 0.7 0.7" to="0.75 0.7 0.75" direction="alternate" repeat="indefinite" easing="ease-in-out-sine"></a-animation>
-            </a-entity>
-        </a-marker>
-
-         <!-- AR Marker 3: 2D Part Orienting (Barcode marker 0) -->
-        <a-marker type='barcode' value='0'>
-             <!-- Rotating 3D polygon (approximated with box/planes) -->
-            <a-entity position="0 0.5 0" scale="0.4 0.4 0.4" rotation="0 0 0">
-                 <a-box color="#3498db" depth="0.2" height="1" width="1.5"></a-box>
-                 <a-plane color="#2980b9" height="0.8" width="0.8" position="0 0.51 0" rotation="-90 0 0"></a-plane>
-                 <a-plane color="#2980b9" height="0.8" width="0.8" position="0 -0.51 0" rotation="90 0 0"></a-plane>
-                 <a-animation attribute="rotation" dur="7000" to="0 360 360" repeat="indefinite" easing="linear"></a-animation>
-                 <!-- Simple push plan animation (move slightly) -->
-                 <a-animation attribute="position" dur="3000" from="0 0.5 -0.2" to="0 0.5 0.2" direction="alternate" repeat="indefinite" easing="ease-in-out-sine"></a-animation>
-            </a-entity>
-        </a-marker>
-
-        <!-- AR Marker 4: Portfolio Website (Meta) (Barcode marker 1) -->
-        <a-marker type='barcode' value='1'>
-            <!-- Abstract floating 'code' snippets or geometric patterns -->
-            <a-entity position="0 0.5 0" scale="0.6 0.6 0.6">
-                <a-plane width="1" height="0.2" color="#95a5a6" position="-0.6 0.4 0" rotation="0 30 0"></a-plane>
-                <a-plane width="0.8" height="0.2" color="#bdc3c7" position="0.5 0 0.3" rotation="0 -20 0"></a-plane>
-                 <a-sphere radius="0.2" color="#ecf0f1" position="0 -0.3 -0.4"></a-sphere>
-                 <a-torus_knot color="#7f8c8d" radius="0.3" radius-tubular="0.05" p="2" q="5" position="0 0 0">
-                     <a-animation attribute="rotation" dur="9000" to="0 360 0" repeat="indefinite" easing="linear"></a-animation>
-                 </a-torus_knot>
-             </a-entity>
-         </a-marker>
-
-         <!-- Add the AR Camera -->
-        <a-entity camera></a-entity>
-    </a-scene>
-
-    <div class="container">
+    <div class="code-container">
         <header>
-            <h1>Geva Kipper</h1>
-            <p class="job-title">Software Engineer at Google</p>
-            <p class="ai-disclaimer">This site's design is regenerated daily by AI, offering a unique experience each visit.</p>
-            <div id="ar-toggle" class="ar-hint" title="Activate AR View">
-                 <!-- Camera icon added via CSS ::before偽元素 -->
-                <span class="tooltip">Activate AR View</span>
-            </div>
+            <h1 class="terminal-text" id="name-text"></h1>
+            <p class="subtitle" id="subtitle">// Site AI-redesigned to write itself as you scroll down</p>
         </header>
 
-        <main>
-            <div class="sections-grid">
+        <div class="code-section" id="code-content">
+            <!-- Code will be generated by JavaScript -->
+        </div>
 
-                <!-- Section 1: GlglStats -->
-                <article class="section-card">
-                    <h2>GlglStats</h2>
-                    <p>Python project measuring Israeli pop song repetitiveness using LZ77 compression and visualizing patterns.</p>
-                    <div class="section-links">
-                        <a href="https://glglstats.onrender.com/" target="_blank">Live Site</a>
-                        <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">Watch PyData Talk</a>
-                        <!-- AR Trigger Visual Cue (Points to HIRO marker area) -->
-                        <span class="ar-trigger-icon" id="glglstats-trigger" title="AR: Soundwave/Compression"></span>
-                    </div>
-                </article>
-
-                <!-- Section 2: Ahuzat Dibuk -->
-                <article class="section-card">
-                    <h2>Ahuzat Dibuk</h2>
-                    <p>Python scraping & data visualization, generating heatmaps of Tel-Aviv parking occupancy for residents.</p>
-                    <div class="section-links">
-                        <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">News: Channel 13</a>
-                        <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">News: Mako</a>
-                        <a href="https://web.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">Original Post</a>
-                         <!-- AR Trigger Visual Cue (Points to KANJI marker area) -->
-                        <span class="ar-trigger-icon" id="ahuzat-trigger" title="AR: Heatmap/Map"></span>
-                    </div>
-                </article>
-
-                <!-- Section 3: 2D Part Orienting -->
-                <article class="section-card">
-                    <h2>2D Part Orienting</h2>
-                    <p>C++ implementation of an efficient algorithm for constructing a 'push plan' to orient polygons within a computational geometry library.</p>
-                     <div class="section-links">
-                         <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">Project Details & Code</a>
-                         <!-- AR Trigger Visual Cue (Points to Barcode 0 area) -->
-                        <span class="ar-trigger-icon" id="orienting-trigger" title="AR: Polygon/Orientation"></span>
-                    </div>
-                </article>
-
-                <!-- Section 4: Portfolio Website (Meta) -->
-                <article class="section-card">
-                    <h2>This Portfolio</h2>
-                    <p>A self-referential card detailing the current website, highlighting its daily AI redesign and AR features implemented with AR.js & A-Frame.</p>
-                    <div class="section-links">
-                         <a href="https://portfolio-dor1.onrender.com/" target="_blank">View Source/Reference</a>
-                        <!-- AR Trigger Visual Cue (Points to Barcode 1 area) -->
-                         <span class="ar-trigger-icon" id="portfolio-trigger" title="AR: AI/Recursion"></span>
-                    </div>
-                </article>
-
-                <!-- Section 5: Connect -->
-                <section class="section-card">
-                    <h2>Connect</h2>
-                    <p>Find me on other platforms:</p>
-                    <nav class="connect-icons" aria-label="Social media links">
-                         <!-- Replace text with actual icons (SVG/FontAwesome) if desired -->
-                        <a href="https://github.com/gevak" target="_blank" aria-label="GitHub"> G </a> <!-- Placeholder G -->
-                        <a href="https://linkedin.com/in/gevakip" target="_blank" aria-label="LinkedIn"> L </a> <!-- Placeholder L -->
-                        <a href="https://facebook.com/geva.kipper" target="_blank" aria-label="Facebook"> F </a> <!-- Placeholder F -->
-                        <!-- Add rel="noopener noreferrer" for security on target="_blank" -->
-                        <!-- <a href="https://github.com/gevak" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><img src="github_icon.svg" alt="GitHub"></a> -->
-                        <!-- <a href="https://linkedin.com/in/gevakip" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><img src="linkedin_icon.svg" alt="LinkedIn"></a> -->
-                       <!-- <a href="https://facebook.com/geva.kipper" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><img src="facebook_icon.svg" alt="Facebook"></a> -->
-                    </nav>
-                </section>
-
-            </div>
-        </main>
+        <footer>
+            <span class="footer-code comment">// Generated with the help of AI - Portfolio up since:</span>
+            <div class="stopwatch" id="stopwatch"></div>
+        </footer>
     </div>
 
-    <footer>
-        <p>Website design concept generated by Claude 3 Opus.</p>
-        <p>Time since AI genesis (2025-04-19 01:01:22): <span id="stopwatch">--:--:--</span></p>
-    </footer>
+    <div class="code-folding">
+        <button class="fold-button" data-section="header">Header</button>
+        <button class="fold-button" data-section="glglstats">GlglStats</button>
+        <button class="fold-button" data-section="ahuzat">Ahuzat Dibuk</button>
+        <button class="fold-button" data-section="2dpart">2D Part Orienting</button>
+        <button class="fold-button" data-section="portfolio">Portfolio</button>
+        <button class="fold-button" data-section="contact">Contact</button>
+    </div>
 
     <script>
-        // --- Stopwatch ---
-        const stopwatchElement = document.getElementById('stopwatch');
-        // NOTE: The year 2025 is in the future from when this code is written.
-        // If you want it to count *up* from a past date, adjust accordingly.
-        // Using the specified future date: 2025-04-19 01:01:22
-        const genesisDate = new Date('2025-04-19T01:01:22'); // T separates date and time
+        // Terminal text typing effect for the header
+        const nameText = "Geva Kipper";
+        const nameElement = document.getElementById('name-text');
+        let index = 0;
 
-        function updateStopwatch() {
-            const now = new Date();
-            // If genesis is in the future, difference will be negative.
-            // We want to show time *elapsed* since genesis, so it should only count *after* genesis.
-            // Or, interpret "since" as time elapsed from page load relative to genesis? Let's assume count up *after* genesis.
-            let diff = now - genesisDate;
-
-            if (diff < 0) {
-                // If genesis date is in the future, show 00:00:00 or a message
-                stopwatchElement.textContent = "00:00:00";
-                 // Or show time *until* genesis:
-                 /*
-                 diff = Math.abs(diff);
-                 const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                 const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-                 const minutes = Math.floor((diff / 1000 / 60) % 60);
-                 const seconds = Math.floor((diff / 1000) % 60);
-                stopwatchElement.textContent = `-${days}d ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                 */
-                return;
+        function typeWriter() {
+            if (index < nameText.length) {
+                nameElement.textContent += nameText.charAt(index);
+                index++;
+                setTimeout(typeWriter, Math.random() * 100 + 100);
+            } else {
+                document.getElementById('subtitle').classList.add('visible');
+                // Start generating code after name is typed
+                generateCodeContent();
+                // Start animations and interactions after a short delay
+                setTimeout(() => {
+                    initializeAnimations();
+                    setupScrollHandling();
+                    setupRippleEffect();
+                    setupFoldingButtons();
+                }, 1000);
             }
-
-            const hours = Math.floor(diff / (1000 * 60 * 60)); // Total hours
-            const minutes = Math.floor((diff / 1000 / 60) % 60);
-            const seconds = Math.floor((diff / 1000) % 60);
-
-            stopwatchElement.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
 
-        // Update immediately and then every second
-        updateStopwatch();
-        setInterval(updateStopwatch, 1000);
-
-        // --- AR Activation ---
-        const arToggle = document.getElementById('ar-toggle');
-        const arScene = document.getElementById('ar-scene');
-        let arActive = false;
-
-        arToggle.addEventListener('click', () => {
-            if (!arActive) {
-                // Attempt to activate AR
-                console.log("Activating AR Scene...");
-                arScene.classList.add('active');
-                // Optional: Briefly modify body style to prevent scrolling while AR is active
-                // document.body.style.overflow = 'hidden';
-                arActive = true;
-                 arToggle.title = "Deactivate AR View"; // Change tooltip
-                 arToggle.style.color = var(--accent-color); // Indicate active state
-                 // Note: AR.js automatically tries to get camera access when the scene loads
-                 // If permissions fail, the scene might not render correctly.
-                 // Proper error handling for camera permissions is more complex.
-
-
-                 // **If using manual activation**:
-                 // You might need to explicitly tell AR.js to start AFTER the scene is made visible,
-                 // although usually 'embedded' handles this. If issues arise, potentially:
-                 // if (arScene.hasLoaded) { arScene.play(); } else { arScene.addEventListener('loaded', () => arScene.play()); }
-
-            } else {
-                console.log("Deactivating AR Scene...");
-                 arScene.classList.remove('active');
-                 // Restore body scroll if it was modified
-                // document.body.style.overflow = '';
-                arActive = false;
-                 arToggle.title = "Activate AR View";
-                 arToggle.style.color = var(--subtle-text-color); // Reset color
-
-                  // **If using manual activation/deactivation**:
-                 // arScene.pause(); // Pause AR processing to save resources
-            }
+        // Start typing effect when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(typeWriter, 1000);
+            updateStopwatch();
+            setInterval(updateStopwatch, 1000);
         });
 
-        // Basic error handling or info for users without HTTPS/camera
-         if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-             console.warn("AR features require HTTPS to access the camera. Please serve this page securely.");
-             // Optionally display a message to the user
-         }
-         // Check for camera support (basic check)
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            console.warn("getUserMedia is not supported in this browser. AR features will not work.");
-            // Optionally disable the AR toggle button or show a message
-             arToggle.style.display = 'none'; // Hide the toggle if no camera API
+        // Generate code content structure
+        function generateCodeContent() {
+            const codeContent = document.getElementById('code-content');
+            
+            // Clear any existing content
+            codeContent.innerHTML = '';
+            
+            // Header section
+            addCodeLine(codeContent, '/* Welcome to my interactive portfolio */', 'comment');
+            addCodeLine(codeContent, 'const portfolio = {', 'keyword');
+            addCodeLine(codeContent, 'name: "Geva Kipper",', 'property indent-1');
+            addCodeLine(codeContent, 'role: "Software Engineer @ Google",', 'property indent-1');
+            addCodeLine(codeContent, 'skills: ["JavaScript", "Python", "Algorithms", "Visualization"],', 'property indent-1');
+            addCodeLine(codeContent, 'projects: [],', 'property indent-1');
+            addCodeLine(codeContent, '};', 'keyword');
+            addCodeLine(codeContent, '');
+
+            // GlglStats project
+            addCodeLine(codeContent, '/* Project 1: GlglStats - Visualizing Sound Patterns */', 'comment', 'glglstats');
+            addCodeLine(codeContent, 'function createGlglStatsProject() {', 'function');
+            addCodeLine(codeContent, 'const project = {', 'keyword indent-1');
+            addCodeLine(codeContent, 'name: "GlglStats",', 'property indent-2');
+            addCodeLine(codeContent, 'description: "A web tool that helps visualize repeated patterns in audio files.",', 'property indent-2');
+            addCodeLine(codeContent, 'tech: ["Web Audio API", "JavaScript", "Signal Processing"],', 'property indent-2');
+            addCodeLine(codeContent, 'links: {', 'property indent-2');
+            addCodeLine(codeContent, 'website: "https://glglstats.onrender.com/",', 'property indent-3');
+            addCodeLine(codeContent, 'presentation: "https://www.youtube.com/watch?v=jrKAtOsj1Lo"', 'property indent-3');
+            addCodeLine(codeContent, '}', 'indent-2');
+            addCodeLine(codeContent, '};', 'indent-1');
+            addCodeLine(codeContent, 'portfolio.projects.push(project);', 'indent-1');
+            addCodeLine(codeContent, 'return project;', 'keyword indent-1');
+            addCodeLine(codeContent, '}', '');
+            
+            // Create GlglStats card
+            const glglStatsProjectCard = document.createElement('div');
+            glglStatsProjectCard.className = 'project-card';
+            glglStatsProjectCard.innerHTML = `
+                <h2>GlglStats</h2>
+                <p>A web tool that helps visualize repeated patterns in audio files. This project analyzes audio data to identify and visualize repetition structures.</p>
+                <div class="sound-wave" id="sound-wave">
+                    ${Array.from({length: 30}, () => '<div class="wave-bar"></div>').join('')}
+                </div>
+                <div class="project-links">
+                    <a href="https://glglstats.onrender.com/" target="_blank">Visit Website</a>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">Watch Presentation</a>
+                </div>
+            `;
+            codeContent.appendChild(glglStatsProjectCard);
+            
+            addCodeLine(codeContent, 'const glglStatsProject = createGlglStatsProject();', '');
+            addCodeLine(codeContent, '');
+
+            // Ahuzat Dibuk project
+            addCodeLine(codeContent, '/* Project 2: Ahuzat Dibuk - Parking Space Analysis */', 'comment', 'ahuzat');
+            addCodeLine(codeContent, 'function createAhuzatDibukProject() {', 'function');
+            addCodeLine(codeContent, 'const project = {', 'keyword indent-1');
+            addCodeLine(codeContent, 'name: "Ahuzat Dibuk",', 'property indent-2');
+            addCodeLine(codeContent, 'description: "Analysis of parking space occupancy in Tel Aviv neighborhoods.",', 'property indent-2');
+            addCodeLine(codeContent, 'tech: ["Data Analysis", "GIS", "Urban Planning"],', 'property indent-2');
+            addCodeLine(codeContent, 'mediaMentions: [', 'property indent-2');
+            addCodeLine(codeContent, '"https://13tv.co.il/item/news/domestic/internal/parking-902956407/",', 'string indent-3');
+            addCodeLine(codeContent, '"https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm",', 'string indent-3');
+            addCodeLine(codeContent, '"https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943"', 'string indent-3');
+            addCodeLine(codeContent, ']', 'indent-2');
+            addCodeLine(codeContent, '};', 'indent-1');
+            addCodeLine(codeContent, 'portfolio.projects.push(project);', 'indent-1');
+            addCodeLine(codeContent, 'return project;', 'keyword indent-1');
+            addCodeLine(codeContent, '}', '');
+
+            // Create Ahuzat Dibuk card
+            const ahuzatDibukProjectCard = document.createElement('div');
+            ahuzatDibukProjectCard.className = 'project-card';
+            ahuzatDibukProjectCard.innerHTML = `
+                <h2>Ahuzat Dibuk</h2>
+                <p>A comprehensive analysis of parking space occupancy in Tel Aviv neighborhoods, revealing insights about urban planning and space utilization.</p>
+                <div class="heatmap-container" id="heatmap-container">
+                    <!-- Heatmap dots will be added via JavaScript -->
+                </div>
+                <div class="project-links">
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">Media Mention 1</a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">Media Mention 2</a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">Publication Post</a>
+                </div>
+            `;
+            codeContent.appendChild(ahuzatDibukProjectCard);
+            
+            addCodeLine(codeContent, 'const ahuzatDibukProject = createAhuzatDibukProject();', '');
+            addCodeLine(codeContent, '');
+
+            // 2D Part Orienting project
+            addCodeLine(codeContent, '/* Project 3: 2D Part Orienting - Smart Algorithm */', 'comment', '2dpart');
+            addCodeLine(codeContent, 'function create2DPartOrientingProject() {', 'function');
+            addCodeLine(codeContent, 'const project = {', 'keyword indent-1');
+            addCodeLine(codeContent, 'name: "2D Part Orienting",', 'property indent-2');
+            addCodeLine(codeContent, 'description: "Algorithm for orienting 2D parts using minimal sensing and manipulation.",', 'property indent-2');
+            addCodeLine(codeContent, 'tech: ["Computational Geometry", "Algorithm Design", "Robotics"],', 'property indent-2');
+            addCodeLine(codeContent, 'link: "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/"', 'property indent-2');
+            addCodeLine(codeContent, '};', 'indent-1');
+            addCodeLine(codeContent, 'portfolio.projects.push(project);', 'indent-1');
+            addCodeLine(codeContent, 'return project;', 'keyword indent-1');
+            addCodeLine(codeContent, '}', '');
+
+            // Create 2D Part Orienting card
+            const partOrientingProjectCard = document.createElement('div');
+            partOrientingProjectCard.className = 'project-card';
+            partOrientingProjectCard.innerHTML = `
+                <h2>2D Part Orienting</h2>
+                <p>An algorithm for orienting 2D parts using minimal sensing and manipulation. This research explores efficient ways to position objects with limited information.</p>
+                <div class="interactive-polygon" id="interactive-polygon">
+                    <svg class="polygon" width="100" height="100" viewBox="0 0 100 100" fill="none" stroke="${getComputedStyle(document.documentElement).getPropertyValue('--highlight-color')}" stroke-width="2">
+                        <polygon points="50,10 90,50 50,90 10,50" />
+                    </svg>
+                </div>
+                <div class="project-links">
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">View Project Details</a>
+                </div>
+            `;
+            codeContent.appendChild(partOrientingProjectCard);
+            
+            addCodeLine(codeContent, 'const partOrientingProject = create2DPartOrientingProject();', '');
+            addCodeLine(codeContent, '');
+
+            // Portfolio Website project
+            addCodeLine(codeContent, '/* Project 4: This Portfolio Website */', 'comment', 'portfolio');
+            addCodeLine(codeContent, 'function createPortfolioWebsite() {', 'function');
+            addCodeLine(codeContent, 'const project = {', 'keyword indent-1');
+            addCodeLine(codeContent, 'name: "Self-Writing Portfolio",', 'property indent-2');
+            addCodeLine(codeContent, 'description: "The website you\'re currently viewing - code that writes itself as you scroll.",', 'property indent-2');
+            addCodeLine(codeContent, 'tech: ["HTML", "CSS", "JavaScript", "Animation"],', 'property indent-2');
+            addCodeLine(codeContent, 'link: "https://portfolio-dor1.onrender.com/"', 'property indent-2');
+            addCodeLine(codeContent, '};', 'indent-1');
+            addCodeLine(codeContent, 'portfolio.projects.push(project);', 'indent-1');
+            addCodeLine(codeContent, 'return project;', 'keyword indent-1');
+            addCodeLine(codeContent, '}', '');
+
+            // Create Portfolio Website card
+            const portfolioProjectCard = document.createElement('div');
+            portfolioProjectCard.className = 'project-card';
+            portfolioProjectCard.innerHTML = `
+                <h2>Self-Writing Portfolio</h2>
+                <p>The very website you're currently viewing - featuring code that writes itself as you scroll down, creating a recursive and interactive experience.</p>
+                <div class="project-links">
+                    <a href="https://portfolio-dor1.onrender.com/" target="_blank">You Are Here</a>
+                </div>
+            `;
+            codeContent.appendChild(portfolioProjectCard);
+            
+            addCodeLine(codeContent, 'const portfolioWebsite = createPortfolioWebsite();', '');
+            addCodeLine(codeContent, '');
+
+            // Contact section
+            addCodeLine(codeContent, '/* Connect with me */', 'comment', 'contact');
+            addCodeLine(codeContent, 'function setupSocialNetwork() {', 'function');
+            addCodeLine(codeContent, 'const socialLinks = {', 'keyword indent-1');
+            addCodeLine(codeContent, 'github: "github.com/gevak",', 'property indent-2');
+            addCodeLine(codeContent, 'linkedin: "linkedin.com/in/gevakip",', 'property indent-2');
+            addCodeLine(codeContent, 'facebook: "facebook.com/geva.kipper"', 'property indent-2');
+            addCodeLine(codeContent, '};', 'indent-1');
+            addCodeLine(codeContent, 'return socialLinks;', 'keyword indent-1');
+            addCodeLine(codeContent, '}', '');
+            
+            // Create social network
+            const socialNetworkDiv = document.createElement('div');
+            socialNetworkDiv.className = 'social-network';
+            socialNetworkDiv.id = 'social-network';
+            
+            const centralNode = document.createElement('div');
+            centralNode.className = 'network-node';
+            centralNode.innerHTML = 'Geva';
+            centralNode.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--keyword-color');
+            centralNode.style.color = '#fff';
+            
+            const githubNode = createSocialNode('GitHub', 'https://github.com/gevak');
+            const linkedinNode = createSocialNode('LinkedIn', 'https://linkedin.com/in/gevakip');
+            const facebookNode = createSocialNode('Facebook', 'https://facebook.com/geva.kipper');
+            
+            socialNetworkDiv.appendChild(centralNode);
+            socialNetworkDiv.appendChild(githubNode);
+            socialNetworkDiv.appendChild(linkedinNode);
+            socialNetworkDiv.appendChild(facebookNode);
+            
+            codeContent.appendChild(socialNetworkDiv);
+            
+            addCodeLine(codeContent, 'const socialLinks = setupSocialNetwork();', '');
+            addCodeLine(codeContent, '');
+            
+            // Closing code
+            addCodeLine(codeContent, 'console.log("Portfolio fully loaded and ready to explore!");', '');
         }
 
+        // Helper function to add a code line
+        function addCodeLine(parent, text, className = '', dataSectionId = '') {
+            const line = document.createElement('span');
+            line.className = `code-line ${className}`;
+            line.textContent = text;
+            if (dataSectionId) {
+                line.dataset.section = dataSectionId;
+            }
+            parent.appendChild(line);
+            return line;
+        }
+
+        // Helper function to create social network node
+        function createSocialNode(name, link) {
+            const node = document.createElement('div');
+            node.className = 'network-node';
+            
+            const anchor = document.createElement('a');
+            anchor.href = link;
+            anchor.target = '_blank';
+            anchor.textContent = name;
+            
+            node.appendChild(anchor);
+            return node;
+        }
+
+        // Animate elements as they enter the viewport
+        function setupScrollHandling() {
+            const codeLines = document.querySelectorAll('.code-line');
+            const projectCards = document.querySelectorAll('.project-card');
+            
+            // Set initial delay for the animation sequence
+            let delay = 0;
+            
+            // Animate code lines sequentially when the page loads
+            codeLines.forEach((line, index) => {
+                setTimeout(() => {
+                    line.classList.add('visible');
+                    
+                    // When we reach a certain point in the code, show the relevant project card
+                    if (index === 15) { // After GlglStats function declaration
+                        setTimeout(() => projectCards[0].classList.add('visible'), 500);
+                    } else if (index === 35) { // After Ahuzat Dibuk function declaration
+                        setTimeout(() => projectCards[1].classList.add('visible'), 500);
+                    } else if (index === 55) { // After 2D Part Orienting function declaration
+                        setTimeout(() => projectCards[2].classList.add('visible'), 500);
+                    } else if (index === 75) { // After Portfolio Website function declaration
+                        setTimeout(() => projectCards[3].classList.add('visible'), 500);
+                    }
+                }, delay);
+                
+                delay += 100; // Increase delay for the next line
+            });
+            
+            // Setup scroll-based animation for elements that are not yet visible
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            // Observe all code lines and project cards
+            document.querySelectorAll('.code-line:not(.visible)').forEach(line => {
+                observer.observe(line);
+            });
+            
+            document.querySelectorAll('.project-card:not(.visible)').forEach(card => {
+                observer.observe(card);
+            });
+        }
+
+        // Initialize animations for project cards
+        function initializeAnimations() {
+            // GlglStats sound wave animation
+            const soundWave = document.getElementById('sound-wave');
+            if (soundWave) {
+                const bars = soundWave.querySelectorAll('.wave-bar');
+                
+                function animateBars() {
+                    bars.forEach(bar => {
+                        const height = Math.floor(Math.random() * 40) + 5;
+                        bar.style.height = `${height}px`;
+                    });
+                }
+                
+                // Start the animation
+                setInterval(animateBars, 200);
+            }
+            
+            // Ahuzat Dibuk heatmap animation
+            const heatmapContainer = document.getElementById('heatmap-container');
+            if (heatmapContainer) {
+                // Generate random heatmap dots
+                for (let i = 0; i < 50; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'heatmap-dot';
+                    dot.style.left = `${Math.random() * 100}%`;
+                    dot.style.top = `${Math.random() * 100}%`;
+                    
+                    // Randomize dot color from red to green
+                    const hue = Math.floor(Math.random() * 60) + 0; // Red to yellowish
+                    dot.style.backgroundColor = `hsl(${hue}, 100%, 60%)`;
+                    
+                    // Randomize dot size
+                    const size = Math.floor(Math.random() * 30) + 10;
+                    dot.style.width = `${size}px`;
+                    dot.style.height = `${size}px`;
+                    
+                    // Randomize dot opacity
+                    dot.style.opacity = Math.random() * 0.5 + 0.2;
+                    
+                    heatmapContainer.appendChild(dot);
+                    
+                    // Animate dot appearance with delay
+                    setTimeout(() => {
+                        dot.style.transform = 'scale(1)';
+                    }, Math.random() * 2000);
+                }
+            }
+            
+            // 2D Part Orienting polygon interaction
+            const interactivePolygon = document.getElementById('interactive-polygon');
+            if (interactivePolygon) {
+                const polygon = interactivePolygon.querySelector('.polygon');
+                
+                interactivePolygon.addEventListener('mousemove', (e) => {
+                    const rect = interactivePolygon.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    // Calculate the center
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    
+                    // Calculate displacement vector from center to mouse
+                    const dx = x - centerX;
+                    const dy = y - centerY;
+                    
+                    // Limit the displacement to make movement smoother
+                    const maxDisplacement = 20;
+                    const displacement = Math.min(Math.sqrt(dx*dx + dy*dy), maxDisplacement);
+                    const angle = Math.atan2(dy, dx);
+                    
+                    const moveX = displacement * Math.cos(angle);
+                    const moveY = displacement * Math.sin(angle);
+                    
+                    // Move the polygon
+                    polygon.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px)) rotate(${moveX * 0.5}deg)`;
+                });
+                
+                interactivePolygon.addEventListener('mouseleave', () => {
+                    polygon.style.transform = 'translate(-50%, -50%) rotate(0deg)';
+                });
+            }
+            
+            // Social network node connections
+            const socialNetwork = document.getElementById('social-network');
+            if (socialNetwork) {
+                const nodes = socialNetwork.querySelectorAll('.network-node');
+                const centralNode = nodes[0];
+                
+                // Get central node position
+                const centralRect = centralNode.getBoundingClientRect();
+                const centralX = centralRect.left + centralRect.width/2;
+                const centralY = centralRect.top + centralRect.height/2;
+                
+                // Connect each node to the central node
+                for (let i = 1; i < nodes.length; i++) {
+                    const node = nodes[i];
+                    const nodeRect = node.getBoundingClientRect();
+                    const nodeX = nodeRect.left + nodeRect.width/2;
+                    const nodeY = nodeRect.top + nodeRect.height/2;
+                    
+                    // Calculate distance and angle
+                    const dx = nodeX - centralX;
+                    const dy = nodeY - centralY;
+                    const distance = Math.sqrt(dx*dx + dy*dy);
+                    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                    
+                    // Create line
+                    const line = document.createElement('div');
+                    line.className = 'network-line';
+                    line.style.width = `${distance}px`;
+                    line.style.transform = `translate(${centralX}px, ${centralY}px) rotate(${angle}deg)`;
+                    
+                    document.body.appendChild(line);
+                }
+                
+                // Add animation to nodes
+                nodes.forEach((node, index) => {
+                    if (index === 0) return; // Skip central node
+                    
+                    setTimeout(() => {
+                        node.style.transform = 'scale(1)';
+                        node.style.opacity = '1';
+                    }, index * 300);
+                });
+            }
+        }
+
+        // Setup ripple effect when interacting with page
+        function setupRippleEffect() {
+            document.addEventListener('click', function(e) {
+                const ripple = document.createElement('div');
+                ripple.className = 'ripple';
+                ripple.style.left = `${e.clientX}px`;
+                ripple.style.top = `${e.clientY}px`;
+                document.body.appendChild(ripple);
+                
+                // Remove ripple after animation completes
+                setTimeout(() => {
+                    ripple.remove();
+                }, 800);
+            });
+        }
+
+        // Setup code folding buttons
+        function setupFoldingButtons() {
+            const buttons = document.querySelectorAll('.fold-button');
+            
+            buttons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const sectionName = button.dataset.section;
+                    const element = document.querySelector(`[data-section="${sectionName}"]`);
+                    
+                    if (element) {
+                        // Scroll to the element
+                        element.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                        
+                        // Highlight the element briefly
+                        element.style.backgroundColor = 'rgba(137, 180, 250, 0.2)';
+                        setTimeout(() => {
+                            element.style.backgroundColor = '';
+                        }, 1000);
+                    }
+                });
+            });
+        }
+
+        // Update stopwatch in footer
+        function updateStopwatch() {
+            const stopwatchElement = document.getElementById('stopwatch');
+            const startDate = new Date('2023-10-01'); // Adjust this to your actual start date
+            const now = new Date();
+            const diff = now - startDate;
+            
+            // Convert to days, hours, minutes, seconds
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            stopwatchElement.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+        }
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
