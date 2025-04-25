@@ -1,745 +1,891 @@
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Geva Kipper - Debug Portfolio</title>
-  <style>
-    :root {
-      --terminal-bg: #1a1a1a;
-      --terminal-text: #00ff00;
-      --terminal-amber: #ffb000;
-      --terminal-error: #ff3333;
-      --terminal-fixed: #66d9ef;
-      --terminal-comment: #777777;
-      --terminal-header: #ff79c6;
-      --terminal-success: #50fa7b;
-    }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    body {
-      font-family: 'Courier New', monospace;
-      background-color: var(--terminal-bg);
-      color: var(--terminal-text);
-      line-height: 1.5;
-      padding: 20px;
-      overflow-x: hidden;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    a {
-      color: var(--terminal-amber);
-      text-decoration: none;
-      transition: color 0.3s ease;
-    }
-    
-    a:hover {
-      color: var(--terminal-fixed);
-      text-decoration: underline;
-    }
-    
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      flex: 1;
-    }
-    
-    header {
-      margin-bottom: 2rem;
-      border-bottom: 1px solid var(--terminal-text);
-      padding-bottom: 1rem;
-      position: relative;
-    }
-    
-    .terminal-prompt {
-      display: flex;
-      align-items: center;
-      margin-bottom: 0.5rem;
-    }
-    
-    .blinking-cursor {
-      display: inline-block;
-      width: 10px;
-      height: 18px;
-      background-color: var(--terminal-text);
-      animation: blink 1s infinite;
-      margin-left: 5px;
-    }
-    
-    @keyframes blink {
-      0%, 49% { opacity: 1; }
-      50%, 100% { opacity: 0; }
-    }
-    
-    .typing-text {
-      white-space: nowrap;
-      overflow: hidden;
-      border-right: 3px solid transparent;
-      animation: typing 3.5s steps(40, end) 1s forwards;
-      width: 0;
-    }
-    
-    @keyframes typing {
-      from { width: 0 }
-      to { width: 100% }
-    }
-    
-    .comment {
-      color: var(--terminal-comment);
-    }
-    
-    .terminal-clock {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      font-size: 0.8rem;
-      color: var(--terminal-amber);
-    }
-    
-    .section {
-      margin-bottom: 2rem;
-      padding: 1rem;
-      border: 1px solid rgba(0, 255, 0, 0.2);
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .section:before {
-      content: attr(data-line-numbers);
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 30px;
-      background-color: rgba(0, 0, 0, 0.3);
-      color: var(--terminal-comment);
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      padding: 1rem 5px;
-      font-size: 0.8rem;
-    }
-    
-    .section-content {
-      margin-left: 35px;
-    }
-    
-    .bug {
-      display: inline-block;
-      color: var(--terminal-error);
-      cursor: pointer;
-      position: relative;
-      text-decoration: wavy underline var(--terminal-error);
-      animation: glitch 0.3s infinite alternate;
-    }
-    
-    @keyframes glitch {
-      0% { transform: translateX(0); }
-      25% { transform: translateX(1px); }
-      50% { transform: translateX(-1px); }
-      75% { transform: translateX(1px); }
-      100% { transform: translateX(-1px); }
-    }
-    
-    .bug-sprite {
-      position: absolute;
-      font-size: 12px;
-      z-index: 10;
-      pointer-events: none;
-      animation: crawl 15s linear infinite;
-    }
-    
-    @keyframes crawl {
-      0% { transform: translate(0, 0) rotate(0deg); }
-      25% { transform: translate(50px, 20px) rotate(90deg); }
-      50% { transform: translate(100px, 0) rotate(180deg); }
-      75% { transform: translate(50px, -20px) rotate(270deg); }
-      100% { transform: translate(0, 0) rotate(360deg); }
-    }
-    
-    .fixed {
-      color: var(--terminal-fixed);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      animation: fix 0.5s ease-in-out;
-    }
-    
-    @keyframes fix {
-      0% { transform: scale(1); filter: blur(4px); }
-      50% { transform: scale(1.05); filter: blur(0); }
-      100% { transform: scale(1); }
-    }
-    
-    .section-title {
-      color: var(--terminal-header);
-      font-weight: bold;
-      margin-bottom: 0.5rem;
-    }
-    
-    .debug-console {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background-color: rgba(0, 0, 0, 0.8);
-      padding: 10px 20px;
-      font-size: 0.9rem;
-      border-top: 1px solid var(--terminal-text);
-      z-index: 100;
-    }
-    
-    .debug-input {
-      background-color: transparent;
-      border: none;
-      color: var(--terminal-text);
-      font-family: 'Courier New', monospace;
-      width: calc(100% - 30px);
-      outline: none;
-      margin-left: 5px;
-    }
-    
-    footer {
-      margin-top: 4rem;
-      padding-top: 1rem;
-      border-top: 1px solid var(--terminal-text);
-      font-size: 0.8rem;
-      text-align: center;
-    }
-    
-    .hidden {
-      display: none;
-    }
-    
-    .project-link {
-      display: inline-block;
-      margin: 5px 10px 5px 0;
-      padding: 3px 10px;
-      border: 1px solid var(--terminal-amber);
-      border-radius: 3px;
-      transition: all 0.3s ease;
-    }
-    
-    .project-link:hover {
-      background-color: var(--terminal-amber);
-      color: var(--terminal-bg);
-      text-decoration: none;
-    }
-    
-    .social-icon {
-      font-size: 1.5rem;
-      margin: 0 10px;
-    }
-    
-    .flicker {
-      animation: flicker 2s infinite;
-    }
-    
-    @keyframes flicker {
-      0% { opacity: 1; }
-      92% { opacity: 1; }
-      93% { opacity: 0.3; }
-      94% { opacity: 1; }
-      97% { opacity: 0.5; }
-      98% { opacity: 1; }
-    }
-    
-    @media (max-width: 768px) {
-      body {
-        padding: 10px;
-      }
-      
-      .terminal-clock {
-        position: static;
-        display: block;
-        margin-top: 10px;
-      }
-      
-      .section:before {
-        display: none;
-      }
-      
-      .section-content {
-        margin-left: 0;
-      }
-      
-      .debug-console {
-        padding: 5px 10px;
-      }
-    }
-    
-    /* Animation for fixed content */
-    .wave-animation {
-      height: 100px;
-      background: linear-gradient(to bottom, transparent 50%, var(--terminal-fixed) 50%);
-      background-size: 100% 20px;
-      width: 100%;
-      animation: wave 2s linear infinite;
-      margin: 20px 0;
-    }
-    
-    @keyframes wave {
-      0% { background-position: 0 0; }
-      100% { background-position: 0 -20px; }
-    }
-    
-    .heat-map {
-      display: grid;
-      grid-template-columns: repeat(10, 1fr);
-      gap: 5px;
-      margin: 20px 0;
-    }
-    
-    .heat-cell {
-      height: 20px;
-      background-color: var(--terminal-amber);
-      opacity: 0.1;
-    }
-    
-    .polygon-animation {
-      width: 100px;
-      height: 100px;
-      background-color: transparent;
-      border: 2px solid var(--terminal-fixed);
-      margin: 20px auto;
-      animation: rotate 4s linear infinite;
-    }
-    
-    @keyframes rotate {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper - Blockchain Portfolio</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Mono:wght@400;700&display=swap');
+
+        :root {
+            --bg-color: #0a0e17;
+            --bg-block: #141a28;
+            --blockchain-green: #00ff9d;
+            --coding-blue: #2d8fff;
+            --text-color: #ffffff;
+            --hash-color: rgba(0, 255, 157, 0.7);
+            --block-shadow: 0 4px 20px rgba(0, 255, 157, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Space Mono', monospace;
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            padding: 0 1rem;
+        }
+
+        #hash-trail {
+            position: fixed;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        #hash-trail .hash-particle {
+            position: absolute;
+            color: var(--hash-color);
+            font-size: 10px;
+            opacity: 0.8;
+            font-family: 'JetBrains Mono', monospace;
+            pointer-events: none;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 0;
+        }
+
+        header {
+            text-align: center;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 3.5rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 15px rgba(0, 255, 157, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto 0.5rem;
+        }
+
+        .daily-note {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            font-style: italic;
+            margin-top: 1rem;
+        }
+
+        .blockchain {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            margin: 2rem 0;
+        }
+
+        .connection {
+            position: relative;
+            width: 4px;
+            height: 70px;
+            background: linear-gradient(to bottom, var(--blockchain-green), var(--coding-blue));
+            margin: 0.5rem 0;
+            overflow: hidden;
+        }
+
+        .connection .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background-color: #fff;
+            border-radius: 50%;
+            top: -4px;
+            left: 0;
+            animation: flow-down 3s infinite;
+        }
+
+        @keyframes flow-down {
+            0% {
+                top: -4px;
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                top: 70px;
+                opacity: 0;
+            }
+        }
+
+        .block {
+            position: relative;
+            width: 90%;
+            max-width: 800px;
+            background: var(--bg-block);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 0.5rem 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            box-shadow: var(--block-shadow);
+            border: 1px solid rgba(0, 255, 157, 0.1);
+            transform-origin: center;
+            overflow: hidden;
+        }
+
+        .block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(to right, var(--blockchain-green), var(--coding-blue));
+        }
+
+        .block.expanded {
+            transform: scale(1.05);
+        }
+
+        .block-header {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 1.5rem;
+            opacity: 0.7;
+            font-size: 0.8rem;
+        }
+
+        .block-hash {
+            max-width: 80%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .block-timestamp {
+            white-space: nowrap;
+        }
+
+        .block-content {
+            display: grid;
+            grid-template-columns: 70px 1fr;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+
+        .block-icon {
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 255, 157, 0.1);
+            border-radius: 12px;
+            font-size: 1.8rem;
+            color: var(--blockchain-green);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .block-icon svg,
+        .block-icon i {
+            position: relative;
+            z-index: 2;
+        }
+
+        .block-info {
+            flex: 1;
+        }
+
+        .block-title {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--blockchain-green);
+        }
+
+        .block-description {
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .block-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-top: 1.5rem;
+        }
+
+        .block-button {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(45, 143, 255, 0.1);
+            border: 1px solid var(--coding-blue);
+            color: var(--text-color);
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .block-button:hover {
+            background: rgba(45, 143, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(45, 143, 255, 0.2);
+        }
+
+        .block-button i {
+            margin-right: 0.5rem;
+        }
+
+        /* Specific block styles */
+
+        #glglstats-block .block-icon {
+            background: rgba(45, 143, 255, 0.1);
+        }
+
+        #ahuzat-block .block-icon {
+            background: rgba(255, 97, 45, 0.1);
+        }
+
+        #ahuzat-block .car-animation {
+            position: absolute;
+            bottom: 10px;
+            left: -20px;
+            font-size: 14px;
+            animation: drive 10s linear infinite;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        #ahuzat-block:hover .car-animation {
+            opacity: 1;
+        }
+
+        @keyframes drive {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(calc(100% + 40px));
+            }
+        }
+
+        #orienting-block .block-icon {
+            background: rgba(255, 217, 0, 0.1);
+        }
+
+        #orienting-block .polygon-animation {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            animation: rotate 8s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #portfolio-block .block-icon {
+            background: rgba(0, 255, 157, 0.1);
+        }
+
+        #portfolio-block .recursive-animation {
+            position: absolute;
+            width: 85%;
+            height: 85%;
+            border: 1px solid var(--blockchain-green);
+            border-radius: 8px;
+            animation: recursion 4s ease-in-out infinite;
+        }
+
+        @keyframes recursion {
+            0%, 100% {
+                transform: scale(0.7);
+                opacity: 0.5;
+            }
+            50% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        #contact-block .block-icon {
+            background: rgba(255, 75, 75, 0.1);
+        }
+
+        #contact-block .social-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.2rem;
+            margin-top: 1.5rem;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-color);
+            text-decoration: none;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .social-link:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .social-link.github:hover {
+            background: #333;
+        }
+
+        .social-link.linkedin:hover {
+            background: #0077b5;
+        }
+
+        .social-link.facebook:hover {
+            background: #1877f2;
+        }
+
+        /* Visualization elements */
+
+        .waveform {
+            display: flex;
+            align-items: center;
+            height: 40px;
+            gap: 2px;
+            margin: 1.5rem 0;
+        }
+
+        .waveform-bar {
+            width: 3px;
+            background-color: var(--blockchain-green);
+            border-radius: 1px;
+        }
+
+        .code-snippet {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 6px;
+            color: #b3b3b3;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+            max-height: 150px;
+            opacity: 0.7;
+        }
+
+        .code-highlight {
+            color: var(--blockchain-green);
+        }
+
+        .comment {
+            color: #6d6d6d;
+        }
+
+        .keyword {
+            color: var(--coding-blue);
+        }
+
+        .you-are-here {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0, 255, 157, 0.1);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+            font-size: 0.8rem;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--blockchain-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 255, 157, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(0, 255, 157, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 255, 157, 0);
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 3rem 0;
+            margin-top: 3rem;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            position: relative;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .digital-clock {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            margin: 1rem 0;
+            min-width: 220px;
+            text-align: center;
+        }
+
+        .footer-icon {
+            font-size: 1.5rem;
+            color: var(--blockchain-green);
+            animation: pulse 2s infinite;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .daily-note {
+                font-size: 0.8rem;
+            }
+
+            .block {
+                width: 95%;
+                padding: 1.5rem;
+            }
+
+            .block-content {
+                grid-template-columns: 1fr;
+            }
+
+            .block-icon {
+                margin-bottom: 1rem;
+            }
+
+            .block-links {
+                flex-direction: column;
+            }
+
+            .social-links {
+                flex-direction: column;
+            }
+
+            .connection {
+                height: 50px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .block-title {
+                font-size: 1.4rem;
+            }
+
+            .connection {
+                height: 40px;
+            }
+        }
+    </style>
 </head>
+
 <body>
-  <div class="container">
-    <header>
-      <div class="terminal-clock" id="terminal-clock">00:00:00</div>
-      <div class="terminal-prompt">
-        <span>> run portfolio.js</span>
-        <span class="blinking-cursor"></span>
-      </div>
-      <h1 id="name" class="typing-text"></h1>
-      <div class="terminal-output">Current work: <span class="terminal-output-text">Machine Learning Engineer @ Google</span></div>
-      <div class="comment">// This website is re-designed each day by AI and is thus ever-changing</div>
-    </header>
+    <div id="hash-trail"></div>
+    <div class="container">
+        <header>
+            <h1 class="typewriter">GEVA KIPPER</h1>
+            <p class="subtitle">Senior Software Engineer at Google, building tools that shape the future of search</p>
+            <p class="daily-note">This portfolio is redesigned daily by AI - what you see today will evolve tomorrow</p>
+        </header>
 
-    <main>
-      <section class="section" data-line-numbers="1\n2\n3\n4\n5\n6\n7\n8\n9\n10">
-        <div class="section-content">
-          <div class="section-title">class GlglStats {</div>
-          <div>&nbsp;&nbsp;constructor() {</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;this.description = "A web application measuring song <span class="bug" data-correct="repetitiveness">repetivness</span>";</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;this.tech = ["JavaScript", "D3.js", "Web Audio API"];</div>
-          <div>&nbsp;&nbsp;}</div>
-          <div>&nbsp;&nbsp;render() { /* Visualization code */ }</div>
-          <div>}</div>
-          <div class="hidden fixed-content">
-            <h3>GlglStats Project</h3>
-            <p>A web application measuring song repetitiveness through interactive audio analysis and visualization.</p>
-            <div class="wave-animation"></div>
-            <p>Technologies: JavaScript, D3.js, Web Audio API</p>
-            <a href="https://glglstats.onrender.com/" class="project-link" target="_blank">View Project</a>
-            <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" class="project-link" target="_blank">Conference Presentation</a>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" data-line-numbers="1\n2\n3\n4\n5\n6\n7\n8\n9\n10">
-        <div class="section-content">
-          <div class="section-title">db.query("AhuzatDibuk", {</div>
-          <div>&nbsp;&nbsp;SELECT: ["parking_data", "heat_maps", "media"]</div>
-          <div>&nbsp;&nbsp;WHERE: {</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;project_type: "urban <span class="bug" data-correct="analysis">analisys</span>"</div>
-          <div>&nbsp;&nbsp;}</div>
-          <div>&nbsp;&nbsp;ORDER_BY: "date_desc"</div>
-          <div>});</div>
-          <div class="hidden fixed-content">
-            <h3>Ahuzat Dibuk Project</h3>
-            <p>An urban analysis project studying parking patterns and traffic flow in Tel Aviv's historical neighborhoods.</p>
-            <div class="heat-map">
-              <!-- Simulated heat map cells -->
-              <div class="heat-cell" style="opacity: 0.2;"></div>
-              <div class="heat-cell" style="opacity: 0.5;"></div>
-              <div class="heat-cell" style="opacity: 0.8;"></div>
-              <div class="heat-cell" style="opacity: 0.3;"></div>
-              <div class="heat-cell" style="opacity: 0.7;"></div>
-              <div class="heat-cell" style="opacity: 0.9;"></div>
-              <div class="heat-cell" style="opacity: 0.4;"></div>
-              <div class="heat-cell" style="opacity: 0.2;"></div>
-              <div class="heat-cell" style="opacity: 0.6;"></div>
-              <div class="heat-cell" style="opacity: 0.3;"></div>
-              <div class="heat-cell" style="opacity: 0.7;"></div>
-              <div class="heat-cell" style="opacity: 0.5;"></div>
-              <div class="heat-cell" style="opacity: 0.9;"></div>
-              <div class="heat-cell" style="opacity: 0.4;"></div>
-              <div class="heat-cell" style="opacity: 0.3;"></div>
-              <div class="heat-cell" style="opacity: 0.8;"></div>
-              <div class="heat-cell" style="opacity: 0.6;"></div>
-              <div class="heat-cell" style="opacity: 0.4;"></div>
-              <div class="heat-cell" style="opacity: 0.7;"></div>
-              <div class="heat-cell" style="opacity: 0.3;"></div>
+        <div class="blockchain">
+            <!-- GlglStats Block -->
+            <div id="glglstats-block" class="block" data-hash="0xf7e392d8c7d145fd21b67418c4c8642d0b112a23e7af5769c5f0bc8ef5f2c63a">
+                <div class="block-header">
+                    <div class="block-hash">0xf7e392d8c7d145fd21b67418c4c8642d0b112a23e7af5769c5f0bc8ef5f2c63a</div>
+                    <div class="block-timestamp">2023-09-15 14:32:18</div>
+                </div>
+                <div class="block-content">
+                    <div class="block-icon">
+                        <i class="fas fa-wave-square"></i>
+                    </div>
+                    <div class="block-info">
+                        <h3 class="block-title">GlglStats</h3>
+                        <p class="block-description">
+                            A system for efficient music analysis using advanced <strong>LZ77 compression</strong> algorithms. 
+                            Processes large-scale datasets to extract meaningful musical patterns.
+                        </p>
+                        <div class="waveform">
+                            <!-- Dynamic waveform visualization -->
+                        </div>
+                        <div class="block-links">
+                            <a href="https://glglstats.onrender.com/" target="_blank" class="block-button">
+                                <i class="fas fa-globe"></i> View Project
+                            </a>
+                            <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="block-button">
+                                <i class="fab fa-youtube"></i> Watch Conference Talk
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <p>Media coverage:</p>
-            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" class="project-link" target="_blank">Channel 13 News</a>
-            <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" class="project-link" target="_blank">Mako News</a>
-            <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" class="project-link" target="_blank">Secret Tel Aviv Post</a>
-          </div>
-        </div>
-      </section>
 
-      <section class="section" data-line-numbers="1\n2\n3\n4\n5\n6\n7\n8\n9\n10">
-        <div class="section-content">
-          <div class="section-title">class PartOrienting2D {</div>
-          <div>&nbsp;&nbsp;private:</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;std::vector<Polygon> parts;</div>
-          <div>&nbsp;&nbsp;public:</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;void optimizeOrientation() <span class="bug" data-correct="{">}</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Algorithm for 2D part orientation</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Tel Aviv University research project</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;}</div>
-          <div>};</div>
-          <div class="hidden fixed-content">
-            <h3>2D Part Orienting Project</h3>
-            <p>A computational geometry research project at Tel Aviv University focusing on optimal orientation algorithms for polygonal parts.</p>
-            <div class="polygon-animation"></div>
-            <p>This algorithm efficiently orients 2D polygonal parts using geometric principles and computational optimization.</p>
-            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" class="project-link" target="_blank">Project Details & Code</a>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" data-line-numbers="1\n2\n3\n4\n5\n6\n7\n8\n9\n10">
-        <div class="section-content">
-          <div class="section-title">function renderPortfolio() {</div>
-          <div>&nbsp;&nbsp;const portfolio = {</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;title: "Debug-driven Portfolio",</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;author: "Geva Kipper",</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;designedBy: <span class="bug" data-correct="\"AI\"">'AI"</span>,</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;lastUpdated: new Date()</div>
-          <div>&nbsp;&nbsp;};</div>
-          <div>&nbsp;&nbsp;return renderPortfolio(); // Recursive call</div>
-          <div>}</div>
-          <div class="hidden fixed-content">
-            <h3>Portfolio Website</h3>
-            <p>A unique debug-driven portfolio concept where visitors find and fix "bugs" to reveal content in a terminal-inspired interface.</p>
-            <p>Each section of this website is designed as code with intentional bugs, creating an interactive experience that showcases both content and creativity.</p>
-            <p>The site is redesigned daily using AI assistance, ensuring a constantly evolving and fresh experience.</p>
-            <a href="https://portfolio-dor1.onrender.com/" class="project-link" target="_blank">Current Portfolio</a>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" data-line-numbers="1\n2\n3\n4\n5\n6\n7\n8\n9\n10">
-        <div class="section-content">
-          <div class="section-title">async function loadSocialLinks() {</div>
-          <div>&nbsp;&nbsp;try {</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;const links = await API.get(<span class="bug" data-correct="'/social'">'social'</span>);</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;return links;</div>
-          <div>&nbsp;&nbsp;} catch (error) {</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;console.error("Failed to load social links");</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;return null;</div>
-          <div>&nbsp;&nbsp;}</div>
-          <div>}</div>
-          <div class="hidden fixed-content">
-            <h3>Connect With Me</h3>
-            <p>Find me on these platforms to connect or see more of my work:</p>
-            <div style="margin-top: 20px; text-align: center;">
-              <a href="https://github.com/gevak" class="social-icon" target="_blank">
-                <i>GitHub</i>
-              </a>
-              <a href="https://linkedin.com/in/gevakip" class="social-icon" target="_blank">
-                <i>LinkedIn</i>
-              </a>
-              <a href="https://facebook.com/geva.kipper" class="social-icon" target="_blank">
-                <i>Facebook</i>
-              </a>
+            <div class="connection">
+                <div class="particle"></div>
+                <div class="particle" style="animation-delay: 1s;"></div>
+                <div class="particle" style="animation-delay: 2s;"></div>
             </div>
-          </div>
+
+            <!-- Ahuzat Dibuk Block -->
+            <div id="ahuzat-block" class="block" data-hash="0x1d8f3a6c2b9e7d5f4a0c2e8d6b4f2a0e6d8b4f2a0e6d8b4f2a0e6d8b4f2a0e6d8">
+                <div class="block-header">
+                    <div class="block-hash">0x1d8f3a6c2b9e7d5f4a0c2e8d6b4f2a0e6d8b4f2a0e6d8b4f2a0e6d8b4f2a0e6d8</div>
+                    <div class="block-timestamp">2023-07-22 09:14:52</div>
+                </div>
+                <div class="block-content">
+                    <div class="block-icon">
+                        <i class="fas fa-car-side"></i>
+                        <div class="car-animation">
+                            <i class="fas fa-car"></i>
+                        </div>
+                    </div>
+                    <div class="block-info">
+                        <h3 class="block-title">Ahuzat Dibuk</h3>
+                        <p class="block-description">
+                            A data-driven exploration of Tel Aviv's parking situation. Used public datasets to analyze and
+                            visualize parking availability patterns across the city, providing insights for urban planning.
+                        </p>
+                        <div class="block-links">
+                            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="block-button">
+                                <i class="fas fa-tv"></i> Channel 13 Feature
+                            </a>
+                            <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="block-button">
+                                <i class="fas fa-newspaper"></i> Mako Article
+                            </a>
+                            <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="block-button">
+                                <i class="fab fa-facebook-f"></i> Facebook Post
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="connection">
+                <div class="particle"></div>
+                <div class="particle" style="animation-delay: 0.5s;"></div>
+                <div class="particle" style="animation-delay: 1.5s;"></div>
+            </div>
+
+            <!-- 2D Part Orienting Block -->
+            <div id="orienting-block" class="block" data-hash="0x3e5d2f1a8c9b7d6e4f2a3c5d8e9f2a3c5d8e9f2a3c5d8e9f2a3c5d8e9f2a3c5d8">
+                <div class="block-header">
+                    <div class="block-hash">0x3e5d2f1a8c9b7d6e4f2a3c5d8e9f2a3c5d8e9f2a3c5d8e9f2a3c5d8e9f2a3c5d8</div>
+                    <div class="block-timestamp">2023-04-10 16:22:47</div>
+                </div>
+                <div class="block-content">
+                    <div class="block-icon">
+                        <div class="polygon-animation">
+                            <svg viewBox="0 0 50 50" width="40" height="40">
+                                <polygon points="25,5 45,20 35,45 15,45 5,20" stroke="rgb(255, 217, 0)" fill="none" stroke-width="2" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="block-info">
+                        <h3 class="block-title">2D Part Orienting</h3>
+                        <p class="block-description">
+                            An algorithm for efficiently orienting 2D polygonal parts through pushing operations. 
+                            Implemented in C++ with optimized computational geometry techniques.
+                        </p>
+                        <div class="code-snippet">
+                            <span class="comment">// Polygon orientation algorithm</span><br>
+                            <span class="keyword">bool</span> Orient(<span class="keyword">const</span> Polygon& p, <span class="keyword">const</span> Vector2D& push) {<br>
+                            &nbsp;&nbsp;<span class="code-highlight">return ComputeStableOrientation(p, push.normalize());</span><br>
+                            }
+                        </div>
+                        <div class="block-links">
+                            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="block-button">
+                                <i class="fas fa-code"></i> View Algorithm
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="connection">
+                <div class="particle"></div>
+                <div class="particle" style="animation-delay: 0.7s;"></div>
+                <div class="particle" style="animation-delay: 1.7s;"></div>
+            </div>
+
+            <!-- Portfolio Website Block -->
+            <div id="portfolio-block" class="block" data-hash="0x9a8b7c6d5e4f3g2h1i0j9k8l7m6n5o4p3q2r1s0t9u8v7w6x5y4z3a2b1c0d9e8">
+                <div class="block-header">
+                    <div class="block-hash">0x9a8b7c6d5e4f3g2h1i0j9k8l7m6n5o4p3q2r1s0t9u8v7w6x5y4z3a2b1c0d9e8</div>
+                    <div class="block-timestamp">2023-11-03 10:05:33</div>
+                </div>
+                <div class="block-content">
+                    <div class="block-icon">
+                        <i class="fas fa-code"></i>
+                        <div class="recursive-animation"></div>
+                        <div class="recursive-animation" style="width: 70%; height: 70%; animation-delay: 1s"></div>
+                    </div>
+                    <div class="block-info">
+                        <h3 class="block-title">Portfolio Website</h3>
+                        <p class="block-description">
+                            A blockchain-inspired interactive resume showcasing projects and skills. 
+                            Features custom animations and responsive design made with modern HTML, CSS and JavaScript.
+                        </p>
+                        <div class="you-are-here">
+                            <div class="pulse-dot"></div>
+                            You are here
+                        </div>
+                        <div class="block-links">
+                            <a href="https://portfolio-dor1.onrender.com/" target="_blank" class="block-button">
+                                <i class="fas fa-external-link-alt"></i> View Source
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="connection">
+                <div class="particle"></div>
+                <div class="particle" style="animation-delay: 0.3s;"></div>
+                <div class="particle" style="animation-delay: 1.3s;"></div>
+            </div>
+
+            <!-- Contact Block -->
+            <div id="contact-block" class="block" data-hash="0x7c8d9e0f1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7a8b9">
+                <div class="block-header">
+                    <div class="block-hash">0x7c8d9e0f1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7a8b9</div>
+                    <div class="block-timestamp">2023-12-01 08:47:11</div>
+                </div>
+                <div class="block-content">
+                    <div class="block-icon">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                    <div class="block-info">
+                        <h3 class="block-title">Connect</h3>
+                        <p class="block-description">
+                            Let's connect and discuss potential collaborations or just exchange ideas. 
+                            Feel free to reach out through any of the platforms below.
+                        </p>
+                        <div class="social-links">
+                            <a href="https://github.com/gevak" target="_blank" class="social-link github">
+                                <i class="fab fa-github"></i> GitHub
+                            </a>
+                            <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-link linkedin">
+                                <i class="fab fa-linkedin-in"></i> LinkedIn
+                            </a>
+                            <a href="https://facebook.com/geva.kipper" target="_blank" class="social-link facebook">
+                                <i class="fab fa-facebook-f"></i> Facebook
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </section>
-    </main>
 
-    <footer>
-      <div>
-        <span class="comment">// Generated by AI Assistant</span>
-      </div>
-      <div id="uptime-counter">
-        System uptime: <span id="uptime">0d 0h 0m 0s</span>
-      </div>
-      <div>
-        <span>> type 'help' for more commands</span>
-      </div>
-    </footer>
-  </div>
+        <footer>
+            <div class="footer-content">
+                <div class="digital-clock" id="time-counter">00:00:00:00</div>
+                <div>Design generated by Claude AI</div>
+                <div class="footer-icon">
+                    <i class="fas fa-cubes"></i>
+                </div>
+            </div>
+        </footer>
+    </div>
 
-  <div class="debug-console">
-    <span>> </span>
-    <input type="text" class="debug-input" id="debug-input" placeholder="Enter command..." autocomplete="off">
-    <div id="debug-status">0/5 bugs fixed. Keep debugging!</div>
-  </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the waveform visualization
+            const waveform = document.querySelector('.waveform');
+            for (let i = 0; i < 30; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'waveform-bar';
+                const height = Math.floor(Math.random() * 30) + 5;
+                bar.style.height = `${height}px`;
+                bar.style.animationDelay = `${i * 0.1}s`;
+                waveform.appendChild(bar);
+            }
 
-  <script>
-    // Initialize variables
-    let bugsFixed = 0;
-    const totalBugs = 5;
-    const bugSprites = ['🐞', '🐛', '🦗', '🐜', '🕷️'];
-    
-    // Initialize typing animation for name
-    document.addEventListener('DOMContentLoaded', () => {
-      const nameElement = document.getElementById('name');
-      const text = "Geva Kipper";
-      let i = 0;
-      
-      function typeWriter() {
-        if (i < text.length) {
-          nameElement.textContent += text.charAt(i);
-          i++;
-          setTimeout(typeWriter, 100);
-        }
-      }
-      
-      setTimeout(typeWriter, 1000);
-      
-      // Add bug sprites randomly
-      addBugSprites();
-      
-      // Update terminal clock
-      updateClock();
-      setInterval(updateClock, 1000);
-      
-      // Update uptime counter
-      setInterval(updateUptime, 1000);
-      
-      // Setup bug fixing
-      setupBugFixing();
-      
-      // Setup debug input
-      setupDebugInput();
-    });
-    
-    function updateClock() {
-      const now = new Date();
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const seconds = String(now.getSeconds()).padStart(2, '0');
-      
-      document.getElementById('terminal-clock').textContent = `${hours}:${minutes}:${seconds}`;
-    }
-    
-    function updateUptime() {
-      // Use a fixed start date for demonstration
-      const startDate = new Date(2023, 0, 1); // January 1, 2023
-      const now = new Date();
-      const diff = now - startDate;
-      
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-      
-      document.getElementById('uptime').textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
-    }
-    
-    function addBugSprites() {
-      for (let i = 0; i < 5; i++) {
-        const bugSprite = document.createElement('div');
-        bugSprite.className = 'bug-sprite';
-        bugSprite.textContent = bugSprites[Math.floor(Math.random() * bugSprites.length)];
-        
-        // Random position
-        const x = Math.floor(Math.random() * window.innerWidth);
-        const y = Math.floor(Math.random() * window.innerHeight);
-        
-        bugSprite.style.left = `${x}px`;
-        bugSprite.style.top = `${y}px`;
-        
-        // Add random speed and direction
-        bugSprite.style.animationDuration = `${10 + Math.random() * 20}s`;
-        bugSprite.style.animationDelay = `${Math.random() * 5}s`;
-        
-        document.body.appendChild(bugSprite);
-        
-        // Make them scatter when clicked
-        bugSprite.addEventListener('click', (e) => {
-          e.target.style.transition = 'all 0.5s ease';
-          e.target.style.opacity = 0;
-          e.target.style.transform = `translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) scale(0)`;
-          
-          setTimeout(() => {
-            e.target.remove();
-          }, 500);
-        });
-      }
-    }
-    
-    function setupBugFixing() {
-      const bugs = document.querySelectorAll('.bug');
-      
-      bugs.forEach(bug => {
-        bug.addEventListener('click', (e) => {
-          const correctValue = e.target.getAttribute('data-correct');
-          const currentValue = e.target.textContent;
-          
-          if (correctValue) {
-            // Replace bug with correct value
-            e.target.textContent = correctValue;
-            e.target.classList.remove('bug');
-            e.target.classList.add('fixed');
-            
-            // Increment bugs fixed counter
-            bugsFixed++;
-            updateDebugStatus();
-            
-            // Replace section content with fixed content
-            const section = e.target.closest('.section');
-            const fixedContent = section.querySelector('.fixed-content');
-            const sectionContent = section.querySelector('.section-content');
-            
-            // Add a terminal flicker effect
-            section.classList.add('flicker');
-            
-            setTimeout(() => {
-              // Show the fixed content
-              sectionContent.innerHTML = '';
-              fixedContent.classList.remove('hidden');
-              sectionContent.appendChild(fixedContent);
-              section.classList.remove('flicker');
-              
-              // Check if all bugs are fixed
-              checkAllBugsFixed();
+            // Animate the waveform
+            setInterval(() => {
+                const bars = document.querySelectorAll('.waveform-bar');
+                bars.forEach(bar => {
+                    const height = Math.floor(Math.random() * 30) + 5;
+                    bar.style.height = `${height}px`;
+                });
             }, 1000);
-          }
+
+            // Block expansion on click
+            const blocks = document.querySelectorAll('.block');
+            blocks.forEach(block => {
+                block.addEventListener('click', function() {
+                    this.classList.toggle('expanded');
+                    // Save state to local storage
+                    localStorage.setItem(`block-${this.id}`, this.classList.contains('expanded') ? 'expanded' : '');
+                });
+
+                // Restore expanded state from local storage
+                const savedState = localStorage.getItem(`block-${block.id}`);
+                if (savedState === 'expanded') {
+                    block.classList.add('expanded');
+                }
+            });
+
+            // Digital clock counter
+            const startDate = new Date('April 25, 2025').getTime();
+            function updateClock() {
+                const now = new Date().getTime();
+                const timeDiff = now - startDate;
+                
+                // Use negative values if we're before the start date
+                const days = Math.floor(Math.abs(timeDiff) / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((Math.abs(timeDiff) % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((Math.abs(timeDiff) % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((Math.abs(timeDiff) % (1000 * 60)) / 1000);
+                
+                const prefix = timeDiff < 0 ? "-" : "";
+                document.getElementById('time-counter').textContent = 
+                    `${prefix}${days.toString().padStart(2, '0')}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            updateClock();
+            setInterval(updateClock, 1000);
+
+            // Create hash trail effect
+            const hashTrail = document.getElementById('hash-trail');
+            let mouseX = 0, mouseY = 0;
+            let particles = [];
+            
+            document.addEventListener('mousemove', function(e) {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                
+                if (Math.random() > 0.9) {
+                    createHashParticle();
+                }
+            });
+            
+            function createHashParticle() {
+                const particle = document.createElement('div');
+                particle.className = 'hash-particle';
+                
+                // Generate a random hash-like string
+                let hash = '0x';
+                const chars = '0123456789abcdef';
+                const length = Math.floor(Math.random() * 8) + 4; // Random length between 4 and 12
+                for (let i = 0; i < length; i++) {
+                    hash += chars[Math.floor(Math.random() * chars.length)];
+                }
+                
+                particle.textContent = hash;
+                particle.style.left = `${mouseX}px`;
+                particle.style.top = `${mouseY}px`;
+                
+                // Random offset
+                const offsetX = (Math.random() - 0.5) * 40;
+                const offsetY = (Math.random() - 0.5) * 40;
+                
+                hashTrail.appendChild(particle);
+                particles.push({
+                    element: particle,
+                    x: mouseX,
+                    y: mouseY,
+                    targetX: mouseX + offsetX,
+                    targetY: mouseY + offsetY,
+                    life: 1 // 1 = full life, 0 = dead
+                });
+                
+                if (particles.length > 20) {
+                    const oldParticle = particles.shift();
+                    hashTrail.removeChild(oldParticle.element);
+                }
+            }
+            
+            function updateParticles() {
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
+                    p.life -= 0.01;
+                    
+                    if (p.life <= 0) {
+                        hashTrail.removeChild(p.element);
+                        particles.splice(i, 1);
+                        i--;
+                        continue;
+                    }
+                    
+                    // Move towards target
+                    p.x += (p.targetX - p.x) * 0.05;
+                    p.y += (p.targetY - p.y) * 0.05;
+                    
+                    p.element.style.left = `${p.x}px`;
+                    p.element.style.top = `${p.y}px`;
+                    p.element.style.opacity = p.life;
+                }
+                
+                requestAnimationFrame(updateParticles);
+            }
+            
+            updateParticles();
         });
-      });
-    }
-    
-    function updateDebugStatus() {
-      const debugStatus = document.getElementById('debug-status');
-      debugStatus.textContent = `${bugsFixed}/${totalBugs} bugs fixed. ${bugsFixed === totalBugs ? 'All bugs fixed! Type "help" for more commands.' : 'Keep debugging!'}`;
-    }
-    
-    function checkAllBugsFixed() {
-      if (bugsFixed === totalBugs) {
-        // Add some celebration effect
-        setTimeout(() => {
-          alert('Congratulations! You found and fixed all bugs in the portfolio. Type "help" in the console for more hidden features!');
-        }, 1000);
-      }
-    }
-    
-    function setupDebugInput() {
-      const debugInput = document.getElementById('debug-input');
-      
-      debugInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          const command = e.target.value.trim().toLowerCase();
-          handleCommand(command);
-          e.target.value = '';
-        }
-      });
-    }
-    
-    function handleCommand(command) {
-      switch (command) {
-        case 'help':
-          showHelp();
-          break;
-        case 'clear':
-          clearConsole();
-          break;
-        case 'about':
-          showAbout();
-          break;
-        case 'contact':
-          showContact();
-          break;
-        case 'projects':
-          listProjects();
-          break;
-        case 'fix all':
-          if (bugsFixed < totalBugs) {
-            fixAllBugs();
-          }
-          break;
-        default:
-          showUnknownCommand(command);
-          break;
-      }
-    }
-    
-    function showHelp() {
-      alert(`Available commands:
-      
-- help: Show this help message
-- clear: Clear the console
-- about: Show information about Geva Kipper
-- contact: Show contact information
-- projects: List all projects
-- fix all: Automatically fix all bugs (cheating!)
-      
-Try these commands in the debug console at the bottom of the page.`);
-    }
-    
-    function clearConsole() {
-      // Visual effect for clearing
-      document.body.classList.add('flicker');
-      
-      setTimeout(() => {
-        document.body.classList.remove('flicker');
-      }, 500);
-    }
-    
-    function showAbout() {
-      alert("Geva Kipper is a Machine Learning Engineer at Google, with expertise in computational geometry, data visualization, and web development.");
-    }
-    
-    function showContact() {
-      alert("Contact Geva Kipper:\n\nGitHub: github.com/gevak\nLinkedIn: linkedin.com/in/gevakip\nFacebook: facebook.com/geva.kipper");
-    }
-    
-    function listProjects() {
-      alert("Projects by Geva Kipper:\n\n1. GlglStats: Sound repetitiveness analysis\n2. Ahuzat Dibuk: Urban parking analysis\n3. 2D Part Orienting: Computational geometry\n4. Portfolio Website: This debug-driven portfolio");
-    }
-    
-    function fixAllBugs() {
-      const bugs = document.querySelectorAll('.bug');
-      
-      if (bugs.length > 0) {
-        // Fix all bugs with a delay between each
-        let index = 0;
-        
-        function fixNextBug() {
-          if (index < bugs.length) {
-            bugs[index].click();
-            index++;
-            setTimeout(fixNextBug, 1000);
-          }
-        }
-        
-        fixNextBug();
-      }
-    }
-    
-    function showUnknownCommand(command) {
-      const debugStatus = document.getElementById('debug-status');
-      const originalText = debugStatus.textContent;
-      
-      debugStatus.textContent = `Unknown command: '${command}'. Type 'help' for available commands.`;
-      setTimeout(() => {
-        debugStatus.textContent = originalText;
-      }, 3000);
-    }
-  </script>
+    </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250424",
+          pageId: "20250425",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
