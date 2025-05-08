@@ -1,1020 +1,1270 @@
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Geva Kipper - Digital Subway Portfolio</title>
-  <style>
-    :root {
-      --red-line: #e74c3c;
-      --blue-line: #3498db;
-      --green-line: #2ecc71;
-      --yellow-line: #f1c40f;
-      --gray-line: #95a5a6;
-      --background: #f8f9fa;
-      --text-dark: #2c3e50;
-      --text-light: #ecf0f1;
-      --station-color: #fff;
-      --station-border: #333;
-      --interchange-color: #fff;
-      --modal-background: #f8f9fa;
-      --header-height: 120px;
-    }
-
-    @font-face {
-      font-family: 'TransitFont';
-      src: url('https://fonts.googleapis.com/css2?family=Barlow:wght@500;700&display=swap');
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Barlow', 'Helvetica Neue', Arial, sans-serif;
-      background-color: var(--background);
-      color: var(--text-dark);
-      overflow-x: hidden;
-    }
-
-    header {
-      background-color: var(--text-dark);
-      color: var(--text-light);
-      padding: 1.5rem;
-      position: fixed;
-      width: 100%;
-      top: 0;
-      z-index: 100;
-      height: var(--header-height);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .header-content {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .header-title {
-      font-family: 'TransitFont', 'Barlow', sans-serif;
-      font-size: 2.5rem;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
-
-    .header-subtitle {
-      font-size: 1rem;
-      font-weight: 400;
-      opacity: 0.9;
-    }
-
-    .ticker-display {
-      font-family: monospace;
-      background-color: #000;
-      color: #f8f9fa;
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      width: fit-content;
-      margin-top: 0.5rem;
-      animation: blink 2s infinite;
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
-
-    .nav-controls {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 1rem;
-    }
-
-    .line-button {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 50px;
-      font-weight: 600;
-      color: white;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .line-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-
-    .line-button.red { background-color: var(--red-line); }
-    .line-button.blue { background-color: var(--blue-line); }
-    .line-button.green { background-color: var(--green-line); }
-    .line-button.yellow { background-color: var(--yellow-line); color: #333; }
-    .line-button.gray { background-color: var(--gray-line); }
-    .line-button.all { background-color: #333; }
-
-    main {
-      margin-top: calc(var(--header-height) + 20px);
-      padding: 1rem;
-      position: relative;
-    }
-
-    .map-container {
-      position: relative;
-      width: 100%;
-      height: 80vh;
-      overflow: hidden;
-      background-color: #f0f0f0;
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-
-    .subway-map {
-      position: absolute;
-      width: 2000px;
-      height: 1500px;
-      transform-origin: center;
-      transition: transform 0.3s ease;
-    }
-
-    .map-controls {
-      position: absolute;
-      bottom: 20px;
-      right: 20px;
-      display: flex;
-      gap: 0.5rem;
-      z-index: 10;
-    }
-
-    .zoom-control {
-      width: 36px;
-      height: 36px;
-      background-color: white;
-      border: 1px solid #ddd;
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 1.2rem;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .line {
-      position: absolute;
-      height: 8px;
-      border-radius: 4px;
-    }
-
-    .line.red { background-color: var(--red-line); }
-    .line.blue { background-color: var(--blue-line); }
-    .line.green { background-color: var(--green-line); }
-    .line.yellow { background-color: var(--yellow-line); }
-    .line.gray { background-color: var(--gray-line); }
-
-    .station {
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      background-color: var(--station-color);
-      border: 3px solid var(--station-border);
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      cursor: pointer;
-      z-index: 5;
-      transition: all 0.3s ease;
-    }
-
-    .station:hover, .station.highlighted {
-      transform: translate(-50%, -50%) scale(1.3);
-      box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
-      z-index: 6;
-    }
-
-    .station.interchange {
-      width: 26px;
-      height: 26px;
-      background-color: var(--interchange-color);
-      border: 4px solid var(--station-border);
-    }
-
-    .station-label {
-      position: absolute;
-      white-space: nowrap;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 3px 6px;
-      background-color: rgba(255, 255, 255, 0.9);
-      border-radius: 3px;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      z-index: 4;
-    }
-
-    .station:hover + .station-label, .station.highlighted + .station-label {
-      opacity: 1;
-      z-index: 7;
-    }
-
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0, 0, 0, 0.7);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 200;
-      opacity: 0;
-      visibility: hidden;
-      transition: all 0.3s ease;
-    }
-
-    .modal-overlay.active {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    .project-modal {
-      width: 90%;
-      max-width: 600px;
-      background-color: var(--modal-background);
-      border-radius: 8px;
-      padding: 2rem;
-      position: relative;
-      transform: translateY(-20px);
-      transition: all 0.3s ease;
-      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-    }
-
-    .modal-overlay.active .project-modal {
-      transform: translateY(0);
-    }
-
-    .modal-header {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid #ddd;
-    }
-
-    .modal-icon {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 1.5rem;
-      color: white;
-    }
-
-    .modal-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
-
-    .modal-subtitle {
-      font-size: 0.9rem;
-      color: #666;
-    }
-
-    .modal-content {
-      margin-bottom: 1.5rem;
-    }
-
-    .modal-links {
-      display: flex;
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-
-    .modal-link {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background-color: var(--text-dark);
-      color: var(--text-light);
-      text-decoration: none;
-      border-radius: 4px;
-      transition: all 0.2s ease;
-    }
-
-    .modal-link:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-
-    .close-modal {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      font-size: 1.5rem;
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: #666;
-    }
-
-    .close-modal:hover {
-      color: #333;
-    }
-
-    .terminal-text {
-      background-color: #282a36;
-      color: #f8f8f2;
-      font-family: 'Courier New', monospace;
-      padding: 1rem;
-      border-radius: 4px;
-      margin: 1rem 0;
-    }
-
-    .media-coverage {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-top: 1rem;
-    }
-
-    .media-link {
-      display: flex;
-      align-items: center;
-      padding: 0.25rem 0.5rem;
-      background-color: #eee;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      text-decoration: none;
-      color: var(--text-dark);
-    }
-
-    .media-link:hover {
-      background-color: #ddd;
-    }
-
-    footer {
-      background-color: var(--text-dark);
-      color: var(--text-light);
-      padding: 1.5rem;
-      text-align: center;
-      margin-top: 2rem;
-      border-top: 4px solid #333;
-    }
-
-    .footer-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .transit-clock {
-      font-family: 'Courier New', monospace;
-      font-size: 1.2rem;
-      letter-spacing: 1px;
-      cursor: pointer;
-      background-color: #000;
-      padding: 0.5rem;
-      border-radius: 4px;
-    }
-
-    .service-announcement {
-      background-color: #f39c12;
-      color: black;
-      padding: 1rem;
-      margin-top: 1rem;
-      border-radius: 4px;
-      display: none;
-    }
-
-    .service-announcement.active {
-      display: block;
-      animation: slideDown 0.3s forwards;
-    }
-
-    @keyframes slideDown {
-      from { transform: translateY(-10px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-
-    /* Responsive styles */
-    @media (max-width: 768px) {
-      .header-title {
-        font-size: 1.8rem;
-      }
-      
-      .header-subtitle {
-        font-size: 0.9rem;
-      }
-      
-      .subway-map {
-        transform-origin: top left;
-      }
-      
-      .nav-controls {
-        flex-wrap: wrap;
-      }
-      
-      .modal-links {
-        flex-direction: column;
-      }
-      
-      .footer-content {
-        flex-direction: column;
-        gap: 1rem;
-      }
-
-      .map-container {
-        height: 60vh;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .header-title {
-        font-size: 1.5rem;
-      }
-      
-      .subway-map {
-        width: 100%;
-        height: auto;
-      }
-      
-      .line-button {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.8rem;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper | AI Portfolio</title>
+    <style>
+        :root {
+            --electric-blue: #00DBFF;
+            --soft-purple: #B490FF;
+            --mint-green: #84FFB5;
+            --dark-bg: #0f0f12;
+            --bubble-bg: #1a1a20;
+            --text-color: #f0f0f0;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        @font-face {
+            font-family: 'JetBrains Mono';
+            src: url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+            font-family: 'JetBrains Mono', 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+        
+        #particles-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.4;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Terminal Intro */
+        #terminal-intro {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        #terminal-text {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--electric-blue);
+            font-size: 2rem;
+            position: relative;
+        }
+        
+        #terminal-text::after {
+            content: "|";
+            position: absolute;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        
+        /* Header Styles */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+        
+        .header-left {
+            flex: 3;
+        }
+        
+        .header-right {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, var(--electric-blue), var(--soft-purple));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 800;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #b4b4b4;
+            margin-bottom: 1rem;
+            font-weight: 300;
+        }
+        
+        .typing-animation {
+            display: inline-block;
+            position: relative;
+            color: var(--mint-green);
+            margin-top: 0.5rem;
+        }
+        
+        .calendar-icon {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .ai-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--soft-purple), var(--electric-blue));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px rgba(180, 144, 255, 0.5);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .ai-avatar:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(180, 144, 255, 0.7);
+        }
+        
+        .ai-face {
+            font-size: 2.5rem;
+            text-align: center;
+        }
+        
+        /* Conversation Interface */
+        .conversation {
+            margin: 2rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .ai-message {
+            align-self: flex-start;
+            max-width: 85%;
+            background-color: var(--bubble-bg);
+            padding: 1rem;
+            border-radius: 1rem 1rem 1rem 0;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            position: relative;
+            transition: all 0.3s ease;
+            border-left: 3px solid var(--electric-blue);
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .project-bubble {
+            align-self: flex-end;
+            max-width: 85%;
+            background-color: var(--bubble-bg);
+            padding: 1.5rem;
+            border-radius: 1rem 1rem 0 1rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-right: 3px solid var(--soft-purple);
+            margin-left: auto;
+        }
+        
+        .project-bubble.expanded {
+            max-width: 90%;
+            min-height: 220px;
+        }
+        
+        .project-bubble h3 {
+            font-size: 1.4rem;
+            color: var(--mint-green);
+            margin-bottom: 0.75rem;
+        }
+        
+        .project-bubble p {
+            margin-bottom: 1rem;
+            max-height: 0;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.4s ease;
+            overflow: hidden;
+        }
+        
+        .project-bubble.expanded p {
+            max-height: 1000px;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .project-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+            max-height: 0;
+            opacity: 0;
+            transition: all 0.5s ease;
+            overflow: hidden;
+        }
+        
+        .project-bubble.expanded .project-links {
+            max-height: 100px;
+            opacity: 1;
+        }
+        
+        .project-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background-color: rgba(0, 219, 255, 0.15);
+            border-radius: 0.5rem;
+            color: var(--electric-blue);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .project-link:hover {
+            background-color: rgba(0, 219, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 219, 255, 0.2);
+        }
+        
+        .terminal-btn {
+            background-color: rgba(84, 255, 181, 0.15);
+            color: var(--mint-green);
+            font-family: 'JetBrains Mono', monospace;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .terminal-btn:hover {
+            background-color: rgba(84, 255, 181, 0.25);
+            transform: translateY(-2px);
+        }
+        
+        /* Project-specific styles */
+        #glglstats-bubble {
+            background: linear-gradient(rgba(26, 26, 32, 0.95), rgba(26, 26, 32, 0.95)), 
+                        url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMDAgMTAwIj48cGF0aCBkPSJNMCw1MCBRMjUsNzAgNTAsNTAgVDEwMCw1MCBUMTUwLDMwIFQyMDAsNDAgVDI1MCw2MCBUMzAwLDUwIiBmaWxsPSJub25lIiBzdHJva2U9IiMwMERCRkYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLW9wYWNpdHk9IjAuMyIvPjwvc3ZnPg==');
+            background-size: cover;
+            border-right-color: var(--electric-blue);
+        }
+        
+        .audio-visualizer {
+            height: 80px;
+            width: 100%;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-height: 0;
+            opacity: 0;
+            transition: all 0.5s ease;
+            overflow: hidden;
+        }
+        
+        #glglstats-bubble.expanded .audio-visualizer {
+            max-height: 80px;
+            opacity: 1;
+        }
+        
+        .audio-bar {
+            width: 4px;
+            background-color: var(--electric-blue);
+            border-radius: 2px;
+            transition: height 0.2s ease;
+            opacity: 0.7;
+        }
+        
+        #ahuzat-bubble {
+            background: linear-gradient(rgba(26, 26, 32, 0.9), rgba(26, 26, 32, 0.9)), 
+                        linear-gradient(135deg, rgba(0, 50, 150, 0.2), rgba(150, 0, 0, 0.2));
+            border-right-color: #ff7e5f;
+        }
+        
+        .parking-visualization {
+            height: 100px;
+            margin: 1rem 0;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-gap: 5px;
+            max-height: 0;
+            opacity: 0;
+            transition: all 0.5s ease;
+            overflow: hidden;
+        }
+        
+        #ahuzat-bubble.expanded .parking-visualization {
+            max-height: 100px;
+            opacity: 1;
+        }
+        
+        .parking-spot {
+            height: 15px;
+            background-color: #333;
+            border-radius: 3px;
+            transition: background-color 0.5s ease;
+        }
+        
+        .parking-spot.filled {
+            background-color: #ff7e5f;
+        }
+        
+        #part-orienting-bubble {
+            background-color: var(--bubble-bg);
+            border-right-color: var(--mint-green);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .rotating-polygon {
+            width: 100px;
+            height: 100px;
+            margin: 1rem auto;
+            position: relative;
+            max-height: 0;
+            opacity: 0;
+            transition: all 0.5s ease;
+            overflow: hidden;
+        }
+        
+        #part-orienting-bubble.expanded .rotating-polygon {
+            max-height: 100px;
+            opacity: 1;
+        }
+        
+        .polygon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            animation: rotate 15s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        .code-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.1;
+            font-size: 8px;
+            color: var(--mint-green);
+            overflow: hidden;
+            pointer-events: none;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.2;
+            z-index: 0;
+        }
+        
+        #portfolio-bubble {
+            background-color: var(--bubble-bg);
+            border-right-color: var(--soft-purple);
+            position: relative;
+        }
+        
+        .recursive-view {
+            width: 100%;
+            height: 120px;
+            margin: 1rem 0;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            border: 1px solid var(--soft-purple);
+            position: relative;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+        
+        #portfolio-bubble.expanded .recursive-view {
+            max-height: 120px;
+            opacity: 1;
+        }
+        
+        .recursive-header {
+            height: 20%;
+            background-color: rgba(180, 144, 255, 0.2);
+            border-bottom: 1px solid var(--soft-purple);
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            font-size: 8px;
+        }
+        
+        .recursive-content {
+            height: 80%;
+            padding: 10px;
+            font-size: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .recursive-bubble {
+            width: 80%;
+            height: 10px;
+            background-color: rgba(180, 144, 255, 0.2);
+            border-radius: 3px;
+        }
+        
+        .mirror-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background-color: rgba(180, 144, 255, 0.15);
+            border-radius: 0.5rem;
+            color: var(--soft-purple);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .mirror-link:hover {
+            background-color: rgba(180, 144, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(180, 144, 255, 0.2);
+        }
+        
+        .mirror-link:hover::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: mirror-sweep 1.5s linear;
+        }
+        
+        @keyframes mirror-sweep {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        #social-bubble {
+            background-color: var(--bubble-bg);
+            border-right-color: var(--mint-green);
+        }
+        
+        .social-constellation {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 2rem 0;
+            position: relative;
+            max-height: 0;
+            opacity: 0;
+            transition: all 0.5s ease;
+            overflow: hidden;
+        }
+        
+        #social-bubble.expanded .social-constellation {
+            max-height: 100px;
+            opacity: 1;
+        }
+        
+        .constellation-line {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.1);
+            height: 1px;
+            z-index: 0;
+        }
+        
+        .social-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            background-color: rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            color: var(--text-color);
+            text-decoration: none;
+        }
+        
+        .github-icon {
+            border: 2px solid var(--electric-blue);
+        }
+        
+        .linkedin-icon {
+            border: 2px solid var(--soft-purple);
+        }
+        
+        .facebook-icon {
+            border: 2px solid var(--mint-green);
+        }
+        
+        .social-icon:hover {
+            transform: scale(1.1);
+        }
+        
+        .github-icon:hover {
+            box-shadow: 0 0 15px rgba(0, 219, 255, 0.5);
+            color: var(--electric-blue);
+        }
+        
+        .linkedin-icon:hover {
+            box-shadow: 0 0 15px rgba(180, 144, 255, 0.5);
+            color: var(--soft-purple);
+        }
+        
+        .facebook-icon:hover {
+            box-shadow: 0 0 15px rgba(84, 255, 181, 0.5);
+            color: var(--mint-green);
+        }
+        
+        /* Footer Styles */
+        footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #777;
+        }
+        
+        .ai-credit {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .stopwatch {
+            font-family: 'JetBrains Mono', monospace;
+            padding: 0.5rem 1rem;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            color: var(--electric-blue);
+            text-shadow: 0 0 5px rgba(0, 219, 255, 0.5);
+        }
+        
+        .reboot-btn {
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #777;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+        
+        .reboot-btn:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-color);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Responsive Styles */
+        @media screen and (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .ai-avatar {
+                width: 60px;
+                height: 60px;
+                font-size: 1.8rem;
+            }
+            
+            .project-bubble, .ai-message {
+                max-width: 92%;
+            }
+            
+            .project-bubble.expanded {
+                max-width: 100%;
+            }
+            
+            .project-links {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .social-constellation {
+                gap: 1rem;
+            }
+            
+            .social-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1.5rem;
+            }
+            
+            footer {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+        }
+        
+        /* Keyboard shortcuts indicator */
+        .keyboard-shortcut {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            text-align: center;
+            line-height: 24px;
+            margin-left: 8px;
+            font-size: 0.8rem;
+            color: var(--text-color);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <div class="header-content">
-      <h1 class="header-title">GEVA KIPPER</h1>
-      <p class="header-subtitle">Senior Software Engineer at Google, focusing on cloud infrastructure and reliability systems</p>
-      <div class="ticker-display" id="ticker">This portfolio is redesigned daily by AI and is ever-changing - today's design generated on <span id="current-date"></span></div>
+    <div id="terminal-intro">
+        <div id="terminal-text"></div>
     </div>
-    <div class="nav-controls">
-      <button class="line-button all" data-line="all">All Lines</button>
-      <button class="line-button red" data-line="red">Programming Projects</button>
-      <button class="line-button blue" data-line="blue">Data Science</button>
-      <button class="line-button green" data-line="green">Computational Geometry</button>
-      <button class="line-button yellow" data-line="yellow">Web Development</button>
-      <button class="line-button gray" data-line="gray">Professional Experience</button>
-    </div>
-  </header>
-
-  <main>
-    <div class="map-container">
-      <div class="subway-map" id="subway-map">
-        <!-- Lines will be dynamically generated -->
-        <!-- Stations will be dynamically generated -->
-      </div>
-      <div class="map-controls">
-        <div class="zoom-control" id="zoom-in">+</div>
-        <div class="zoom-control" id="zoom-out">−</div>
-        <div class="zoom-control" id="zoom-reset">⟲</div>
-      </div>
-    </div>
-  </main>
-
-  <!-- Modals -->
-  <div class="modal-overlay" id="glglstats-modal">
-    <div class="project-modal">
-      <div class="modal-header">
-        <div class="modal-icon" style="background-color: var(--red-line);">
-          <i>🎵</i>
-        </div>
-        <div>
-          <h2 class="modal-title">GlglStats Station</h2>
-          <p class="modal-subtitle">Music Data Visualization & Analysis</p>
-        </div>
-      </div>
-      <button class="close-modal">&times;</button>
-      <div class="modal-content">
-        <p>A comprehensive digital platform for analyzing and visualizing music statistics. This project combines data science with interactive web interfaces to provide insights into music consumption patterns.</p>
-        <div class="terminal-text">
-          $ ./analyze_music_data.py<br>
-          > Loading datasets...<br>
-          > Processing 10,493 tracks<br>
-          > Generating insights...<br>
-          > Visualization complete!
-        </div>
-        <div class="modal-links">
-          <a href="https://glglstats.onrender.com/" class="modal-link" target="_blank">
-            <span>↗</span> Live Demo
-          </a>
-          <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" class="modal-link" target="_blank">
-            <span>🎬</span> Conference Talk
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="ahuzat-modal">
-    <div class="project-modal">
-      <div class="modal-header">
-        <div class="modal-icon" style="background-color: var(--blue-line);">
-          <i>🅿️</i>
-        </div>
-        <div>
-          <h2 class="modal-title">Ahuzat Dibuk Station</h2>
-          <p class="modal-subtitle">Urban Parking Analysis & Visualization</p>
-        </div>
-      </div>
-      <button class="close-modal">&times;</button>
-      <div class="modal-content">
-        <p>An innovative solution for urban parking problems, using data visualization and heatmaps to identify optimal parking locations in dense urban environments. The project received significant media coverage for its practical applications.</p>
-        <img src="https://via.placeholder.com/500x250?text=Parking+Heatmap+Visualization" alt="Parking Heatmap" style="width: 100%; border-radius: 4px; margin: 1rem 0;">
-        <p>Media Coverage:</p>
-        <div class="media-coverage">
-          <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" class="media-link" target="_blank">13TV News</a>
-          <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" class="media-link" target="_blank">Mako Nexter</a>
-          <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" class="media-link" target="_blank">Secret Tel Aviv</a>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="orienting-modal">
-    <div class="project-modal">
-      <div class="modal-header">
-        <div class="modal-icon" style="background-color: var(--green-line);">
-          <i>📐</i>
-        </div>
-        <div>
-          <h2 class="modal-title">2D Part Orienting Station</h2>
-          <p class="modal-subtitle">Computational Geometry Research</p>
-        </div>
-      </div>
-      <button class="close-modal">&times;</button>
-      <div class="modal-content">
-        <p>An advanced computational geometry algorithm that solves the problem of orienting parts in two dimensions. This research project developed efficient solutions for robotics and manufacturing applications.</p>
-        <div style="display: flex; justify-content: center;">
-          <div style="width: 300px; height: 150px; background-color: #eee; display: flex; justify-content: center; align-items: center; margin: 1rem 0; border-radius: 4px;">
-            <div style="width: 80px; height: 80px; background-color: var(--green-line); transform: rotate(30deg);"></div>
-            <span style="margin-left: 10px; font-size: 24px;">→</span>
-            <div style="width: 80px; height: 80px; background-color: var(--green-line); margin-left: 10px;"></div>
-          </div>
-        </div>
-        <div class="terminal-text">
-          struct Part {<br>
-          &nbsp;&nbsp;std::vector&lt;Point_2&gt; vertices;<br>
-          &nbsp;&nbsp;bool is_oriented() const;<br>
-          };<br><br>
-          // Find optimal orientation sequence<br>
-          Sequence find_orientation(const Part& p);
-        </div>
-        <div class="modal-links">
-          <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" class="modal-link" target="_blank">
-            <span>🎫</span> Project Details & Code
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="portfolio-modal">
-    <div class="project-modal">
-      <div class="modal-header">
-        <div class="modal-icon" style="background-color: var(--yellow-line); color: #333;">
-          <i>🗺️</i>
-        </div>
-        <div>
-          <h2 class="modal-title">Portfolio Website Station</h2>
-          <p class="modal-subtitle">Self-Referential Web Design</p>
-        </div>
-      </div>
-      <button class="close-modal">&times;</button>
-      <div class="modal-content">
-        <p>The very website you're exploring! A meta-project that showcases web development skills through a unique transit map interface. This design is regenerated daily using artificial intelligence.</p>
-        <div style="background-color: #f5f5f5; padding: 1rem; border-radius: 4px; margin: 1rem 0; text-align: center;">
-          <strong>🚩 YOU ARE HERE 🚩</strong>
-          <p style="margin-top: 0.5rem; font-size: 0.9rem;">This self-referential station represents the portfolio itself</p>
-        </div>
-        <div class="modal-links">
-          <a href="https://portfolio-dor1.onrender.com/" class="modal-link" target="_blank">
-            <span>🔄</span> Return to Current Location
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="social-modal">
-    <div class="project-modal">
-      <div class="modal-header">
-        <div class="modal-icon" style="background: linear-gradient(45deg, var(--red-line), var(--blue-line), var(--green-line), var(--yellow-line));">
-          <i>🔗</i>
-        </div>
-        <div>
-          <h2 class="modal-title">Social Connection Hub</h2>
-          <p class="modal-subtitle">Central Interchange Station</p>
-        </div>
-      </div>
-      <button class="close-modal">&times;</button>
-      <div class="modal-content">
-        <p>This central hub connects to all of Geva's professional and social platforms. Follow different exits to explore various profiles and connections.</p>
-        <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
-          <div style="display: flex; align-items: center;">
-            <div style="width: 40px; height: 40px; background-color: #333; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white;">
-              <span>A1</span>
-            </div>
-            <div style="margin-left: 1rem;">
-              <h3 style="font-size: 1.1rem;">GitHub Exit</h3>
-              <p style="font-size: 0.9rem; color: #666;">Code repositories and open-source contributions</p>
-            </div>
-            <a href="https://github.com/gevak" style="margin-left: auto; background-color: #333; color: white; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none;" target="_blank">Exit →</a>
-          </div>
-          
-          <div style="display: flex; align-items: center;">
-            <div style="width: 40px; height: 40px; background-color: #0077b5; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white;">
-              <span>B2</span>
-            </div>
-            <div style="margin-left: 1rem;">
-              <h3 style="font-size: 1.1rem;">LinkedIn Exit</h3>
-              <p style="font-size: 0.9rem; color: #666;">Professional profile and work history</p>
-            </div>
-            <a href="https://linkedin.com/in/gevakip" style="margin-left: auto; background-color: #0077b5; color: white; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none;" target="_blank">Exit →</a>
-          </div>
-          
-          <div style="display: flex; align-items: center;">
-            <div style="width: 40px; height: 40px; background-color: #1877f2; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white;">
-              <span>C3</span>
-            </div>
-            <div style="margin-left: 1rem;">
-              <h3 style="font-size: 1.1rem;">Facebook Exit</h3>
-              <p style="font-size: 0.9rem; color: #666;">Social profile and personal updates</p>
-            </div>
-            <a href="https://facebook.com/geva.kipper" style="margin-left: auto; background-color: #1877f2; color: white; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none;" target="_blank">Exit →</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <footer>
-    <div class="footer-content">
-      <div>
-        <p>Designed by AI Assistant</p>
-      </div>
-      <div class="transit-clock" id="transit-clock">00:00:00</div>
-    </div>
-    <div class="service-announcement" id="service-announcement">
-      <p><strong>Service Announcement:</strong> Did you know? Geva can solve a Rubik's cube in under 2 minutes while explaining how distributed systems work!</p>
-    </div>
-  </footer>
-
-  <script>
-    // Current date for ticker
-    document.getElementById('current-date').textContent = new Date().toLocaleDateString();
     
-    // Transit clock countdown since May 7, 2025
-    const targetDate = new Date('May 7, 2025 01:06:07').getTime();
+    <div id="particles-container"></div>
     
-    function updateClock() {
-      const now = new Date().getTime();
-      const timeElapsed = Math.max(0, now - targetDate);
-      
-      const hours = Math.floor(timeElapsed / (1000 * 60 * 60));
-      const minutes = Math.floor((timeElapsed % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((timeElapsed % (1000 * 60)) / 1000);
-      
-      const formattedHours = hours.toString().padStart(2, '0');
-      const formattedMinutes = minutes.toString().padStart(2, '0');
-      const formattedSeconds = seconds.toString().padStart(2, '0');
-      
-      document.getElementById('transit-clock').textContent = 
-        `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
-    }
-    
-    // Update clock every second
-    setInterval(updateClock, 1000);
-    updateClock(); // Initial call
-    
-    // Clock easter egg
-    document.getElementById('transit-clock').addEventListener('click', function() {
-      const announcement = document.getElementById('service-announcement');
-      announcement.classList.toggle('active');
-      setTimeout(() => {
-        announcement.classList.remove('active');
-      }, 8000);
-    });
-    
-    // Map data
-    const lines = [
-      {
-        id: 'red-line',
-        color: 'red',
-        path: [
-          { x: 300, y: 200 },
-          { x: 400, y: 200 },
-          { x: 550, y: 250 },
-          { x: 700, y: 300 },
-          { x: 850, y: 300 },
-          { x: 1000, y: 250 }
-        ]
-      },
-      {
-        id: 'blue-line',
-        color: 'blue',
-        path: [
-          { x: 200, y: 400 },
-          { x: 300, y: 350 },
-          { x: 550, y: 250 },
-          { x: 800, y: 200 }
-        ]
-      },
-      {
-        id: 'green-line',
-        color: 'green',
-        path: [
-          { x: 300, y: 600 },
-          { x: 400, y: 500 },
-          { x: 550, y: 450 },
-          { x: 700, y: 500 },
-          { x: 900, y: 600 }
-        ]
-      },
-      {
-        id: 'yellow-line',
-        color: 'yellow',
-        path: [
-          { x: 100, y: 500 },
-          { x: 250, y: 500 },
-          { x: 400, y: 500 },
-          { x: 550, y: 450 },
-          { x: 600, y: 400 },
-          { x: 700, y: 300 }
-        ]
-      },
-      {
-        id: 'gray-line',
-        color: 'gray',
-        path: [
-          { x: 400, y: 700 },
-          { x: 500, y: 600 },
-          { x: 550, y: 450 },
-          { x: 600, y: 350 },
-          { x: 700, y: 300 }
-        ]
-      }
-    ];
-    
-    const stations = [
-      {
-        id: 'glglstats-station',
-        name: 'GlglStats',
-        x: 700,
-        y: 300,
-        lines: ['red', 'yellow', 'gray'], // Intersection of these lines
-        modalId: 'glglstats-modal'
-      },
-      {
-        id: 'ahuzat-station',
-        name: 'Ahuzat Dibuk',
-        x: 550,
-        y: 250,
-        lines: ['red', 'blue'],
-        modalId: 'ahuzat-modal'
-      },
-      {
-        id: 'orienting-station',
-        name: '2D Part Orienting',
-        x: 550,
-        y: 450,
-        lines: ['green', 'yellow', 'gray'],
-        modalId: 'orienting-modal'
-      },
-      {
-        id: 'portfolio-station',
-        name: 'Portfolio Website',
-        x: 400,
-        y: 500,
-        lines: ['yellow', 'green'],
-        modalId: 'portfolio-modal'
-      },
-      {
-        id: 'social-station',
-        name: 'Social Connection Hub',
-        x: 550,
-        y: 350,
-        lines: ['red', 'blue', 'green', 'yellow', 'gray'],
-        modalId: 'social-modal'
-      }
-    ];
-
-    // Render the subway map
-    function renderSubwayMap() {
-      const mapContainer = document.getElementById('subway-map');
-      mapContainer.innerHTML = ''; // Clear map
-      
-      // Render lines
-      lines.forEach(line => {
-        for (let i = 0; i < line.path.length - 1; i++) {
-          const start = line.path[i];
-          const end = line.path[i + 1];
-          
-          const length = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
-          const angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI;
-          
-          const lineElement = document.createElement('div');
-          lineElement.className = `line ${line.color}`;
-          lineElement.style.width = `${length}px`;
-          lineElement.style.left = `${start.x}px`;
-          lineElement.style.top = `${start.y}px`;
-          lineElement.style.transform = `rotate(${angle}deg)`;
-          lineElement.style.transformOrigin = '0 4px';
-          lineElement.dataset.line = line.color;
-          
-          mapContainer.appendChild(lineElement);
-        }
-      });
-      
-      // Render stations
-      stations.forEach(station => {
-        const stationElement = document.createElement('div');
-        stationElement.id = station.id;
-        stationElement.className = `station ${station.lines.length > 1 ? 'interchange' : ''}`;
-        stationElement.style.left = `${station.x}px`;
-        stationElement.style.top = `${station.y}px`;
-        stationElement.dataset.lines = station.lines.join(',');
-        stationElement.dataset.modalId = station.modalId;
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <h1>Geva Kipper</h1>
+                <div class="subtitle">Software Engineer at Google</div>
+                <div class="typing-animation" id="typing-text"></div>
+                <div class="calendar-icon" id="current-date">
+                    <span>📅 </span><span id="date-text"></span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="ai-avatar" id="ai-avatar">
+                    <div class="ai-face">👾</div>
+                </div>
+            </div>
+        </header>
         
-        // Add station border colors for interchanges
-        if (station.lines.length > 1) {
-          stationElement.style.borderColor = '#333';
+        <main>
+            <div class="conversation" id="conversation">
+                <div class="ai-message">
+                    Hello! I'm Geva's Portfolio AI. I'd be happy to guide you through his projects. Click on any project to learn more, or press the keyboard number (1-5) to navigate.
+                </div>
+                
+                <!-- GlglStats Project -->
+                <div class="ai-message">
+                    Would you like to learn about GlglStats? A data visualization for sound engineering students.
+                </div>
+                
+                <div class="project-bubble" id="glglstats-bubble" data-shortcut="1">
+                    <h3>GlglStats <span class="keyboard-shortcut">1</span></h3>
+                    <p>
+                        GlglStats is a web-based data visualization tool designed for sound engineering students. It helps analyze audio patterns in an intuitive interface with interactive visualizations, making complex data accessible.
+                    </p>
+                    <div class="audio-visualizer" id="audio-visualizer">
+                        <!-- Audio bars will be inserted here by JavaScript -->
+                    </div>
+                    <div class="project-links">
+                        <a href="https://glglstats.onrender.com/" target="_blank" class="project-link">
+                            🔗 Visit Website
+                        </a>
+                        <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="project-link">
+                            📹 Watch Presentation
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Ahuzat Dibuk Project -->
+                <div class="ai-message">
+                    Have you heard about "Ahuzat Dibuk"? It's a fascinating parking management innovation.
+                </div>
+                
+                <div class="project-bubble" id="ahuzat-bubble" data-shortcut="2">
+                    <h3>Ahuzat Dibuk <span class="keyboard-shortcut">2</span></h3>
+                    <p>
+                        An innovative parking management system for residential areas in Tel Aviv. The project addresses urban parking challenges with data-driven solutions, garnering significant media attention.
+                    </p>
+                    <div class="parking-visualization" id="parking-visualization">
+                        <!-- Parking spots will be generated by JavaScript -->
+                    </div>
+                    <div class="project-links">
+                        <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="project-link">
+                            📝 Publication Post
+                        </a>
+                        <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="project-link">
+                            📰 Media Mention 1
+                        </a>
+                        <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="project-link">
+                            📰 Media Mention 2
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- 2D Part Orienting Project -->
+                <div class="ai-message">
+                    The 2D Part Orienting project shows Geva's expertise in robotics and algorithms.
+                </div>
+                
+                <div class="project-bubble" id="part-orienting-bubble" data-shortcut="3">
+                    <h3>2D Part Orienting <span class="keyboard-shortcut">3</span></h3>
+                    <p>
+                        A computational geometry project focused on robotic manipulation algorithms. This research explored efficient algorithms for orienting 2D parts using C++ implementation of geometric algorithms.
+                    </p>
+                    <div class="rotating-polygon">
+                        <svg class="polygon" viewBox="0 0 100 100">
+                            <polygon points="50,5 95,35 95,75 50,95 5,75 5,35" fill="none" stroke="var(--mint-green)" stroke-width="2"></polygon>
+                        </svg>
+                    </div>
+                    <div class="code-background" id="code-background"></div>
+                    <div class="project-links">
+                        <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="terminal-btn">
+                            $ ./view_project_info
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Portfolio Website Project -->
+                <div class="ai-message">
+                    Meta-moment: This very portfolio website was also designed by Geva!
+                </div>
+                
+                <div class="project-bubble" id="portfolio-bubble" data-shortcut="4">
+                    <h3>Portfolio Website <span class="keyboard-shortcut">4</span></h3>
+                    <p>
+                        You're looking at it right now! This conversational AI-themed portfolio website showcases Geva's projects through an interactive messaging interface. It features modern web technologies and thoughtful UX design.
+                    </p>
+                    <div class="recursive-view">
+                        <div class="recursive-header">
+                            Geva Kipper Portfolio
+                        </div>
+                        <div class="recursive-content">
+                            <div class="recursive-bubble" style="width: 60%"></div>
+                            <div class="recursive-bubble" style="width: 70%"></div>
+                            <div class="recursive-bubble" style="width: 50%"></div>
+                            <div class="recursive-bubble" style="width: 80%"></div>
+                        </div>
+                    </div>
+                    <div class="project-links">
+                        <a href="https://portfolio-dor1.onrender.com/" target="_blank" class="mirror-link">
+                            🪞 Portfolio Inception
+                        </a>
+                        <span style="font-style: italic; color: #888; font-size: 0.9em;">
+                            Yes, I'm helping show off myself. Very meta.
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Social Links Section -->
+                <div class="ai-message">
+                    Want to connect with Geva? Here are his social media profiles:
+                </div>
+                
+                <div class="project-bubble" id="social-bubble" data-shortcut="5">
+                    <h3>Connect with Geva <span class="keyboard-shortcut">5</span></h3>
+                    <p>
+                        Feel free to reach out to Geva through any of these platforms for professional inquiries, collaboration opportunities, or just to say hello!
+                    </p>
+                    <div class="social-constellation">
+                        <div class="constellation-line" style="width: 100px; transform: rotate(25deg); top: 25px; left: 75px;"></div>
+                        <div class="constellation-line" style="width: 100px; transform: rotate(-25deg); top: 25px; right: 75px;"></div>
+                        
+                        <a href="https://github.com/gevak" target="_blank" class="social-icon github-icon">
+                            <i>🐙</i>
+                        </a>
+                        <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-icon linkedin-icon">
+                            <i>🔗</i>
+                        </a>
+                        <a href="https://facebook.com/geva.kipper" target="_blank" class="social-icon facebook-icon">
+                            <i>📱</i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <div class="ai-credit">// Portfolio AI Assistant v1.0.1</div>
+            <div class="stopwatch" id="stopwatch">00:00:00:00</div>
+            <button class="reboot-btn" id="reboot-btn">⟲ reboot assistant</button>
+        </footer>
+    </div>
+    
+    <script>
+        // Terminal intro animation
+        document.addEventListener('DOMContentLoaded', () => {
+            const terminalText = document.getElementById('terminal-text');
+            const introText = "Hello, I'm Geva's Portfolio AI";
+            let i = 0;
+            
+            const typeIntro = () => {
+                if (i < introText.length) {
+                    terminalText.textContent += introText.charAt(i);
+                    i++;
+                    setTimeout(typeIntro, Math.random() * 50 + 30);
+                } else {
+                    setTimeout(() => {
+                        document.getElementById('terminal-intro').style.opacity = '0';
+                        setTimeout(() => {
+                            document.getElementById('terminal-intro').style.display = 'none';
+                            startPortfolioAnimations();
+                        }, 500);
+                    }, 1000);
+                }
+            };
+            
+            setTimeout(typeIntro, 500);
+        });
+        
+        function startPortfolioAnimations() {
+            // Display current date
+            const dateElement = document.getElementById('date-text');
+            const now = new Date();
+            dateElement.textContent = now.toISOString().split('T')[0];
+            
+            // Subtitle typing animation
+            const typingText = document.getElementById('typing-text');
+            const subtitleText = "Daily redesign of AI-based portfolio experience";
+            let j = 0;
+            
+            const typeSubtitle = () => {
+                if (j < subtitleText.length) {
+                    typingText.textContent += subtitleText.charAt(j);
+                    j++;
+                    setTimeout(typeSubtitle, Math.random() * 40 + 20);
+                }
+            };
+            
+            setTimeout(typeSubtitle, 500);
+            
+            // AI Avatar animations
+            const aiAvatar = document.getElementById('ai-avatar');
+            const aiFace = aiAvatar.querySelector('.ai-face');
+            const expressions = ['👾', '🤖', '👁️', '🧠', '💫'];
+            let expressionIndex = 0;
+            
+            setInterval(() => {
+                expressionIndex = (expressionIndex + 1) % expressions.length;
+                aiFace.style.transform = 'scale(0.8)';
+                aiFace.style.opacity = '0.7';
+                setTimeout(() => {
+                    aiFace.textContent = expressions[expressionIndex];
+                    aiFace.style.transform = 'scale(1)';
+                    aiFace.style.opacity = '1';
+                }, 200);
+            }, 5000);
+            
+            // Project bubble click handlers
+            const projectBubbles = document.querySelectorAll('.project-bubble');
+            projectBubbles.forEach(bubble => {
+                bubble.addEventListener('click', () => {
+                    toggleProjectBubble(bubble.id);
+                });
+            });
+            
+            // Initialize audio visualizer for GlglStats
+            initAudioVisualizer();
+            
+            // Initialize parking visualization
+            initParkingVisualization();
+            
+            // Initialize code background for Part Orienting
+            initCodeBackground();
+            
+            // Initialize stopwatch
+            startStopwatch();
+            
+            // Initialize keyboard shortcuts
+            initKeyboardShortcuts();
+            
+            // Initialize reboot button
+            document.getElementById('reboot-btn').addEventListener('click', rebootAssistant);
+            
+            // Initialize particles
+            initParticles();
         }
         
-        // Add station label
-        const labelElement = document.createElement('div');
-        labelElement.className = 'station-label';
-        labelElement.textContent = station.name;
-        labelElement.style.left = `${station.x + 15}px`;
-        labelElement.style.top = `${station.y - 15}px`;
-        
-        mapContainer.appendChild(stationElement);
-        mapContainer.appendChild(labelElement);
-        
-        // Add click event to open modal
-        stationElement.addEventListener('click', function() {
-          const modalId = this.dataset.modalId;
-          document.getElementById(modalId).classList.add('active');
-        });
-      });
-    }
-    
-    // Initialize map
-    renderSubwayMap();
-    
-    // Map interactions
-    let scale = 1;
-    let translateX = 0;
-    let translateY = 0;
-    let isDragging = false;
-    let startX, startY;
-    const map = document.getElementById('subway-map');
-    
-    // Zoom controls
-    document.getElementById('zoom-in').addEventListener('click', function() {
-      scale = Math.min(scale + 0.2, 2);
-      updateMapTransform();
-    });
-    
-    document.getElementById('zoom-out').addEventListener('click', function() {
-      scale = Math.max(scale - 0.2, 0.5);
-      updateMapTransform();
-    });
-    
-    document.getElementById('zoom-reset').addEventListener('click', function() {
-      scale = 1;
-      translateX = 0;
-      translateY = 0;
-      updateMapTransform();
-    });
-    
-    function updateMapTransform() {
-      map.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
-    }
-    
-    // Map dragging
-    map.addEventListener('mousedown', function(e) {
-      isDragging = true;
-      startX = e.clientX - translateX;
-      startY = e.clientY - translateY;
-      map.style.cursor = 'grabbing';
-    });
-    
-    document.addEventListener('mousemove', function(e) {
-      if (isDragging) {
-        translateX = e.clientX - startX;
-        translateY = e.clientY - startY;
-        updateMapTransform();
-      }
-    });
-    
-    document.addEventListener('mouseup', function() {
-      isDragging = false;
-      map.style.cursor = 'grab';
-    });
-    
-    // Mouse wheel zoom
-    document.querySelector('.map-container').addEventListener('wheel', function(e) {
-      e.preventDefault();
-      if (e.deltaY < 0) {
-        scale = Math.min(scale + 0.05, 2);
-      } else {
-        scale = Math.max(scale - 0.05, 0.5);
-      }
-      updateMapTransform();
-    });
-    
-    // Line toggle buttons
-    document.querySelectorAll('.line-button').forEach(button => {
-      button.addEventListener('click', function() {
-        const line = this.dataset.line;
-        
-        if (line === 'all') {
-          document.querySelectorAll('.line, .station').forEach(el => {
-            el.style.opacity = '1';
-          });
-          return;
+        function toggleProjectBubble(id) {
+            const bubble = document.getElementById(id);
+            
+            // If already expanded, just return
+            if (bubble.classList.contains('expanded')) {
+                return;
+            }
+            
+            // Collapse all other bubbles
+            document.querySelectorAll('.project-bubble').forEach(b => {
+                if (b.id !== id && b.classList.contains('expanded')) {
+                    b.classList.remove('expanded');
+                }
+            });
+            
+            // Expand this bubble
+            bubble.classList.toggle('expanded');
+            
+            // Animate AI typing when project is expanded
+            if (bubble.classList.contains('expanded')) {
+                // Scroll to the bubble
+                setTimeout(() => {
+                    bubble.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+                
+                // Special behaviors for each project
+                switch(id) {
+                    case 'glglstats-bubble':
+                        animateAudioVisualizer();
+                        break;
+                    case 'ahuzat-bubble':
+                        animateParkingVisualization();
+                        break;
+                    case 'part-orienting-bubble':
+                        // Already animated by CSS
+                        break;
+                    case 'portfolio-bubble':
+                        // Already animated by CSS
+                        break;
+                    case 'social-bubble':
+                        // Already animated by CSS
+                        break;
+                }
+            }
         }
         
-        // Dim all lines
-        document.querySelectorAll('.line').forEach(el => {
-          el.style.opacity = '0.2';
-        });
-        
-        // Highlight selected line
-        document.querySelectorAll(`.line.${line}`).forEach(el => {
-          el.style.opacity = '1';
-        });
-        
-        // Dim all stations, then highlight those on the selected line
-        document.querySelectorAll('.station').forEach(el => {
-          el.style.opacity = '0.2';
-          el.classList.remove('highlighted');
-        });
-        
-        document.querySelectorAll('.station').forEach(el => {
-          const stationLines = el.dataset.lines.split(',');
-          if (stationLines.includes(line)) {
-            el.style.opacity = '1';
-            el.classList.add('highlighted');
-          }
-        });
-      });
-    });
-    
-    // Modal controls
-    document.querySelectorAll('.close-modal').forEach(button => {
-      button.addEventListener('click', function() {
-        this.closest('.modal-overlay').classList.remove('active');
-      });
-    });
-    
-    // Close modal when clicking outside
-    document.querySelectorAll('.modal-overlay').forEach(overlay => {
-      overlay.addEventListener('click', function(e) {
-        if (e.target === this) {
-          this.classList.remove('active');
+        function initAudioVisualizer() {
+            const visualizer = document.getElementById('audio-visualizer');
+            // Create 30 bars
+            for (let i = 0; i < 30; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'audio-bar';
+                bar.style.height = `${Math.random() * 40 + 5}px`;
+                visualizer.appendChild(bar);
+            }
         }
-      });
-    });
-    
-    // Make the map initially grabbable
-    map.style.cursor = 'grab';
-    
-    // Handle responsive behavior
-    function handleResponsiveMap() {
-      if (window.innerWidth <= 768) {
-        // Center map on smaller screens
-        translateX = 300;
-        translateY = 0;
-        updateMapTransform();
-      }
-    }
-    
-    // Initial responsive setup
-    handleResponsiveMap();
-    
-    // Update on resize
-    window.addEventListener('resize', handleResponsiveMap);
-  </script>
+        
+        function animateAudioVisualizer() {
+            const bars = document.querySelectorAll('.audio-bar');
+            
+            function randomizeHeights() {
+                bars.forEach(bar => {
+                    const height = Math.random() * 40 + 5;
+                    bar.style.height = `${height}px`;
+                });
+            }
+            
+            // Start animation
+            const interval = setInterval(randomizeHeights, 200);
+            
+            // Store the interval ID in a data attribute
+            document.getElementById('glglstats-bubble').setAttribute('data-interval', interval);
+            
+            // Clear the interval when the bubble is collapsed
+            document.getElementById('glglstats-bubble').addEventListener('transitionend', (e) => {
+                if (!e.target.classList.contains('expanded')) {
+                    clearInterval(interval);
+                }
+            });
+        }
+        
+        function initParkingVisualization() {
+            const visualization = document.getElementById('parking-visualization');
+            // Create 20 parking spots
+            for (let i = 0; i < 20; i++) {
+                const spot = document.createElement('div');
+                spot.className = 'parking-spot';
+                visualization.appendChild(spot);
+            }
+        }
+        
+        function animateParkingVisualization() {
+            const spots = document.querySelectorAll('.parking-spot');
+            let filled = 0;
+            
+            function updateParkingState() {
+                if (filled < spots.length) {
+                    spots[filled].classList.add('filled');
+                    filled++;
+                } else {
+                    // Reset
+                    spots.forEach(spot => spot.classList.remove('filled'));
+                    filled = 0;
+                }
+            }
+            
+            // Start animation
+            const interval = setInterval(updateParkingState, 300);
+            
+            // Store the interval ID in a data attribute
+            document.getElementById('ahuzat-bubble').setAttribute('data-interval', interval);
+            
+            // Clear the interval when the bubble is collapsed
+            document.getElementById('ahuzat-bubble').addEventListener('transitionend', (e) => {
+                if (!e.target.classList.contains('expanded')) {
+                    clearInterval(interval);
+                }
+            });
+        }
+        
+        function initCodeBackground() {
+            const codeBackground = document.getElementById('code-background');
+            const codeSnippet = `
+            #include <vector>
+            #include <cmath>
+            #include <algorithm>
+            
+            class Polygon {
+            private:
+                std::vector<Point> vertices;
+            
+            public:
+                void rotate(double angle) {
+                    for(auto& v : vertices) {
+                        double x = v.x * cos(angle) - v.y * sin(angle);
+                        double y = v.x * sin(angle) + v.y * cos(angle);
+                        v.x = x;
+                        v.y = y;
+                    }
+                }
+                
+                bool isStable(const Plane& p) {
+                    // Check stability conditions
+                    return checkEquilibrium(p);
+                }
+            };
+            `;
+            
+            codeBackground.textContent = codeSnippet;
+        }
+        
+        function startStopwatch() {
+            const stopwatchElement = document.getElementById('stopwatch');
+            // Set the start date to May 8, 2025
+            const startDate = new Date('2025-05-08T01:06:56');
+            
+            function updateStopwatch() {
+                const now = new Date();
+                const elapsed = now - startDate;
+                
+                // If the date is in the future, show the countdown
+                if (elapsed < 0) {
+                    const diff = Math.abs(elapsed);
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                    
+                    stopwatchElement.textContent = `T-${days}:${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                } else {
+                    // Otherwise show the elapsed time
+                    const days = Math.floor(elapsed / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((elapsed % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
+                    
+                    stopwatchElement.textContent = `${days}:${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }
+            }
+            
+            updateStopwatch();
+            setInterval(updateStopwatch, 1000);
+        }
+        
+        function initKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                // Keyboard shortcuts 1-5
+                if (e.key >= '1' && e.key <= '5') {
+                    const index = parseInt(e.key) - 1;
+                    const bubbles = document.querySelectorAll('.project-bubble');
+                    if (bubbles[index]) {
+                        toggleProjectBubble(bubbles[index].id);
+                    }
+                }
+            });
+        }
+        
+        function rebootAssistant() {
+            // Clear any animations
+            document.querySelectorAll('.project-bubble').forEach(bubble => {
+                if (bubble.hasAttribute('data-interval')) {
+                    clearInterval(parseInt(bubble.getAttribute('data-interval')));
+                }
+                bubble.classList.remove('expanded');
+            });
+            
+            // Reset the AI avatar
+            const aiFace = document.querySelector('.ai-face');
+            aiFace.textContent = '👾';
+            
+            // Add a "rebooting" message
+            const conversation = document.getElementById('conversation');
+            
+            const rebootMessage = document.createElement('div');
+            rebootMessage.className = 'ai-message';
+            rebootMessage.textContent = 'Rebooting assistant...';
+            conversation.appendChild(rebootMessage);
+            
+            // Scroll to bottom
+            rebootMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            
+            // After a short delay, remove the reboot message and add a new greeting
+            setTimeout(() => {
+                conversation.removeChild(rebootMessage);
+                
+                const newGreeting = document.createElement('div');
+                newGreeting.className = 'ai-message';
+                newGreeting.textContent = 'Hello again! I\'ve been rebooted and am ready to guide you through Geva\'s projects. Click on any project to explore further.';
+                conversation.appendChild(newGreeting);
+                
+                // Scroll to the new greeting
+                newGreeting.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                
+                // Re-initialize animations
+                initAudioVisualizer();
+                initParkingVisualization();
+            }, 1500);
+        }
+        
+        function initParticles() {
+            const container = document.getElementById('particles-container');
+            
+            // Create 50 particles
+            for (let i = 0; i < 50; i++) {
+                createParticle(container);
+            }
+        }
+        
+        function createParticle(container) {
+            const particle = document.createElement('div');
+            particle.style.position = 'absolute';
+            particle.style.width = `${Math.random() * 3 + 1}px`;
+            particle.style.height = `${Math.random() * 3 + 1}px`;
+            particle.style.borderRadius = '50%';
+            
+            // Random color from the theme
+            const colors = ['var(--electric-blue)', 'var(--soft-purple)', 'var(--mint-green)'];
+            particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            // Random starting position
+            particle.style.left = `${Math.random() * 100}vw`;
+            particle.style.top = `${Math.random() * 100}vh`;
+            
+            // Random opacity
+            particle.style.opacity = Math.random() * 0.5 + 0.1;
+            
+            // Add to container
+            container.appendChild(particle);
+            
+            // Animate the particle
+            animateParticle(particle);
+        }
+        
+        function animateParticle(particle) {
+            const speed = Math.random() * 5 + 1;
+            const direction = Math.random() * Math.PI * 2;
+            let x = parseFloat(particle.style.left);
+            let y = parseFloat(particle.style.top);
+            
+            function move() {
+                // Convert position from vw/vh to pixels for calculation
+                const vw = window.innerWidth / 100;
+                const vh = window.innerHeight / 100;
+                
+                let xPx = x * vw;
+                let yPx = y * vh;
+                
+                // Move in the random direction
+                xPx += Math.cos(direction) * speed;
+                yPx += Math.sin(direction) * speed;
+                
+                // Convert back to vw/vh
+                x = xPx / vw;
+                y = yPx / vh;
+                
+                // Check boundaries
+                if (x < 0 || x > 100 || y < 0 || y > 100) {
+                    // Reposition to the opposite side
+                    if (x < 0) x = 100;
+                    if (x > 100) x = 0;
+                    if (y < 0) y = 100;
+                    if (y > 100) y = 0;
+                }
+                
+                // Update position
+                particle.style.left = `${x}vw`;
+                particle.style.top = `${y}vh`;
+                
+                // Continue animation
+                requestAnimationFrame(move);
+            }
+            
+            move();
+        }
+    </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250507",
+          pageId: "20250508",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
