@@ -2,1937 +2,1227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | Virtual Code Editor Portfolio</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5/lib/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5/theme/dracula.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <title>Geva Kipper OS v1.0</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
     <style>
         :root {
-            --bg-primary: #1e1e1e;
-            --bg-secondary: #252526;
-            --bg-tertiary: #333333;
-            --text-primary: #d4d4d4;
-            --text-secondary: #9cdcfe;
-            --text-accent: #569cd6;
-            --text-comment: #6a9955;
-            --border-color: #444444;
-            --tab-active: #1e1e1e;
-            --tab-inactive: #2d2d2d;
-            --explorer-bg: #252526;
-            --explorer-hover: #37373d;
-            --terminal-bg: #1e1e1e;
-            --terminal-text: #cccccc;
-            --scrollbar-bg: #1e1e1e;
-            --scrollbar-thumb: #424242;
+            --primary-bg: #121212;
+            --window-bg: #1f1f1f;
+            --window-border: #3a3a3a;
+            --text-color: #e0e0e0;
+            --accent-color: #4e9df5;
+            --taskbar-color: #262626;
+            --taskbar-height: 40px;
+            --menubar-height: 30px;
+            --desktop-icon-size: 64px;
+            --terminal-green: #42ff8e;
         }
-
-        .light-theme {
-            --bg-primary: #ffffff;
-            --bg-secondary: #f3f3f3;
-            --bg-tertiary: #e7e7e7;
-            --text-primary: #333333;
-            --text-secondary: #0000ff;
-            --text-accent: #0070c1;
-            --text-comment: #008000;
-            --border-color: #cccccc;
-            --tab-active: #ffffff;
-            --tab-inactive: #ececec;
-            --explorer-bg: #f3f3f3;
-            --explorer-hover: #e4e4e4;
-            --terminal-bg: #f3f3f3;
-            --terminal-text: #333333;
-            --scrollbar-bg: #f3f3f3;
-            --scrollbar-thumb: #c1c1c1;
-        }
-
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Consolas', 'Courier New', monospace;
+            user-select: none;
         }
-
+        
         body {
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
+            font-family: 'VT323', monospace;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
             height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+            cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAjUlEQVR4nO2UQQrCQAxF3xW8kOBJPIE38QJeRNx7FXEjuHDrQp3FQAqdTKZYF33wN5P8vPkJdEIW2AFnoFCeC7ADssg8A1bgYRxr+i2wCSWrgLuBqk7AFEi+SeYG6noAYwuZV3mRWQu5AC/HkA5OdCcdgasl8HTOzDtm41i9gh+GCthbU/T+Dz8lK/OfPAEHmzW0SzP1bQAAAABJRU5ErkJggg=='), auto;
+        }
+        
+        #boot-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            color: var(--terminal-green);
             display: flex;
             flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-size: 1.2rem;
+        }
+        
+        #boot-log {
+            width: 80%;
+            max-width: 600px;
+            height: 300px;
             overflow: hidden;
-            transition: background-color 0.3s, color 0.3s;
+            margin-bottom: 20px;
         }
-
-        #header {
-            background-color: var(--bg-secondary);
-            padding: 8px 16px;
-            border-bottom: 1px solid var(--border-color);
+        
+        #boot-logo {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        #progress-bar-container {
+            width: 80%;
+            max-width: 600px;
+            height: 20px;
+            border: 2px solid var(--terminal-green);
+        }
+        
+        #progress-bar {
+            height: 100%;
+            width: 0;
+            background-color: var(--terminal-green);
+            transition: width 0.3s;
+        }
+        
+        #desktop {
+            background-image: 
+                linear-gradient(rgba(0, 0, 30, 0.7), rgba(0, 0, 30, 0.7)),
+                repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(50, 50, 100, 0.1) 20px, rgba(50, 50, 100, 0.1) 21px),
+                repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(50, 50, 100, 0.1) 20px, rgba(50, 50, 100, 0.1) 21px);
+            height: calc(100vh - var(--taskbar-height) - var(--menubar-height));
+            position: relative;
+            overflow: hidden;
+            margin-top: var(--menubar-height);
+            padding: 20px;
             display: flex;
-            justify-content: space-between;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 20px;
+        }
+        
+        /* Menu Bar */
+        #menu-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--menubar-height);
+            background-color: var(--taskbar-color);
+            border-bottom: 1px solid var(--window-border);
+            display: flex;
             align-items: center;
+            padding: 0 10px;
+            z-index: 900;
         }
-
-        #tab-bar {
+        
+        #menu-items {
             display: flex;
-            background-color: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
+            gap: 15px;
         }
-
-        .tab {
-            padding: 8px 16px;
-            background-color: var(--tab-inactive);
-            border-right: 1px solid var(--border-color);
+        
+        .menu-item {
             cursor: pointer;
+            padding: 0 10px;
+        }
+        
+        .menu-item:hover {
+            background-color: var(--accent-color);
+            color: black;
+        }
+        
+        #user-info {
+            margin-left: auto;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+        }
+        
+        #notification {
+            margin-right: 20px;
+            font-style: italic;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        #subtitle {
+            margin-left: 20px;
+            font-style: italic;
+            color: #888;
+            font-size: 0.8rem;
+        }
+        
+        /* Task Bar */
+        #taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--taskbar-height);
+            background-color: var(--taskbar-color);
+            border-top: 1px solid var(--window-border);
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            z-index: 900;
+        }
+        
+        #start-button {
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            border: 1px outset var(--window-border);
+            padding: 2px 10px;
+            margin-right: 10px;
+            cursor: pointer;
+            height: 28px;
+            display: flex;
+            align-items: center;
+        }
+        
+        #start-button:hover {
+            background-color: var(--accent-color);
+            color: black;
+        }
+        
+        #taskbar-items {
+            display: flex;
+            gap: 5px;
+            height: 80%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            flex-grow: 1;
+        }
+
+        .taskbar-item {
+            background-color: var(--primary-bg);
+            border: 1px outset var(--window-border);
+            padding: 2px 8px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-        }
-
-        .tab.active {
-            background-color: var(--tab-active);
-            border-bottom: 2px solid var(--text-accent);
-        }
-
-        #controls {
+            max-width: 150px;
             display: flex;
             align-items: center;
-            gap: 16px;
-        }
-
-        #controls button, #controls select {
-            background-color: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            padding: 4px 8px;
             cursor: pointer;
-            border-radius: 4px;
         }
-
-        #controls button:hover, #controls select:hover {
-            background-color: var(--explorer-hover);
+        
+        .taskbar-item.active {
+            background-color: var(--accent-color);
+            color: black;
+            border-style: inset;
         }
-
-        #main-container {
+        
+        #system-tray {
             display: flex;
-            flex: 1;
+            gap: 10px;
+            align-items: center;
+            margin-left: auto;
+        }
+        
+        #clock {
+            min-width: 130px;
+            text-align: center;
+        }
+        
+        /* Desktop Icons */
+        .desktop-icon {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            text-align: center;
+            padding: 5px;
+        }
+        
+        .desktop-icon:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .icon-image {
+            width: var(--desktop-icon-size);
+            height: var(--desktop-icon-size);
+            margin-bottom: 5px;
+            image-rendering: pixelated;
+            background-color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px;
             overflow: hidden;
+            padding: 5px;
         }
-
-        #explorer {
-            width: 250px;
-            background-color: var(--explorer-bg);
-            border-right: 1px solid var(--border-color);
-            overflow-y: auto;
-            user-select: none;
-        }
-
-        #explorer::-webkit-scrollbar {
-            width: 8px;
-            background-color: var(--scrollbar-bg);
-        }
-
-        #explorer::-webkit-scrollbar-thumb {
-            background-color: var(--scrollbar-thumb);
-        }
-
-        .explorer-title {
-            padding: 8px 16px;
+        
+        .icon-label {
+            color: var(--text-color);
+            text-shadow: 1px 1px 2px black;
             font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-secondary);
+            max-width: 100px;
+            word-break: break-word;
         }
-
-        .folder {
-            cursor: pointer;
-            padding: 6px 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .folder:hover {
-            background-color: var(--explorer-hover);
-        }
-
-        .folder-contents {
-            display: none;
-            padding-left: 16px;
-        }
-
-        .folder.open .folder-contents {
-            display: block;
-        }
-
-        .file {
-            cursor: pointer;
-            padding: 4px 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9rem;
-        }
-
-        .file:hover {
-            background-color: var(--explorer-hover);
-        }
-
-        .file.active {
-            background-color: var(--explorer-hover);
-            color: var(--text-accent);
-        }
-
-        #editor-container {
-            flex: 1;
+        
+        /* Windows */
+        .window {
+            background-color: var(--window-bg);
+            border: 2px solid var(--window-border);
+            border-radius: 5px;
+            position: absolute;
+            min-width: 300px;
+            min-height: 200px;
+            box-shadow: 2px 2px 15px rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            resize: both;
         }
-
-        #editor-wrapper {
+        
+        .window-titlebar {
+            background-color: var(--accent-color);
+            color: black;
+            padding: 5px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+        }
+        
+        .window-title {
+            font-weight: bold;
+            pointer-events: none;
+        }
+        
+        .window-controls {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .window-control {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px outset #888;
+            cursor: pointer;
+            background-color: #ddd;
+            font-size: 12px;
+            line-height: 1;
+        }
+        
+        .window-control:hover {
+            background-color: #fff;
+        }
+        
+        .window-content {
             flex: 1;
+            padding: 10px;
+            overflow: auto;
+        }
+        
+        .window-statusbar {
+            height: 25px;
+            background-color: var(--window-bg);
+            border-top: 1px solid var(--window-border);
+            padding: 3px 10px;
+            font-size: 0.8em;
+            display: flex;
+            align-items: center;
+        }
+        
+        /* Project specific styles */
+        .media-player .window-content {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .video-container {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        
+        .map-utility .window-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .map-container {
+            border: 1px solid var(--window-border);
+            padding: 10px;
+            height: 200px;
+            background-color: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .bookmark-item {
+            display: flex;
+            align-items: center;
+            padding: 5px;
+            border-bottom: 1px solid var(--window-border);
+        }
+        
+        .bookmark-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .cad-program .code-editor {
+            font-family: monospace;
+            background-color: #000;
+            color: #0f0;
+            padding: 10px;
+            height: 150px;
+            overflow: auto;
+            border: 1px inset var(--window-border);
+            white-space: pre;
+            font-size: 0.9rem;
+        }
+        
+        .wireframe-preview {
+            border: 1px solid var(--window-border);
+            height: 200px;
+            margin: 10px 0;
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .address-book-entry {
+            border: 1px solid var(--window-border);
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        
+        .address-book-entry:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: scale(1.02);
+        }
+        
+        .os-button {
+            background-color: var(--taskbar-color);
+            color: var(--text-color);
+            border: 2px outset var(--window-border);
+            padding: 5px 10px;
+            margin: 5px 0;
+            cursor: pointer;
+            text-align: center;
+            min-width: 100px;
+        }
+        
+        .os-button:hover {
+            background-color: var(--accent-color);
+            color: black;
+        }
+        
+        .os-button:active {
+            border-style: inset;
+        }
+        
+        /* CRT Effect */
+        .crt-image {
             position: relative;
             overflow: hidden;
+            border: 5px solid #333;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
         }
-
-        #editor {
-            width: 100%;
-            height: 100%;
-        }
-
-        .CodeMirror {
-            height: 100%;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        #resizable-terminal {
-            height: 180px;
-            background-color: var(--terminal-bg);
-            border-top: 1px solid var(--border-color);
-            overflow: auto;
-            resize: vertical;
-            min-height: 100px;
-            max-height: 50vh;
-        }
-
-        #terminal {
-            padding: 12px;
-            color: var(--terminal-text);
-            white-space: pre-wrap;
-            font-family: 'Consolas', 'Courier New', monospace;
-            height: 100%;
-            overflow-y: auto;
-        }
-
-        #terminal::-webkit-scrollbar {
-            width: 8px;
-            background-color: var(--scrollbar-bg);
-        }
-
-        #terminal::-webkit-scrollbar-thumb {
-            background-color: var(--scrollbar-thumb);
-        }
-
-        .drag-handle {
-            height: 4px;
-            background-color: var(--bg-tertiary);
-            cursor: ns-resize;
-        }
-
-        #run-button {
+        
+        .crt-image::before {
+            content: "";
             position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background-color: #0e639c;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        #run-button:hover {
-            background-color: #1177bb;
-        }
-
-        #reset-button {
-            position: absolute;
-            bottom: 20px;
-            right: 120px;
-            background-color: #8b3d3d;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        #reset-button:hover {
-            background-color: #a74747;
-        }
-
-        .cmd-prompt {
-            color: #569cd6;
-        }
-
-        .cmd-result {
-            color: #cccccc;
-            margin-bottom: 8px;
-        }
-
-        .cmd-link {
-            color: #3794ff;
-            text-decoration: underline;
-            cursor: pointer;
-        }
-
-        .cmd-comment {
-            color: var(--text-comment);
-        }
-
-        .subtitle {
-            color: var(--text-comment);
-            animation: typing 4s steps(60, end);
-            overflow: hidden;
-            white-space: nowrap;
-            margin-top: 4px;
-        }
-
-        @keyframes typing {
-            from { width: 0 }
-            to { width: 100% }
-        }
-
-        .particle {
-            position: absolute;
-            background-color: rgba(86, 156, 214, 0.7);
-            border-radius: 50%;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 2;
             pointer-events: none;
-            z-index: 9999;
+        }
+        
+        .crt-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        /* Start Menu */
+        #start-menu {
+            position: absolute;
+            bottom: var(--taskbar-height);
+            left: 0;
+            width: 250px;
+            background-color: var(--taskbar-color);
+            border: 2px solid var(--window-border);
+            border-bottom: none;
+            z-index: 1000;
+            display: none;
+            box-shadow: 5px -2px 10px rgba(0, 0, 0, 0.3);
+            padding: 5px 0;
+        }
+        
+        .start-menu-item {
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .start-menu-item:hover {
+            background-color: var(--accent-color);
+            color: black;
+            cursor: pointer;
+        }
+        
+        .start-menu-divider {
+            height: 1px;
+            background-color: var(--window-border);
+            margin: 5px 0;
         }
 
+        /* Cheat mode effect */
+        .cheat-mode-active {
+            animation: rainbow-bg 5s linear infinite;
+        }
+        
+        @keyframes rainbow-bg {
+            0% { background-color: rgba(255, 0, 0, 0.3); }
+            20% { background-color: rgba(255, 165, 0, 0.3); }
+            40% { background-color: rgba(255, 255, 0, 0.3); }
+            60% { background-color: rgba(0, 128, 0, 0.3); }
+            80% { background-color: rgba(0, 0, 255, 0.3); }
+            100% { background-color: rgba(128, 0, 128, 0.3); }
+        }
+
+        /* Shutdown animation */
+        @keyframes shutdown {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(0.1); opacity: 0.5; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        
+        .shutting-down {
+            animation: shutdown 2s forwards;
+        }
+        
+        /* Responsive */
         @media (max-width: 768px) {
-            #main-container {
-                flex-direction: column;
+            :root {
+                --desktop-icon-size: 48px;
+                --taskbar-height: 50px;
+                --menubar-height: 40px;
+            }
+            
+            #desktop {
+                padding: 10px;
+                justify-content: space-around;
+            }
+            
+            .desktop-icon {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .window {
+                width: 90vw !important;
+                height: 70vh !important;
+                top: calc(var(--menubar-height) + 10px) !important;
+                left: 5vw !important;
+                resize: none;
+            }
+            
+            #notification, #subtitle {
+                display: none;
+            }
+            
+            #menu-bar, #taskbar {
+                padding: 0 5px;
             }
 
-            #explorer {
-                width: 100%;
-                max-height: 30%;
-                border-right: none;
-                border-bottom: 1px solid var(--border-color);
-            }
-
-            #controls {
-                gap: 8px;
-                flex-wrap: wrap;
-            }
-
-            #run-button, #reset-button {
-                padding: 6px 10px;
+            #user-info {
                 font-size: 0.8rem;
             }
+            
+            .taskbar-item {
+                max-width: 100px;
+            }
+        }
 
-            #reset-button {
-                right: 100px;
+        /* Mobile app drawer */
+        @media (max-width: 480px) {
+            body {
+                background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="20" height="20" fill="black"/><rect x="1" y="1" width="18" height="18" fill="rgb(30,30,40)"/></svg>');
+                background-size: cover;
+            }
+            
+            #desktop {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 10px;
+                background: rgba(0,0,0,0.7);
+                overflow-y: auto;
+            }
+            
+            .desktop-icon {
+                width: 100%;
+                max-width: 300px;
+                height: 80px;
+                flex-direction: row;
+                justify-content: flex-start;
+                margin-bottom: 10px;
+                background-color: rgba(50, 50, 80, 0.4);
+                border-radius: 10px;
+            }
+            
+            .icon-image {
+                margin-right: 15px;
+                margin-bottom: 0;
+                width: 48px;
+                height: 48px;
+            }
+            
+            .icon-label {
+                font-size: 1.2rem;
+            }
+            
+            .window {
+                width: 100vw !important;
+                height: calc(100vh - var(--menubar-height) - var(--taskbar-height)) !important;
+                top: var(--menubar-height) !important;
+                left: 0 !important;
+                border-radius: 0;
             }
         }
     </style>
 </head>
 <body>
-    <div id="header">
-        <div>
-            <h1>Geva Kipper</h1>
-            <p>Software Engineer at Google focusing on AI-driven solutions and computational geometry</p>
-            <p class="subtitle">// This site redesigns itself daily using AI - what you see today will evolve tomorrow</p>
-        </div>
-        <div id="controls">
-            <button id="theme-toggle" title="Toggle Light/Dark Theme">
-                <i class="fas fa-sun"></i>/<i class="fas fa-moon"></i>
-            </button>
-            <select id="font-size">
-                <option value="12">12px</option>
-                <option value="14" selected>14px</option>
-                <option value="16">16px</option>
-                <option value="18">18px</option>
-            </select>
+    <!-- Boot Screen -->
+    <div id="boot-screen">
+        <div id="boot-logo">Geva OS v1.0</div>
+        <div id="boot-log"></div>
+        <div id="progress-bar-container">
+            <div id="progress-bar"></div>
         </div>
     </div>
-
-    <div id="tab-bar">
-        <div class="tab active" data-file="welcome.md">
-            <i class="fas fa-file-alt"></i> welcome.md
+    
+    <!-- Menu Bar -->
+    <div id="menu-bar">
+        <div id="menu-items">
+            <div class="menu-item">File</div>
+            <div class="menu-item">Edit</div>
+            <div class="menu-item">View</div>
+            <div class="menu-item">Help</div>
+        </div>
+        <div id="subtitle">This website is redesigned daily by AI and is ever-changing</div>
+        <div id="user-info">
+            <div id="notification">Currently working at Google</div>
+            <div>Geva Kipper</div>
         </div>
     </div>
-
-    <div id="main-container">
-        <div id="explorer">
-            <div class="explorer-title">PROJECTS</div>
-            
-            <div class="folder" data-folder="glglstats">
-                <i class="fas fa-folder-closed"></i> GlglStats
-                <div class="folder-contents">
-                    <div class="file" data-file="glglstats-readme.md">
-                        <i class="fas fa-file-alt"></i> README.md
-                    </div>
-                    <div class="file" data-file="glglstats-demo.js">
-                        <i class="fas fa-file-code"></i> demo.js
-                    </div>
-                    <div class="file" data-file="glglstats-media.md">
-                        <i class="fas fa-file-image"></i> media.md
-                    </div>
-                </div>
-            </div>
-            
-            <div class="folder" data-folder="ahuzat-dibuk">
-                <i class="fas fa-folder-closed"></i> Ahuzat Dibuk
-                <div class="folder-contents">
-                    <div class="file" data-file="ahuzat-readme.md">
-                        <i class="fas fa-file-alt"></i> README.md
-                    </div>
-                    <div class="file" data-file="ahuzat-demo.js">
-                        <i class="fas fa-file-code"></i> demo.js
-                    </div>
-                    <div class="file" data-file="ahuzat-media.md">
-                        <i class="fas fa-file-image"></i> media.md
-                    </div>
-                </div>
-            </div>
-            
-            <div class="folder" data-folder="2d-part-orienting">
-                <i class="fas fa-folder-closed"></i> 2D Part Orienting
-                <div class="folder-contents">
-                    <div class="file" data-file="2d-part-readme.md">
-                        <i class="fas fa-file-alt"></i> README.md
-                    </div>
-                    <div class="file" data-file="2d-part-demo.js">
-                        <i class="fas fa-file-code"></i> demo.js
-                    </div>
-                    <div class="file" data-file="2d-part-media.md">
-                        <i class="fas fa-file-image"></i> media.md
-                    </div>
-                </div>
-            </div>
-            
-            <div class="folder" data-folder="meta-portfolio">
-                <i class="fas fa-folder-closed"></i> Meta Portfolio
-                <div class="folder-contents">
-                    <div class="file" data-file="meta-readme.md">
-                        <i class="fas fa-file-alt"></i> README.md
-                    </div>
-                    <div class="file" data-file="meta-demo.js">
-                        <i class="fas fa-file-code"></i> demo.js
-                    </div>
-                </div>
-            </div>
-            
-            <div class="folder" data-folder="connect">
-                <i class="fas fa-folder-closed"></i> Connect
-                <div class="folder-contents">
-                    <div class="file" data-file="connect-readme.md">
-                        <i class="fas fa-file-alt"></i> README.md
-                    </div>
-                </div>
-            </div>
+    
+    <!-- Desktop -->
+    <div id="desktop">
+        <!-- Desktop icons will be added by JavaScript -->
+    </div>
+    
+    <!-- Taskbar -->
+    <div id="taskbar">
+        <div id="start-button">Start</div>
+        <div id="taskbar-items">
+            <!-- Taskbar items will be added dynamically -->
         </div>
-        
-        <div id="editor-container">
-            <div id="editor-wrapper">
-                <div id="editor"></div>
-                <button id="reset-button" style="display: none;">
-                    <i class="fas fa-rotate-left"></i> Reset
-                </button>
-                <button id="run-button" style="display: none;">
-                    <i class="fas fa-play"></i> Run
-                </button>
-            </div>
-            <div class="drag-handle" id="terminal-resizer"></div>
-            <div id="resizable-terminal">
-                <div id="terminal">
-<span class="cmd-prompt">$ </span> <span class="cmd-result">Welcome to Geva Kipper's interactive portfolio terminal</span>
-<span class="cmd-prompt">$ </span> <span class="cmd-result">Running session since <span id="time-counter">0 days, 0 hours, 0 minutes, 0 seconds</span></span>
-<span class="cmd-prompt">$ </span> <span class="cmd-result">Available social connections:</span>
-<span class="cmd-prompt">$ </span> <span class="cmd-result">connect --github <a class="cmd-link" href="https://github.com/gevak" target="_blank">github.com/gevak</a></span>
-<span class="cmd-prompt">$ </span> <span class="cmd-result">connect --linkedin <a class="cmd-link" href="https://linkedin.com/in/gevakip" target="_blank">linkedin.com/in/gevakip</a></span>
-<span class="cmd-prompt">$ </span> <span class="cmd-result">connect --facebook <a class="cmd-link" href="https://facebook.com/geva.kipper" target="_blank">facebook.com/geva.kipper</a></span>
-<span class="cmd-prompt">$ </span> <span class="cmd-comment">// Portfolio designed with AI assistance</span>
-                </div>
-            </div>
+        <div id="system-tray">
+            <div id="version">AI: GPT-4</div>
+            <div id="clock">00:00:00</div>
         </div>
     </div>
+    
+    <!-- Start Menu -->
+    <div id="start-menu">
+        <div class="start-menu-item">Programs</div>
+        <div class="start-menu-item">Documents</div>
+        <div class="start-menu-item">Settings</div>
+        <div class="start-menu-divider"></div>
+        <div class="start-menu-item" id="shutdown-option">Shut Down...</div>
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/codemirror@5/lib/codemirror.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/codemirror@5/mode/javascript/javascript.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/codemirror@5/mode/markdown/markdown.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/codemirror@5/addon/edit/matchbrackets.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/codemirror@5/addon/selection/active-line.min.js"></script>
+    <audio id="startup-sound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnQGAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YVAGAACAgICAgICAgICAgICAgICAgICAgICBgYGBgYGBgYGBgoKCgoKCg4ODg4ODhISEhIWFhYWGhoaGh4eHh4eIiIiJiYmJiYmKioqKioqLi4uLi4yMjIyMjI2NjY2Njo6Oj4+Pj4+QkJCQkZGRkZGSkpKSkpOTk5OTlJSUlJSVlZWVlZaWlpaWl5eXl5eYmJiYmJmZmZmZmpqampqbm5ubm5ycnJycnZ2dnZ2enp6enp+fn5+foKCgoKChoaGhoaKioqKio6Ojo6OkpKSkpKWlpaWlpqampqanp6enp6ioqKioqampqamqqqqqqqurq6urra2trq6ur6+vsLCwsbGxsrKys7Oztra2t7e3uLi4ubm5urq6u7u7vLy8vb29vr6+v7+/wMDAwcHBwsLCxMTExcXFxsbGx8fHyMjIycnJysrKy8vLzMzMzc3Nzs7Oz8/P0NDQ0dHR0tLS09PT1NTU1dXV1tbW19fX2NjY2dnZ2tra29vb3Nzc3d3d3t7e39/f4ODg4eHh4uLi4+Pj5OTk5eXl5ubm5+fn6Ojo6enp6urq6+vr7Ozs7e3t7u7u7+/v8PDw8fHx8vLy8/Pz9PT09fX19vb29/f3+Pj4+fn5+vr6+/v7/Pz8/f39/v7+/f39/f39/Pz8/Pz8+/v7+/v7+vr6+vr6+fn5+fn5+Pj4+Pj49/f39/f39vb29vb29fX19fX19PT09PT08/Pz8/Pz8vLy8vLy8fHx8PDw8PDw7+/v7+/v7u7u7u7u7e3t7e3t7Ozs7Ozs6+vr6+vr6urq6urq6enp6enp6Ojo6Ojo5+fn5+fn5ubm5ubm5eXl5eXl5OTk5OTk4+Pj4+Pj4uLi4uLi4eHh4eHh4ODg4ODg39/f39/f3t7e3t7e3d3d3d3d3Nzc3Nzc29vb29vb2tra2tra2dnZ2dnZ2NjY2NjY19fX19fX1tbW1tbW1dXV1dXV1NTU1NTU09PT09PT0tLS0tLS0dHR0dHR0NDQ0NDQz8/Pz8/PwsLCwsLCwcHBwcHBwMDAwMDAv7+/v7+/vr6+vr6+vb29vb29vLy8vLy8u7u7u7u7urq6urq6ubm5ubm5uLi4uLi4t7e3t7e3tra2tra2tbW1tbW1tLS0tLS0s7Ozs7Ozrq6urq6ura2tra2trKysrKysq6urq6urqqqqqqqqqampqampqKioqKioqKiop6enp6enp6emp6engICAf39/f39/fn5+fn5+fX19fX19fHx8fHx8e3t7e3t7enp6enp6eXl5eXl5eHh4eHh4d3d3d3d3dnZ2dnZ2dXV1dXV1dHR0dHR0c3Nzc3Nzfn5+fn5+f39/f39/gICAgICAgoKCgoKCZWRrZmZlZGZlZGZlZmVmZWZlZmVmZWZkZmRmZGZlZmVmZWZlZmVmZWZlZmVmZWZlZmZnZmZnZmZnZmZnZmZnZmZnZmZnZmZnZmdnZ2dnZ2dnZ2dYWVlZWVlZWVlZWVlaWVpaWlpaWlpaWlpaWlpaWlpaW1tbW1tbW1tcXFxcXFxcXFxcXFxcXF1dXV1dXV1dXl5eXl5eXl5fX19fX19fX19fX19fX2BgYGBgYGBgYWFhYWFhYWFhYWFhYWFiYmJiYmJiYmNjY2NjY2NjY2NjY2NjZGRkZGRkZGRkZGRkZGRkZWVlZWVlZWVlZWVlZWVlZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnY2NjY2NjY2NjY2NjY2NjY2NjYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmFhYWFhYWFhYWFhYWFhYWFhYWFhYQ==" type="audio/wav">
+    </audio>
+    <audio id="shutdown-sound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRtwDAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YbgDAACBgYGCgoKDg4OEhISFhYWGhoaHh4eIiIiJiYmKioqLi4uMjIyNjY2Ojo6Pj4+QkJCRkZGSkpKTk5OUlJSVlZWWlpaXl5eYmJiZmZmampqbm5ucnJydnZ2enp6fn5+goKChoaGioqKjo6OkpKSlpaWmpqanp6eoqKipqamqqqqrq6usrKytra2urq6vr6+wsLCxsbGysrKzs7O0tLS1tbW2tra3t7e4uLi5ubm6urq7u7u8vLy9vb2+vr6/v7/AwMDBwcHCwsLDw8PExMTFxcXGxsbHx8fIyMjJycnKysrLy8vMzMzNzc3Ozs7Pz8/Q0NDR0dHS0tLT09PU1NTV1dXW1tbX19fY2NjZ2dna2trb29vc3Nzd3d3e3t7f39/g4ODh4eHi4uLj4+Pk5OTl5eXm5ubn5+fo6Ojp6enq6urr6+vs7Ozt7e3u7u7v7+/w8PDx8fHy8vLz8/P09PT19fX29vb39/f4+Pj5+fn6+vr7+/v8/Pz9/f3+/v79/f38/Pz7+/v6+vr5+fn4+Pj39/f29vb19fX09PTz8/Py8vLx8fHw8PDv7+/u7u7t7e3s7Ozr6+vq6urp6eno6Ojn5+fm5ubl5eXk5OTj4+Pi4uLh4eHg4ODf39/e3t7d3d3c3Nzb29va2trZ2dnY2NjX19fW1tbV1dXU1NTT09PS0tLR0dHQ0NDPz8/Ozs7Nzc3MzMzLy8vKysrJycnIyMjHx8fGxsbFxcXExMTDw8PCwsLBwcHAwMC/v7++vr69vb28vLy7u7u6urq5ubm4uLi3t7e2tra1tbW0tLSzs7OysrKxsbGwsLCvr6+urq6tra2srKyrq6uqqqqpqamhoaGgoKCfn5+enp6dnZ2cnJybm5uampqZmZmYmJiXl5eWlpaVlZWUlJSTk5OSkpKRkZGQkJCPj4+Ojo6NjY2MjIyLi4uKioqJiYmIiIiHh4eGhoaFhYWEhISDg4OCgoKBgYGAgICAgICBgYGCgoKDg4OEhISFhYWGhoaHh4eIiIiJiYmKioqLi4uMjIyNjY2Ojo6Pj4+QkJCRkZGSkpKTk5OUlJSVlZWWlpaXl5eYmJiZmZmampqbm5ucnJydnZ2enp6fn5+goKChoaGioqKjo6OkpKSlpaWmpqanp6eoqKipqamqqqqrq6usrKytra2urq6vr6+wsLCxsbGysrKzs7O0tLS1tbW2tra3t7e4uLi5ubm6urq7u7u8vLy9vb2+vr6/v7/AwMDBwcHCwsLDw8PExMTFxcXGxsbHx8fIyMjJycnKysrLy8vMzMzNzc3Ozs7Pz8/Q0NDR0dHS0tLT09PU1NTV1dXW1tbX19fY2Nj/////AAA=" type="audio/wav">
+    </audio>
+    <audio id="click-sound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRpYEAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YXIEAACAf3lyaFxTSUA4Mi4rKSgpKiwvNDk/RUtRV15laG50eX6Dh4uPkpaZnJ+ho6WmqKipqqqrq6ysrKysrKysrKysrKysrKysrKysrKysq6uqqaimpKKfnJqXlJGOi4iFgn98eXVybmpmYl5aVlJOSkZCPjs3My8sKSYkIiAfHh0cHBscHR4fISMlJyksLzI2Ojw/Q0ZKTlJWWl1hZWlsb3N2eXx/goWHio2Pko+Qj46MiomHhYSCgH59e3p5d3Z1dXRzcnFwcG9ubm1tbGxsbGxra2tra2tsbGxsbGxsbGxsbW1tbW1tbW1tbW1tbW5ubm5ubm5ubm5ubm5ubm9vb29vb29vcHFxcnJzc3R0dXV2dnd3eHh5eXp6e3t8fH19fn5/f4CAgYGCgoODhISFhYaGh4eIiImJioqLi4yMjY2Ojo+PkJCRkZKSk5OUlJWVlpaXl5iYmZmampubm5ucnJ2dnp6fn6CgoaGioqOjpKSlpaampqenqKipqaqqq6usrK2tra6urq+vsLCxsbKys7O0tLW1tra2t7e4uLm5urq7u7y8vb2+vr+/wMDBwcLCw8PExMXFxsbHx8jIycnJycnJycnJycnJycnJycnJycnJycnJycnJyMjHx8bGxcXExMPDwsLBwcDAwL++vr29vLy7u7q6ubm4uLe3tra1tbS0s7OysrGxsLCvrq6traysq6uqqainp6ampqWlpKSjo6KioaGgoJ+fnp6dnZycm5ubmpqZmZiYl5eWlpWVlJSTk5KSkZGQkI+PjY2MjIuLioqJiYiIh4eGhoWFhISDg4KCgYGAgH9/fn59fXx8e3t6enl5eHh3d3Z2dXV0dHNzcnJxcXBwb29ubm1tbGxra2pqaWloaGdnZmZlZWRkY2NiYmFhYGBfX15eXV1cXFtbWlpZWVhYV1dWVlVVVFRTU1JSUVFRUFBPT05OTU1MTEtLSkpJSUhIR0dGRkVFRERDQ0JCQUFAQEBAQEBBQUJCQkNDRERFRUZGR0dISElJSkpLS0xMTU1OTk9PUFBRUVJSUlNTVFRVVVZWV1dYWFlZWlpbW1xcXV1eXl9fYGBhYWJiYmNjZGRlZWZmZ2doaGlpampra2xsbW1ubm9vcHBxcXJyc3N0dHV1dnZ3d3h4eXl6ent7fHx9fX5+f3+AgIGBgoKDg4SEhYWGhoeHiIiJiYqKi4uMjI2Njo6Pj5CQkZGSkpOTlJSVlZaWl5eYmJmZmpqbm5ycnZ2enp+foKChoaKio6OkpKWlpqanp6ioqamqqquqqqmpp6alno+GfnVrYVdOQzoxKiUgHBkXFhYXGRsdICMnKy4yNjo/Q0hMUFRYXGBkaGxvc3Z5fH+Ch4qOkZWYnKCkqKuvsrW4u77BxMbIysrLzMzNzc3NzMvLycfGxMLAv727ubezsa+sqaekoqCdm5iWk5GPjIqHhYOAfXt5d3VzcnBubGtpZ2ZkY2FgX15dXFtaWllYV1dWVVVUVFNTUlJSUVFRUVFRUVBQUFBQUFBQUFBQUFBQUFBQUFFRUVFSUlJTU1RUVVVWVldXWFhZWVpbXFxdXV5fX2BhYWJjZGRlZmdnaGlqa2tsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DQ0dHS0tPT1NTV1dbX19jZ2drb29zd3d7f3+Dh4eLj4+Tl5ebn5+jo6enq6+vs7e7u7/Dx8vLz9PX19vf4+Pn6+vv8/f3+/v8=" type="audio/wav">
+    </audio>
+
     <script>
-        // File content for the portfolio
-        const fileContents = {
-            'welcome.md': `# Welcome to Geva Kipper's Interactive Portfolio
-
-This portfolio is designed as a fully interactive code editor experience where you can:
-
-- **Browse** through my projects in the sidebar
-- **Read** about my work in the README files
-- **Run** and **modify** code samples
-- **View** media related to the projects
-
-## How to Use This Portfolio
-
-1. Click on any folder in the explorer panel to expand it
-2. Select a file to view its contents
-3. For code files, you can actually edit and run the code using the "Run" button
-4. If you want to restore the original code, use the "Reset" button
-
-## My Background
-
-I'm a Software Engineer at Google, focusing on AI-driven solutions and computational geometry. My work spans from practical applications like parking management systems to academic research in geometrical algorithms.
-
-Feel free to explore my projects and connect with me through the social links in the terminal below!
-`,
-
-            'glglstats-readme.md': `# GlglStats Project
-
-GlglStats is an interactive web tool for exploring statistical properties of high-dimensional data, specifically focusing on geometric learning and graphics applications.
-
-## Project Overview
-
-The tool allows researchers and data scientists to:
-
-- Visualize high-dimensional data distributions
-- Compare statistical properties across datasets
-- Generate synthetic data with specific properties
-- Export results in various formats for research papers
-
-## Technical Details
-
-- Built with Three.js for 3D visualizations
-- Backend powered by Python with NumPy/SciPy
-- Implements novel dimensionality reduction techniques
-- Real-time interactive adjustments of parameters
-
-## Links
-
-- Live Site: [https://glglstats.onrender.com/](https://glglstats.onrender.com/)
-- Conference Presentation: [Watch on YouTube](https://www.youtube.com/watch?v=jrKAtOsj1Lo)
-
-Check out the demo.js file to see a simplified version of the visualization logic!
-`,
-
-            'glglstats-demo.js': `// GlglStats Visualization Demo
-// A simplified version of the 3D visualization component
-
-class DataVisualizer {
-  constructor(containerElement) {
-    this.container = containerElement;
-    this.points = [];
-    this.dimensions = 3;
-    this.scene = null;
-    this.camera = null;
-    this.renderer = null;
-    this.initialized = false;
-  }
-  
-  initialize() {
-    // Three.js scene setup would go here
-    console.log("Initializing 3D visualization...");
-    this.initialized = true;
-    
-    // Simplified for demo purposes
-    this.generateRandomPoints(100);
-    
-    return this;
-  }
-  
-  generateRandomPoints(count) {
-    this.points = [];
-    for (let i = 0; i < count; i++) {
-      const point = {
-        x: Math.random() * 2 - 1,
-        y: Math.random() * 2 - 1,
-        z: Math.random() * 2 - 1,
-        // Additional dimensions if needed
-        properties: {
-          cluster: Math.floor(Math.random() * 3),
-          value: Math.random()
-        }
-      };
-      this.points.push(point);
+        // Project Data
+        const projects = [
+            {
+                name: "GlglStats",
+                icon: "📊",
+                type: "media-player",
+                content: `
+                    <h3>Statistics Visualization Tool</h3>
+                    <div class="video-container crt-image">
+                        <iframe width="100%" height="100%" src="https://www.youtube.com/embed/jrKAtOsj1Lo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                    <p>GlglStats is a powerful statistics visualization tool that simplifies complex data analysis for researchers and data scientists.</p>
+                    <div class="os-button" onclick="window.open('https://glglstats.onrender.com/', '_blank')">Open Website</div>
+                    <div class="media-controls">
+                        <div class="os-button">Play</div>
+                        <div class="os-button">Pause</div>
+                        <div class="os-button">Stop</div>
+                    </div>
+                `,
+                statusBar: "GlglStats v1.2.3 | PyData presentation"
+            },
+            {
+                name: "Ahuzat Dibuk",
+                icon: "🏙️",
+                type: "map-utility",
+                content: `
+                    <h3>Urban Mapping Project</h3>
+                    <div class="map-container crt-image">
+                        <svg width="100%" height="100%" viewBox="0 0 200 100">
+                            <rect x="10" y="10" width="180" height="80" fill="#222" stroke="#444" />
+                            <circle cx="50" cy="40" r="20" fill="rgba(255,0,0,0.5)" />
+                            <circle cx="100" cy="60" r="30" fill="rgba(255,0,0,0.3)" />
+                            <circle cx="150" cy="30" r="25" fill="rgba(255,0,0,0.4)" />
+                            <polyline points="20,80 40,70 60,75 80,65 100,70 120,60 140,65 160,55 180,60" stroke="#0f0" fill="none" />
+                        </svg>
+                    </div>
+                    <div class="map-controls">
+                        <div class="os-button">Zoom In</div>
+                        <div class="os-button">Zoom Out</div>
+                        <div class="os-button">Reset View</div>
+                    </div>
+                    <h4>Media Coverage:</h4>
+                    <div class="bookmark-item" onclick="window.open('https://13tv.co.il/item/news/domestic/internal/parking-902956407/', '_blank')">
+                        13TV - Parking Analysis Report
+                    </div>
+                    <div class="bookmark-item" onclick="window.open('https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm', '_blank')">
+                        Mako - Urban Planning Feature
+                    </div>
+                    <div class="bookmark-item" onclick="window.open('https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943', '_blank')">
+                        Secret Tel Aviv Publication
+                    </div>
+                `,
+                statusBar: "Map Region: Tel Aviv | Data updated: 2022"
+            },
+            {
+                name: "2D Part Orienting",
+                icon: "⚙️",
+                type: "cad-program",
+                content: `
+                    <h3>Computational Geometry Research</h3>
+                    <div class="wireframe-preview">
+                        <svg width="100%" height="100%" viewBox="0 0 200 200">
+                            <g stroke="#0f0" fill="none" stroke-width="1">
+                                <polygon points="100,20 140,50 160,100 140,150 100,180 60,150 40,100 60,50" />
+                                <line x1="100" y1="20" x2="100" y2="180" />
+                                <line x1="40" y1="100" x2="160" y2="100" />
+                                <circle cx="100" cy="100" r="80" stroke-dasharray="5,5" />
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="code-editor">
+// Polygon orientation algorithm
+function orientPolygon(points) {
+  let minIdx = 0;
+  for (let i = 1; i < points.length; i++) {
+    if (points[i].y < points[minIdx].y || 
+       (points[i].y === points[minIdx].y && 
+        points[i].x < points[minIdx].x)) {
+      minIdx = i;
     }
-    console.log(\`Generated \${count} random data points\`);
-    return this.points;
   }
-  
-  renderPoints() {
-    if (!this.initialized) {
-      console.error("Visualizer not initialized");
-      return;
-    }
-    
-    console.log("Rendering points with the following properties:");
-    console.log(\`- Total points: \${this.points.length}\`);
-    
-    // Cluster statistics
-    const clusters = {};
-    this.points.forEach(point => {
-      const cluster = point.properties.cluster;
-      if (!clusters[cluster]) clusters[cluster] = 0;
-      clusters[cluster]++;
-    });
-    
-    Object.entries(clusters).forEach(([cluster, count]) => {
-      console.log(\`- Cluster \${cluster}: \${count} points (\${(count/this.points.length*100).toFixed(1)}%)\`);
-    });
-    
-    return "Visualization complete!";
-  }
-  
-  applyDimensionReduction(method = "pca") {
-    console.log(\`Applying \${method.toUpperCase()} dimension reduction...`);
-    // Simplified implementation
-    return \`Applied \${method.toUpperCase()} dimension reduction successfully\`;
-  }
-}
-
-// Demo usage
-const visualizer = new DataVisualizer(document.body);
-visualizer.initialize();
-let result = visualizer.renderPoints();
-
-// This function would be called when user clicks "Run"
-function runVisualization() {
-  const newPointCount = Math.floor(Math.random() * 200) + 50;
-  visualizer.generateRandomPoints(newPointCount);
-  const reductionMethods = ["pca", "tsne", "umap"];
-  const selectedMethod = reductionMethods[Math.floor(Math.random() * reductionMethods.length)];
-  
-  visualizer.applyDimensionReduction(selectedMethod);
-  return visualizer.renderPoints();
-}
-`,
-
-            'glglstats-media.md': `# GlglStats Media & Resources
-
-## Conference Presentation
-
-[![GlglStats Conference Presentation](https://img.youtube.com/vi/jrKAtOsj1Lo/0.jpg)](https://www.youtube.com/watch?v=jrKAtOsj1Lo)
-
-Link: [Watch on YouTube](https://www.youtube.com/watch?v=jrKAtOsj1Lo)
-
-## Project Website
-
-The GlglStats tool is available online at [https://glglstats.onrender.com/](https://glglstats.onrender.com/)
-
-## Key Visualizations
-
-The project includes several visualization types:
-
-1. Point-cloud distributions
-2. Statistical heat maps
-3. Comparative dataset analysis graphs
-4. Dimensionality reduction projections
-
-## Example Usage Screenshots
-
-- Data loading interface
-- Parameter adjustment panel
-- Real-time 3D visualization
-- Results export dialog
-
-## Research Impact
-
-The visualization techniques developed in this project have been used in multiple publications in the field of geometric deep learning and have helped researchers identify statistical patterns in complex datasets.
-`,
-
-            'ahuzat-readme.md': `# Ahuzat Dibuk Project
-
-## Overview
-
-Ahuzat Dibuk is an innovative parking management system developed to address the chronic parking shortages in Tel Aviv's high-density neighborhoods. The project applies computational geometry and optimization algorithms to maximize parking efficiency in urban environments.
-
-## Problem Statement
-
-Tel Aviv's Ahuzat Bayit neighborhood (nicknamed "Ahuzat Dibuk" by residents due to the "possessed" nature of finding parking) faces:
-- Severe parking shortages
-- Inefficient use of available space
-- Lack of real-time parking availability data
-
-## Solution
-
-The system includes:
-- Mobile app for residents to find and report parking
-- Backend algorithms to optimize parking assignments
-- IoT sensors for real-time occupancy monitoring
-- Predictive models for parking availability forecasting
-
-## Impact
-
-- Increased parking efficiency by approximately 27%
-- Reduced average time to find parking from 14 minutes to 4 minutes
-- Featured in multiple media outlets (see media.md)
-- Pilot program expanded to additional neighborhoods
-
-## Technical Implementation
-
-The core algorithm utilizes a spatial optimization approach that accounts for:
-- Vehicle dimensions
-- Parking space geometry
-- Time-based availability patterns
-- User preferences and priorities
-
-Check out the demo.js file to see a simplified version of the parking optimization algorithm!
-`,
-
-            'ahuzat-demo.js': `// Ahuzat Dibuk Parking Optimization Algorithm Demo
-// Simplified version of the actual parking assignment algorithm
-
-class ParkingOptimizer {
-  constructor() {
-    this.parkingSpots = [];
-    this.vehicles = [];
-    this.assignments = new Map();
-  }
-  
-  initializeTestData() {
-    // Create sample parking spots
-    this.parkingSpots = [
-      { id: "P1", location: { lat: 32.0731, lng: 34.7677 }, size: "standard", occupied: false },
-      { id: "P2", location: { lat: 32.0733, lng: 34.7680 }, size: "compact", occupied: false },
-      { id: "P3", location: { lat: 32.0729, lng: 34.7675 }, size: "large", occupied: true },
-      { id: "P4", location: { lat: 32.0735, lng: 34.7679 }, size: "standard", occupied: false },
-      { id: "P5", location: { lat: 32.0736, lng: 34.7682 }, size: "compact", occupied: false },
-      { id: "P6", location: { lat: 32.0732, lng: 34.7684 }, size: "standard", occupied: true }
-    ];
-    
-    // Create sample vehicles seeking parking
-    this.vehicles = [
-      { id: "V1", size: "compact", userLocation: { lat: 32.0734, lng: 34.7678 }, priority: "closest" },
-      { id: "V2", size: "standard", userLocation: { lat: 32.0730, lng: 34.7681 }, priority: "safest" }
-    ];
-    
-    console.log("Test data initialized with:");
-    console.log(\`- \${this.parkingSpots.length} parking spots\`);
-    console.log(\`- \${this.parkingSpots.filter(spot => !spot.occupied).length} available spots\`);
-    console.log(\`- \${this.vehicles.length} vehicles seeking parking\`);
-    
-    return this;
-  }
-  
-  calculateDistance(point1, point2) {
-    // Simplified distance calculation
-    const latDiff = point1.lat - point2.lat;
-    const lngDiff = point1.lng - point2.lng;
-    return Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
-  }
-  
-  optimizeAssignments() {
-    console.log("Running parking optimization algorithm...");
-    this.assignments.clear();
-    
-    // Get only available spots
-    const availableSpots = this.parkingSpots.filter(spot => !spot.occupied);
-    
-    // For each vehicle, find best available spot
-    this.vehicles.forEach(vehicle => {
-      const compatibleSpots = availableSpots.filter(spot => {
-        // A compact vehicle can park in any spot
-        if (vehicle.size === "compact") return true;
-        // A standard vehicle needs standard or large spot
-        if (vehicle.size === "standard") return spot.size !== "compact";
-        // A large vehicle needs a large spot
-        return spot.size === "large";
-      });
-      
-      if (compatibleSpots.length === 0) {
-        console.log(\`No compatible parking spot found for vehicle \${vehicle.id}\`);
-        return;
-      }
-      
-      // Sort based on priority
-      let bestSpot;
-      if (vehicle.priority === "closest") {
-        bestSpot = compatibleSpots.sort((a, b) => {
-          const distA = this.calculateDistance(vehicle.userLocation, a.location);
-          const distB = this.calculateDistance(vehicle.userLocation, b.location);
-          return distA - distB;
-        })[0];
-      } else {
-        // "safest" priority - prefer larger spots
-        const spotSizeRank = { "compact": 0, "standard": 1, "large": 2 };
-        bestSpot = compatibleSpots.sort((a, b) => {
-          return spotSizeRank[b.size] - spotSizeRank[a.size];
-        })[0];
-      }
-      
-      // Assign the spot to the vehicle
-      this.assignments.set(vehicle.id, bestSpot.id);
-      
-      // Mark the spot as occupied
-      const spotIndex = availableSpots.findIndex(spot => spot.id === bestSpot.id);
-      if (spotIndex >= 0) {
-        availableSpots.splice(spotIndex, 1);
-      }
-      
-      console.log(\`Assigned parking spot \${bestSpot.id} to vehicle \${vehicle.id}\`);
-    });
-    
-    return this.getAssignmentSummary();
-  }
-  
-  getAssignmentSummary() {
-    const summary = {
-      totalVehicles: this.vehicles.length,
-      assignedVehicles: this.assignments.size,
-      unassignedVehicles: this.vehicles.length - this.assignments.size,
-      assignments: Array.from(this.assignments).map(([vehicleId, spotId]) => {
-        const vehicle = this.vehicles.find(v => v.id === vehicleId);
-        const spot = this.parkingSpots.find(s => s.id === spotId);
-        const distance = this.calculateDistance(vehicle.userLocation, spot.location);
-        return {
-          vehicle: vehicleId,
-          parkingSpot: spotId,
-          distance: distance.toFixed(4),
-          spotSize: spot.size
-        };
-      })
-    };
-    
-    return summary;
-  }
-}
-
-// Initialize and run the parking optimization
-const optimizer = new ParkingOptimizer().initializeTestData();
-const result = optimizer.optimizeAssignments();
-
-// This function would be called when user clicks "Run"
-function runOptimization() {
-  // Add a random new vehicle each time
-  const vehicleId = \`V\${optimizer.vehicles.length + 1}\`;
-  const vehicleSizes = ["compact", "standard", "large"];
-  const priorities = ["closest", "safest"];
-  
-  const newVehicle = {
-    id: vehicleId,
-    size: vehicleSizes[Math.floor(Math.random() * vehicleSizes.length)],
-    userLocation: {
-      lat: 32.073 + Math.random() * 0.001,
-      lng: 34.767 + Math.random() * 0.001
-    },
-    priority: priorities[Math.floor(Math.random() * priorities.length)]
-  };
-  
-  optimizer.vehicles.push(newVehicle);
-  console.log(\`Added new vehicle \${vehicleId} (\${newVehicle.size}) with \${newVehicle.priority} priority\`);
-  
-  return optimizer.optimizeAssignments();
-}
-`,
-
-            'ahuzat-media.md': `# Ahuzat Dibuk Media Coverage
-
-## News Articles
-
-### Channel 13 News Feature
-Headline: "Revolutionary App Solves Tel Aviv Parking Crisis"  
-Link: [https://13tv.co.il/item/news/domestic/internal/parking-902956407/](https://13tv.co.il/item/news/domestic/internal/parking-902956407/)
-
-### Mako Tech News
-Headline: "Tel Aviv's 'Parking Whisperer': AI Solution to Urban Congestion"  
-Link: [https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm](https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm)
-
-## Social Media
-
-### Secret Tel Aviv Community Post
-The project received significant attention in the Secret Tel Aviv Facebook community, with over 500 comments from residents sharing their parking experiences and requesting access to the beta program.
-
-Link: [Facebook Group Post](https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943)
-
-## Community Impact
-
-The project has been highlighted by the Tel Aviv Municipality as an example of citizen-led innovation addressing urban challenges. The pilot program initially covering Ahuzat Bayit neighborhood has now been approved for expansion to additional areas:
-
-- Florentin
-- Neve Tzedek
-- Shapira
-
-## Testimonials
-
-> "After years of circling blocks looking for parking, this app has literally changed my daily life. I save almost an hour of frustration every day." - Maya K., Ahuzat Bayit resident
-
-> "At first I was skeptical about another parking app, but the community aspect and the accuracy of the predictions are remarkable." - David L., beta tester
-
-## Recognition
-
-- Featured in "Urban Tech Solutions" conference (2022)
-- Finalist in Tel Aviv Municipality's "Smart City Challenge" (2023)
-`,
-
-            '2d-part-readme.md': `# 2D Part Orienting Project
-
-## Project Overview
-
-The 2D Part Orienting project investigates algorithms for orienting planar parts using parallel-jaw grippers or other mechanical manipulation devices. This work has applications in automated manufacturing, robotics, and assembly systems.
-
-## Research Context
-
-This research builds on the computational geometry foundation established by Goldberg's work on part orienting with parallel-jaw grippers. Our contribution extends these algorithms with:
-
-- Improved time complexity for orientation planning
-- Probabilistic guarantees for uncertain part geometry
-- Implementation of the algorithms in a physically realistic simulation environment
-- Experimental validation with an actual robotic gripper system
-
-## Key Innovations
-
-1. **Enhanced Push-Squeeze Algorithm**: Improved the classic push-squeeze method with adaptive step sizes based on part geometry
-2. **Uncertainty Handling**: Developed techniques to deal with sensor noise and imprecise part dimensions
-3. **Minimal Step Sequences**: Computed provably minimal sequences of operations to reach a desired orientation
-4. **Real-time Feedback Control**: Implemented vision-based feedback to correct orientation errors during execution
-
-## Academic Output
-
-This research project has been documented in academic publications and has been made available through Tel Aviv University's Computational Geometry Lab.
-
-For full details and access to the research code, visit:
-[https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/](https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/)
-
-Check out the demo.js file to see a simplified version of the part orienting simulation!
-`,
-
-            '2d-part-demo.js': `// 2D Part Orienting Simulation Demo
-// Simplified version of the push-squeeze algorithm for part orientation
-
-class PolygonalPart {
-  constructor(vertices) {
-    this.vertices = vertices || this.createDefaultPolygon();
-    this.position = { x: 0, y: 0 };
-    this.orientation = 0; // In radians
-    this.stableOrientations = this.computeStableOrientations();
-  }
-  
-  createDefaultPolygon() {
-    // Create a simple irregular hexagon
-    return [
-      { x: 0, y: 0 },
-      { x: 2, y: 0 },
-      { x: 3, y: 1 },
-      { x: 2, y: 2 },
-      { x: 1, y: 3 },
-      { x: 0, y: 1 }
-    ];
-  }
-  
-  computeStableOrientations() {
-    // In a real implementation, this would analyze the polygon
-    // to find orientations where it's stable under gravity
-    // Here we'll just create some example stable orientations
-    const numStableOrientations = 4;
-    const stableOrientations = [];
-    
-    for (let i = 0; i < numStableOrientations; i++) {
-      stableOrientations.push({
-        angle: (i * Math.PI) / numStableOrientations,
-        probability: 0.25 // Equal probability for simplicity
-      });
-    }
-    
-    console.log(\`Computed \${stableOrientations.length} stable orientations:\`);
-    stableOrientations.forEach((orientation, i) => {
-      console.log(\`Orientation #\${i}: \${(orientation.angle * 180 / Math.PI).toFixed(1)}° (probability: \${orientation.probability})\`);
-    });
-    
-    return stableOrientations;
-  }
-  
-  rotate(angle) {
-    this.orientation = (this.orientation + angle) % (2 * Math.PI);
-    if (this.orientation < 0) this.orientation += 2 * Math.PI;
-    console.log(\`Rotated part to \${(this.orientation * 180 / Math.PI).toFixed(1)}°\`);
-  }
-  
-  // Move to closest stable orientation when dropped
-  dropToStableOrientation() {
-    let closestStable = this.stableOrientations[0];
-    let minAngleDiff = Math.abs(this.orientation - closestStable.angle);
-    
-    for (let stable of this.stableOrientations) {
-      const angleDiff = Math.abs(this.orientation - stable.angle);
-      if (angleDiff < minAngleDiff) {
-        minAngleDiff = angleDiff;
-        closestStable = stable;
-      }
-    }
-    
-    const oldOrientation = this.orientation;
-    this.orientation = closestStable.angle;
-    console.log(\`Part dropped from \${(oldOrientation * 180 / Math.PI).toFixed(1)}° to stable orientation \${(this.orientation * 180 / Math.PI).toFixed(1)}°\`);
-    
-    return this.orientation;
-  }
-  
-  getCurrentState() {
-    return {
-      vertices: this.vertices,
-      position: this.position,
-      orientation: this.orientation,
-      orientationDegrees: (this.orientation * 180 / Math.PI).toFixed(1) + "°"
-    };
-  }
-}
-
-class ParallelJawGripper {
-  constructor() {
-    this.jawWidth = 3;
-    this.jawPosition = 0;
-    this.gripping = false;
-  }
-  
-  squeeze(part) {
-    if (this.gripping) {
-      console.log("Already gripping part");
-      return;
-    }
-    
-    console.log("Squeezing part with parallel jaws");
-    this.gripping = true;
-    
-    // In a real implementation, we would calculate how the part
-    // rotates when squeezed based on its geometry
-    // Here we'll just rotate it to align with the gripper (x-axis)
-    const angleToXAxis = part.orientation % Math.PI;
-    if (angleToXAxis > Math.PI / 2) {
-      part.rotate(Math.PI - angleToXAxis);
-    } else {
-      part.rotate(-angleToXAxis);
-    }
-    
-    console.log("Part squeezed to align with gripper jaws");
-    return part.getCurrentState();
-  }
-  
-  release(part) {
-    if (!this.gripping) {
-      console.log("Not currently gripping any part");
-      return;
-    }
-    
-    console.log("Releasing part");
-    this.gripping = false;
-    
-    // When released, the part falls to a stable orientation
-    part.dropToStableOrientation();
-    
-    return part.getCurrentState();
-  }
-  
-  push(part, angle) {
-    console.log(\`Pushing part at angle \${(angle * 180 / Math.PI).toFixed(1)}°\`);
-    
-    // First, set gripper orientation
-    const gripperOrientation = angle;
-    
-    // In a real implementation, we would calculate how the part
-    // rotates when pushed based on its geometry and the push direction
-    // Here we'll just rotate it in the push direction
-    part.rotate(angle / 3); // Simplified effect
-    
-    console.log(\`Part rotated to \${(part.orientation * 180 / Math.PI).toFixed(1)}° after pushing\`);
-    
-    return part.getCurrentState();
-  }
-}
-
-class PartOrientingPlanner {
-  constructor(part, gripper) {
-    this.part = part;
-    this.gripper = gripper;
-    this.targetOrientation = 0; // Default target orientation
-  }
-  
-  setTargetOrientation(targetAngle) {
-    this.targetOrientation = targetAngle;
-    console.log(\`Set target orientation to \${(targetAngle * 180 / Math.PI).toFixed(1)}°\`);
-  }
-  
-  planOrientingSequence() {
-    console.log("Planning orienting sequence...");
-    
-    // In a real implementation, this would compute an optimal sequence
-    // of push and squeeze operations to reach the target orientation
-    // Here we'll just create a simple sequence for demonstration
-    
-    const sequence = [];
-    
-    // Find which stable orientation is closest to our target
-    let closestStable = this.part.stableOrientations[0];
-    let minAngleDiff = Math.abs(this.targetOrientation - closestStable.angle);
-    
-    for (let stable of this.part.stableOrientations) {
-      const angleDiff = Math.abs(this.targetOrientation - stable.angle);
-      if (angleDiff < minAngleDiff) {
-        minAngleDiff = angleDiff;
-        closestStable = stable;
-      }
-    }
-    
-    // Calculate how many push-squeeze-release cycles we need
-    const numberOfCycles = this.part.stableOrientations.length;
-    
-    for (let i = 0; i < numberOfCycles; i++) {
-      // Push at different angles to achieve different outcomes
-      sequence.push({ operation: "push", params: { angle: (i * Math.PI) / numberOfCycles } });
-      sequence.push({ operation: "squeeze", params: { } });
-      sequence.push({ operation: "release", params: { } });
-    }
-    
-    console.log(\`Generated plan with \${sequence.length} operations\`);
-    return sequence;
-  }
-  
-  executeSequence(sequence) {
-    console.log("Executing orienting sequence...");
-    
-    const results = [];
-    let state = this.part.getCurrentState();
-    results.push({ 
-      operation: "initial", 
-      state: state 
-    });
-    
-    for (const step of sequence) {
-      console.log(\`Executing \${step.operation}\`);
-      
-      switch (step.operation) {
-        case "push":
-          state = this.gripper.push(this.part, step.params.angle);
-          break;
-        case "squeeze":
-          state = this.gripper.squeeze(this.part);
-          break;
-        case "release":
-          state = this.gripper.release(this.part);
-          break;
-      }
-      
-      results.push({
-        operation: step.operation,
-        params: step.params,
-        state: state
-      });
-    }
-    
-    console.log("Execution complete!");
-    console.log(\`Final orientation: \${(this.part.orientation * 180 / Math.PI).toFixed(1)}°\`);
-    
-    const targetDiff = Math.abs(this.part.orientation - this.targetOrientation);
-    const targetDiffDegrees = (targetDiff * 180 / Math.PI).toFixed(1);
-    
-    if (targetDiff < 0.1) {
-      console.log("✓ Target orientation achieved successfully!");
-    } else {
-      console.log(\`✗ Missed target by \${targetDiffDegrees}°\`);
-    }
-    
-    return results;
-  }
-}
-
-// Set up simulation
-const part = new PolygonalPart();
-const gripper = new ParallelJawGripper();
-const planner = new PartOrientingPlanner(part, gripper);
-
-// Initial target
-planner.setTargetOrientation(Math.PI / 4); // 45 degrees
-
-// This function would be called when user clicks "Run"
-function runPartOrienting() {
-  // Choose a random target orientation
-  const randomTarget = Math.random() * Math.PI;
-  planner.setTargetOrientation(randomTarget);
-  
-  // Reset part to random orientation
-  part.orientation = Math.random() * 2 * Math.PI;
-  console.log(\`Starting with part at \${(part.orientation * 180 / Math.PI).toFixed(1)}°\`);
-  
-  // Plan and execute
-  const sequence = planner.planOrientingSequence();
-  return planner.executeSequence(sequence);
-}
-`,
-
-            '2d-part-media.md': `# 2D Part Orienting Media & Resources
-
-## Project Website
-
-The complete research, including papers, code, and demonstrations, is hosted at Tel Aviv University's Computational Geometry Lab:
-
-[https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/](https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/)
-
-## Research Video Demonstrations
-
-The project includes several video demonstrations showing:
-
-1. Simulation of various part geometries being oriented
-2. Real robotic implementation with physical parts
-3. Comparison between theoretical predictions and experimental results
-
-## Diagrams and Visualizations
-
-### Push-Squeeze Operation Diagram
-Illustrates how a parallel-jaw gripper can reorient parts through a combination of pushing and squeezing operations.
-
-### Stable Orientation Analysis
-Visualizations showing the stable resting orientations of different part geometries and how they determine the possible outcomes of orienting operations.
-
-### Minimal Sequence Computation
-Diagrams explaining the graph-based algorithm for computing minimal-length orienting sequences.
-
-## Applications
-
-This research has applications in:
-
-- Automated manufacturing and assembly
-- Robotic manipulation
-- Parts feeding systems
-- Educational robotics
-
-The algorithms developed have been implemented in industrial settings with significant improvements in efficiency compared to previous methods.
-`,
-
-            'meta-readme.md': `# Meta Portfolio Project
-
-## Project Overview
-
-The Meta Portfolio is a self-referential project that explores innovative ways to present technical and creative work. This interactive code editor portfolio itself is part of the meta-portfolio, demonstrating my approach to presenting information in engaging, unexpected formats.
-
-## Concept
-
-The central idea behind this meta-portfolio is to blur the line between content and container - the portfolio itself becomes a project that demonstrates technical skill, creativity, and a touch of playfulness.
-
-Key aspects include:
-
-- **Interactivity**: Turning passive viewing into active exploration
-- **Self-Modification**: The site evolves over time with AI assistance
-- **Code as Content**: Presenting actual running code rather than just screenshots
-- **Layered Experience**: Different levels of engagement for different visitors
-
-## Technical Implementation
-
-This portfolio uses:
-
-- Modern HTML5 and CSS3
-- Vanilla JavaScript (no frameworks)
-- CodeMirror for the code editor functionality
-- LocalStorage for preserving user modifications
-- Dynamic theme switching and responsive design
-
-## Evolution
-
-The meta-portfolio concept involves continuous evolution:
-
-1. Each day, the AI assistant suggests modifications and improvements
-2. The portfolio tracks its own metrics and adapts based on user interaction patterns
-3. New projects are integrated not just as content but potentially as new interface paradigms
-
-## Philosophy
-
-This approach reflects my belief that how we present our work is itself a demonstration of our craft. By making the portfolio an interactive coding environment, I'm showcasing both the technical projects themselves and my approach to developer experience and interface design.
-`,
-
-            'meta-demo.js': `// Meta Portfolio - Self-modifying code example
-// This demonstrates the concept of code that can modify itself
-
-class MetaPortfolio {
-  constructor() {
-    this.lastModified = new Date('2025-05-10T01:04:04');
-    this.visitorCount = this.loadVisitorCount();
-    this.theme = localStorage.getItem('portfolio-theme') || 'dark';
-    this.modifications = this.loadModifications() || [];
-    this.creationDate = new Date('2025-05-10');
-  }
-  
-  loadVisitorCount() {
-    let count = localStorage.getItem('visitor-count');
-    if (!count) {
-      count = Math.floor(Math.random() * 100) + 500; // Start with a plausible number
-      localStorage.setItem('visitor-count', count);
-    }
-    return parseInt(count);
-  }
-  
-  incrementVisitorCount() {
-    this.visitorCount++;
-    localStorage.setItem('visitor-count', this.visitorCount);
-    console.log(\`Visitor count: \${this.visitorCount}\`);
-    return this.visitorCount;
-  }
-  
-  loadModifications() {
-    return JSON.parse(localStorage.getItem('portfolio-modifications') || '[]');
-  }
-  
-  saveModifications() {
-    localStorage.setItem('portfolio-modifications', JSON.stringify(this.modifications));
-  }
-  
-  addModification(description) {
-    const modification = {
-      date: new Date().toISOString(),
-      description: description
-    };
-    this.modifications.push(modification);
-    this.saveModifications();
-    
-    console.log(\`Added modification: \${description}\`);
-    return modification;
-  }
-  
-  getModificationsLog() {
-    return this.modifications.map(mod => {
-      const date = new Date(mod.date);
-      return \`[\${date.toLocaleDateString()}] \${mod.description}\`;
-    }).join('\\n');
-  }
-  
-  calculateAge() {
-    const now = new Date();
-    const diffTime = Math.abs(now - this.creationDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return {
-      days: diffDays,
-      versions: this.modifications.length + 1
-    };
-  }
-  
-  toggleTheme() {
-    this.theme = this.theme === 'dark' ? 'light' : 'dark';
-    localStorage.setItem('portfolio-theme', this.theme);
-    
-    this.addModification(\`Switched to \${this.theme} theme\`);
-    console.log(\`Theme toggled to \${this.theme}\`);
-    
-    return this.theme;
-  }
-  
-  generateSiteReport() {
-    const age = this.calculateAge();
-    
-    return {
-      creationDate: this.creationDate.toLocaleDateString(),
-      age: age.days,
-      versions: age.versions,
-      lastModified: new Date(this.modifications.length > 0 ? 
-                             this.modifications[this.modifications.length - 1].date : 
-                             this.lastModified).toLocaleDateString(),
-      visitorCount: this.visitorCount,
-      currentTheme: this.theme,
-      modificationHistory: this.modifications.length > 0 ? 
-                           this.getModificationsLog() : 
-                           "No modifications recorded yet."
-    };
-  }
-}
-
-// Initialize portfolio meta data
-const portfolio = new MetaPortfolio();
-portfolio.incrementVisitorCount();
-
-// This function would be called when user clicks "Run"
-function runMetaPortfolio() {
-  // Simulate adding a random modification
-  const possibleModifications = [
-    "Updated color scheme for better accessibility",
-    "Added new project section",
-    "Optimized code editor performance",
-    "Implemented new typing animation effect",
-    "Fixed mobile responsiveness issues",
-    "Added keyboard shortcuts for navigation",
-    "Updated project descriptions and links",
-    "Integrated real-time collaboration feature"
-  ];
-  
-  const randomMod = possibleModifications[Math.floor(Math.random() * possibleModifications.length)];
-  portfolio.addModification(randomMod);
-  
-  // Toggle theme occasionally
-  if (Math.random() > 0.7) {
-    portfolio.toggleTheme();
-  }
-  
-  // Generate and return the site report
-  return portfolio.generateSiteReport();
-}
-`,
-
-            'connect-readme.md': `# Connect With Geva Kipper
-
-## Contact Information
-
-Thank you for exploring my interactive portfolio! Feel free to connect with me through any of the following channels:
-
-### Professional Profiles
-
-- **GitHub**: [github.com/gevak](https://github.com/gevak)
-- **LinkedIn**: [linkedin.com/in/gevakip](https://linkedin.com/in/gevakip)
-- **Facebook**: [facebook.com/geva.kipper](https://facebook.com/geva.kipper)
-
-## Project Collaboration
-
-I'm always open to interesting collaborations, particularly in these areas:
-
-- Computational Geometry algorithms and applications
-- Urban technology solutions
-- Interactive data visualization
-- AI and machine learning applications
-
-## Speaking & Consulting
-
-I'm available for:
-
-- Technical talks on computational geometry
-- Consulting on urban technology implementations
-- Workshops on visualization techniques
-- Code reviews and architecture consulting
-
-## Current Focus
-
-My current technical focus areas include:
-
-1. Multi-agent geometric optimization algorithms
-2. Visualization techniques for high-dimensional datasets
-3. Urban mobility and infrastructure optimization
-4. Interactive educational tools for computational geometry
-
-## Academic Collaboration
-
-For academic collaborations, research opportunities, or student mentorship, please reach out via email with your specific interests and background.
-
-## Portfolio Feedback
-
-I welcome any feedback on this interactive portfolio. If you have suggestions for improvements or encounter any issues, please let me know!
-
----
-
-*"The essence of mathematics is not to make simple things complicated, but to make complicated things simple."* — Stan Gudder
-`
-        };
-
-        // DOM elements
-        const editor = document.getElementById('editor');
-        const terminal = document.getElementById('terminal');
-        const runButton = document.getElementById('run-button');
-        const resetButton = document.getElementById('reset-button');
-        const fontSizeSelector = document.getElementById('font-size');
-        const themeToggle = document.getElementById('theme-toggle');
-        const timeCounter = document.getElementById('time-counter');
-        const tabBar = document.getElementById('tab-bar');
+  // Sort points by polar angle...
+}</div>
+                    <p>Research on algorithms for orienting polygonal parts using computational geometry techniques.</p>
+                    <div class="os-button" onclick="window.open('https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/', '_blank')">Project Website</div>
+                    <div class="os-button">Download Paper</div>
+                `,
+                statusBar: "Tel-Aviv University | Computational Geometry Lab"
+            },
+            {
+                name: "Portfolio Website",
+                icon: "💻",
+                type: "portfolio",
+                content: `
+                    <h3>Meta-Recursive Portfolio</h3>
+                    <div class="crt-image" style="height: 200px; background-color: #000; padding: 10px; overflow: hidden;">
+                        <div style="transform: scale(0.6); transform-origin: top left;">
+                            <div style="background-color: #1f1f1f; border: 2px solid #3a3a3a; padding: 5px; width: 100%;">
+                                <div style="background-color: #4e9df5; padding: 5px; color: black; display: flex; justify-content: space-between;">
+                                    <span>Geva OS v1.0</span>
+                                    <span>×</span>
+                                </div>
+                                <div style="padding: 10px;">
+                                    <div style="display: flex; gap: 10px;">
+                                        <div style="width: 40px; height: 40px; background-color: #4e9df5; display: flex; align-items: center; justify-content: center;">💻</div>
+                                        <div style="width: 40px; height: 40px; background-color: #4e9df5; display: flex; align-items: center; justify-content: center;">📊</div>
+                                        <div style="width: 40px; height: 40px; background-color: #4e9df5; display: flex; align-items: center; justify-content: center;">🏙️</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <p>This portfolio website is redesigned daily by AI and is ever-changing. The current version features a retro OS interface, reminiscent of early Windows and Mac systems.</p>
+                    <div class="os-button" onclick="window.open('https://portfolio-dor1.onrender.com/', '_blank')">View Portfolio</div>
+                    <div class="os-button" onclick="alert('You\'re already here!')">Refresh</div>
+                `,
+                statusBar: "Current website version: 1.0 | Updated daily"
+            },
+            {
+                name: "Social Links",
+                icon: "👤",
+                type: "address-book",
+                content: `
+                    <h3>Connect with Geva</h3>
+                    <div class="address-book-entry" onclick="window.open('https://github.com/gevak', '_blank')">
+                        <h4>GitHub Profile</h4>
+                        <p>github.com/gevak</p>
+                        <p>Check out my open source contributions and personal projects</p>
+                    </div>
+                    <div class="address-book-entry" onclick="window.open('https://linkedin.com/in/gevakip', '_blank')">
+                        <h4>LinkedIn Profile</h4>
+                        <p>linkedin.com/in/gevakip</p>
+                        <p>Professional connections and career history</p>
+                    </div>
+                    <div class="address-book-entry" onclick="window.open('https://facebook.com/geva.kipper', '_blank')">
+                        <h4>Facebook Profile</h4>
+                        <p>facebook.com/geva.kipper</p>
+                        <p>Social updates and non-technical content</p>
+                    </div>
+                `,
+                statusBar: "Address Book | Last updated today"
+            }
+        ];
         
-        // Initialize CodeMirror editor
-        let codeMirrorEditor = CodeMirror(editor, {
-            value: fileContents['welcome.md'],
-            mode: 'markdown',
-            theme: 'dracula',
-            lineNumbers: true,
-            matchBrackets: true,
-            styleActiveLine: true,
-            lineWrapping: true,
-            indentUnit: 2,
-            tabSize: 2,
-            autoCloseBrackets: true,
-            viewportMargin: Infinity
-        });
+        // Global variables
+        let activeWindow = null;
+        let zIndex = 100;
+        let isStartMenuOpen = false;
+        let isDragging = false;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+        let bootStartTime = Date.now();
+        let startupTime = new Date('2025-05-11T01:09:43').getTime();
+        let konamiSequence = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+        let konamiIndex = 0;
         
-        // Track current file and original content
-        let currentFile = 'welcome.md';
-        let originalContent = {};
+        // Audio elements
+        const startupSound = document.getElementById('startup-sound');
+        const shutdownSound = document.getElementById('shutdown-sound');
+        const clickSound = document.getElementById('click-sound');
         
-        // Initialize original content with file contents
-        Object.keys(fileContents).forEach(file => {
-            originalContent[file] = fileContents[file];
-        });
-
-        // Load saved modifications from localStorage if any
-        function loadSavedContent() {
-            Object.keys(fileContents).forEach(file => {
-                const savedContent = localStorage.getItem(`file-${file}`);
-                if (savedContent) {
-                    originalContent[file] = savedContent;
+        // Boot sequence
+        function bootSequence() {
+            const bootScreen = document.getElementById('boot-screen');
+            const bootLog = document.getElementById('boot-log');
+            const progressBar = document.getElementById('progress-bar');
+            
+            const bootMessages = [
+                "Initializing system...",
+                "Loading OS kernel...",
+                "Checking memory...",
+                "Loading system resources...",
+                "Initializing desktop environment...",
+                "Loading user profile: Geva Kipper...",
+                "Connecting to network...",
+                "Starting system services...",
+                "Loading applications...",
+                "Welcome to Geva OS v1.0"
+            ];
+            
+            let messageIndex = 0;
+            let progress = 0;
+            
+            const bootInterval = setInterval(() => {
+                if (messageIndex < bootMessages.length) {
+                    bootLog.innerHTML += bootMessages[messageIndex] + "<br>";
+                    bootLog.scrollTop = bootLog.scrollHeight;
+                    messageIndex++;
+                    progress += 10;
+                    progressBar.style.width = `${progress}%`;
+                } else {
+                    clearInterval(bootInterval);
+                    setTimeout(() => {
+                        bootScreen.style.display = 'none';
+                        startupSound.play();
+                        initDesktop();
+                    }, 500);
                 }
-            });
+            }, 400);
         }
         
-        loadSavedContent();
-        
-        // Function to open a file
-        function openFile(filename) {
-            // Save current file content
-            if (currentFile) {
-                originalContent[currentFile] = codeMirrorEditor.getValue();
-                localStorage.setItem(`file-${currentFile}`, originalContent[currentFile]);
-            }
+        // Initialize desktop
+        function initDesktop() {
+            const desktop = document.getElementById('desktop');
             
-            currentFile = filename;
-            
-            // Set editor mode based on file extension
-            const fileExtension = filename.split('.').pop();
-            let mode;
-            
-            switch (fileExtension) {
-                case 'js':
-                    mode = 'javascript';
-                    runButton.style.display = 'flex';
-                    resetButton.style.display = 'flex';
-                    break;
-                case 'md':
-                    mode = 'markdown';
-                    runButton.style.display = 'none';
-                    resetButton.style.display = 'none';
-                    break;
-                default:
-                    mode = 'text';
-                    runButton.style.display = 'none';
-                    resetButton.style.display = 'none';
-            }
-            
-            // Set the content and mode
-            codeMirrorEditor.setOption('mode', mode);
-            codeMirrorEditor.setValue(originalContent[filename]);
-            
-            // Update tab bar
-            updateTabBar(filename);
-
-            // Add typing animation for MD files
-            if (fileExtension === 'md' && !filename.includes('welcome')) {
-                typeContent(originalContent[filename]);
-            }
-
-            // Scroll to top
-            codeMirrorEditor.scrollTo(0, 0);
-        }
-        
-        // Add typing animation for markdown files
-        function typeContent(content) {
-            const typingSpeed = 1; // Lower is faster
-            
-            // Skip animation if content is too long (for performance)
-            if (content.length > 2000) {
-                codeMirrorEditor.setValue(content);
-                return;
-            }
-            
-            codeMirrorEditor.setValue('');
-            let i = 0;
-            
-            function typeNextChar() {
-                if (i < content.length) {
-                    // Add the next character
-                    codeMirrorEditor.replaceRange(content.charAt(i), 
-                                                 {line: codeMirrorEditor.lineCount() - 1, 
-                                                  ch: codeMirrorEditor.getLine(codeMirrorEditor.lineCount() - 1).length});
-                    i++;
-                    
-                    // Schedule the next character with a small random delay for realistic typing effect
-                    setTimeout(typeNextChar, Math.random() * 10 * typingSpeed);
-                }
-            }
-            
-            typeNextChar();
-        }
-        
-        // Manage tabs
-        function updateTabBar(filename) {
-            // Check if tab already exists
-            const existingTab = document.querySelector(`.tab[data-file="${filename}"]`);
-            
-            if (existingTab) {
-                // Tab exists, just make it active
-                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-                existingTab.classList.add('active');
-                return;
-            }
-            
-            // Create new tab
-            const newTab = document.createElement('div');
-            newTab.className = 'tab active';
-            newTab.setAttribute('data-file', filename);
-            
-            // Set icon based on file extension
-            const fileExtension = filename.split('.').pop();
-            let iconClass;
-            
-            switch (fileExtension) {
-                case 'js':
-                    iconClass = 'fa-file-code';
-                    break;
-                case 'md':
-                    iconClass = 'fa-file-alt';
-                    break;
-                default:
-                    iconClass = 'fa-file';
-            }
-            
-            newTab.innerHTML = `<i class="fas ${iconClass}"></i> ${filename}`;
-            
-            // Make all other tabs inactive
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            
-            // Add new tab to tab bar
-            tabBar.appendChild(newTab);
-            
-            // Limit number of tabs (remove oldest if more than 5)
-            const tabs = document.querySelectorAll('.tab');
-            if (tabs.length > 5) {
-                // Don't remove the first (welcome) tab
-                tabs[1].remove();
-            }
-            
-            // Add click event to new tab
-            newTab.addEventListener('click', () => {
-                if (!newTab.classList.contains('active')) {
-                    openFile(filename);
-                }
-            });
-        }
-        
-        // Function to run the code in the editor
-        function runCode() {
-            if (!currentFile.endsWith('.js')) {
-                return;
-            }
-            
-            // Get the code from editor
-            const code = codeMirrorEditor.getValue();
-            
-            // Clear terminal
-            terminal.innerHTML = '';
-            
-            // Add a message to show execution is starting
-            terminal.innerHTML += '<span class="cmd-prompt">$ </span><span class="cmd-result">Running ' + currentFile + '...</span>\n';
-            
-            // Store original console methods
-            const originalLog = console.log;
-            const originalError = console.error;
-            const originalWarning = console.warn;
-            
-            try {
-                // Override console methods to output to our terminal
-                console.log = (...args) => {
-                    terminal.innerHTML += '<span class="cmd-result">' + args.join(' ') + '</span>\n';
-                    terminal.scrollTop = terminal.scrollHeight; // Auto-scroll to bottom
-                    originalLog(...args);
-                };
+            // Create desktop icons
+            projects.forEach((project, index) => {
+                const icon = document.createElement('div');
+                icon.className = 'desktop-icon';
+                icon.innerHTML = `
+                    <div class="icon-image">${project.icon}</div>
+                    <div class="icon-label">${project.name}</div>
+                `;
                 
-                console.error = (...args) => {
-                    terminal.innerHTML += '<span class="cmd-result" style="color: #ff5555;">' + args.join(' ') + '</span>\n';
-                    terminal.scrollTop = terminal.scrollHeight;
-                    originalError(...args);
-                };
-                
-                console.warn = (...args) => {
-                    terminal.innerHTML += '<span class="cmd-result" style="color: #ffb86c;">' + args.join(' ') + '</span>\n';
-                    terminal.scrollTop = terminal.scrollHeight;
-                    originalWarning(...args);
-                };
-                
-
-                // Find the function to call when running the code
-                let functionToCall;
-                if (currentFile.includes('glglstats')) functionToCall = 'runVisualization';
-                else if (currentFile.includes('ahuzat')) functionToCall = 'runOptimization';
-                else if (currentFile.includes('2d-part')) functionToCall = 'runPartOrienting';
-                else if (currentFile.includes('meta')) functionToCall = 'runMetaPortfolio';
-                
-                // Evaluate the code
-                const evalResult = eval(code);
-                
-                // If there's a specific function to call, call it
-                if (functionToCall && typeof window[functionToCall] === 'function') {
-                    const result = window[functionToCall]();
-                    
-                    // Display the result if it's returned
-                    if (result !== undefined) {
-                        terminal.innerHTML += '<span class="cmd-prompt">$ </span><span class="cmd-result">Result:</span>\n';
-                        if (typeof result === 'object') {
-                            terminal.innerHTML += '<span class="cmd-result">' + JSON.stringify(result, null, 2) + '</span>\n';
-                        } else {
-                            terminal.innerHTML += '<span class="cmd-result">' + result + '</span>\n';
-                        }
-                    }
-                }
-                
-                // Add completion message
-                terminal.innerHTML += '<span class="cmd-prompt">$ </span><span class="cmd-result">Execution completed successfully</span>\n';
-                
-                // Create particle effect for successful run
-                createParticles();
-            } catch (error) {
-                // Display errors
-                terminal.innerHTML += '<span class="cmd-prompt">$ </span><span class="cmd-result" style="color: #ff5555;">Error: ' + error.message + '</span>\n';
-                
-                // Add stack trace if available
-                if (error.stack) {
-                    const cleanStack = error.stack.replace(/eval at runCode.*/, '');
-                    terminal.innerHTML += '<span class="cmd-result" style="color: #ff5555; font-size: 0.9em;">' + cleanStack + '</span>\n';
-                }
-            } finally {
-                // Restore original console methods
-                console.log = originalLog;
-                console.error = originalError;
-                console.warn = originalWarning;
-                
-                // Scroll terminal to bottom
-                terminal.scrollTop = terminal.scrollHeight;
-            }
-        }
-        
-        // Function to reset the code to original
-        function resetCode() {
-            if (currentFile && fileContents[currentFile]) {
-                codeMirrorEditor.setValue(fileContents[currentFile]);
-                terminal.innerHTML += '<span class="cmd-prompt">$ </span><span class="cmd-result">Code reset to original</span>\n';
-                terminal.scrollTop = terminal.scrollHeight;
-            }
-        }
-
-        // Create particles when running code
-        function createParticles() {
-            const particleCount = 30;
-            const editorRect = document.getElementById('editor-wrapper').getBoundingClientRect();
-            
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                
-                // Random starting position near run button
-                const runButtonRect = runButton.getBoundingClientRect();
-                particle.style.left = (runButtonRect.left + Math.random() * runButtonRect.width) + 'px';
-                particle.style.top = (runButtonRect.top + Math.random() * runButtonRect.height) + 'px';
-                
-                // Random size
-                const size = Math.random() * 5 + 3;
-                particle.style.width = size + 'px';
-                particle.style.height = size + 'px';
-                
-                // Add to body
-                document.body.appendChild(particle);
-                
-                // Animate
-                const xDest = Math.random() * editorRect.width + editorRect.left;
-                const yDest = Math.random() * editorRect.height + editorRect.top;
-                const speed = Math.random() * 1000 + 500;
-                
-                // Apply animation
-                particle.animate([
-                    { opacity: 1, transform: 'translate(0, 0)' },
-                    { opacity: 0, transform: `translate(${xDest - parseInt(particle.style.left)}px, ${yDest - parseInt(particle.style.top)}px)` }
-                ], {
-                    duration: speed,
-                    easing: 'ease-out',
-                    fill: 'forwards'
+                icon.addEventListener('click', () => {
+                    clickSound.currentTime = 0;
+                    clickSound.play();
+                    openWindow(project);
                 });
                 
-                // Remove particle after animation
-                setTimeout(() => {
-                    particle.remove();
-                }, speed);
-            }
-        }
-        
-        // Event listeners for UI controls
-        runButton.addEventListener('click', runCode);
-        resetButton.addEventListener('click', resetCode);
-        
-        // Font size adjustment
-        fontSizeSelector.addEventListener('change', () => {
-            const fontSize = fontSizeSelector.value + 'px';
-            codeMirrorEditor.getWrapperElement().style.fontSize = fontSize;
-            // Save preference
-            localStorage.setItem('editor-font-size', fontSize);
-        });
-        
-        // Apply saved font size if it exists
-        const savedFontSize = localStorage.getItem('editor-font-size');
-        if (savedFontSize) {
-            fontSizeSelector.value = savedFontSize.replace('px', '');
-            codeMirrorEditor.getWrapperElement().style.fontSize = savedFontSize;
-        }
-        
-        // Theme toggle
-        themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('light-theme');
-            const isDark = !document.body.classList.contains('light-theme');
+                desktop.appendChild(icon);
+            });
             
-            // Update CodeMirror theme
-            if (isDark) {
-                codeMirrorEditor.setOption('theme', 'dracula');
-            } else {
-                codeMirrorEditor.setOption('theme', 'default');
-            }
-            
-            // Save preference
-            localStorage.setItem('theme-preference', isDark ? 'dark' : 'light');
-        });
-        
-        // Apply saved theme preference if it exists
-        const savedTheme = localStorage.getItem('theme-preference');
-        if (savedTheme) {
-            if (savedTheme === 'light') {
-                document.body.classList.add('light-theme');
-                codeMirrorEditor.setOption('theme', 'default');
-            } else {
-                codeMirrorEditor.setOption('theme', 'dracula');
-            }
-        }
-        
-        // File explorer folder toggling
-        document.querySelectorAll('.folder').forEach(folder => {
-            folder.addEventListener('click', (e) => {
-                // Only toggle if the click was directly on the folder or its icon, not on a file
-                if (e.target.classList.contains('file') || e.target.closest('.file')) {
-                    return;
+            // Setup event listeners
+            document.getElementById('start-button').addEventListener('click', toggleStartMenu);
+            document.getElementById('shutdown-option').addEventListener('click', initiateShutdown);
+            document.addEventListener('click', (e) => {
+                if (isStartMenuOpen && !e.target.closest('#start-menu') && !e.target.closest('#start-button')) {
+                    toggleStartMenu();
                 }
+            });
+            
+            // Setup clock
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            // Setup Konami code
+            document.addEventListener('keydown', checkKonamiCode);
+        }
+        
+        // Open a window
+        function openWindow(project) {
+            const existingWindow = document.querySelector(`.window[data-name="${project.name}"]`);
+            if (existingWindow) {
+                bringToFront(existingWindow);
+                return;
+            }
+            
+            const desktopHeight = document.getElementById('desktop').clientHeight;
+            const desktopWidth = document.getElementById('desktop').clientWidth;
+            
+            // Random position within visible area
+            const maxLeft = desktopWidth - 400;
+            const maxTop = desktopHeight - 300;
+            const left = Math.max(50, Math.min(maxLeft, Math.random() * maxLeft));
+            const top = Math.max(50, Math.min(maxTop, Math.random() * maxTop));
+            
+            // Create window
+            const windowEl = document.createElement('div');
+            windowEl.className = `window ${project.type}`;
+            windowEl.dataset.name = project.name;
+            windowEl.style.width = '700px';
+            windowEl.style.height = '500px';
+            windowEl.style.left = `${left}px`;
+            windowEl.style.top = `${top}px`;
+            windowEl.style.zIndex = ++zIndex;
+            
+            windowEl.innerHTML = `
+                <div class="window-titlebar">
+                    <div class="window-title">${project.name}</div>
+                    <div class="window-controls">
+                        <div class="window-control window-minimize">_</div>
+                        <div class="window-control window-maximize">□</div>
+                        <div class="window-control window-close">✕</div>
+                    </div>
+                </div>
+                <div class="window-content">${project.content}</div>
+                <div class="window-statusbar">${project.statusBar || ''}</div>
+            `;
+            
+            document.getElementById('desktop').appendChild(windowEl);
+            
+            // Add to taskbar
+            addTaskbarItem(project.name);
+            
+            // Setup event listeners for window
+            setupWindowEventListeners(windowEl);
+            
+            // Set as active window
+            setActiveWindow(windowEl);
+        }
+        
+        // Setup window event listeners
+        function setupWindowEventListeners(windowEl) {
+            const titlebar = windowEl.querySelector('.window-titlebar');
+            const closeBtn = windowEl.querySelector('.window-close');
+            const minimizeBtn = windowEl.querySelector('.window-minimize');
+            const maximizeBtn = windowEl.querySelector('.window-maximize');
+            
+            // Click on window to bring to front
+            windowEl.addEventListener('mousedown', () => {
+                bringToFront(windowEl);
+            });
+            
+            // Close button
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                clickSound.currentTime = 0;
+                clickSound.play();
+                closeWindow(windowEl);
+            });
+            
+            // Minimize button
+            minimizeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                clickSound.currentTime = 0;
+                clickSound.play();
+                minimizeWindow(windowEl);
+            });
+            
+            // Maximize button
+            maximizeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                clickSound.currentTime = 0;
+                clickSound.play();
+                maximizeWindow(windowEl);
+            });
+            
+            // Dragging
+            titlebar.addEventListener('mousedown', (e) => {
+                if (e.target !== closeBtn && e.target !== minimizeBtn && e.target !== maximizeBtn) {
+                    isDragging = true;
+                    dragOffsetX = e.clientX - windowEl.offsetLeft;
+                    dragOffsetY = e.clientY - windowEl.offsetTop;
+                    bringToFront(windowEl);
+                }
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging && activeWindow === windowEl) {
+                    const newLeft = e.clientX - dragOffsetX;
+                    const newTop = e.clientY - dragOffsetY;
+                    
+                    // Keep the window within the desktop boundaries
+                    const maxLeft = window.innerWidth - windowEl.offsetWidth;
+                    const maxTop = window.innerHeight - windowEl.offsetHeight - 40; // Account for taskbar
+                    
+                    windowEl.style.left = `${Math.max(0, Math.min(maxLeft, newLeft))}px`;
+                    windowEl.style.top = `${Math.max(30, Math.min(maxTop, newTop))}px`;
+                }
+            });
+            
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        }
+        
+        // Bring window to front
+        function bringToFront(windowEl) {
+            windowEl.style.zIndex = ++zIndex;
+            setActiveWindow(windowEl);
+        }
+        
+        // Set active window
+        function setActiveWindow(windowEl) {
+            if (activeWindow) {
+                activeWindow.querySelector('.window-titlebar').style.backgroundColor = '#666';
+                const taskbarItem = document.querySelector(`.taskbar-item[data-name="${activeWindow.dataset.name}"]`);
+                if (taskbarItem) taskbarItem.classList.remove('active');
+            }
+            
+            activeWindow = windowEl;
+            windowEl.querySelector('.window-titlebar').style.backgroundColor = var(--accent-color);
+            
+            const taskbarItem = document.querySelector(`.taskbar-item[data-name="${windowEl.dataset.name}"]`);
+            if (taskbarItem) taskbarItem.classList.add('active');
+        }
+        
+        // Close window
+        function closeWindow(windowEl) {
+            // Remove from taskbar
+            const taskbarItem = document.querySelector(`.taskbar-item[data-name="${windowEl.dataset.name}"]`);
+            if (taskbarItem) {
+                document.getElementById('taskbar-items').removeChild(taskbarItem);
+            }
+            
+            // Remove window
+            document.getElementById('desktop').removeChild(windowEl);
+            
+            if (activeWindow === windowEl) {
+                activeWindow = null;
+            }
+        }
+        
+        // Minimize window
+        function minimizeWindow(windowEl) {
+            windowEl.style.display = 'none';
+            const taskbarItem = document.querySelector(`.taskbar-item[data-name="${windowEl.dataset.name}"]`);
+            if (taskbarItem) {
+                taskbarItem.classList.remove('active');
+            }
+            
+            if (activeWindow === windowEl) {
+                activeWindow = null;
+            }
+        }
+        
+        // Maximize window
+        function maximizeWindow(windowEl) {
+            if (windowEl.dataset.isMaximized === 'true') {
+                // Restore
+                windowEl.style.width = windowEl.dataset.prevWidth;
+                windowEl.style.height = windowEl.dataset.prevHeight;
+                windowEl.style.left = windowEl.dataset.prevLeft;
+                windowEl.style.top = windowEl.dataset.prevTop;
+                windowEl.dataset.isMaximized = 'false';
+            } else {
+                // Maximize
+                windowEl.dataset.prevWidth = windowEl.style.width;
+                windowEl.dataset.prevHeight = windowEl.style.height;
+                windowEl.dataset.prevLeft = windowEl.style.left;
+                windowEl.dataset.prevTop = windowEl.style.top;
                 
-                folder.classList.toggle('open');
-                const icon = folder.querySelector('i');
-                if (folder.classList.contains('open')) {
-                    icon.classList.remove('fa-folder-closed');
-                    icon.classList.add('fa-folder-open');
-                } else {
-                    icon.classList.remove('fa-folder-open');
-                    icon.classList.add('fa-folder-closed');
-                }
-            });
-        });
-        
-        // File opening
-        document.querySelectorAll('.file').forEach(file => {
-            file.addEventListener('click', () => {
-                const filename = file.getAttribute('data-file');
-                if (filename) {
-                    openFile(filename);
-                }
-            });
-        });
-        
-        // Tab clicking
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                const filename = tab.getAttribute('data-file');
-                if (filename && !tab.classList.contains('active')) {
-                    openFile(filename);
-                }
-            });
-        });
-        
-        // Terminal resize functionality
-        const resizer = document.getElementById('terminal-resizer');
-        resizer.addEventListener('mousedown', initResize, false);
-
-        function initResize(e) {
-            window.addEventListener('mousemove', resize, false);
-            window.addEventListener('mouseup', stopResize, false);
-        }
-
-        function resize(e) {
-            const terminal = document.getElementById('resizable-terminal');
-            const editorContainer = document.getElementById('editor-container');
-            const editorWrapper = document.getElementById('editor-wrapper');
-            
-            // Calculate new height based on mouse position
-            const containerRect = editorContainer.getBoundingClientRect();
-            const newHeight = containerRect.bottom - e.clientY;
-            
-            // Constrain to min/max height
-            const minHeight = 100;
-            const maxHeight = containerRect.height * 0.5;
-            const constrainedHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
-            
-            terminal.style.height = constrainedHeight + 'px';
-        }
-
-        function stopResize() {
-            window.removeEventListener('mousemove', resize, false);
-            window.removeEventListener('mouseup', stopResize, false);
+                windowEl.style.width = `${window.innerWidth}px`;
+                windowEl.style.height = `${window.innerHeight - 70}px`; // Account for taskbar and menubar
+                windowEl.style.left = '0';
+                windowEl.style.top = '30px'; // Account for menubar
+                windowEl.dataset.isMaximized = 'true';
+            }
         }
         
-        // Time counter
-        function updateTimeCounter() {
-            const startDate = new Date('2025-05-10T01:04:04');
+        // Add taskbar item
+        function addTaskbarItem(name) {
+            const taskbarItems = document.getElementById('taskbar-items');
+            
+            // Check if item already exists
+            const existingItem = document.querySelector(`.taskbar-item[data-name="${name}"]`);
+            if (existingItem) return;
+            
+            const taskbarItem = document.createElement('div');
+            taskbarItem.className = 'taskbar-item';
+            taskbarItem.dataset.name = name;
+            taskbarItem.textContent = name;
+            
+            taskbarItem.addEventListener('click', () => {
+                clickSound.currentTime = 0;
+                clickSound.play();
+                const windowEl = document.querySelector(`.window[data-name="${name}"]`);
+                if (windowEl) {
+                    if (windowEl.style.display === 'none') {
+                        windowEl.style.display = 'flex';
+                        bringToFront(windowEl);
+                    } else if (activeWindow === windowEl) {
+                        minimizeWindow(windowEl);
+                    } else {
+                        bringToFront(windowEl);
+                    }
+                }
+            });
+            
+            taskbarItems.appendChild(taskbarItem);
+        }
+        
+        // Toggle start menu
+        function toggleStartMenu() {
+            clickSound.currentTime = 0;
+            clickSound.play();
+            
+            const startMenu = document.getElementById('start-menu');
+            if (isStartMenuOpen) {
+                startMenu.style.display = 'none';
+                isStartMenuOpen = false;
+            } else {
+                startMenu.style.display = 'block';
+                isStartMenuOpen = true;
+            }
+        }
+        
+        // Update clock
+        function updateClock() {
             const now = new Date();
-            const diff = now - startDate;
+            const elapsed = now.getTime() - startupTime;
+            const hours = String(Math.floor(elapsed / 3600000)).padStart(2, '0');
+            const minutes = String(Math.floor((elapsed % 3600000) / 60000)).padStart(2, '0');
+            const seconds = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, '0');
             
-            // Calculate days, hours, minutes, seconds
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-            
-            timeCounter.textContent = `${days} days, ${hours} hours, ${minutes} minutes, ${seconds} seconds`;
-            
-            // Update every second
-            setTimeout(updateTimeCounter, 1000);
+            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
         }
         
-        // Start the time counter
-        updateTimeCounter();
-
-        // Keyboard sound effect for typing
-        let audioContext;
-        let isAudioInitialized = false;
-
-        // Initialize audio context on first user interaction
-        document.addEventListener('click', () => {
-            if (!isAudioInitialized) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                isAudioInitialized = true;
+        // Check for Konami code
+        function checkKonamiCode(e) {
+            if (e.key === konamiSequence[konamiIndex]) {
+                konamiIndex++;
+                if (konamiIndex === konamiSequence.length) {
+                    activateCheatMode();
+                    konamiIndex = 0;
+                }
+            } else {
+                konamiIndex = 0;
             }
-        }, { once: true });
-
-        // Play typing sound
-        codeMirrorEditor.on('keyHandled', (instance, name, event) => {
-            if (isAudioInitialized && name.length === 1) { // Only for single char keys
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.type = 'sine';
-                oscillator.frequency.value = 800 + Math.random() * 400; // Random frequency for variation
-                
-                gainNode.gain.value = 0.05; // Very quiet
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.start();
-                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.05);
-                
+        }
+        
+        // Activate cheat mode
+        function activateCheatMode() {
+            const desktop = document.getElementById('desktop');
+            desktop.classList.add('cheat-mode-active');
+            
+            // Play a fun sound
+            clickSound.play();
+            
+            // Show a message
+            const cheatMessage = document.createElement('div');
+            cheatMessage.style.position = 'absolute';
+            cheatMessage.style.top = '50%';
+            cheatMessage.style.left = '50%';
+            cheatMessage.style.transform = 'translate(-50%, -50%)';
+            cheatMessage.style.background = 'rgba(0,0,0,0.8)';
+            cheatMessage.style.padding = '20px';
+            cheatMessage.style.border = '2px solid #fff';
+            cheatMessage.style.zIndex = '9999';
+            cheatMessage.style.fontSize = '24px';
+            cheatMessage.textContent = 'CHEAT MODE ACTIVATED!';
+            
+            document.body.appendChild(cheatMessage);
+            
+            setTimeout(() => {
+                document.body.removeChild(cheatMessage);
                 setTimeout(() => {
-                    oscillator.stop();
-                }, 50);
-            }
-        });
+                    desktop.classList.remove('cheat-mode-active');
+                }, 5000);
+            }, 2000);
+        }
+        
+        // Shutdown animation
+        function initiateShutdown() {
+            clickSound.currentTime = 0;
+            clickSound.play();
+            
+            const startMenu = document.getElementById('start-menu');
+            startMenu.style.display = 'none';
+            
+            shutdownSound.play();
+            
+            document.body.classList.add('shutting-down');
+            
+            setTimeout(() => {
+                document.body.classList.remove('shutting-down');
+                // Instead of actually closing, restart the experience
+                location.reload();
+            }, 2000);
+        }
+        
+        // Start the boot sequence when page loads
+        window.addEventListener('DOMContentLoaded', bootSequence);
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250510",
+          pageId: "20250511",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
