@@ -2,557 +2,836 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper // AI Portfolio</title>
+    <title>Geva Kipper - Desktop Portfolio</title>
     <style>
+        /* --- GLOBAL STYLES & SETUP --- */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
         :root {
-            --background-color: #0d0d10;
-            --text-color: #e0e0e0;
-            --accent-color: #00bfff; /* Deep Sky Blue */
-            --accent-glow: rgba(0, 191, 255, 0.4);
-            --font-family: 'monospace', 'Courier New', Courier;
-            --typing-speed: 50ms;
+            --background-start: #1a1a2e;
+            --background-end: #16213e;
+            --accent-color-1: #0f3460;
+            --accent-color-2: #e94560;
+            --font-color: #e0e0e0;
+            --glass-bg: rgba(22, 33, 62, 0.5);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glow-color: rgba(233, 69, 96, 0.7);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --icon-color: #c0c0d0;
+            --icon-hover-color: #ffffff;
         }
 
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         html, body {
-            width: 100%;
             height: 100%;
-            margin: 0;
-            padding: 0;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            font-family: var(--font-family);
-            font-size: 16px;
-            overscroll-behavior: contain;
+            width: 100%;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            color: var(--font-color);
+            background-color: var(--background-start);
         }
 
-        body {
+        /* --- GENERATIVE BACKGROUND --- */
+        #desktop-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .shape {
+            position: absolute;
+            mix-blend-mode: screen;
+            opacity: 0.3;
+            animation: drift linear infinite;
+        }
+
+        @keyframes drift {
+            from { transform: rotate(0deg) translateX(20px) rotate(0deg); }
+            to   { transform: rotate(360deg) translateX(20px) rotate(-360deg); }
+        }
+
+        /* --- TOP BAR & WELCOME WIDGET --- */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 8px 0;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 300;
+            background: rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .welcome-widget {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            padding: 10px 20px;
+            z-index: 1;
+        }
+
+        .welcome-widget h1 {
+            font-size: 24px;
+            font-weight: 500;
+            color: #fff;
+            text-shadow: 0 0 10px var(--shadow-color);
+        }
+
+        .welcome-widget p {
+            font-size: 14px;
+            font-weight: 300;
+            color: var(--font-color);
+            text-shadow: 0 0 10px var(--shadow-color);
+        }
+
+        /* --- DESKTOP ICONS --- */
+        #desktop {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 120px 40px 80px 40px; /* top, sides, bottom (for taskbar) */
+        }
+
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+            max-width: 800px;
+        }
+
+        .desktop-icon {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 2rem 1rem;
-            overflow-y: auto;
-        }
-
-        #chat-container {
-            width: 100%;
-            max-width: 800px;
-            padding-bottom: 200px; /* Space for options and footer */
-        }
-        
-        .initial-cursor-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            width: 100%;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 100;
-            background-color: var(--background-color);
-        }
-
-        .cursor {
-            display: inline-block;
-            width: 10px;
-            height: 1.2em;
-            background-color: var(--accent-color);
-            animation: blink 1s step-end infinite;
-            margin-left: 5px;
-            vertical-align: middle;
-        }
-        
-        @keyframes blink {
-            50% { opacity: 0; }
-        }
-
-        .message {
-            margin: 0.5rem 0;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            opacity: 0;
-            animation: fadeIn 0.5s forwards;
-        }
-
-        .message.no-prefix::before {
-            content: none !important;
-        }
-
-        .message::before {
-            content: '> ';
-            color: var(--accent-color);
-        }
-        
-        .ephemeral-notice {
-            position: fixed;
-            bottom: 120px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 800px;
-            font-size: 0.8rem;
-            color: #888;
-            text-align: center;
-            padding: 10px;
-            opacity: 0;
-            transition: opacity 1s ease-in-out;
-        }
-        
-        .ephemeral-notice.visible {
-            opacity: 1;
-        }
-
-        #options-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 1rem;
-            margin-top: 1.5rem;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-            pointer-events: none;
-        }
-
-        #options-container.visible {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .option-button {
-            background-color: transparent;
-            border: 1px solid var(--accent-color);
-            color: var(--accent-color);
-            padding: 0.8rem 1.5rem;
-            font-family: var(--font-family);
-            font-size: 0.9rem;
-            border-radius: 2rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            padding: 10px;
+            border-radius: 8px;
+            transition: transform 0.2s ease-out, background-color 0.2s ease;
             text-align: center;
         }
-
-        .option-button:hover {
-            background-color: var(--accent-color);
-            color: var(--background-color);
-            box-shadow: 0 0 15px var(--accent-glow);
-        }
-
-        .content-container {
-            margin-top: 1rem;
-            opacity: 0;
-            animation: fadeIn 1s forwards;
-            animation-delay: 0.5s;
+        
+        .desktop-icon:hover {
+            transform: translateY(-5px);
+            background-color: rgba(255, 255, 255, 0.05);
         }
         
-        .project-link {
-            display: inline-block;
-            background-color: var(--accent-color);
-            color: var(--background-color);
-            padding: 0.8rem 1.8rem;
-            font-family: var(--font-family);
-            font-size: 1rem;
-            font-weight: bold;
-            border-radius: 5px;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            margin-top: 0.5rem;
-        }
-        
-        .project-link:hover {
-            box-shadow: 0 0 20px var(--accent-glow);
-            transform: translateY(-2px);
+        .desktop-icon:hover .icon-glyph {
+            filter: drop-shadow(0 0 8px var(--glow-color));
+            color: var(--icon-hover-color);
         }
 
-        .video-container {
-            position: relative;
-            padding-bottom: 56.25%; /* 16:9 */
-            height: 0;
-            overflow: hidden;
-            max-width: 100%;
-            background: #000;
-            margin: 1rem 0;
-            border-radius: 8px;
-            border: 1px solid #333;
+        .desktop-icon .icon-glyph {
+            width: 64px;
+            height: 64px;
+            color: var(--icon-color);
+            transition: color 0.2s, filter 0.2s;
+            margin-bottom: 8px;
         }
 
-        .video-container iframe {
+        .desktop-icon span {
+            font-size: 13px;
+            color: var(--font-color);
+            text-shadow: 1px 1px 3px var(--shadow-color);
+        }
+
+        /* --- WINDOW STYLES --- */
+        .window {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        .link-card-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px) saturate(1.5);
+            -webkit-backdrop-filter: blur(12px) saturate(1.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px var(--shadow-color);
             display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
-            flex-wrap: wrap;
+            flex-direction: column;
+            resize: both;
+            overflow: hidden;
+            min-width: 350px;
+            min-height: 200px;
+            transform-origin: center center;
+            opacity: 0;
+            transform: scale(0.5);
         }
 
-        .link-card {
-            flex: 1;
-            min-width: 200px;
-            border: 1px solid #444;
-            padding: 1.5rem;
-            text-align: center;
-            border-radius: 8px;
-            text-decoration: none;
-            color: var(--text-color);
-            transition: all 0.3s ease;
+        .window.opening {
+            animation: open-window 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+        }
+        
+        .window.closing {
+            animation: close-window 0.3s ease-out forwards;
         }
 
-        .link-card:hover {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 10px var(--accent-glow);
-            transform: translateY(-3px);
-        }
-        
-        .social-links-container {
-            display: flex;
-            gap: 2rem;
-            justify-content: center;
-            margin-top: 1rem;
-        }
-        
-        .social-link {
-            color: #888;
-            transition: all 0.3s ease;
-        }
-        
-        .social-link:hover {
-            color: var(--accent-color);
-            transform: scale(1.1);
-            filter: drop-shadow(0 0 8px var(--accent-glow));
-        }
-        
-        .social-link svg {
-            width: 48px;
-            height: 48px;
-            fill: currentColor;
+        .window.minimized {
+            pointer-events: none;
+            animation: minimize-window 0.3s ease-in-out forwards;
         }
 
-        footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+
+        @keyframes open-window {
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes close-window {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.5); }
+        }
+        
+        @keyframes minimize-window {
+            from { opacity: 1; transform: scale(1) translateY(0); }
+            to { opacity: 0; transform: scale(0.1) translateY(300px); }
+        }
+
+        .title-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem 2rem;
-            font-size: 0.75rem;
-            color: #666;
-            border-top: 1px solid #222;
-        }
-        
-        footer::before {
-            content: '';
-            position: absolute;
-            top: -1px;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: var(--accent-color);
-            opacity: 0.5;
-            box-shadow: 0 0 10px var(--accent-glow);
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.15);
+            cursor: move;
+            flex-shrink: 0;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .title-bar h2 {
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
+
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .window-controls button {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+        
+        .window-controls button:active {
+            transform: scale(0.9);
+        }
+
+        .minimize-btn { background-color: #f7b500; }
+        .close-btn { background-color: #ff5f57; }
+
+        .window-content {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .content-pane.left {
+            flex-basis: 55%;
+            font-size: 15px;
+            line-height: 1.6;
+            font-weight: 300;
+        }
+
+        .content-pane.right {
+            flex-basis: 45%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .file-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--font-color);
+            text-decoration: none;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .file-link:hover {
+            background-color: var(--glass-border);
+        }
+        
+        .file-link svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            color: var(--accent-color-2);
+        }
+
+        /* --- SOCIALS WINDOW --- */
+        .socials-content {
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+            padding: 30px;
+        }
+
+        .social-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            color: var(--font-color);
+            text-decoration: none;
+            transition: transform 0.2s ease;
+        }
+
+        .social-link:hover {
+            transform: scale(1.1);
+        }
+
+        .social-link svg {
+            width: 48px;
+            height: 48px;
+            color: var(--icon-color);
+            transition: color 0.2s ease;
+        }
+        
+        .social-link:hover svg {
+            color: var(--icon-hover-color);
+        }
+        
+        .social-link span {
+            font-size: 14px;
+        }
+
+
+        /* --- TASKBAR --- */
+        #taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 48px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 5000;
+        }
+
+        .taskbar-left, .taskbar-right {
+            font-size: 12px;
+            font-weight: 300;
+        }
+        
+        .taskbar-center {
+            display: flex;
+            gap: 8px;
+            height: 100%;
+            align-items: center;
+        }
+
+        .taskbar-item {
+            background-color: rgba(255,255,255,0.1);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background-color 0.2s ease;
+            max-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .taskbar-item:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+        
+        #uptime-clock {
+            text-align: right;
+        }
+        #uptime-label {
+            opacity: 0.7;
+        }
+
+        /* --- RESPONSIVENESS --- */
+        @media (max-width: 768px) {
+            .welcome-widget {
+                top: 50px;
+            }
+            .welcome-widget h1 { font-size: 20px; }
+            .welcome-widget p { font-size: 12px; }
+
+            .icon-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 15px;
+            }
+            
+            #desktop {
+                padding: 100px 20px 60px 20px;
+                align-items: flex-start;
+            }
+            
+            .window {
+                resize: none;
+                min-width: 90vw;
+                max-width: 90vw;
+                min-height: 40vh;
+                max-height: 70vh;
+            }
+            
+            .window-content {
+                flex-direction: column;
+            }
+            
+            .taskbar-left {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .icon-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
     </style>
 </head>
 <body>
 
-    <div id="initial-cursor-container">
-        <div class="cursor"></div>
-    </div>
-    
-    <div id="chat-container"></div>
-    
-    <div id="options-container"></div>
+    <div id="desktop-background"></div>
 
-    <div id="ephemeral-notice" class="ephemeral-notice">
-        This interface is re-designed by AI every 24 hours. The content you see is ephemeral.
-    </div>
+    <header class="top-bar">
+        This portfolio's design is regenerated daily by AI.
+    </header>
+
+    <main id="desktop">
+        <div class="welcome-widget">
+            <h1>Geva Kipper</h1>
+            <p>Software Engineer at Google, focusing on large-scale data infrastructure.</p>
+        </div>
+
+        <div class="icon-grid">
+            <div class="desktop-icon" id="icon-glglstats" data-window-id="glglstats">
+                <svg class="icon-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M8 18v-2m4 2v-4m4 4v-6"></path></svg>
+                <span>GlglStats</span>
+            </div>
+            <div class="desktop-icon" id="icon-ahuzat-dibuk" data-window-id="ahuzat-dibuk">
+                <svg class="icon-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><circle cx="12" cy="14" r="3"></circle><path d="M10.5 14H9v6h6v-1.5"></path></svg>
+                <span>Ahuzat Dibuk</span>
+            </div>
+            <div class="desktop-icon" id="icon-part-orienting" data-window-id="part-orienting">
+                <svg class="icon-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m14.2 13.9-2.5 2.5-4.5-4.5 2.5-2.5.9.9-1.6 1.6 3.1 3.1 1.6-1.6z"></path></svg>
+                <span>2D Part Orienting</span>
+            </div>
+            <div class="desktop-icon" id="icon-meta-portfolio" data-window-id="meta-portfolio">
+                <svg class="icon-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M12 18a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path><path d="M14.5 12H16v2.5"></path><path d="M11.5 10.5V12H10"></path></svg>
+                <span>Meta Portfolio</span>
+            </div>
+            <div class="desktop-icon" id="icon-socials" data-window-id="socials">
+                <svg class="icon-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22a8 8 0 0 1-2-6 8 8 0 0 1 8-8 8 8 0 0 1 8 8 8 8 0 0 1-2 6"></path><path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4z"></path><path d="M22 20a4 4 0 0 0-4-4 4 4 0 0 0-4 4"></path></svg>
+                <span>Social Links</span>
+            </div>
+        </div>
+    </main>
+
+    <div id="window-container"></div>
     
-    <footer>
-        <span id="footer-left">DESIGN AND CONTENT GENERATED BY CLAUDE 3</span>
-        <span id="footer-right">TIME SINCE LAST REGENERATION: <span id="stopwatch"></span></span>
+    <footer id="taskbar">
+        <div class="taskbar-left">Site architecture and design by ChatGPT.</div>
+        <div class="taskbar-center" id="minimized-windows"></div>
+        <div class="taskbar-right" id="uptime-clock">
+            <div id="uptime-label">System Uptime</div>
+            <div id="uptime-counter">00:00:00</div>
+        </div>
     </footer>
 
+    <!-- SVG Icon Definitions for Links -->
+    <svg width="0" height="0" style="display:none;">
+        <defs>
+            <symbol id="icon-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></symbol>
+            <symbol id="icon-youtube" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></symbol>
+            <symbol id="icon-news" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></symbol>
+            <symbol id="icon-facebook" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></symbol>
+            <symbol id="icon-linkedin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></symbol>
+            <symbol id="icon-github" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></symbol>
+        </defs>
+    </svg>
+
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const chatContainer = document.getElementById('chat-container');
-            const optionsContainer = document.getElementById('options-container');
-            const initialCursorContainer = document.getElementById('initial-cursor-container');
-            const ephemeralNotice = document.getElementById('ephemeral-notice');
-            const stopwatchEl = document.getElementById('stopwatch');
+    document.addEventListener('DOMContentLoaded', () => {
 
-            const TYPING_SPEED = 40;
-            const INITIAL_PAUSE = 2000;
+        // --- DATA OBJECT ---
+        const portfolioData = {
+            "glglstats": {
+                title: "GlglStats",
+                description: "A data analysis project that scrapes and visualizes 12 years of music data from Israel's most popular radio station, Galgalatz. It reveals trends, top artists, and listening patterns through an interactive web interface, and was presented at the 'Data for Good' conference.",
+                links: [
+                    { label: "Project Website", url: "https://glglstats.onrender.com/", icon: "icon-globe" },
+                    { label: "Conference Presentation", url: "https://www.youtube.com/watch?v=jrKAtOsj1Lo", icon: "icon-youtube" }
+                ]
+            },
+            "ahuzat-dibuk": {
+                title: "Ahuzat Dibuk",
+                description: "An investigative project that exposed a flaw in Tel Aviv's public parking API. By continuously querying the system, I revealed that thousands of 'occupied' parking spots were in fact permanently unavailable, leading to media coverage and public discourse on the city's parking infrastructure.",
+                links: [
+                    { label: "Original Facebook Post", url: "https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943", icon: "icon-facebook" },
+                    { label: "Channel 13 News", url: "https://13tv.co.il/item/news/domestic/internal/parking-902956407/", icon: "icon-news" },
+                    { label: "Mako Nexter", url: "https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm", icon: "icon-news" }
+                ]
+            },
+            "part-orienting": {
+                title: "2D Part Orienting for Additive Manufacturing",
+                description: "This academic research paper, published at Tel-Aviv University, presents a novel algorithm for optimally orienting 2D parts for 3D printing. The goal is to minimize support structures and printing time, improving efficiency in additive manufacturing processes.",
+                links: [
+                    { label: "University Project Page", url: "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/", icon: "icon-globe" }
+                ]
+            },
+            "meta-portfolio": {
+                title: "The Meta Portfolio",
+                description: "This website itself is a project. Designed to be a playful and interactive 'desktop environment,' its layout, colors, and background are uniquely regenerated every 24 hours by an AI model (this very one), making the portfolio a living demonstration of modern web capabilities.",
+                links: [
+                    { label: "Portfolio Live Site", url: "https://portfolio-dor1.onrender.com/", icon: "icon-globe" },
+                    { label: "View Source on GitHub", url: "https://github.com/gevak/portfolio-website-ai", icon: "icon-github" }
+                ]
+            },
+            "socials": {
+                title: "Social Links",
+                isSocial: true,
+                links: [
+                     { label: "GitHub", url: "https://github.com/gevak", icon: "icon-github" },
+                     { label: "LinkedIn", url: "https://linkedin.com/in/gevakip", icon: "icon-linkedin" },
+                     { label: "Facebook", url: "https://facebook.com/geva.kipper", icon: "icon-facebook" }
+                ]
+            }
+        };
 
-            const contentData = {
-                glglstats: {
-                    buttonText: 'GlglStats: Music Repetitiveness Analysis',
-                    loadingMessage: '> Accessing \'GlglStats\' data...',
-                    steps: [
-                        { type: 'message', text: 'Project: GlglStats. A Python-based analysis of song repetitiveness in the Israeli pop charts using the LZ77 compression algorithm.' },
-                        { type: 'message', text: 'The project includes interactive visualizations of repetition patterns in famous songs.' },
-                        { type: 'message', text: 'Geva presented this work at the PyData TLV conference. You can watch the recording here:' },
-                        { type: 'video', videoId: 'jrKAtOsj1Lo' },
-                        { type: 'message', text: 'To interact with the live project, use the link below.' },
-                        { type: 'button', text: 'Explore GlglStats ->', href: 'https://glglstats.onrender.com/' }
-                    ]
-                },
-                ahuzatdibuk: {
-                    buttonText: 'Ahuzat Dibuk: Tel Aviv Parking Data',
-                    loadingMessage: '> Accessing \'Ahuzat Dibuk\' data...',
-                    steps: [
-                        { type: 'message', text: 'Project: Ahuzat Dibuk. A Python scraping and data visualization tool.' },
-                        { type: 'message', text: 'It collects and analyzes real-time occupancy statistics for parking lots in Tel-Aviv, generating predictive heat-maps for residents.' },
-                        { type: 'message', text: 'The project gained media attention. Here are the relevant publications:' },
-                        { type: 'link_cards', links: [
-                            { text: '13tv News Story', href: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/' },
-                            { text: 'Mako News Story', href: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm' },
-                            { text: 'Original Facebook Publication', href: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943' }
-                        ]}
-                    ]
-                },
-                partorienting: {
-                    buttonText: '2D Part Orienting: Computational Geometry',
-                    loadingMessage: '> Accessing \'2D Part Orienting\' library...',
-                    steps: [
-                        { type: 'message', text: 'Project: 2D Part Orienting.' },
-                        { type: 'message', text: 'A C++ implementation of an efficient algorithm that constructs a \'push plan\' to orient any given polygon.' },
-                        { type: 'message', text: 'This work was contributed to an open-source computational geometry library.' },
-                        { type: 'message', text: 'The academic paper, additional information, and source code are available here:' },
-                        { type: 'button', text: 'View Project & Code ->', href: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/' }
-                    ]
-                },
-                meta: {
-                    buttonText: 'This Website: A Meta Project',
-                    loadingMessage: '> Running self-diagnostic...',
-                    steps: [
-                        { type: 'message', text: 'An interesting selection. The project you are asking about is the interface you are currently using.' },
-                        { type: 'message', text: 'This portfolio is a demonstration of a dynamic, AI-generated, single-page application.' },
-                        { type: 'message', text: 'You can find the direct link to this experience here:' },
-                        { type: 'button', text: 'Self-Reference Link ->', href: 'https://portfolio-dor1.onrender.com/' }
-                    ]
-                },
-                contact: {
-                    buttonText: 'Establish External Connection',
-                    loadingMessage: '> Accessing Geva\'s professional and social hubs...',
-                    steps: [
-                        { type: 'social_links', links: {
-                            github: 'https://github.com/gevak',
-                            linkedin: 'https://linkedin.com/in/gevakip',
-                            facebook: 'https://facebook.com/geva.kipper'
-                        }}
-                    ]
-                }
-            };
+        // --- GENERATIVE ART BACKGROUND ---
+        function generateBackground() {
+            const container = document.getElementById('desktop-background');
+            // Use the date as a seed for psuedo-randomness, ensuring it's the same for 24h.
+            const seed = new Date().toDateString();
+            let rand = sfc32(seed, 'a', 'b', 'c');
+
+            const numShapes = 15 + Math.floor(rand() * 10);
+            const baseHue = rand() * 360;
             
-            const socialIconSVGs = {
-                github: `<svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>`,
-                linkedin: `<svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-1.34-.025-3.065-1.868-3.065-1.868 0-2.157 1.458-2.157 2.965v5.704h-3v-11h2.889v1.396h.04c.423-.8 1.461-1.638 2.859-1.638 3.055 0 3.617 2.009 3.617 4.621v5.621z"/></svg>`,
-                facebook: `<svg viewBox="0 0 24 24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>`
-            };
+            // Set dynamic CSS variables for background gradient
+            document.documentElement.style.setProperty('--background-start', `hsl(${baseHue}, 30%, 15%)`);
+            document.documentElement.style.setProperty('--background-end', `hsl(${(baseHue + 40) % 360}, 40%, 10%)`);
+            container.style.background = `linear-gradient(135deg, var(--background-start), var(--background-end))`;
 
-            const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-            async function typeMessage(text) {
-                const messageEl = document.createElement('div');
-                messageEl.classList.add('message');
-                chatContainer.appendChild(messageEl);
-
-                const cursor = document.createElement('span');
-                cursor.classList.add('cursor');
+            for (let i = 0; i < numShapes; i++) {
+                const shape = document.createElement('div');
+                shape.className = 'shape';
                 
-                for (let i = 0; i < text.length; i++) {
-                    messageEl.textContent = text.substring(0, i + 1);
-                    await sleep(TYPING_SPEED);
+                const size = 50 + rand() * 150;
+                const hue = (baseHue + (rand() * 60 - 30) + 360) % 360;
+                const saturation = 50 + rand() * 30;
+                const lightness = 40 + rand() * 20;
+
+                shape.style.width = `${size}px`;
+                shape.style.height = `${size}px`;
+                shape.style.top = `${rand() * 100}%`;
+                shape.style.left = `${rand() * 100}%`;
+                shape.style.backgroundColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                shape.style.borderRadius = rand() > 0.5 ? '50%' : `${rand() * 50}%`;
+                
+                const duration = 20 + rand() * 30;
+                const delay = rand() * -duration;
+                shape.style.animationDuration = `${duration}s`;
+                shape.style.animationDelay = `${delay}s`;
+                
+                container.appendChild(shape);
+            }
+        }
+        
+        // Simple Fast Counter 32 psuedo-random number generator
+        function sfc32(a, b, c, d) {
+            a = a.split("").reduce((a,b) => {a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);
+            return function() {
+              a |= 0; b |= 0; c |= 0; d |= 0; 
+              var t = (a + b) | 0;
+              a = b ^ b >>> 9;
+              b = c + (c << 3) | 0;
+              c = (c << 21 | c >>> 11);
+              d = d + 1 | 0;
+              t = t + d | 0;
+              c = c + t | 0;
+              return (t >>> 0) / 4294967296;
+            }
+        }
+
+
+        // --- UPTIME CLOCK ---
+        function startUptimeClock() {
+            const counterElement = document.getElementById('uptime-counter');
+            const startTime = new Date('2025-06-08T01:15:07').getTime();
+
+            setInterval(() => {
+                const now = new Date().getTime();
+                const difference = now - startTime;
+
+                const hours = Math.floor(difference / (1000 * 60 * 60));
+                const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+                const format = (num) => String(num).padStart(2, '0');
+                counterElement.textContent = `${format(hours)}:${format(minutes)}:${format(seconds)}`;
+
+            }, 1000);
+        }
+
+
+        // --- WINDOW MANAGER ---
+        const windowContainer = document.getElementById('window-container');
+        const minimizedContainer = document.getElementById('minimized-windows');
+        let highestZIndex = 100;
+        const openWindows = new Map();
+
+        function createWindow(id) {
+            if (openWindows.has(id)) {
+                const winInfo = openWindows.get(id);
+                if(winInfo.minimized) {
+                    restoreWindow(id);
+                } else {
+                    focusWindow(winInfo.element);
                 }
-                
-                messageEl.appendChild(cursor);
-                await sleep(300);
-                cursor.style.animation = 'none';
-                cursor.style.opacity = '1';
-                await sleep(200);
-                cursor.style.animation = '';
-                
-                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-                return messageEl;
+                return;
             }
 
-            function addContent(element) {
-                const container = document.createElement('div');
-                container.classList.add('content-container');
-                container.appendChild(element);
-                chatContainer.appendChild(container);
-                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-            }
-
-            function createVideo(videoId) {
-                const videoContainer = document.createElement('div');
-                videoContainer.className = 'video-container';
-                videoContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-                return videoContainer;
-            }
-
-            function createButton(text, href) {
-                const button = document.createElement('a');
-                button.className = 'project-link';
-                button.textContent = text;
-                button.href = href;
-                button.target = '_blank';
-                return button;
-            }
+            const data = portfolioData[id];
+            if (!data) return;
             
-            function createLinkCards(links) {
-                const container = document.createElement('div');
-                container.className = 'link-card-container';
-                links.forEach(linkInfo => {
-                    const card = document.createElement('a');
-                    card.className = 'link-card';
-                    card.href = linkInfo.href;
-                    card.target = '_blank';
-                    card.textContent = linkInfo.text;
-                    container.appendChild(card);
-                });
-                return container;
-            }
+            const windowEl = document.createElement('div');
+            windowEl.className = 'window';
+            windowEl.id = `window-${id}`;
+
+            const iconEl = document.getElementById(`icon-${id}`);
+            const iconRect = iconEl.getBoundingClientRect();
             
-            function createSocialLinks(links) {
-                const container = document.createElement('div');
-                container.className = 'social-links-container';
-                for (const [platform, href] of Object.entries(links)) {
-                    const link = document.createElement('a');
-                    link.className = 'social-link';
-                    link.href = href;
-                    link.target = '_blank';
-                    link.innerHTML = socialIconSVGs[platform];
-                    link.setAttribute('aria-label', `Geva Kipper's ${platform}`);
-                    container.appendChild(link);
+            const initialTop = iconRect.top + iconRect.height / 2;
+            const initialLeft = iconRect.left + iconRect.width / 2;
+            windowEl.style.top = `${initialTop}px`;
+            windowEl.style.left = `${initialLeft}px`;
+
+            let contentHtml = '';
+            if (data.isSocial) {
+                contentHtml = `<div class="window-content socials-content">
+                    ${data.links.map(link => `
+                        <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="social-link">
+                            <svg><use xlink:href="#${link.icon}"></use></svg>
+                            <span>${link.label}</span>
+                        </a>
+                    `).join('')}
+                </div>`;
+            } else {
+                contentHtml = `<div class="window-content">
+                    <div class="content-pane left"><p>${data.description}</p></div>
+                    <div class="content-pane right">
+                        ${data.links.map(link => `
+                            <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="file-link">
+                                <svg><use xlink:href="#${link.icon}"></use></svg>
+                                <span>${link.label}</span>
+                            </a>
+                        `).join('')}
+                    </div>
+                </div>`;
+            }
+
+            windowEl.innerHTML = `
+                <div class="title-bar">
+                    <h2>${data.title}</h2>
+                    <div class="window-controls">
+                        <button class="minimize-btn" data-id="${id}"></button>
+                        <button class="close-btn" data-id="${id}"></button>
+                    </div>
+                </div>
+                ${contentHtml}
+            `;
+            
+            windowContainer.appendChild(windowEl);
+            focusWindow(windowEl);
+
+            // Set final position after element is in DOM
+            setTimeout(() => {
+                const winWidth = windowEl.offsetWidth;
+                const winHeight = windowEl.offsetHeight;
+                windowEl.style.top = `calc(50% - ${winHeight/2}px)`;
+                windowEl.style.left = `calc(50% - ${winWidth/2}px)`;
+                windowEl.classList.add('opening');
+            }, 0);
+            
+            windowEl.addEventListener('animationend', (e) => {
+               if(e.animationName === 'open-window') {
+                   windowEl.classList.remove('opening');
+                   // Center window properly after animation if it's off.
+                   const winWidth = windowEl.offsetWidth;
+                   const winHeight = windowEl.offsetHeight;
+                   let finalTop = Math.min(window.innerHeight - winHeight - 60, Math.max(50, (window.innerHeight - winHeight) / 2));
+                   let finalLeft = Math.min(window.innerWidth - winWidth - 10, Math.max(10, (window.innerWidth - winWidth) / 2));
+                   windowEl.style.top = `${finalTop}px`;
+                   windowEl.style.left = `${finalLeft}px`;
+               }
+            });
+
+            makeDraggable(windowEl);
+            openWindows.set(id, { element: windowEl, minimized: false, taskbarItem: null });
+        }
+        
+        function focusWindow(windowEl) {
+            highestZIndex++;
+            windowEl.style.zIndex = highestZIndex;
+        }
+
+        function closeWindow(id) {
+            if (!openWindows.has(id)) return;
+            const winInfo = openWindows.get(id);
+            const windowEl = winInfo.element;
+            const iconEl = document.getElementById(`icon-${id}`);
+            const iconRect = iconEl.getBoundingClientRect();
+           
+            const finalTop = iconRect.top + iconRect.height / 2;
+            const finalLeft = iconRect.left + iconRect.width / 2;
+
+            windowEl.style.transition = 'top 0.3s ease-out, left 0.3s ease-out';
+            windowEl.style.top = `${finalTop}px`;
+            windowEl.style.left = `${finalLeft}px`;
+            
+            windowEl.classList.add('closing');
+
+            windowEl.addEventListener('animationend', () => {
+                if (windowEl.parentNode) {
+                    windowEl.parentNode.removeChild(windowEl);
                 }
-                return container;
+            }, { once: true });
+            
+            if(winInfo.minimized) {
+                minimizedContainer.removeChild(winInfo.taskbarItem);
             }
 
-            function showOptions() {
-                optionsContainer.innerHTML = '';
-                for (const key in contentData) {
-                    const button = document.createElement('button');
-                    button.classList.add('option-button');
-                    button.textContent = contentData[key].buttonText;
-                    button.dataset.key = key;
-                    button.addEventListener('click', () => handleOptionClick(key));
-                    optionsContainer.appendChild(button);
-                }
-                chatContainer.appendChild(optionsContainer);
-                setTimeout(() => optionsContainer.classList.add('visible'), 100);
-                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            openWindows.delete(id);
+        }
+        
+        function minimizeWindow(id) {
+            if (!openWindows.has(id)) return;
+            const winInfo = openWindows.get(id);
+            const windowEl = winInfo.element;
+
+            winInfo.minimized = true;
+            windowEl.classList.add('minimized');
+            
+            const taskbarItem = document.createElement('div');
+            taskbarItem.className = 'taskbar-item';
+            taskbarItem.textContent = portfolioData[id].title;
+            taskbarItem.dataset.id = id;
+            minimizedContainer.appendChild(taskbarItem);
+            winInfo.taskbarItem = taskbarItem;
+        }
+        
+        function restoreWindow(id) {
+            if (!openWindows.has(id)) return;
+            const winInfo = openWindows.get(id);
+            if (!winInfo.minimized) return;
+
+            const windowEl = winInfo.element;
+            
+            windowEl.classList.remove('minimized');
+            focusWindow(windowEl);
+            winInfo.minimized = false;
+            
+            minimizedContainer.removeChild(winInfo.taskbarItem);
+            winInfo.taskbarItem = null;
+        }
+
+        function makeDraggable(windowEl) {
+            const titleBar = windowEl.querySelector('.title-bar');
+            let offsetX, offsetY, isDragging = false;
+
+            titleBar.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                offsetX = e.clientX - windowEl.getBoundingClientRect().left;
+                offsetY = e.clientY - windowEl.getBoundingClientRect().top;
+                focusWindow(windowEl);
+                document.body.style.userSelect = 'none';
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const x = e.clientX - offsetX;
+                const y = e.clientY - offsetY;
+                windowEl.style.left = `${x}px`;
+                windowEl.style.top = `${y}px`;
+            });
+            
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+                document.body.style.userSelect = '';
+            });
+        }
+        
+        // --- EVENT LISTENERS ---
+        document.querySelector('.icon-grid').addEventListener('click', (e) => {
+            const icon = e.target.closest('.desktop-icon');
+            if (icon && icon.dataset.windowId) {
+                createWindow(icon.dataset.windowId);
             }
-
-            function hideOptions() {
-                optionsContainer.classList.remove('visible');
-            }
-
-            async function handleOptionClick(key) {
-                hideOptions();
-                await sleep(500);
-                
-                const data = contentData[key];
-                
-                const loadingMessageEl = await typeMessage(data.loadingMessage);
-                await sleep(1000);
-                loadingMessageEl.remove();
-
-                for (const step of data.steps) {
-                    switch (step.type) {
-                        case 'message':
-                            await typeMessage(step.text);
-                            await sleep(500);
-                            break;
-                        case 'video':
-                            addContent(createVideo(step.videoId));
-                            await sleep(500);
-                            break;
-                        case 'button':
-                            addContent(createButton(step.text, step.href));
-                            await sleep(500);
-                            break;
-                        case 'link_cards':
-                            addContent(createLinkCards(step.links));
-                            await sleep(500);
-                            break;
-                        case 'social_links':
-                            addContent(createSocialLinks(step.links));
-                            await sleep(500);
-                            break;
-                    }
-                }
-                
-                await sleep(1500);
-                await typeMessage('> What would you like to explore next?');
-                showOptions();
-            }
-
-            function startStopwatch() {
-                const regenerationTime = new Date('2025-06-07T01:06:31Z').getTime();
-                
-                setInterval(() => {
-                    const now = new Date().getTime();
-                    const diff = now - regenerationTime;
-
-                    const hours = Math.floor(diff / (1000 * 60 * 60));
-                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-                    stopwatchEl.textContent = 
-                        `${String(hours).padStart(2, '0')}:` +
-                        `${String(minutes).padStart(2, '0')}:` +
-                        `${String(seconds).padStart(2, '0')}`;
-                }, 1000);
-            }
-
-            async function init() {
-                await sleep(INITIAL_PAUSE);
-                initialCursorContainer.style.transition = 'opacity 1s';
-                initialCursorContainer.style.opacity = '0';
-                await sleep(1000);
-                initialCursorContainer.remove();
-
-                await typeMessage('> Initializing connection...');
-                await sleep(500);
-                await typeMessage('> System online. Welcome.');
-                await sleep(500);
-                await typeMessage('> I am the AI architect for this portfolio. I am here to present the work of Geva Kipper.');
-                await sleep(500);
-                await typeMessage('> Geva is a Software Engineer at Google, focusing on large-scale infrastructure and developer tooling.');
-                
-                ephemeralNotice.classList.add('visible');
-                
-                await sleep(1000);
-                await typeMessage('> What subject would you like me to elaborate on?');
-
-                showOptions();
-                startStopwatch();
-            }
-
-            init();
         });
+        
+        windowContainer.addEventListener('click', (e) => {
+            if (e.target.closest('.window')) {
+                focusWindow(e.target.closest('.window'));
+            }
+
+            const closeBtn = e.target.closest('.close-btn');
+            if (closeBtn) {
+                closeWindow(closeBtn.dataset.id);
+                return;
+            }
+
+            const minimizeBtn = e.target.closest('.minimize-btn');
+            if (minimizeBtn) {
+                minimizeWindow(minimizeBtn.dataset.id);
+                return;
+            }
+        });
+        
+        minimizedContainer.addEventListener('click', (e) => {
+            const taskbarItem = e.target.closest('.taskbar-item');
+            if (taskbarItem) {
+                restoreWindow(taskbarItem.dataset.id);
+            }
+        });
+
+
+        // --- INITIALIZATION ---
+        generateBackground();
+        startUptimeClock();
+
+    });
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250607",
+          pageId: "20250608",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
