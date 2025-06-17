@@ -2,500 +2,634 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper Protocol</title>
+    <title>Geva Kipper - The GevaBot Interview</title>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
     <style>
+        /* --- CSS Reset & Global Styles --- */
         :root {
-            --bg-color: #1a1c1d;
-            --text-color: #e0e0e0;
-            --accent-color: #00ffff;
-            --accent-color-translucent: #00ffff20;
-            --accent-fill-hover: #00ffff;
-            --text-on-accent: #1a1c1d;
-            --font-mono: 'Fira Code', monospace;
-            --font-sans: 'Inter', sans-serif;
+            --bg-color: #1A1A1A;
+            --text-color: #E0E0E0;
+            --text-muted: #888888;
+            --accent-primary: #4A90E2;
+            --accent-secondary: #7B68EE;
+            --surface-color: #252525;
+            --border-color: #333333;
+
+            --font-ui: 'Inter', sans-serif;
+            --font-bot: 'JetBrains Mono', monospace;
+            
+            --border-radius-pill: 999px;
+            --border-radius-card: 12px;
         }
 
-        * {
+        *, *::before, *::after {
             box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
             margin: 0;
             padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-ui);
+            font-size: 16px;
+            overflow: hidden; /* Prevent scrollbars from layout shift */
+        }
+        
+        /* --- Animated Background --- */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at 10% 20%, rgba(75, 108, 183, 0.1), transparent 40%),
+                        radial-gradient(circle at 80% 90%, rgba(123, 104, 238, 0.1), transparent 40%);
+            animation: subtle-gradient-shift 30s ease-in-out infinite;
+            z-index: -1;
         }
 
-        html {
+        @keyframes subtle-gradient-shift {
+            0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+            25% { transform: translate(5px, 10px) rotate(5deg); opacity: 0.8; }
+            50% { transform: translate(-5px, -10px) rotate(-5deg); opacity: 1; }
+            75% { transform: translate(-10px, 5px) rotate(3deg); opacity: 0.9; }
+            100% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+        }
+
+        /* --- Layout --- */
+        .page-wrapper {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .header-subtitle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            z-index: 10;
+        }
+
+        .chat-scroll-area {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 100px 20px;
             scroll-behavior: smooth;
         }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: var(--font-mono);
-            font-size: 16px;
-            line-height: 1.7;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        /* --- Initial View --- */
-        #initial-view {
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: left;
-            padding: 2rem;
-            flex-direction: column;
-        }
-
-        #initial-text-container {
-            width: 100%;
-            max-width: 800px;
-        }
-
-        #initial-text-container p {
-            margin: 0.5em 0;
-        }
-
-        #initial-text-container .typed-text::after {
-            content: "█";
-            animation: blink 1s step-end infinite;
-            color: var(--accent-color);
-            margin-left: 0.25rem;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
-        }
-
-        /* --- Main Layout --- */
-        #main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem 1rem;
-            max-width: 1200px;
+        /* --- Chat Interface --- */
+        .chat-container {
+            max-width: 720px;
             margin: 0 auto;
-            padding: 5vh 2rem;
-            align-items: center;
-        }
-
-        .log-entry {
-            grid-column: 1 / 2;
-            justify-self: end;
-            text-align: right;
-            padding-right: 2rem;
-            min-height: 160px; /* Aligns content boxes better */
             display: flex;
             flex-direction: column;
-            justify-content: center;
-        }
-        
-        .log-entry p {
-             opacity: 0;
-             transition: opacity 0.5s ease-in;
+            gap: 20px;
         }
 
-        .log-entry.visible p {
-            opacity: 1;
-        }
-
-        .content-box {
-            grid-column: 2 / 3;
-            justify-self: start;
-            padding-left: 2rem;
-            min-height: 160px;
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 85%;
+            align-items: flex-end;
             opacity: 0;
             transform: translateY(20px);
-            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
-            width: 100%;
+            animation: fade-in 0.5s ease-out forwards;
         }
 
-        .content-box.visible {
-            opacity: 1;
-            transform: translateY(0);
+        @keyframes fade-in {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message.user {
+            align-self: flex-end;
+            text-align: right;
+            flex-direction: row-reverse;
         }
 
-        .content-box h3 {
-            font-family: var(--font-sans);
-            font-weight: 700;
-            font-size: 1.75rem;
-            color: var(--text-color);
-            margin-bottom: 1.5rem;
+        .message.bot {
+            align-self: flex-start;
         }
 
-        /* --- Components --- */
-        .btn {
+        .avatar {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            background-color: var(--surface-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-bot);
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--accent-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .message-content {
+            background-color: var(--surface-color);
+            padding: 12px 18px;
+            border-radius: var(--border-radius-card);
+            line-height: 1.6;
+        }
+        
+        .message.bot .message-content {
+            font-family: var(--font-bot);
+        }
+
+        .message.user .message-content {
+            background-color: var(--accent-primary);
+            color: #FFFFFF;
+        }
+
+        .bot-name {
+            font-weight: bold;
+            color: var(--accent-secondary);
+            margin-bottom: 8px;
+            display: block;
+            font-size: 0.9rem;
+        }
+        
+        /* Thinking Indicator */
+        .thinking span {
             display: inline-block;
-            font-family: var(--font-mono);
-            text-decoration: none;
-            padding: 0.75rem 1.5rem;
-            border: 1px solid var(--accent-color);
-            color: var(--accent-color);
-            background-color: transparent;
-            border-radius: 50px;
-            transition: background-color 0.3s ease, color 0.3s ease;
-            margin-right: 1rem;
-            margin-bottom: 1rem;
-            font-size: 0.875rem;
+            width: 8px;
+            height: 8px;
+            background-color: var(--text-muted);
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: pulse 1.4s infinite ease-in-out both;
+        }
+        .thinking span:nth-child(1) { animation-delay: -0.32s; }
+        .thinking span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes pulse {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
         }
 
-        .btn:hover {
-            background-color: var(--accent-fill-hover);
-            color: var(--text-on-accent);
+        /* --- Prompt Buttons --- */
+        .prompt-options {
+            margin-left: 52px; /* avatar width + gap */
+            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            opacity: 0;
+            animation: fade-in 0.5s 0.2s ease-out forwards;
         }
 
-        .text-link {
+        .prompt-button {
+            font-family: var(--font-ui);
+            font-size: 0.9rem;
+            font-weight: 500;
+            background: transparent;
+            color: var(--accent-primary);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: var(--border-radius-pill);
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s, transform 0.2s;
+        }
+
+        .prompt-button:hover {
+            background-color: var(--accent-primary);
+            color: #FFFFFF;
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        /* --- Project Cards --- */
+        .project-card {
+            background-color: #1c1c1c; /* Slightly different from message bg */
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-card);
+            padding: 20px;
+        }
+
+        .card-title {
+            font-family: var(--font-ui);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+
+        .card-description {
+            font-family: var(--font-ui);
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .card-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .card-link-button {
             display: inline-flex;
             align-items: center;
-            color: var(--accent-color);
+            gap: 8px;
+            font-family: var(--font-ui);
             text-decoration: none;
-            position: relative;
-            margin: 0.5rem 0;
+            font-weight: 500;
+            font-size: 0.9rem;
+            padding: 10px 18px;
+            border-radius: 8px;
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
         }
 
-        .text-link::after {
-            content: '';
-            position: absolute;
-            width: 100%;
-            transform: scaleX(0);
-            height: 1px;
-            bottom: -2px;
-            left: 0;
-            background-color: var(--accent-color);
-            transform-origin: bottom right;
-            transition: transform 0.25s ease-out;
+        .card-link-button:hover {
+            background-color: var(--accent-secondary);
+            color: #FFFFFF;
+            border-color: var(--accent-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
-
-        .text-link:hover::after {
-            transform: scaleX(1);
-            transform-origin: bottom left;
-        }
-
-        .text-link .icon {
-            width: 16px;
-            height: 16px;
-            margin-right: 0.5rem;
-            fill: var(--accent-color);
-        }
-
-        /* --- Social Links --- */
-        #social-links-container a {
-            display: inline-block;
-            margin-right: 1.5rem;
-        }
-
-        #social-links-container .social-icon {
-            width: 32px;
-            height: 32px;
-            fill: var(--text-color);
-            transition: fill 0.3s ease, transform 0.3s ease;
-        }
-
-        #social-links-container a:hover .social-icon {
-            fill: var(--accent-fill-hover);
-            transform: scale(1.1);
+        
+        .card-link-button svg {
+            width: 1em;
+            height: 1em;
         }
 
         /* --- Footer --- */
-        footer {
-            max-width: 1200px;
-            margin: 5rem auto 0;
-            padding: 2rem;
-            border-top: 1px solid transparent; /* placeholder */
-        }
-        
-        #footer-rule {
-            height: 1px;
-            background-color: var(--accent-color);
-            width: 0;
-            transition: width 1s ease-out;
-            margin: 0 auto;
-        }
-
-        #footer-rule.visible {
-            width: 100%;
-        }
-
-        .footer-content {
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 10px 20px;
+            background: rgba(26, 26, 26, 0.7);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
             display: flex;
             justify-content: space-between;
-            font-size: 0.8rem;
-            color: #888;
-            padding-top: 1rem;
-            opacity: 0;
-            transition: opacity 1s ease-out 0.5s;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+            z-index: 10;
         }
         
-        .footer-content.visible {
-            opacity: 1;
+        .footer-stopwatch {
+            text-align: right;
+        }
+        
+        .footer-stopwatch-label {
+            display: block;
+            font-size: 0.65rem;
+            opacity: 0.7;
+        }
+        
+        #stopwatch {
+            font-family: var(--font-bot);
         }
 
-
-        /* --- Responsive Design --- */
-        @media (max-width: 900px) {
-            body {
-                font-size: 14px;
-            }
-            #main-content {
-                grid-template-columns: 1fr;
-                gap: 0;
-            }
-            .log-entry, .content-box {
-                grid-column: 1 / 2;
-                justify-self: start;
-                text-align: left;
-                padding: 0;
-            }
-            .log-entry {
-                min-height: auto;
-                margin-bottom: 2rem;
-            }
-            .content-box {
-                min-height: auto;
-                margin-bottom: 8vh;
-            }
-            .content-box h3 {
-                font-size: 1.5rem;
-            }
-        }
     </style>
 </head>
 <body>
 
-    <!-- SVG Definitions for Icons -->
-    <svg width="0" height="0" style="display:none;">
-        <symbol id="icon-newspaper" viewBox="0 0 24 24">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20.25a2.25 2.25 0 0 1-2.25 2.25H3.25A2.25 2.25 0 0 1 1 20.25V5.25A2.25 2.25 0 0 1 3.25 3h13.5A2.25 2.25 0 0 1 19 5.25v15Z" fill="none" />
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 8.25H5m10 3H5m5 3H5" fill="none"/>
-        </symbol>
-        <symbol id="icon-facebook" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M22.675 0h-21.35C.59 0 0 .59 0 1.325v21.351C0 23.41.59 24 1.325 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116c.735 0 1.325-.59 1.325-1.325V1.325C24 .59 23.41 0 22.675 0z" />
-        </symbol>
-        <symbol id="icon-github" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.26.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297 24 5.67 18.627.297 12 .297z" />
-        </symbol>
-        <symbol id="icon-linkedin" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z" />
-        </symbol>
-    </svg>
+    <div class="page-wrapper">
+        <div class="header-subtitle">This interface is procedurally redesigned by AI every 24 hours.</div>
 
-    <div id="initial-view">
-        <div id="initial-text-container">
-            <!-- JS will populate these -->
-        </div>
-    </div>
-
-    <main id="main-content">
-        <!-- Section 1: GlglStats -->
-        <div class="log-entry" data-observable>
-            <p data-text-1="> Loading project: GlglStats..." 
-               data-text-2="> Analysis: A Python project measuring song repetitiveness in Israeli pop charts using LZ77 compression and data visualization."></p>
-        </div>
-        <div class="content-box" data-observable>
-            <h3>GlglStats</h3>
-            <a href="https://glglstats.onrender.com/" target="_blank" rel="noopener noreferrer" class="btn">[ VIEW LIVE PROJECT ]</a>
-            <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" rel="noopener noreferrer" class="btn">[ WATCH PYDATA TALK ]</a>
-        </div>
-
-        <!-- Section 2: Ahuzat Dibuk -->
-        <div class="log-entry" data-observable>
-            <p data-text-1="> Loading project: Ahuzat Dibuk..."
-               data-text-2="> Analysis: A Python scraping and visualization tool generating heat-maps of Tel-Aviv parking occupancy. Featured in national news."></p>
-        </div>
-        <div class="content-box" data-observable>
-            <h3>Ahuzat Dibuk</h3>
-            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" rel="noopener noreferrer" class="text-link">
-                <svg class="icon"><use href="#icon-newspaper"></use></svg>
-                News Story: Channel 13
-            </a><br>
-            <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" rel="noopener noreferrer" class="text-link">
-                <svg class="icon"><use href="#icon-newspaper"></use></svg>
-                News Story: Mako
-            </a><br>
-            <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" rel="noopener noreferrer" class="text-link">
-                <svg class="icon"><use href="#icon-facebook"></use></svg>
-                Original Facebook Publication
-            </a>
-        </div>
-
-        <!-- Section 3: 2D Part Orienting -->
-        <div class="log-entry" data-observable>
-            <p data-text-1="> Loading project: 2D Part Orienting..."
-               data-text-2="> Analysis: A C++ implementation of an efficient computational geometry algorithm for constructing a 'push plan' to orient polygons."></p>
-        </div>
-        <div class="content-box" data-observable>
-            <h3>2D Part Orienting</h3>
-            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" rel="noopener noreferrer" class="btn">[ EXPLORE ALGORITHM & CODE ]</a>
-        </div>
-
-        <!-- Section 4: The Meta Project -->
-        <div class="log-entry" data-observable>
-            <p data-text-1="> Loading project: Recursive Portfolio..."
-               data-text-2="> Analysis: This website itself. A self-referential, AI-generated, single-page application serving as a dynamic portfolio."></p>
-        </div>
-        <div class="content-box" data-observable>
-            <h3>This Website</h3>
-            <a href="https://portfolio-dor1.onrender.com/" target="_blank" rel="noopener noreferrer" class="text-link">View a static instance of this protocol</a>
-        </div>
-
-        <!-- Section 5: Contact -->
-        <div class="log-entry" data-observable>
-            <p data-text-1="> End of protocol. Establishing connection links..."
-               data-text-2="> Standby."></p>
-        </div>
-        <div class="content-box" data-observable>
-            <div id="social-links-container">
-                <a href="https://github.com/gevak" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
-                    <svg class="social-icon"><use href="#icon-github"></use></svg>
-                </a>
-                <a href="https://linkedin.com/in/gevakip" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
-                    <svg class="social-icon"><use href="#icon-linkedin"></use></svg>
-                </a>
-                <a href="https://facebook.com/geva.kipper" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-                    <svg class="social-icon"><use href="#icon-facebook"></use></svg>
-                </a>
+        <div class="chat-scroll-area">
+            <div id="chat-container" class="chat-container">
+                <!-- Chat messages will be dynamically inserted here -->
             </div>
         </div>
-    </main>
+
+        <footer class="footer">
+            <div class="footer-credit">Site design by Claude 3 Opus, an AI assistant from Anthropic.</div>
+            <div class="footer-stopwatch">
+                <span class="footer-stopwatch-label">TIME SINCE LAST AI REDESIGN</span>
+                <span id="stopwatch">00:00:00</span>
+            </div>
+        </footer>
+    </div>
     
-    <footer>
-        <div id="footer-rule" data-observable></div>
-        <div class="footer-content">
-            <div id="footer-left">Design protocol generated by Claude, an AI by Anthropic.</div>
-            <div id="footer-right">System Uptime: <span id="uptime-counter">0000:00:00</span></div>
-        </div>
-    </footer>
-
-
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const typeSpeed = 25; // ms per character
+        document.addEventListener('DOMContentLoaded', () => {
 
-        function typeWriter(element, text, index = 0, callback) {
-            if (index < text.length) {
-                element.textContent += text.charAt(index);
-                setTimeout(() => typeWriter(element, text, index + 1, callback), typeSpeed);
-            } else if (callback) {
-                callback();
-            }
-        }
-        
-        function multiLineTypewriter(container, lines, finalCallback) {
-            let lineIndex = 0;
+            // --- Elements ---
+            const chatContainer = document.getElementById('chat-container');
+            const chatScrollArea = document.querySelector('.chat-scroll-area');
+            const stopwatchEl = document.getElementById('stopwatch');
+
+            // --- SVGs for buttons for better visuals ---
+            const svgs = {
+                website: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`,
+                video: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`,
+                news: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>`,
+                post: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`,
+                code: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>`,
+                link: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></svg>`,
+                github: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.91 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path></svg>`,
+                linkedin: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"></path></svg>`,
+                facebook: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"></path></svg>`,
+            };
             
-            function typeNextLine() {
-                if (lineIndex < lines.length) {
-                    const p = document.createElement('p');
-                    container.appendChild(p);
+            // --- Content Database ---
+            const content = {
+                welcome: {
+                    text: `Hello. I am a bot representation of Geva Kipper, a Software Engineer at Google, currently working on infrastructure for large-scale AI models.\nI can tell you about his work. What would you like to know?`,
+                    prompts: [
+                        { text: 'Tell me about his projects', key: 'projects' },
+                        { text: 'What is this website?', key: 'what_is_this' },
+                        { text: 'How can I contact him?', key: 'contact' },
+                    ]
+                },
+                projects: {
+                    text: `Here are some of Geva's key projects. Which one interests you?`,
+                    prompts: [
+                        { text: 'GlglStats', key: 'glglstats_card' },
+                        { text: 'Ahuzat Dibuk', key: 'ahuzatdibuk_card' },
+                        { text: '2D Part Orienting', key: 'partorienting_card' },
+                        { text: 'This Portfolio', key: 'portfolio_card' },
+                        { text: 'Socials & Links', key: 'contact_card' },
+                    ]
+                },
+                what_is_this: {
+                    text: `This is an interactive portfolio designed to mimic a conversation. Instead of a traditional layout, you can "ask" me about Geva's work. It's built in a single file using vanilla JavaScript, HTML, and CSS, showcasing a minimalist, content-focused approach.\n\nWhat would you like to explore next?`,
+                    prompts: [
+                        { text: 'Back to projects', key: 'projects' },
+                        { text: 'How do I contact him?', key: 'contact' },
+                    ]
+                },
+                contact: {
+                    text: `You can connect with Geva through his professional and social profiles. I can bring them up for you.`,
+                    prompts: [
+                        { text: 'Show me the links', key: 'contact_card' },
+                        { text: 'Tell me about projects instead', key: 'projects' },
+                    ]
+                },
+                glglstats_card: {
+                    card: {
+                        title: 'GlglStats',
+                        description: `A Python project which measures repetitiveness of Israeli pop-chart songs based on LZ77 compression. It also visualizes repetition patterns in a selection of famous songs.`,
+                        links: [
+                            { text: 'View Live Site', url: 'https://glglstats.onrender.com/', icon: svgs.website },
+                            { text: 'Watch Conference Talk', url: 'https://www.youtube.com/watch?v=jrKAtOsj1Lo', icon: svgs.video }
+                        ]
+                    },
+                    ...getDefaultFollowUp()
+                },
+                ahuzatdibuk_card: {
+                    card: {
+                        title: 'Ahuzat Dibuk',
+                        description: `A Python scraping and data visualization project, collecting statistics on Tel-Aviv car parking lots occupancy and generating heat-maps to be used by residents.`,
+                        links: [
+                            { text: 'Read on 13tv', url: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/', icon: svgs.news },
+                            { text: 'Read on Mako', url: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm', icon: svgs.news },
+                            { text: 'View Original Post', url: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943', icon: svgs.post }
+                        ]
+                    },
+                    ...getDefaultFollowUp()
+                },
+                partorienting_card: {
+                    card: {
+                        title: '2D Part Orienting',
+                        description: `A C++ implementation in an open-source computational geometry library (CGAL) of an efficient algorithm for constructing a 'push plan' to orient a given polygon.`,
+                        links: [
+                            { text: 'View Code & Details', url: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/', icon: svgs.code }
+                        ]
+                    },
+                    ...getDefaultFollowUp()
+                },
+                portfolio_card: {
+                     card: {
+                        title: 'The "GevaBot" Portfolio',
+                        description: `You're looking at it! This single-page portfolio is designed as a chat-based interview, built with modern JavaScript and designed to be minimal, interactive, and ever-evolving.`,
+                        links: [
+                            { text: 'View The Site (Again)', url: 'https://portfolio-dor1.onrender.com/', icon: svgs.link }
+                        ]
+                    },
+                    ...getDefaultFollowUp()
+                },
+                contact_card: {
+                    card: {
+                        title: 'Get In Touch',
+                        description: `Connect with Geva on the following platforms.`,
+                        links: [
+                            { text: 'GitHub', url: 'https://github.com/gevak', icon: svgs.github },
+                            { text: 'LinkedIn', url: 'https://linkedin.com/in/gevakip', icon: svgs.linkedin },
+                            { text: 'Facebook', url: 'https://facebook.com/geva.kipper', icon: svgs.facebook }
+                        ]
+                    },
+                    ...getDefaultFollowUp()
+                }
+            };
 
-                    // Add blinking cursor only to the last line
-                    if (lineIndex === lines.length - 1) {
-                        p.classList.add('typed-text');
+            function getDefaultFollowUp() {
+                 return {
+                    text: "Is there anything else I can show you?",
+                    prompts: [
+                        { text: 'Show all projects', key: 'projects' },
+                        { text: 'Contact Geva', key: 'contact' }
+                    ]
+                }
+            }
+            
+            // --- Core Functions ---
+            const scrollToBottom = () => {
+                chatScrollArea.scrollTo(0, chatScrollArea.scrollHeight);
+            };
+
+            const typeWriter = (element, text, callback) => {
+                let i = 0;
+                const speed = 20; // typing speed in ms
+                
+                // Sanitize text for HTML display
+                const sanitizedText = text.replace(/\n/g, '<br>');
+
+                function type() {
+                    if (i < sanitizedText.length) {
+                        // Handle <br> tags without typing them out
+                        if (sanitizedText.substring(i, i + 4) === '<br>') {
+                            element.innerHTML += '<br>';
+                            i += 4;
+                        } else {
+                            element.innerHTML += sanitizedText.charAt(i);
+                            i++;
+                        }
+                        scrollToBottom();
+                        setTimeout(type, speed);
+                    } else if (callback) {
+                        callback();
                     }
+                }
+                type();
+            };
 
-                    // For all but the last iteration, remove cursor from previous line
-                    if (lineIndex > 0) {
-                        const previousP = container.children[lineIndex-1];
-                        previousP.classList.remove('typed-text');
-                    }
+            const createMessageHTML = (sender, contentHTML) => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                
+                const avatar = `<div class="avatar">${sender === 'bot' ? 'G' : ''}</div>`;
+                const content = `<div class="message-content">${contentHTML}</div>`;
 
-                    typeWriter(p, lines[lineIndex], 0, () => {
-                        lineIndex++;
-                        typeNextLine();
+                messageDiv.innerHTML = sender === 'bot' ? avatar + content : content + avatar;
+                return messageDiv;
+            };
+            
+            const createCardHTML = (cardData) => {
+                const linksHTML = cardData.links.map(link => 
+                    `<a href="${link.url}" target="_blank" rel="noopener noreferrer" class="card-link-button">
+                        ${link.icon || ''}
+                        <span>${link.text}</span>
+                    </a>`
+                ).join('');
+
+                return `
+                    <div class="project-card">
+                        <div class="card-title">${cardData.title}</div>
+                        <div class="card-description">${cardData.description}</div>
+                        <div class="card-links">${linksHTML}</div>
+                    </div>
+                `;
+            };
+
+            const createPromptsHTML = (prompts) => {
+                const buttonsHTML = prompts.map(prompt => 
+                    `<button class="prompt-button" data-key="${prompt.key}">${prompt.text}</button>`
+                ).join('');
+                return `<div class="prompt-options">${buttonsHTML}</div>`;
+            };
+
+            const addMessage = (sender, contentConfig) => {
+                let messageContentHTML = '';
+                
+                // Add bot name for all bot messages
+                if (sender === 'bot') {
+                    messageContentHTML += `<strong class="bot-name">GevaBot</strong>`;
+                }
+
+                // If it's a card
+                if (contentConfig.card) {
+                    messageContentHTML += createCardHTML(contentConfig.card);
+                }
+                
+                // Type out the text part
+                const textElement = document.createElement('div');
+                if (contentConfig.text) {
+                    typeWriter(textElement, contentConfig.text, () => {
+                        // When typing is done, show prompts if any
+                        if (contentConfig.prompts) {
+                            const promptsContainer = document.createElement('div');
+                            promptsContainer.innerHTML = createPromptsHTML(contentConfig.prompts);
+                            messageElement.appendChild(promptsContainer);
+                            scrollToBottom();
+                        }
                     });
-                } else if(finalCallback) {
-                    finalCallback();
-                }
-            }
-
-            typeNextLine();
-        }
-
-        // --- Initial "Above the Fold" Animation ---
-        const initialTextContainer = document.getElementById('initial-text-container');
-        const initialLines = [
-            '> Initializing session for Geva Kipper...',
-            '> Geva is a Software Engineer at Google, focusing on large-scale infrastructure challenges.',
-            '> This interface is procedurally redesigned by an AI on a daily basis. All representations are ephemeral.',
-            '> Scroll to execute professional story protocol.'
-        ];
-        
-        setTimeout(() => {
-           multiLineTypewriter(initialTextContainer, initialLines);
-        }, 1000); // 1-second pause on load
-
-
-        // --- Scroll-based Animations with Intersection Observer ---
-        const observables = document.querySelectorAll('[data-observable]');
-        
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const el = entry.target;
-                    
-                    if (el.classList.contains('log-entry')) {
-                        el.classList.add('visible');
-                        const p = el.querySelector('p');
-                        const text1 = p.dataset.text1;
-                        const text2 = p.dataset.text2;
-                        
-                        // Type out the two lines sequentially
-                        typeWriter(p, text1, 0, () => {
-                            p.innerHTML += '<br>';
-                            typeWriter(p, text2, 0);
-                        });
-
-                    } else if (el.id === 'footer-rule') {
-                        el.classList.add('visible');
-                        el.nextElementSibling.classList.add('visible');
-
-                    } else {
-                       el.classList.add('visible');
+                } else {
+                     // If no text, just show prompts immediately
+                    if (contentConfig.prompts) {
+                        const promptsContainer = document.createElement('div');
+                        promptsContainer.innerHTML = createPromptsHTML(contentConfig.prompts);
+                        messageElement.appendChild(promptsContainer);
                     }
-
-                    observer.unobserve(el); // Animate only once
                 }
-            });
-        }, {
-            rootMargin: '0px 0px -100px 0px', // Trigger a bit before it's fully in view
-            threshold: 0.1
+                messageContentHTML += textElement.outerHTML;
+
+                const messageElement = createMessageHTML(sender, messageContentHTML);
+                // The text element is inside, so we need to replace it
+                messageElement.querySelector('.message-content div').replaceWith(textElement);
+                
+                chatContainer.appendChild(messageElement);
+                scrollToBottom();
+            };
+
+            const showBotResponse = (key) => {
+                const responseConfig = content[key];
+                if (!responseConfig) return;
+                
+                // Hide thinking indicator and show response
+                const thinkingEl = document.querySelector('.thinking-indicator');
+                if(thinkingEl) thinkingEl.remove();
+
+                addMessage('bot', responseConfig);
+            };
+
+            const handleUserChoice = (e) => {
+                if (!e.target.matches('.prompt-button')) return;
+
+                const button = e.target;
+                const choiceKey = button.dataset.key;
+                const choiceText = button.textContent;
+                
+                // Remove all prompt buttons
+                const promptContainer = button.closest('.prompt-options');
+                if (promptContainer) {
+                    promptContainer.remove();
+                }
+
+                // 1. Add user's message
+                const userMessageEl = createMessageHTML('user', choiceText);
+                chatContainer.appendChild(userMessageEl);
+                scrollToBottom();
+                
+                // 2. Show thinking indicator
+                const thinkingEl = createMessageHTML('bot', `<div class="thinking"><span></span><span></span><span></span></div>`);
+                thinkingEl.classList.add('thinking-indicator');
+                chatContainer.appendChild(thinkingEl);
+                scrollToBottom();
+                
+                // 3. Get bot response after a delay
+                setTimeout(() => showBotResponse(choiceKey), 1200);
+            };
+
+            // --- Stopwatch ---
+            const startStopwatch = () => {
+                const redesignDate = new Date('2025-06-17T01:08:24');
+                // The spec is contradictory. "TIME SINCE" means counting up from the past.
+                // Let's set the date in the past for a live demo.
+                redesignDate.setFullYear(2024);
+
+                setInterval(() => {
+                    const now = new Date();
+                    const diff = now - redesignDate;
+
+                    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const totalHours = days * 24 + hours;
+
+                    const minutes = Math.floor((diff / 1000 / 60) % 60);
+                    const seconds = Math.floor((diff / 1000) % 60);
+
+                    const format = (num) => String(num).padStart(2, '0');
+                    
+                    stopwatchEl.textContent = `${format(totalHours)}:${format(minutes)}:${format(seconds)}`;
+                }, 1000);
+            };
+
+            // --- Initialization ---
+            const init = () => {
+                startStopwatch();
+                addMessage('bot', content.welcome);
+                chatContainer.addEventListener('click', handleUserChoice);
+            };
+
+            init();
         });
-
-        observables.forEach(el => observer.observe(el));
-
-
-        // --- System Uptime Stopwatch ---
-        const uptimeElement = document.getElementById('uptime-counter');
-        const startDate = new Date('2021-05-10T08:00:00Z');
-
-        function updateUptime() {
-            const now = new Date();
-            const diffMs = now - startDate;
-            
-            const totalSeconds = Math.floor(diffMs / 1000);
-            const totalMinutes = Math.floor(totalSeconds / 60);
-            const totalHours = Math.floor(totalMinutes / 60);
-
-            const seconds = totalSeconds % 60;
-            const minutes = totalMinutes % 60;
-            
-            uptimeElement.textContent = 
-                `${String(totalHours).padStart(4, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        }
-
-        updateUptime(); // Initial call
-        setInterval(updateUptime, 1000); // Update every second
-
-    });
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250616",
+          pageId: "20250617",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
