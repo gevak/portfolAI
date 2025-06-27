@@ -2,570 +2,713 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - Career Repository</title>
+    <title>Geva Kipper | Software Engineer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0d1117;
-            --main-content-bg: #161b22;
-            --border-color: #30363d;
-            --text-primary: #e6edf3;
-            --text-secondary: #7d8590;
-            --accent-color: #38bdf8;
-            --accent-color-hover: #7dd3fc;
-            --font-sans: 'Inter', sans-serif;
-            --font-mono: 'JetBrains Mono', monospace;
+            --charcoal-bg: #1a1a1a;
+            --cyan-glow: #00ffff;
+            --cyan-glow-transparent: rgba(0, 255, 255, 0.7);
+            --cyan-glow-faint: rgba(0, 255, 255, 0.15);
+            --primary-font: 'Inter', sans-serif;
+            --mono-font: 'Space Mono', monospace;
         }
 
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
 
-        html, body {
-            height: 100%;
+        html {
+            scroll-behavior: smooth;
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            font-family: var(--font-sans);
-            display: flex;
-            flex-direction: column;
-            font-size: 16px;
-            line-height: 1.6;
+            background-color: var(--charcoal-bg);
+            color: white;
+            font-family: var(--primary-font);
+            overflow-x: hidden;
         }
 
-        a {
-            color: var(--accent-color);
-            text-decoration: none;
-            transition: color 0.2s ease;
-        }
-
-        a:hover {
-            text-decoration: underline;
-            color: var(--accent-color-hover);
-        }
-
-        /* --- Layout --- */
-        .page-header, .page-footer {
-            background-color: var(--main-content-bg);
-            border-bottom: 1px solid var(--border-color);
-            padding: 1rem 2rem;
-            position: sticky;
-            z-index: 10;
-        }
-
-        .page-header {
+        /* --- Canvas for Game World --- */
+        #game-canvas {
+            position: fixed;
             top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
         }
         
-        .page-footer {
-            top: 100vh;
-            border-top: 1px solid var(--border-color);
-            border-bottom: none;
-        }
-
-        .main-content {
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 2rem;
-            padding: 2rem;
-            flex-grow: 1;
+        /* --- Scrollable container --- */
+        .scroll-container {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
+            /* Height is set by JS */
+            z-index: 1;
         }
 
-        /* --- Header --- */
-        .repo-path {
-            font-family: var(--font-mono);
-            font-size: 1.25rem;
+        /* --- UI Sections --- */
+        .content-section {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        /* --- Start Screen --- */
+        #start-screen {
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0;
+            animation: fadeIn 1.5s 0.5s forwards;
+        }
+
+        #start-screen h1 {
+            font-size: clamp(3rem, 10vw, 6rem);
+            color: var(--cyan-glow);
+            text-shadow: 0 0 15px var(--cyan-glow);
+            margin-bottom: 2rem;
+            animation: fadeIn 2s forwards;
+        }
+
+        #start-screen p {
+            font-size: clamp(1rem, 3vw, 1.25rem);
+            max-width: 600px;
+            color: #ccc;
+            animation: fadeIn 2s 0.5s forwards;
+        }
+
+        #start-screen .subtitle {
+            margin-top: 1.5rem;
+            font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+            color: #aaa;
+            text-shadow: 0 0 10px rgba(0,255,255,0.3);
+            animation: fadeIn 2s 1s forwards, shimmer 4s infinite 3s;
+        }
+        
+        .down-arrow {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 30px;
+            z-index: 11;
+            opacity: 0;
+            animation: fadeIn 1s 2s forwards, pulse 2s infinite 3s;
+        }
+
+        /* --- Project Boxes --- */
+        .project-box {
+            position: absolute;
+            width: clamp(300px, 90vw, 450px);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 1px solid var(--cyan-glow-faint);
+            background: rgba(26, 26, 26, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+            opacity: 0;
+            transform: translateY(20px) scale(0.98);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+            pointer-events: none;
+        }
+
+        .project-box.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        .project-box h2 {
+            color: var(--cyan-glow);
+            font-size: 1.7rem;
             margin-bottom: 1rem;
         }
 
-        h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-
-        .header-subtitle {
-             color: var(--text-secondary);
-        }
-
-        .header-readme-ref {
-            font-family: var(--font-mono);
-            color: var(--text-secondary);
-            margin-top: 1rem;
-            background-color: #21262d;
-            padding: 0.25rem 0.5rem;
-            border-radius: 6px;
-            display: inline-block;
-        }
-
-        /* --- Main Content: Left Column (Commit History) --- */
-        .commit-history {
-            list-style: none;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 0.5rem;
-            align-self: flex-start; /* Stick to top */
-        }
-        
-        .commit-item {
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-        
-        .commit-item:last-child {
-            border-bottom: none;
-        }
-        
-        .commit-item:hover {
-            background-color: var(--main-content-bg);
-        }
-        
-        .commit-item.active {
-            background-color: rgba(56, 189, 248, 0.1);
-            border-left: 3px solid var(--accent-color);
-            padding-left: calc(1rem - 3px);
-        }
-        
-        .commit-message {
-            font-weight: 500;
-            margin-bottom: 0.25rem;
-        }
-        
-        .commit-meta {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-        
-        .commit-hash {
-            font-family: var(--font-mono);
-            color: var(--accent-color);
-        }
-
-        /* --- Main Content: Right Column (README Viewer) --- */
-        .readme-viewer {
-            background-color: var(--main-content-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            min-height: 500px;
-        }
-
-        .content-panel {
-            padding: 2rem;
-        }
-
-        .content-panel h2 {
-            font-family: var(--font-mono);
-            font-size: 1.75rem;
-            font-weight: 400;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 0.75rem;
+        .project-box p {
+            font-size: 1rem;
+            color: #ddd;
+            line-height: 1.6;
             margin-bottom: 1.5rem;
         }
-        
-        .content-tags {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
 
-        .tag {
-            background-color: rgba(56, 189, 248, 0.15);
-            color: var(--accent-color-hover);
-            padding: 0.25rem 0.75rem;
-            border-radius: 999px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .content-description {
-            margin-bottom: 2rem;
-            max-width: 75ch; /* Improve readability */
-        }
-
-        .content-links {
+        .project-links {
             display: flex;
             gap: 1rem;
             flex-wrap: wrap;
         }
 
-        .link-card, .link-icon, .link-button {
+        .project-link {
             display: inline-flex;
             align-items: center;
             gap: 0.75rem;
-            padding: 0.75rem 1.25rem;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            background-color: #21262d;
-            transition: all 0.2s ease;
-            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            background-color: transparent;
+            border: 1px solid var(--cyan-glow-transparent);
+            color: var(--cyan-glow-transparent);
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
         }
         
-        .link-card:hover, .link-icon:hover, .link-button:hover {
-            border-color: var(--accent-color);
-            background-color: #30363d;
-            color: var(--text-primary);
-            text-decoration: none;
+        .project-link:hover {
+            background-color: var(--cyan-glow-faint);
+            color: var(--cyan-glow);
+            box-shadow: 0 0 15px var(--cyan-glow-faint);
         }
 
-        .link-card svg, .link-icon svg, .link-button svg {
+        .project-link svg {
             width: 20px;
             height: 20px;
-            stroke-width: 2;
+            fill: currentColor;
         }
         
-        .youtube-card {
-            background-repeat: no-repeat;
-            background-size: cover;
-            background-position: center;
-            position: relative;
-            color: white;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
-        }
-
-        .youtube-card::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxIPEA8QEBIVDxAPFRUVDxAQEBUQEA8PFRIWFhUVFRUYHSggGBolGxUVITEhJSkrLi4uFx8zODMtNygtLisBCgoKDg0OFxAQFysdFR0rLS0tLS0tLS0tKy0tLS0tLS0tLS0tLS0tLS0tLS0rLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIAJ8BPgMBIgACEQEDEQH/xAAZAAEBAQEBAQAAAAAAAAAAAAABAAIDBQT/xAAjEAEBAQEAAwEAAgIDAQEAAAABEQACEgMTIUFRgSJhcYGR/8QAGQEBAQEBAQEAAAAAAAAAAAAAAAECAwQF/8QAGhEBAQEBAQEBAAAAAAAAAAAAAAERAgMSIf/aAAPAWgAQAABvECAgKICAoCQoCQqCoKgqCoKgqAioKgqCoKgqCKg8HyoKgqCoKgqCoKgqCoKgqCoKgqCoIqDz/AAlQVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVB5PjAVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVB4PjAVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVB4PjBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVB5PjBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVB4PjBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVB5PjBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVB8Hn+MBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVBVB8Hn+MBUFUFUFUFUFUFUFUFUFUFUFUFUFUFUFUFUFUFUHn+MBVBUFUFQVBUFUFQVBUFUFQVBUFUFQVBUFUFUFQeD4wFQVAAAAECKgqCoPN8YCoPN+CoKgqDx/CoKg8/wAIKgqD//Z'); /* Low-res placeholder */
-            background-size: cover;
-            border-radius: inherit;
-            z-index: -1;
-        }
-
-        .link-press {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-        .link-press:hover {
-            color: var(--accent-color-hover);
-        }
-        .link-press svg {
-            width: 16px;
-            height: 16px;
-            stroke: var(--text-secondary);
-            transition: stroke 0.2s ease;
-        }
-        .link-press:hover svg {
-            stroke: var(--accent-color);
-        }
-
-        .link-socials {
+        /* Icon-only links */
+        .icon-links {
+            justify-content: center;
             gap: 1.5rem;
         }
-
-        .link-icon svg {
+        
+        .icon-link {
+             color: var(--cyan-glow-transparent);
+             transition: color 0.3s, transform 0.3s;
+        }
+        .icon-link:hover {
+            color: var(--cyan-glow);
+            transform: scale(1.1);
+        }
+        .icon-link svg {
              width: 28px;
              height: 28px;
-             stroke: var(--text-secondary);
-             transition: stroke 0.2s ease;
-        }
-        .link-icon:hover svg {
-            stroke: var(--accent-color);
-        }
-
-
-        /* --- Footer --- */
-        .page-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-
-        .footer-uptime {
-            font-family: var(--font-mono);
+             fill: currentColor;
         }
         
-        /* --- Responsive Design --- */
-        @media (max-width: 900px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-            .commit-history {
-                margin-bottom: 2rem;
-            }
+        /* --- Footer --- */
+        #footer {
+            position: absolute;
+            padding: 5rem 2rem;
+            color: #888;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            text-align: center;
         }
-        @media (max-width: 600px) {
-            .page-header, .page-footer, .main-content {
-                padding: 1rem;
-            }
-            .repo-path {
-                font-size: 1rem;
-            }
-            h1 {
-                font-size: 1.5rem;
-            }
-            .content-panel {
-                padding: 1rem;
-            }
-            h2 {
-                font-size: 1.5rem;
-            }
-            .page-footer {
-                flex-direction: column;
-                gap: 0.5rem;
-                text-align: center;
-            }
+        
+        #footer.visible {
+            opacity: 1;
         }
+
+        #footer p {
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        #stopwatch {
+            font-family: var(--mono-font);
+            font-size: 2rem;
+            color: #ccc;
+            letter-spacing: 2px;
+        }
+
+        /* --- Keyframe Animations --- */
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        @keyframes shimmer {
+            0% { text-shadow: 0 0 10px rgba(0,255,255,0.3); }
+            50% { text-shadow: 0 0 20px rgba(0,255,255,0.7); }
+            100% { text-shadow: 0 0 10px rgba(0,255,255,0.3); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(1) translateX(-50%); }
+            50% { opacity: 1; transform: scale(1.1) translateX(-50%); }
+            100% { opacity: 0.5; transform: scale(1) translateX(-50%); }
+        }
+
     </style>
 </head>
 <body>
-    <header class="page-header">
-        <div class="repo-path">
-            <a href="https://github.com/gevak" target="_blank" rel="noopener noreferrer">gevak</a> / <span>career-portfolio</span>
+
+    <div id="start-screen" class="content-section">
+        <div class="intro-text">
+            <h1>Geva Kipper</h1>
+            <p>A software engineer at Google, focusing on large-scale data infrastructure.</p>
+            <p class="subtitle">This site is re-designed each day by AI and is thus ever-changing.</p>
         </div>
-        <h1>Geva Kipper</h1>
-        <p class="header-subtitle">A Software Engineer at Google, focusing on large-scale systems and data processing.</p>
-        <div class="header-readme-ref">
-            README.md: This site is algorithmically redesigned daily by AI. Last commit: <span id="last-commit-date"></span>
-        </div>
-    </header>
+    </div>
+    
+    <div class="down-arrow">
+        <!-- Down Arrow SVG -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#00ffff"><path d="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z" /></svg>
+    </div>
 
-    <main class="main-content">
-        <aside>
-            <ul class="commit-history">
-                <li class="commit-item" data-target="content-glglstats">
-                    <p class="commit-message">feat: Implement GlglStats music analysis</p>
-                    <div class="commit-meta">
-                        <span class="commit-hash">a4e9c6f</span> Geva Kipper committed 2 years ago
-                    </div>
-                </li>
-                <li class="commit-item" data-target="content-ahuzat">
-                    <p class="commit-message">feat: Scrape and visualize Tel-Aviv parking data</p>
-                    <div class="commit-meta">
-                        <span class="commit-hash">d8b3a2e</span> Geva Kipper committed 2 years ago
-                    </div>
-                </li>
-                <li class="commit-item" data-target="content-cgal">
-                    <p class="commit-message">refactor: Add 2D Part Orienting algorithm to CGAL</p>
-                    <div class="commit-meta">
-                        <span class="commit-hash">f0c5b91</span> Geva Kipper committed 3 years ago
-                    </div>
-                </li>
-                <li class="commit-item" data-target="content-portfolio">
-                    <p class="commit-message">docs: Create portfolio README (self-reference)</p>
-                    <div class="commit-meta">
-                        <span class="commit-hash">c3a0e4f</span> Geva Kipper committed 1 month ago
-                    </div>
-                </li>
-                <li class="commit-item" data-target="content-contact">
-                    <p class="commit-message">chore: Update contact and social links</p>
-                    <div class="commit-meta">
-                        <span class="commit-hash">b1d7a8c</span> Geva Kipper committed 2 weeks ago
-                    </div>
-                </li>
-            </ul>
-        </aside>
-        <article class="readme-viewer">
-            <!-- Content Panel 1: GlglStats -->
-            <div id="content-glglstats" class="content-panel">
-                <h2>GlglStats</h2>
-                <div class="content-tags">
-                    <span class="tag">Python</span>
-                    <span class="tag">Data Visualization</span>
-                    <span class="tag">LZ77</span>
-                    <span class="tag">Signal Processing</span>
-                </div>
-                <p class="content-description">
-                    GlglStats is a project that measures the "repetitiveness" of songs from the Israeli pop charts (Galgalatz). Using the LZ77 compression algorithm as a proxy for complexity, it analyzes lyrical patterns to quantify how formulaic songs are and visualizes these trends over time.
-                </p>
-                <div class="content-links">
-                    <a href="https://glglstats.onrender.com/" target="_blank" rel="noopener noreferrer" class="link-card">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                        Live Site
-                    </a>
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" rel="noopener noreferrer" class="link-card youtube-card">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>
-                        Conference Presentation
-                    </a>
-                </div>
-            </div>
+    <canvas id="game-canvas"></canvas>
 
-            <!-- Content Panel 2: Ahuzat Dibuk -->
-            <div id="content-ahuzat" class="content-panel">
-                <h2>Ahuzat Dibuk</h2>
-                <div class="content-tags">
-                    <span class="tag">Python</span>
-                    <span class="tag">Web Scraping</span>
-                    <span class="tag">Data Visualization</span>
-                    <span class="tag">Geo-Data</span>
-                </div>
-                <p class="content-description">
-                    This project scrapes real-time occupancy data from Tel Aviv's municipal parking lots ("Ahuzat HaHof"). It then aggregates and visualizes this information, creating insightful heatmaps that help residents understand parking availability patterns throughout the city.
-                </p>
-                <div class="content-links" style="flex-direction: column; align-items: flex-start;">
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" rel="noopener noreferrer" class="link-button">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
-                        Original Publication
-                    </a>
-                    <div style="margin-top: 1rem;">
-                        <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Press Mentions:</p>
-                        <div style="display: flex; gap: 1.5rem;">
-                            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" rel="noopener noreferrer" class="link-press">
-                                Channel 13 News
-                            </a>
-                            <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" rel="noopener noreferrer" class="link-press">
-                                Mako
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Content Panel 3: 2D Part Orienting -->
-            <div id="content-cgal" class="content-panel">
-                <h2>2D Part Orienting</h2>
-                <div class="content-tags">
-                    <span class="tag">C++</span>
-                    <span class="tag">Computational Geometry</span>
-                    <span class="tag">Algorithms</span>
-                    <span class="tag">Open Source</span>
-                </div>
-                <p class="content-description">
-                    A C++ implementation of an efficient algorithm to determine the orientation of a planar convex polygon. The algorithm, based on constructing a "push plan," can find the orientation with a minimal number of steps. This work was contributed to the CGAL open-source computational geometry library as part of a university project.
-                </p>
-                <div class="content-links">
-                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" rel="noopener noreferrer" class="link-button">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-                        View Project & Code
-                    </a>
-                </div>
-            </div>
+    <div class="scroll-container">
+        <!-- Project content boxes will be injected here by JS -->
+    </div>
+    
+    <div id="footer">
+        <p>Website design generated by Claude 3 Opus.</p>
+        <p>Last daily re-design initiated:</p>
+        <div id="stopwatch">0000:00:00</div>
+    </div>
 
-            <!-- Content Panel 4: Portfolio -->
-            <div id="content-portfolio" class="content-panel">
-                <h2>portfolio-dor1</h2>
-                <div class="content-tags">
-                    <span class="tag">JavaScript</span>
-                    <span class="tag">HTML5</span>
-                    <span class="tag">CSS</span>
-                    <span class="tag">AI-Generated</span>
-                </div>
-                <p class="content-description">
-                    A self-referencing project. This is the portfolio you are currently viewing, designed to emulate a GitHub repository and dynamically updated by an AI to ensure its design is always evolving.
-                </p>
-                <div class="content-links">
-                     <a href="https://portfolio-dor1.onrender.com/" target="_blank" rel="noopener noreferrer" class="link-button">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></svg>
-                        View Source (You are here)
-                    </a>
-                </div>
-            </div>
-
-            <!-- Content Panel 5: Contact -->
-            <div id="content-contact" class="content-panel">
-                 <h2>Connect</h2>
-                 <div class="content-tags">
-                    <span class="tag">Networking</span>
-                    <span class="tag">Collaboration</span>
-                </div>
-                <p class="content-description">
-                   Find me on the web. Let's build something great together.
-                </p>
-                <div class="content-links link-socials">
-                    <a href="https://github.com/gevak" target="_blank" rel="noopener noreferrer" class="link-icon" aria-label="GitHub Profile">
-                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
-                    </a>
-                    <a href="https://www.linkedin.com/in/gevakip" target="_blank" rel="noopener noreferrer" class="link-icon" aria-label="LinkedIn Profile">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
-                    </a>
-                    <a href="https://www.facebook.com/geva.kipper" target="_blank" rel="noopener noreferrer" class="link-icon" aria-label="Facebook Profile">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
-                    </a>
-                </div>
-            </div>
-        </article>
-    </main>
-
-    <footer class="page-footer">
-        <div>Design generated by a GPT-4 model. Version: 2024.05.21</div>
-        <div class="footer-uptime">
-            Repository Uptime: <span id="uptime-stopwatch">00:00:00</span>
-        </div>
-    </footer>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- Content Switching Logic ---
-            const commits = document.querySelectorAll('.commit-item');
-            const contents = document.querySelectorAll('.content-panel');
+    document.addEventListener('DOMContentLoaded', () => {
 
-            commits.forEach(commit => {
-                commit.addEventListener('click', () => {
-                    const targetId = commit.dataset.target;
-                    const targetContent = document.getElementById(targetId);
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const scrollContainer = document.querySelector('.scroll-container');
+        const footerElement = document.getElementById('footer');
 
-                    commits.forEach(c => c.classList.remove('active'));
-                    contents.forEach(p => p.style.display = 'none');
+        const START_TIME = new Date(); // Or a specific date: new Date('2024-05-21T08:00:00Z');
 
-                    commit.classList.add('active');
-                    if (targetContent) {
-                        targetContent.style.display = 'block';
-                    }
+        // --- SVG Icons ---
+        const ICONS = {
+            link: `<svg viewBox="0 0 24 24"><path d="M10.59,13.41C11,13.8 11,14.44 10.59,14.83C10.2,15.22 9.56,15.22 9.17,14.83L5.64,11.3C4.86,10.52 4.86,9.27 5.64,8.49L9.17,5.03C9.56,4.64 10.2,4.64 10.59,5.03C11,5.42 11,6.06 10.59,6.45L7.05,10L10.59,13.41M13.41,9.17C13.8,8.78 14.44,8.78 14.83,9.17L18.36,12.7C19.14,13.48 19.14,14.73 18.36,15.51L14.83,18.97C14.44,19.36 13.8,19.36 13.41,18.97C13,18.58 13,17.94 13.41,17.55L16.95,14L13.41,10.59C13,10.2 13,9.56 13.41,9.17Z" /></svg>`,
+            play: `<svg viewBox="0 0 24 24"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg>`,
+            newspaper: `<svg viewBox="0 0 24 24"><path d="M20,11H4V8H20M20,15H13V13H20M20,19H13V17H20M11,15H4V13H11M4,19V17H11V19M20.3,6C20.7,6 21,6.3 21,6.7V20.3C21,20.7 20.7,21 20.3,21H3.7C3.3,21 3,20.7 3,20.3V6.7C3,6.3 3.3,6 3.7,6H20.3M20,4H4C2.9,4 2,4.9 2,6V20C2,21.1 2.9,22 4,22H20C21.1,22 22,21.1 22,20V6C22,4.9 21.1,4 20,4Z" /></svg>`,
+            code: `<svg viewBox="0 0 24 24"><path d="M8.7,15.9L4.8,12L8.7,8.1L10.1,9.5L7.6,12L10.1,14.5L8.7,15.9M15.3,15.9L13.9,14.5L16.4,12L13.9,9.5L15.3,8.1L19.2,12L15.3,15.9Z" /></svg>`,
+            refresh: `<svg viewBox="0 0 24 24"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" /></svg>`,
+            github: `<svg viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21V19.21C6.73,19.64 6.1,17.71 6.1,17.71C5.64,16.5 5,16.14 5,16.14C4.07,15.45 5.06,15.47 5.06,15.47C6.06,15.54 6.6,16.45 6.6,16.45C7.5,18 9,17.5 9.5,17.29C9.58,16.67 9.86,16.21 10.13,15.96C7.38,15.68 4.5,14.56 4.5,10C4.5,8.79 4.97,7.79 5.69,7C5.59,6.72 5.25,5.66 5.79,4.5C5.79,4.5 6.72,4.19 8.5,5.5C9.4,5.25 10.4,5.13 11.4,5.13C12.4,5.13 13.4,5.25 14.3,5.5C16.08,4.19 17,4.5 17,4.5C17.55,5.66 17.21,6.72 17.11,7C17.83,7.79 18.3,8.79 18.3,10C18.3,14.57 15.42,15.67 12.67,15.95C13.04,16.27 13.4,17.04 13.4,18.23V21C13.4,21.27 13.56,21.58 14.06,21.5C18.03,20.17 20.86,16.42 20.86,12A10,10 0 0,0 12,2Z"/></svg>`,
+            linkedin: `<svg viewBox="0 0 24 24"><path d="M19,3A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H19M18.5,18.5V13.2A3.26,3.26 0 0,0 15.24,9.94C14.39,9.94 13.4,10.43 13,11.11V10.28H10.13V18.5H13V13.57C13,12.24 14.09,12.24 15.24,12.24C16.4,12.24 16.4,12.24 16.4,13.57V18.5H18.5M6.88,8.56A1.68,1.68 0 0,0 8.56,6.88C8.56,6 8,5.44 7.19,5.44C6.38,5.44 5.81,6 5.81,6.88A1.68,1.68 0 0,0 6.88,8.56M8.27,18.5V10.28H5.5V18.5H8.27Z" /></svg>`,
+            facebook: `<svg viewBox="0 0 24 24"><path d="M12 2.04C6.5 2.04 2 6.53 2 12.06C2 17.06 5.66 21.21 10.44 21.96V14.96H7.9V12.06H10.44V9.85C10.44 7.32 11.93 5.96 14.22 5.96C15.31 5.96 16.45 6.15 16.45 6.15V8.62H15.19C13.95 8.62 13.56 9.39 13.56 10.18V12.06H16.34L15.89 14.96H13.56V21.96C18.34 21.21 22 17.06 22 12.06C22 6.53 17.5 2.04 12 2.04Z" /></svg>`,
+        };
+
+        // --- Game World & Project Data ---
+        const WORLD_HEIGHT = 10000;
+        const PLAYER_Y_ON_SCREEN = 0.75; // 75% from top
+        
+        const PROJECTS = [
+            {
+                name: "GlglStats",
+                worldY: 1200,
+                platform: { type: 'soundwave', width: 400, segments: 20, amplitude: 25 },
+                content: {
+                    title: "GlglStats",
+                    description: "A Python project measuring the repetitiveness of Israeli pop-chart songs using LZ77 compression, featuring visualizations of repetition patterns.",
+                    links: [
+                        { text: "Visit The Site", url: "https://glglstats.onrender.com/", icon: ICONS.link },
+                        { text: "Watch PyData Talk", url: "https://www.youtube.com/watch?v=jrKAtOsj1Lo", icon: ICONS.play }
+                    ]
+                }
+            },
+            {
+                name: "Ahuzat Dibuk",
+                worldY: 2700,
+                platform: { type: 'grid', width: 350, height: 150, rows: 5, cols: 8 },
+                content: {
+                    title: "Ahuzat Dibuk",
+                    description: "A Python scraping and data visualization project that collects statistics on Tel-Aviv parking lot occupancy, generating heat-maps for residents.",
+                    links: [
+                        { text: null, url: "https://13tv.co.il/item/news/domestic/internal/parking-902956407/", icon: ICONS.newspaper, title:"13tv News" },
+                        { text: null, url: "https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm", icon: ICONS.newspaper, title:"Mako News" },
+                        { text: null, url: "https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943", icon: ICONS.facebook, title: "Original Post" }
+                    ]
+                }
+            },
+            {
+                name: "2D Part Orienting",
+                worldY: 4200,
+                platform: { type: 'polygon', radius: 180, sides: 7, concavity: 0.4 },
+                content: {
+                    title: "2D Part Orienting",
+                    description: "A C++ implementation of an efficient algorithm for constructing a 'push plan' to orient a given polygon, contributed to an open-source computational geometry library.",
+                    links: [
+                        { text: "View Project & Code", url: "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/", icon: ICONS.code }
+                    ]
+                }
+            },
+            {
+                name: "This Portfolio",
+                worldY: 5700,
+                platform: { type: 'spiral', initialRadius: 20, coils: 4, radiusStep: 15 },
+                content: {
+                    title: "The Ever-Changing Portfolio",
+                    description: "This meta-project is the very site you are playing through—a portfolio designed as a single-page game.",
+                    links: [
+                        { text: "View Source", url: "https://portfolio-dor1.onrender.com/", icon: ICONS.refresh }
+                    ]
+                }
+            },
+            {
+                name: "Contact Hub",
+                worldY: 7700,
+                platform: { type: 'circle', radius: 250 },
+                content: null, // No content box, icons are on the platform
+                contactIcons: [
+                    { name: 'github', xOffset: -120, yOffset: 0, url: 'https://github.com/gevak' },
+                    { name: 'linkedin', xOffset: 0, yOffset: 0, url: 'https://linkedin.com/in/gevakip' },
+                    { name: 'facebook', xOffset: 120, yOffset: 0, url: 'https://facebook.com/geva.kipper' }
+                ]
+            }
+        ];
+
+        let w, h;
+        let scrollY = 0;
+        let lastScrollY = 0;
+        let player = {
+            x: 0, y: 0, // Screen position set in resize
+            vx: 0,
+            angle: 0,
+            bob: 0
+        };
+        
+        let mouse = { x: 0, y: 0, overContact: null };
+
+        // --- PLATFORMS ---
+        // Generate smaller connecting platforms
+        let platforms = [];
+        let lastPlatformY = 400;
+        let lastPlatformX = 0.5; // in percentage of width
+        
+        PROJECTS.forEach(proj => {
+            let jumps = Math.floor((proj.worldY - lastPlatformY) / 300);
+            for(let i=1; i <= jumps; i++) {
+                let nextY = lastPlatformY + (proj.worldY - lastPlatformY) / jumps * i;
+                let nextX_percent = lastPlatformX + (Math.random() - 0.5) * 0.3;
+                nextX_percent = Math.max(0.15, Math.min(0.85, nextX_percent));
+                platforms.push({
+                    type: 'line',
+                    worldY: nextY,
+                    x_percent: nextX_percent,
+                    width: Math.random() * 50 + 80
                 });
-            });
-
-            // Set initial active state on the first commit
-            if (commits.length > 0) {
-                commits[0].click();
             }
+            platforms.push({ ...proj.platform, worldY: proj.worldY, x_percent: 0.5 });
+            lastPlatformY = proj.worldY;
+            lastPlatformX = 0.5;
+        });
 
-            // --- Dynamic Date for "Last Commit" ---
-            const dateElement = document.getElementById('last-commit-date');
-            if(dateElement){
-                const today = new Date();
-                const year = today.getFullYear();
-                const month = String(today.getMonth() + 1).padStart(2, '0');
-                const day = String(today.getDate()).padStart(2, '0');
-                dateElement.textContent = `${year}-${month}-${day}`;
-            }
-
-            // --- Live Uptime Stopwatch ---
-            const uptimeElement = document.getElementById('uptime-stopwatch');
-            if (uptimeElement) {
-                // The prompt specified a future date '2025-06-26'.
-                // A true "uptime" counter requires a past date.
-                // Using the design version date from the footer for a logical start time.
-                const startTime = new Date('2024-05-21T08:00:00Z');
-
-                const updateUptime = () => {
-                    const now = new Date();
-                    const diffSeconds = Math.max(0, Math.floor((now - startTime) / 1000));
-
-                    const totalHours = Math.floor(diffSeconds / 3600);
-                    const minutes = Math.floor((diffSeconds % 3600) / 60);
-                    const seconds = diffSeconds % 60;
-
-                    uptimeElement.textContent = 
-                        `${String(totalHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                };
+        // --- UI Initialization ---
+        function initUI() {
+            let projectHtml = '';
+            PROJECTS.forEach((proj, index) => {
+                if (!proj.content) return;
                 
-                setInterval(updateUptime, 1000);
-                updateUptime(); // Initial call to display immediately
+                let linksHtml = '';
+                if(proj.name === "Ahuzat Dibuk") { // Special case for icon links
+                     linksHtml = `<div class="project-links icon-links">${proj.content.links.map(link => 
+                        `<a href="${link.url}" target="_blank" rel="noopener noreferrer" class="icon-link" title="${link.title}">${link.icon}</a>`
+                    ).join('')}</div>`;
+                } else {
+                     linksHtml = `<div class="project-links">${proj.content.links.map(link => 
+                        `<a href="${link.url}" target="_blank" rel="noopener noreferrer" class="project-link">${link.icon}<span>${link.text}</span></a>`
+                    ).join('')}</div>`;
+                }
+
+                projectHtml += `
+                    <div class="project-box" id="project-box-${index}" style="left: 50%; transform: translateX(-50%);">
+                        <h2>${proj.content.title}</h2>
+                        <p>${proj.content.description}</p>
+                        ${linksHtml}
+                    </div>
+                `;
+            });
+            scrollContainer.innerHTML = projectHtml;
+        }
+
+        function setup() {
+            w = canvas.width = window.innerWidth;
+            h = canvas.height = window.innerHeight;
+            
+            player.x = w / 2;
+            player.y = h * PLAYER_Y_ON_SCREEN;
+            
+            scrollContainer.style.height = `${WORLD_HEIGHT}px`;
+            footerElement.style.top = `${WORLD_HEIGHT}px`;
+            
+            PROJECTS.forEach((proj, index) => {
+                if(proj.content) {
+                    const box = document.getElementById(`project-box-${index}`);
+                    const boxVerticalOffset = (w > 600) ? -250 : 100;
+                    box.style.top = `${proj.worldY + boxVerticalOffset}px`;
+                }
+             });
+
+            initUI();
+            updateStopwatch();
+            setInterval(updateStopwatch, 1000);
+
+            gameLoop();
+        }
+
+        // --- Event Listeners ---
+        window.addEventListener('resize', setup);
+        window.addEventListener('scroll', () => {
+             scrollY = window.scrollY;
+        });
+        canvas.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+        canvas.addEventListener('click', (e) => {
+            if(mouse.overContact) {
+                window.open(mouse.overContact.url, '_blank');
             }
         });
+
+        // --- Game Loop ---
+        function gameLoop(timestamp) {
+            // Player animation logic
+            let scrollSpeed = Math.abs(scrollY - lastScrollY);
+            if (scrollSpeed > 0.1) { // Running
+                player.angle = Math.sin(timestamp * 0.02) * 0.2; // Tilt
+                player.bob = Math.abs(Math.sin(timestamp * 0.03) * 3);
+            } else { // Idle
+                player.angle = 0;
+                player.bob = Math.sin(timestamp * 0.002) * 3;
+            }
+            player.vx = (scrollY - lastScrollY) * 0.1;
+            lastScrollY = scrollY;
+            
+            // Drawing
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = 'var(--charcoal-bg)';
+            ctx.fillRect(0,0,w,h);
+
+            // Draw platforms and check for project visibility
+            updateAndDrawWorld(timestamp);
+
+            // Draw player
+            drawPlayer(timestamp);
+
+            // Update UI elements based on scroll
+            updateUI();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateAndDrawWorld(timestamp) {
+            const glowColor = 'var(--cyan-glow)';
+            ctx.strokeStyle = glowColor;
+            ctx.fillStyle = glowColor;
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = 15;
+            ctx.lineWidth = 2.5;
+
+            platforms.forEach(p => {
+                const screenY = p.worldY - scrollY;
+                if (screenY < -200 || screenY > h + 200) return; // Culling
+                
+                const platformX = w * p.x_percent;
+                drawPlatform(p, platformX, screenY, timestamp);
+            });
+            
+            // Handle contact icons
+            mouse.overContact = null; // Reset
+            const contactIsland = PROJECTS.find(p => p.name === 'Contact Hub');
+            if(contactIsland) {
+                 const screenY = contactIsland.worldY - scrollY;
+                 const platformX = w / 2;
+                 contactIsland.contactIcons.forEach(icon => {
+                    const iconScreenX = platformX + icon.xOffset;
+                    const iconScreenY = screenY + icon.yOffset;
+                    const dist = Math.hypot(mouse.x - iconScreenX, mouse.y - iconScreenY);
+                    
+                    let brightness = 1;
+                    if(dist < 30) {
+                        brightness = 1.5;
+                        mouse.overContact = icon;
+                    }
+                    drawContactIcon(icon.name, iconScreenX, iconScreenY, brightness);
+                });
+            }
+            
+            ctx.shadowBlur = 0; // Reset shadow for next frame
+        }
+
+        function drawPlatform(p, x, y, timestamp) {
+            ctx.beginPath();
+            switch (p.type) {
+                case 'line':
+                    ctx.moveTo(x - p.width / 2, y);
+                    ctx.lineTo(x + p.width / 2, y);
+                    break;
+                case 'soundwave':
+                    ctx.moveTo(x - p.width / 2, y);
+                    for (let i = 0; i <= p.segments; i++) {
+                        const segX = x - p.width / 2 + (p.width / p.segments) * i;
+                        const segY = y + Math.sin(i * 0.5 + timestamp * 0.003) * p.amplitude;
+                        ctx.lineTo(segX, segY);
+                    }
+                    break;
+                case 'grid':
+                    for (let i = 0; i <= p.rows; i++) {
+                        const lineY = y - p.height / 2 + (p.height / p.rows) * i;
+                        ctx.moveTo(x - p.width / 2, lineY);
+                        ctx.lineTo(x + p.width / 2, lineY);
+                    }
+                    for (let i = 0; i <= p.cols; i++) {
+                        const lineX = x - p.width / 2 + (p.width / p.cols) * i;
+                        ctx.moveTo(lineX, y - p.height / 2);
+                        ctx.lineTo(lineX, y + p.height / 2);
+                    }
+                    break;
+                case 'polygon':
+                    for (let i = 0; i < p.sides; i++) {
+                        const angle = (i / p.sides) * Math.PI * 2;
+                        const r = p.radius * (1 - p.concavity * Math.pow(Math.sin(i * 2.5 + timestamp*0.001), 2));
+                        const px = x + Math.cos(angle) * r;
+                        const py = y + Math.sin(angle) * r;
+                        if (i === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    break;
+                case 'spiral':
+                    let angle = 0;
+                    let radius = p.initialRadius;
+                    ctx.moveTo(x + p.initialRadius, y);
+                    for (let i = 0; i < 360 * p.coils; i++) {
+                        angle += Math.PI / 180;
+                        radius += p.radiusStep / 360;
+                        ctx.lineTo(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
+                    }
+                    break;
+                case 'circle':
+                    ctx.arc(x, y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(0, 255, 255, 0.05)';
+                    ctx.fill();
+                    ctx.stroke(); // also stroke the outline
+                    break;
+            }
+            if (p.type !== 'circle') ctx.stroke();
+        }
+
+        function drawPlayer() {
+            let size = 20;
+            ctx.save();
+            ctx.translate(player.x, player.y - player.bob);
+            ctx.rotate(player.angle);
+            
+            ctx.fillStyle = 'var(--cyan-glow)';
+            ctx.shadowColor = 'var(--cyan-glow)';
+            ctx.shadowBlur = 20;
+            
+            ctx.fillRect(-size / 2, -size / 2, size, size);
+            
+            ctx.restore();
+        }
+
+        function drawContactIcon(name, x, y, brightness) {
+            const iconString = ICONS[name];
+            if (!iconString) return;
+
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            const size = 64; // render larger for good quality
+            tempCanvas.width = size;
+            tempCanvas.height = size;
+            
+            const color = `rgba(0, 255, 255, ${Math.min(1, 0.7 * brightness)})`;
+            
+            const coloredIcon = iconString.replace('fill="currentColor"', `fill="${color}"`);
+            const v = canvg.Canvg.fromString(tempCtx, coloredIcon);
+            v.render().then(() => {
+                const drawSize = 48 * Math.pow(brightness, 0.5); // make it pop
+                ctx.shadowColor = 'var(--cyan-glow)';
+                ctx.shadowBlur = 15 * brightness;
+                ctx.drawImage(tempCanvas, x - drawSize/2, y-drawSize/2, drawSize, drawSize);
+                ctx.shadowBlur = 0;
+            });
+        }
+
+
+        function updateUI() {
+            // Fade start screen out
+            const startScreen = document.getElementById('start-screen');
+            startScreen.style.opacity = Math.max(0, 1 - scrollY / (h * 0.5));
+            startScreen.style.pointerEvents = (scrollY > 10) ? 'none' : 'auto';
+
+            // Project boxes visibility
+            PROJECTS.forEach((proj, index) => {
+                const box = document.getElementById(`project-box-${index}`);
+                if (!box) return;
+
+                const triggerPoint = proj.worldY - h * 0.6;
+                const endPoint = proj.worldY + h * 0.4;
+                
+                if (scrollY > triggerPoint && scrollY < endPoint) {
+                    box.classList.add('visible');
+                } else {
+                    box.classList.remove('visible');
+                }
+            });
+
+            // Footer visibility
+            if (scrollY > WORLD_HEIGHT - h * 1.2) {
+                footerElement.classList.add('visible');
+            } else {
+                footerElement.classList.remove('visible');
+            }
+        }
+        
+        function updateStopwatch() {
+            const now = new Date();
+            const diff = now - START_TIME;
+
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            const pad = (num, len = 2) => num.toString().padStart(len, '0');
+            
+            document.getElementById('stopwatch').textContent = `${pad(hours, 4)}:${pad(minutes)}:${pad(seconds)}`;
+        }
+        
+        // --- Library for SVG on Canvas ---
+        // Basic version of canvg for this simple use case
+        const canvg = {
+            Canvg: {
+                fromString: (ctx, svgString) => {
+                    const self = {};
+                    self.render = () => {
+                        return new Promise((resolve) => {
+                            const img = new Image();
+                            const svg = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
+                            const url = URL.createObjectURL(svg);
+                            img.onload = () => {
+                                ctx.drawImage(img, 0, 0);
+                                URL.revokeObjectURL(url);
+                                resolve();
+                            };
+                            img.src = url;
+                        });
+                    };
+                    return self;
+                }
+            }
+        };
+
+        // --- Start Everything ---
+        setup();
+    });
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250626",
+          pageId: "20250627",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
