@@ -1,0 +1,442 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper - Portfolio</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier Prime', 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #00ff41;
+            line-height: 1.6;
+            overflow-x: auto;
+            position: relative;
+            min-height: 100vh;
+        }
+        
+        /* Scanline effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 65, 0.03) 2px,
+                rgba(0, 255, 65, 0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        /* Phosphor glow */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, rgba(0, 255, 65, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 999;
+        }
+        
+        .terminal {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 20px;
+            background: #00ff41;
+            animation: blink 1s infinite;
+            margin-left: 2px;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        .ascii-art {
+            font-size: 12px;
+            line-height: 1.2;
+            margin-bottom: 30px;
+            color: #00ff41;
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+        }
+        
+        .header-info {
+            margin-bottom: 40px;
+            font-size: 14px;
+        }
+        
+        .comment {
+            color: #666;
+            font-style: italic;
+        }
+        
+        .code-block {
+            background: rgba(40, 40, 40, 0.8);
+            border: 1px solid #333;
+            border-radius: 5px;
+            margin: 30px 0;
+            padding: 20px;
+            position: relative;
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+        
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        
+        .code-block:hover {
+            border-color: #00ff41;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+        }
+        
+        .code-block:hover .line-numbers {
+            opacity: 1;
+        }
+        
+        .line-numbers {
+            position: absolute;
+            left: 5px;
+            top: 20px;
+            color: #666;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            user-select: none;
+        }
+        
+        .code-content {
+            margin-left: 40px;
+        }
+        
+        .keyword {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+        
+        .function {
+            color: #4ecdc4;
+        }
+        
+        .string {
+            color: #45b7d1;
+        }
+        
+        .number {
+            color: #96ceb4;
+        }
+        
+        .property {
+            color: #feca57;
+        }
+        
+        a {
+            color: #45b7d1;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        a:hover {
+            color: #00ff41;
+            text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding: 20px 0;
+            border-top: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .uptime {
+            color: #00ff41;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+        }
+        
+        .pause-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            color: #ff6b6b;
+            display: none;
+            z-index: 1001;
+        }
+        
+        @media (max-width: 768px) {
+            .terminal {
+                padding: 10px;
+            }
+            
+            .ascii-art {
+                font-size: 8px;
+            }
+            
+            .code-content {
+                margin-left: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="pause-indicator" id="pauseIndicator">
+        ⏸️ PAUSED - Click to resume
+    </div>
+    
+    <div class="terminal">
+        <div class="ascii-art" id="asciiArt"></div>
+        <div class="header-info" id="headerInfo"></div>
+        <div id="content"></div>
+        <div class="footer">
+            <span class="comment">// Generated by Claude AI</span>
+            <span class="uptime" id="uptime">UPTIME: 00h 00m 00s</span>
+        </div>
+    </div>
+
+    <script>
+        class TypewriterTerminal {
+            constructor() {
+                this.isPaused = false;
+                this.currentElement = null;
+                this.typeSpeed = 50;
+                this.startTime = new Date('2024-01-01T00:00:00Z'); // Reference timestamp
+                
+                this.asciiArt = `
+ ██████╗ ███████╗██╗   ██╗ █████╗     ██╗  ██╗██╗██████╗ ██████╗ ███████╗██████╗ 
+██╔════╝ ██╔════╝██║   ██║██╔══██╗    ██║ ██╔╝██║██╔══██╗██╔══██╗██╔════╝██╔══██╗
+██║  ███╗█████╗  ██║   ██║███████║    █████╔╝ ██║██████╔╝██████╔╝█████╗  ██████╔╝
+██║   ██║██╔══╝  ╚██╗ ██╔╝██╔══██║    ██╔═██╗ ██║██╔═══╝ ██╔═══╝ ██╔══╝  ██╔══██╗
+╚██████╔╝███████╗ ╚████╔╝ ██║  ██║    ██║  ██╗██║██║     ██║     ███████╗██║  ██║
+ ╚═════╝ ╚══════╝  ╚═══╝  ╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝╚═╝     ╚═╝     ╚══════╝╚═╝  ╚═╝`;
+
+                this.headerText = [
+                    '// Currently architecting scalable systems at Google',
+                    '',
+                    '/* This portfolio is redesigned daily by AI - refresh tomorrow for a new experience */'
+                ];
+
+                this.projects = [
+                    {
+                        type: 'python',
+                        content: `<span class="keyword">def</span> <span class="function">glgl_stats</span>():
+    """
+    Advanced analytics platform for gaming performance metrics.
+    Built with Python, Flask, and modern data visualization.
+    
+    Features real-time data processing and interactive dashboards
+    for competitive gaming analysis and player improvement tracking.
+    """
+    <span class="keyword">website</span> = <span class="string">"<a href="https://glglstats.onrender.com/">https://glglstats.onrender.com/</a>"</span>
+    # Watch my PyData presentation here: <span class="string">"<a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo">https://www.youtube.com/watch?v=jrKAtOsj1Lo</a>"</span>
+    
+    <span class="keyword">return</span> <span class="string">"Revolutionary gaming analytics"</span>`
+                    },
+                    {
+                        type: 'javascript',
+                        content: `<span class="keyword">const</span> <span class="function">ahuzatDibuk</span> = {
+    <span class="property">description</span>: <span class="string">"Viral social media phenomenon investigating Tel Aviv's parking mysteries"</span>,
+    <span class="property">impact</span>: <span class="string">"Generated massive public discourse and media coverage"</span>,
+    <span class="property">originalPost</span>: <span class="string">"<a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943">Facebook Investigation Post</a>"</span>,
+    <span class="property">mediaCoverage</span>: [
+        <span class="string">"<a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/">Channel 13 News Coverage</a>"</span>,
+        <span class="string">"<a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm">Mako News Feature</a>"</span>
+    ],
+    <span class="property">status</span>: <span class="string">"Solved the mystery and influenced urban policy"</span>
+};</span>`
+                    },
+                    {
+                        type: 'cpp',
+                        content: `<span class="comment">// Advanced Computer Graphics Algorithm</span>
+<span class="comment">// Optimizes 2D part orientation for manufacturing efficiency</span>
+#include <span class="string">"<a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/">https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/</a>"</span>
+
+<span class="keyword">class</span> <span class="function">PartOrientingAlgorithm</span> {
+<span class="keyword">private</span>:
+    <span class="comment">// Research conducted at Tel Aviv University</span>
+    <span class="comment">// Published algorithm for optimal 2D part orientation</span>
+    <span class="comment">// Applications in manufacturing and automated production</span>
+    
+<span class="keyword">public</span>:
+    <span class="keyword">void</span> <span class="function">optimizeOrientation</span>() {
+        <span class="comment">// Implementation reduces material waste by 25-40%</span>
+        <span class="comment">// Revolutionizes manufacturing efficiency</span>
+    }
+};</span>`
+                    },
+                    {
+                        type: 'html',
+                        content: `<span class="comment">&lt;!-- Meta Portfolio: Self-Referential Design --&gt;</span>
+<span class="keyword">&lt;div</span> <span class="property">class</span>=<span class="string">"portfolio-recursive"</span><span class="keyword">&gt;</span>
+    <span class="keyword">&lt;div</span> <span class="property">class</span>=<span class="string">"self-reference"</span><span class="keyword">&gt;</span>
+        <span class="keyword">&lt;a</span> <span class="property">href</span>=<span class="string">"<a href="https://portfolio-dor1.onrender.com/">https://portfolio-dor1.onrender.com/</a>"</span><span class="keyword">&gt;</span>
+            This portfolio references itself
+        <span class="keyword">&lt;/a&gt;</span>
+        <span class="keyword">&lt;div</span> <span class="property">class</span>=<span class="string">"nested-portfolio"</span><span class="keyword">&gt;</span>
+            <span class="comment">&lt;!-- Infinite loop of creativity --&gt;</span>
+            Created with AI collaboration and human vision
+        <span class="keyword">&lt;/div&gt;</span>
+    <span class="keyword">&lt;/div&gt;</span>
+<span class="keyword">&lt;/div&gt;</span>`
+                    },
+                    {
+                        type: 'json',
+                        content: `{
+    <span class="property">"socialLinks"</span>: {
+        <span class="property">"github"</span>: <span class="string">"<a href="https://github.com/gevak">github.com/gevak</a>"</span>,
+        <span class="property">"linkedin"</span>: <span class="string">"<a href="https://linkedin.com/in/gevakip">linkedin.com/in/gevakip</a>"</span>,
+        <span class="property">"facebook"</span>: <span class="string">"<a href="https://facebook.com/geva.kipper">facebook.com/geva.kipper</a>"</span>
+    },
+    <span class="property">"status"</span>: <span class="string">"Building the future, one algorithm at a time"</span>
+}`
+                    }
+                ];
+
+                this.init();
+            }
+
+            init() {
+                document.addEventListener('click', () => this.togglePause());
+                this.startUptime();
+                this.startTyping();
+            }
+
+            togglePause() {
+                this.isPaused = !this.isPaused;
+                const indicator = document.getElementById('pauseIndicator');
+                indicator.style.display = this.isPaused ? 'block' : 'none';
+            }
+
+            async delay(ms) {
+                return new Promise(resolve => {
+                    const checkPause = () => {
+                        if (!this.isPaused) {
+                            setTimeout(resolve, ms);
+                        } else {
+                            setTimeout(checkPause, 100);
+                        }
+                    };
+                    checkPause();
+                });
+            }
+
+            async typeText(element, text, speed = this.typeSpeed) {
+                for (let char of text) {
+                    if (Math.random() < 0.1) await this.delay(speed * 3); // Random pauses
+                    element.innerHTML += char;
+                    await this.delay(speed + Math.random() * 30);
+                }
+            }
+
+            async startTyping() {
+                // Type ASCII art
+                const asciiElement = document.getElementById('asciiArt');
+                await this.typeText(asciiElement, this.asciiArt, 5);
+                await this.delay(1000);
+
+                // Type header info
+                const headerElement = document.getElementById('headerInfo');
+                for (let line of this.headerText) {
+                    await this.typeText(headerElement, line, 30);
+                    headerElement.innerHTML += '<br>';
+                    await this.delay(300);
+                }
+                await this.delay(1500);
+
+                // Type projects
+                const contentElement = document.getElementById('content');
+                for (let i = 0; i < this.projects.length; i++) {
+                    await this.createAndTypeProject(contentElement, this.projects[i], i);
+                    await this.delay(1000);
+                }
+
+                // Add final cursor
+                contentElement.innerHTML += '<span class="cursor"></span>';
+            }
+
+            async createAndTypeProject(container, project, index) {
+                const codeBlock = document.createElement('div');
+                codeBlock.className = 'code-block';
+                codeBlock.style.animationDelay = `${index * 0.2}s`;
+                
+                const lineNumbers = document.createElement('div');
+                lineNumbers.className = 'line-numbers';
+                const lines = project.content.split('\n').length;
+                for (let i = 1; i <= lines; i++) {
+                    lineNumbers.innerHTML += `${i}<br>`;
+                }
+                
+                const codeContent = document.createElement('div');
+                codeContent.className = 'code-content';
+                
+                codeBlock.appendChild(lineNumbers);
+                codeBlock.appendChild(codeContent);
+                container.appendChild(codeBlock);
+
+                await this.delay(500);
+                await this.typeText(codeContent, project.content, 25);
+            }
+
+            startUptime() {
+                const updateUptime = () => {
+                    const now = new Date();
+                    const diff = now - this.startTime;
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                    
+                    document.getElementById('uptime').textContent = 
+                        `UPTIME: ${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+                };
+                
+                updateUptime();
+                setInterval(updateUptime, 1000);
+            }
+        }
+
+        // Initialize the terminal
+        document.addEventListener('DOMContentLoaded', () => {
+            new TypewriterTerminal();
+        });
+    </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250529",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>

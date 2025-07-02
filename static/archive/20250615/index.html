@@ -1,0 +1,593 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper - A Geva-Bot Interface</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- Root Variables & Base Styles --- */
+        :root {
+            --bg-color: #121820;
+            --bot-bubble-color: #1E2732;
+            --user-bubble-color: #3A434F;
+            --button-color: #2A333E;
+            --button-hover-color: #3A434F;
+            --accent-color: #00F5D4;
+            --text-primary: #EAECEF;
+            --text-secondary: #9DA3AE;
+            --font-family: 'Inter', sans-serif;
+            --border-radius: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: box-shadow 0.4s ease-in-out;
+        }
+
+        body.glow-effect {
+            box-shadow: 0 0 20px 5px var(--accent-color);
+        }
+
+        /* --- Header --- */
+        .site-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(18, 24, 32, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            z-index: 10;
+            border-bottom: 1px solid #2A333E;
+        }
+
+        .header-avatar {
+            width: 40px;
+            height: 40px;
+            margin-right: 15px;
+            animation: pulse 4s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 245, 212, 0.3); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 245, 212, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 245, 212, 0); }
+        }
+
+        .header-info .name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .header-info .title {
+            font-weight: 400;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin: 2px 0 0 0;
+        }
+
+        /* --- Main Chat Area --- */
+        .chat-container {
+            flex-grow: 1;
+            padding: 95px 20px 10px; /* Top padding = header height + buffer */
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .chat-message {
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.5s forwards;
+            max-width: 85%;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-bubble {
+            padding: 12px 18px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        
+        /* Bot Messages */
+        .bot {
+            align-self: flex-start;
+        }
+        .bot .message-bubble {
+            background-color: var(--bot-bubble-color);
+            border-radius: var(--border-radius) var(--border-radius) var(--border-radius) 5px;
+        }
+
+        /* User Messages */
+        .user {
+            align-self: flex-end;
+        }
+        .user .message-bubble {
+            background-color: var(--user-bubble-color);
+            color: var(--text-primary);
+            border-radius: var(--border-radius) var(--border-radius) 5px var(--border-radius);
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background-color: var(--text-secondary);
+            border-radius: 50%;
+            animation: typing-bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing-bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+
+        /* Rich Content Cards */
+        .rich-card {
+            background-color: var(--bot-bubble-color);
+            border: 1px solid #2A333E;
+            border-radius: 12px;
+            overflow: hidden;
+            width: 100%;
+            max-width: 450px;
+            padding: 20px;
+        }
+        .rich-card .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+        }
+        .rich-card .card-body {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .rich-card .card-actions, .rich-card .social-links {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .rich-card .action-link, .rich-card .social-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: #2A333E;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 500;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .rich-card .action-link:hover, .rich-card .social-link:hover {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+        }
+        .rich-card .action-link svg, .rich-card .social-link svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        /* --- Button Input Area --- */
+        .button-bar {
+            padding: 10px 20px 60px; /* Bottom padding = footer height + buffer */
+            width: 100%;
+            max-width: 840px;
+            margin: 0 auto;
+        }
+
+        .button-options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 10px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.5s 0.5s forwards;
+        }
+
+        .option-button {
+            background-color: var(--button-color);
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
+            padding: 10px 20px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .option-button:hover {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+        }
+        .option-button:active {
+            transform: scale(0.95);
+        }
+
+        /* --- Footer --- */
+        .site-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            background-color: rgba(18, 24, 32, 0.5); 
+            z-index: 10;
+        }
+        .stopwatch {
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="site-header">
+        <svg class="header-avatar" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M50 0C59.2783 0 68.3235 2.91572 75.911 8.35639L50 50L8.35639 75.911C2.91572 68.3235 0 59.2783 0 50C0 22.3858 22.3858 0 50 0ZM91.6436 24.089C97.0843 31.6765 100 40.7217 100 50C100 77.6142 77.6142 100 50 100C40.7217 100 31.6765 97.0843 24.089 91.6436L50 50L91.6436 24.089Z" fill="#00F5D4"/>
+        </svg>
+        <div class="header-info">
+            <p class="name">Geva Kipper</p>
+            <p class="title">Software Engineer at Google, focusing on large-scale data infrastructure.</p>
+        </div>
+    </header>
+
+    <main class="chat-container" id="chat-container">
+        <div class="chat-messages" id="chat-messages">
+            <!-- Messages will be injected here -->
+        </div>
+    </main>
+
+    <div class="button-bar" id="button-bar">
+        <div class="button-options" id="button-options">
+            <!-- Buttons will be injected here -->
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <div class="credit">Site designed and generated by a GPT-4 class language model.</div>
+        <div class="stopwatch" id="stopwatch">Time Since Last AI Redesign: 00:00:00</div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatMessages = document.getElementById('chat-messages');
+            const buttonOptions = document.getElementById('button-options');
+            const chatContainer = document.getElementById('chat-container');
+            const stopwatchEl = document.getElementById('stopwatch');
+
+            const ICONS = {
+                link: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z" /></svg>`,
+                play: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg>`,
+                github: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.83,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z" /></svg>`,
+                linkedin: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M19,3A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H19M18.5,18.5V13.2A3.26,3.26 0 0,0 15.24,9.94C14.39,9.94 13.4,10.43 13,11.1V10.28H10.13V18.5H13V13.57C13,12.8 13.09,12.03 14.17,12.03C15.24,12.03 15.24,12.91 15.24,13.67V18.5H18.5M6.88,8.56A1.68,1.68 0 0,0 8.56,6.88C8.56,6 8,5.13 6.88,5.13C5.76,5.13 5.19,6 5.19,6.88A1.68,1.68 0 0,0 6.88,8.56M8.27,18.5V10.28H5.5V18.5H8.27Z" /></svg>`,
+                facebook: `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.04C6.5 2.04 2 6.53 2 12.06C2 17.06 5.66 21.21 10.44 21.96V14.96H7.9V12.06H10.44V9.81C10.44 7.31 11.93 5.96 14.22 5.96C15.31 5.96 16.45 6.15 16.45 6.15V8.62H15.19C13.95 8.62 13.56 9.39 13.56 10.18V12.06H16.34L15.89 14.96H13.56V21.96A10 10 0 0 0 12 2.04Z" /></svg>`
+            };
+
+            const CONVERSATION_DATA = {
+                start: {
+                    messages: [
+                        "Hello. I'm Geva-Bot, a digital assistant trained on Geva Kipper's professional background.",
+                        "He tasked me with redesigning this portfolio daily. My design parameters are always in flux, but the core data remains the same. What can I show you?"
+                    ],
+                    buttons: [
+                        { text: "About Geva's Projects", action: 'projects_menu' },
+                        { text: "What is this Website?", action: 'show_meta_project' },
+                        { text: "Professional Links", action: 'show_links' }
+                    ]
+                },
+                projects_menu: {
+                    userMessage: "About Geva's Projects",
+                    botResponse: {
+                        messages: ["Of course. Which project interests you most?"],
+                        buttons: [
+                            { text: 'GlglStats', action: 'show_project_glglstats' },
+                            { text: 'Ahuzat Dibuk', action: 'show_project_ahuzat' },
+                            { text: '2D Part Orienting', action: 'show_project_orienting' }
+                        ]
+                    }
+                },
+                show_meta_project: {
+                    userMessage: "What is this Website?",
+                    botResponse: {
+                        card: {
+                            title: 'The Geva-Bot Portfolio',
+                            body: "This is a meta-project: a dynamic, single-page portfolio designed to emulate a conversation. It's built with modern HTML, CSS, and JavaScript.",
+                            actions: [
+                                { text: "✨ You're Here!", action: 'glow_effect' }
+                            ]
+                        }
+                    }
+                },
+                show_links: {
+                    userMessage: "Professional Links",
+                    botResponse: {
+                        messages: ["You can find Geva on the following platforms."],
+                        links: [
+                            { text: 'GitHub', url: 'https://github.com/gevak', icon: 'github'},
+                            { text: 'LinkedIn', url: 'https://www.linkedin.com/in/gevakip', icon: 'linkedin' },
+                            { text: 'Facebook', url: 'https://www.facebook.com/geva.kipper', icon: 'facebook' }
+                        ]
+                    }
+                },
+                show_project_glglstats: {
+                    userMessage: "GlglStats",
+                    botResponse: {
+                        card: {
+                            title: 'GlglStats',
+                            body: 'An analytical platform for the Israeli national radio station "Galgalatz," providing insights and visualizations of their daily playlists.',
+                            actions: [
+                                { text: 'View Live Project', url: 'https://glglstats.onrender.com/', icon: 'link' },
+                                { text: 'Watch Conference Talk', url: 'https://www.youtube.com/watch?v=jrKAtOsj1Lo', icon: 'play' }
+                            ]
+                        }
+                    }
+                },
+                show_project_ahuzat: {
+                    userMessage: 'Ahuzat Dibuk',
+                    botResponse: {
+                        card: {
+                            title: 'Ahuzat Dibuk',
+                            body: 'A project that cross-referenced city parking data with Google Maps to reveal over 1,500 "secret" free public parking spots in Tel Aviv, gaining significant media attention.',
+                             actions: [
+                                { text: 'Original Facebook Post', url: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943', icon: 'facebook' },
+                                { text: 'Media: Channel 13 News', url: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/', icon: 'link' },
+                                { text: 'Media: Mako Nexter', url: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm', icon: 'link' }
+                            ]
+                        }
+                    }
+                },
+                show_project_orienting: {
+                    userMessage: '2D Part Orienting',
+                    botResponse: {
+                        card: {
+                            title: '2D Part Orienting',
+                            body: 'Academic research from Tel-Aviv University focused on developing an algorithm to determine the optimal stable orientation of 2D polygonal parts for fabrication processes.',
+                            actions: [
+                                { text: 'View Project Page & Code', url: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/', icon: 'link' }
+                            ]
+                        }
+                    }
+                }
+            };
+
+            const scrollToBottom = () => {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            };
+
+            const addMessage = (content, sender, isCard = false, isLinks = false) => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${sender}`;
+                
+                if (isCard) {
+                    messageDiv.innerHTML = content;
+                } else if (isLinks) {
+                    messageDiv.innerHTML = content;
+                } else {
+                    const bubble = document.createElement('div');
+                    bubble.className = 'message-bubble';
+                    bubble.textContent = content;
+                    messageDiv.appendChild(bubble);
+                }
+
+                chatMessages.appendChild(messageDiv);
+                scrollToBottom();
+            };
+
+            const createRichCard = (cardData) => {
+                const actionsHtml = cardData.actions.map(action =>
+                    action.url ?
+                    `<a href="${action.url}" target="_blank" rel="noopener noreferrer" class="action-link">${ICONS[action.icon]}<span>${action.text}</span></a>` :
+                    `<button class="action-link" data-action="${action.action}">${action.text}</button>`
+                ).join('');
+
+                return `
+                    <div class="rich-card">
+                        <h3 class="card-title">${cardData.title}</h3>
+                        <p class="card-body">${cardData.body}</p>
+                        <div class="card-actions">${actionsHtml}</div>
+                    </div>
+                `;
+            };
+            
+            const createSocialLinks = (linksData) => {
+                const linksHtml = linksData.map(link => 
+                    `<a href="${link.url}" target="_blank" rel="noopener noreferrer" class="social-link">${ICONS[link.icon]}<span>${link.text}</span></a>`
+                ).join('');
+
+                return `<div class="rich-card"><div class="social-links">${linksHtml}</div></div>`;
+            };
+
+            const showButtons = (buttons) => {
+                buttonOptions.innerHTML = '';
+                if (!buttons || buttons.length === 0) {
+                    // Show initial menu again if conversation ends
+                    buttons = CONVERSATION_DATA.start.buttons; 
+                }
+
+                buttons.forEach(buttonInfo => {
+                    const button = document.createElement('button');
+                    button.className = 'option-button';
+                    button.textContent = buttonInfo.text;
+                    button.dataset.action = buttonInfo.action;
+                    buttonOptions.appendChild(button);
+                });
+                buttonOptions.style.opacity = '1';
+                buttonOptions.style.transform = 'translateY(0)';
+            };
+
+            const showTypingIndicator = async (duration = 1000) => {
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'chat-message bot';
+                typingDiv.innerHTML = `<div class="message-bubble typing-indicator"><span></span><span></span><span></span></div>`;
+                chatMessages.appendChild(typingDiv);
+                scrollToBottom();
+
+                await new Promise(resolve => setTimeout(resolve, duration));
+                typingDiv.remove();
+            };
+
+            const handleUserChoice = async (e) => {
+                const target = e.target;
+                if (!target.matches('.option-button, .action-link[data-action]')) return;
+
+                const action = target.dataset.action;
+                if (!action) return;
+
+                // Special case for glow effect
+                if (action === 'glow_effect') {
+                    document.body.classList.add('glow-effect');
+                    setTimeout(() => document.body.classList.remove('glow-effect'), 1200);
+                    return;
+                }
+
+                const choiceData = CONVERSATION_DATA[action];
+                if (!choiceData) return;
+
+                // 1. Show user message & clear buttons
+                if (choiceData.userMessage) {
+                    addMessage(choiceData.userMessage, 'user');
+                }
+                buttonOptions.innerHTML = '';
+
+                // 2. Show typing indicator
+                await showTypingIndicator(800);
+
+                // 3. Show bot response
+                const response = choiceData.botResponse;
+                if (response.messages) {
+                    for (const msg of response.messages) {
+                        await new Promise(resolve => setTimeout(() => {
+                            addMessage(msg, 'bot');
+                            resolve();
+                        }, 300));
+                    }
+                }
+                if (response.card) {
+                    const cardHtml = createRichCard(response.card);
+                    addMessage(cardHtml, 'bot', true);
+                }
+                 if (response.links) {
+                    const linksHtml = createSocialLinks(response.links);
+                    addMessage(linksHtml, 'bot', true);
+                }
+
+                // 4. Show next set of buttons or default buttons
+                setTimeout(() => {
+                    showButtons(response.buttons || CONVERSATION_DATA.start.buttons);
+                }, 500);
+            };
+
+            document.body.addEventListener('click', handleUserChoice);
+
+            // --- Stopwatch Logic ---
+            const redesignTimestamp = new Date('2025-06-15T01:15:24Z').getTime();
+
+            const updateStopwatch = () => {
+                const now = new Date().getTime();
+                const difference = now - redesignTimestamp;
+                
+                if (difference < 0) {
+                    stopwatchEl.textContent = "Launching Soon...";
+                    return;
+                }
+
+                const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+                const pad = (num) => num.toString().padStart(2, '0');
+                
+                stopwatchEl.textContent = `Time Since Last AI Redesign: ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+            };
+            
+
+            // --- Initial Page Load ---
+            const init = async () => {
+                updateStopwatch();
+                setInterval(updateStopwatch, 1000);
+                
+                await showTypingIndicator(1200);
+
+                const startNode = CONVERSATION_DATA.start;
+                for (const msg of startNode.messages) {
+                    await new Promise(resolve => setTimeout(() => {
+                        addMessage(msg, 'bot');
+                        resolve();
+                    }, 600));
+                }
+                
+                setTimeout(() => {
+                    showButtons(startNode.buttons);
+                }, 500);
+            };
+
+            init();
+        });
+    </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250615",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>

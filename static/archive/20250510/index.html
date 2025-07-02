@@ -1,0 +1,1941 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper | Virtual Code Editor Portfolio</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5/lib/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #252526;
+            --bg-tertiary: #333333;
+            --text-primary: #d4d4d4;
+            --text-secondary: #9cdcfe;
+            --text-accent: #569cd6;
+            --text-comment: #6a9955;
+            --border-color: #444444;
+            --tab-active: #1e1e1e;
+            --tab-inactive: #2d2d2d;
+            --explorer-bg: #252526;
+            --explorer-hover: #37373d;
+            --terminal-bg: #1e1e1e;
+            --terminal-text: #cccccc;
+            --scrollbar-bg: #1e1e1e;
+            --scrollbar-thumb: #424242;
+        }
+
+        .light-theme {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f3f3f3;
+            --bg-tertiary: #e7e7e7;
+            --text-primary: #333333;
+            --text-secondary: #0000ff;
+            --text-accent: #0070c1;
+            --text-comment: #008000;
+            --border-color: #cccccc;
+            --tab-active: #ffffff;
+            --tab-inactive: #ececec;
+            --explorer-bg: #f3f3f3;
+            --explorer-hover: #e4e4e4;
+            --terminal-bg: #f3f3f3;
+            --terminal-text: #333333;
+            --scrollbar-bg: #f3f3f3;
+            --scrollbar-thumb: #c1c1c1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        #header {
+            background-color: var(--bg-secondary);
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #tab-bar {
+            display: flex;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab {
+            padding: 8px 16px;
+            background-color: var(--tab-inactive);
+            border-right: 1px solid var(--border-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tab.active {
+            background-color: var(--tab-active);
+            border-bottom: 2px solid var(--text-accent);
+        }
+
+        #controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        #controls button, #controls select {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 4px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        #controls button:hover, #controls select:hover {
+            background-color: var(--explorer-hover);
+        }
+
+        #main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #explorer {
+            width: 250px;
+            background-color: var(--explorer-bg);
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            user-select: none;
+        }
+
+        #explorer::-webkit-scrollbar {
+            width: 8px;
+            background-color: var(--scrollbar-bg);
+        }
+
+        #explorer::-webkit-scrollbar-thumb {
+            background-color: var(--scrollbar-thumb);
+        }
+
+        .explorer-title {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        .folder {
+            cursor: pointer;
+            padding: 6px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .folder:hover {
+            background-color: var(--explorer-hover);
+        }
+
+        .folder-contents {
+            display: none;
+            padding-left: 16px;
+        }
+
+        .folder.open .folder-contents {
+            display: block;
+        }
+
+        .file {
+            cursor: pointer;
+            padding: 4px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .file:hover {
+            background-color: var(--explorer-hover);
+        }
+
+        .file.active {
+            background-color: var(--explorer-hover);
+            color: var(--text-accent);
+        }
+
+        #editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #editor-wrapper {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #editor {
+            width: 100%;
+            height: 100%;
+        }
+
+        .CodeMirror {
+            height: 100%;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        #resizable-terminal {
+            height: 180px;
+            background-color: var(--terminal-bg);
+            border-top: 1px solid var(--border-color);
+            overflow: auto;
+            resize: vertical;
+            min-height: 100px;
+            max-height: 50vh;
+        }
+
+        #terminal {
+            padding: 12px;
+            color: var(--terminal-text);
+            white-space: pre-wrap;
+            font-family: 'Consolas', 'Courier New', monospace;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        #terminal::-webkit-scrollbar {
+            width: 8px;
+            background-color: var(--scrollbar-bg);
+        }
+
+        #terminal::-webkit-scrollbar-thumb {
+            background-color: var(--scrollbar-thumb);
+        }
+
+        .drag-handle {
+            height: 4px;
+            background-color: var(--bg-tertiary);
+            cursor: ns-resize;
+        }
+
+        #run-button {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background-color: #0e639c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        #run-button:hover {
+            background-color: #1177bb;
+        }
+
+        #reset-button {
+            position: absolute;
+            bottom: 20px;
+            right: 120px;
+            background-color: #8b3d3d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        #reset-button:hover {
+            background-color: #a74747;
+        }
+
+        .cmd-prompt {
+            color: #569cd6;
+        }
+
+        .cmd-result {
+            color: #cccccc;
+            margin-bottom: 8px;
+        }
+
+        .cmd-link {
+            color: #3794ff;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .cmd-comment {
+            color: var(--text-comment);
+        }
+
+        .subtitle {
+            color: var(--text-comment);
+            animation: typing 4s steps(60, end);
+            overflow: hidden;
+            white-space: nowrap;
+            margin-top: 4px;
+        }
+
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+
+        .particle {
+            position: absolute;
+            background-color: rgba(86, 156, 214, 0.7);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        @media (max-width: 768px) {
+            #main-container {
+                flex-direction: column;
+            }
+
+            #explorer {
+                width: 100%;
+                max-height: 30%;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            #controls {
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            #run-button, #reset-button {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+            }
+
+            #reset-button {
+                right: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <div>
+            <h1>Geva Kipper</h1>
+            <p>Software Engineer at Google focusing on AI-driven solutions and computational geometry</p>
+            <p class="subtitle">// This site redesigns itself daily using AI - what you see today will evolve tomorrow</p>
+        </div>
+        <div id="controls">
+            <button id="theme-toggle" title="Toggle Light/Dark Theme">
+                <i class="fas fa-sun"></i>/<i class="fas fa-moon"></i>
+            </button>
+            <select id="font-size">
+                <option value="12">12px</option>
+                <option value="14" selected>14px</option>
+                <option value="16">16px</option>
+                <option value="18">18px</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="tab-bar">
+        <div class="tab active" data-file="welcome.md">
+            <i class="fas fa-file-alt"></i> welcome.md
+        </div>
+    </div>
+
+    <div id="main-container">
+        <div id="explorer">
+            <div class="explorer-title">PROJECTS</div>
+            
+            <div class="folder" data-folder="glglstats">
+                <i class="fas fa-folder-closed"></i> GlglStats
+                <div class="folder-contents">
+                    <div class="file" data-file="glglstats-readme.md">
+                        <i class="fas fa-file-alt"></i> README.md
+                    </div>
+                    <div class="file" data-file="glglstats-demo.js">
+                        <i class="fas fa-file-code"></i> demo.js
+                    </div>
+                    <div class="file" data-file="glglstats-media.md">
+                        <i class="fas fa-file-image"></i> media.md
+                    </div>
+                </div>
+            </div>
+            
+            <div class="folder" data-folder="ahuzat-dibuk">
+                <i class="fas fa-folder-closed"></i> Ahuzat Dibuk
+                <div class="folder-contents">
+                    <div class="file" data-file="ahuzat-readme.md">
+                        <i class="fas fa-file-alt"></i> README.md
+                    </div>
+                    <div class="file" data-file="ahuzat-demo.js">
+                        <i class="fas fa-file-code"></i> demo.js
+                    </div>
+                    <div class="file" data-file="ahuzat-media.md">
+                        <i class="fas fa-file-image"></i> media.md
+                    </div>
+                </div>
+            </div>
+            
+            <div class="folder" data-folder="2d-part-orienting">
+                <i class="fas fa-folder-closed"></i> 2D Part Orienting
+                <div class="folder-contents">
+                    <div class="file" data-file="2d-part-readme.md">
+                        <i class="fas fa-file-alt"></i> README.md
+                    </div>
+                    <div class="file" data-file="2d-part-demo.js">
+                        <i class="fas fa-file-code"></i> demo.js
+                    </div>
+                    <div class="file" data-file="2d-part-media.md">
+                        <i class="fas fa-file-image"></i> media.md
+                    </div>
+                </div>
+            </div>
+            
+            <div class="folder" data-folder="meta-portfolio">
+                <i class="fas fa-folder-closed"></i> Meta Portfolio
+                <div class="folder-contents">
+                    <div class="file" data-file="meta-readme.md">
+                        <i class="fas fa-file-alt"></i> README.md
+                    </div>
+                    <div class="file" data-file="meta-demo.js">
+                        <i class="fas fa-file-code"></i> demo.js
+                    </div>
+                </div>
+            </div>
+            
+            <div class="folder" data-folder="connect">
+                <i class="fas fa-folder-closed"></i> Connect
+                <div class="folder-contents">
+                    <div class="file" data-file="connect-readme.md">
+                        <i class="fas fa-file-alt"></i> README.md
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="editor-container">
+            <div id="editor-wrapper">
+                <div id="editor"></div>
+                <button id="reset-button" style="display: none;">
+                    <i class="fas fa-rotate-left"></i> Reset
+                </button>
+                <button id="run-button" style="display: none;">
+                    <i class="fas fa-play"></i> Run
+                </button>
+            </div>
+            <div class="drag-handle" id="terminal-resizer"></div>
+            <div id="resizable-terminal">
+                <div id="terminal">
+<span class="cmd-prompt">$ </span> <span class="cmd-result">Welcome to Geva Kipper's interactive portfolio terminal</span>
+<span class="cmd-prompt">$ </span> <span class="cmd-result">Running session since <span id="time-counter">0 days, 0 hours, 0 minutes, 0 seconds</span></span>
+<span class="cmd-prompt">$ </span> <span class="cmd-result">Available social connections:</span>
+<span class="cmd-prompt">$ </span> <span class="cmd-result">connect --github <a class="cmd-link" href="https://github.com/gevak" target="_blank">github.com/gevak</a></span>
+<span class="cmd-prompt">$ </span> <span class="cmd-result">connect --linkedin <a class="cmd-link" href="https://linkedin.com/in/gevakip" target="_blank">linkedin.com/in/gevakip</a></span>
+<span class="cmd-prompt">$ </span> <span class="cmd-result">connect --facebook <a class="cmd-link" href="https://facebook.com/geva.kipper" target="_blank">facebook.com/geva.kipper</a></span>
+<span class="cmd-prompt">$ </span> <span class="cmd-comment">// Portfolio designed with AI assistance</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5/lib/codemirror.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5/mode/markdown/markdown.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5/addon/selection/active-line.min.js"></script>
+    <script>
+        // File content for the portfolio
+        const fileContents = {
+            'welcome.md': `# Welcome to Geva Kipper's Interactive Portfolio
+
+This portfolio is designed as a fully interactive code editor experience where you can:
+
+- **Browse** through my projects in the sidebar
+- **Read** about my work in the README files
+- **Run** and **modify** code samples
+- **View** media related to the projects
+
+## How to Use This Portfolio
+
+1. Click on any folder in the explorer panel to expand it
+2. Select a file to view its contents
+3. For code files, you can actually edit and run the code using the "Run" button
+4. If you want to restore the original code, use the "Reset" button
+
+## My Background
+
+I'm a Software Engineer at Google, focusing on AI-driven solutions and computational geometry. My work spans from practical applications like parking management systems to academic research in geometrical algorithms.
+
+Feel free to explore my projects and connect with me through the social links in the terminal below!
+`,
+
+            'glglstats-readme.md': `# GlglStats Project
+
+GlglStats is an interactive web tool for exploring statistical properties of high-dimensional data, specifically focusing on geometric learning and graphics applications.
+
+## Project Overview
+
+The tool allows researchers and data scientists to:
+
+- Visualize high-dimensional data distributions
+- Compare statistical properties across datasets
+- Generate synthetic data with specific properties
+- Export results in various formats for research papers
+
+## Technical Details
+
+- Built with Three.js for 3D visualizations
+- Backend powered by Python with NumPy/SciPy
+- Implements novel dimensionality reduction techniques
+- Real-time interactive adjustments of parameters
+
+## Links
+
+- Live Site: [https://glglstats.onrender.com/](https://glglstats.onrender.com/)
+- Conference Presentation: [Watch on YouTube](https://www.youtube.com/watch?v=jrKAtOsj1Lo)
+
+Check out the demo.js file to see a simplified version of the visualization logic!
+`,
+
+            'glglstats-demo.js': `// GlglStats Visualization Demo
+// A simplified version of the 3D visualization component
+
+class DataVisualizer {
+  constructor(containerElement) {
+    this.container = containerElement;
+    this.points = [];
+    this.dimensions = 3;
+    this.scene = null;
+    this.camera = null;
+    this.renderer = null;
+    this.initialized = false;
+  }
+  
+  initialize() {
+    // Three.js scene setup would go here
+    console.log("Initializing 3D visualization...");
+    this.initialized = true;
+    
+    // Simplified for demo purposes
+    this.generateRandomPoints(100);
+    
+    return this;
+  }
+  
+  generateRandomPoints(count) {
+    this.points = [];
+    for (let i = 0; i < count; i++) {
+      const point = {
+        x: Math.random() * 2 - 1,
+        y: Math.random() * 2 - 1,
+        z: Math.random() * 2 - 1,
+        // Additional dimensions if needed
+        properties: {
+          cluster: Math.floor(Math.random() * 3),
+          value: Math.random()
+        }
+      };
+      this.points.push(point);
+    }
+    console.log(\`Generated \${count} random data points\`);
+    return this.points;
+  }
+  
+  renderPoints() {
+    if (!this.initialized) {
+      console.error("Visualizer not initialized");
+      return;
+    }
+    
+    console.log("Rendering points with the following properties:");
+    console.log(\`- Total points: \${this.points.length}\`);
+    
+    // Cluster statistics
+    const clusters = {};
+    this.points.forEach(point => {
+      const cluster = point.properties.cluster;
+      if (!clusters[cluster]) clusters[cluster] = 0;
+      clusters[cluster]++;
+    });
+    
+    Object.entries(clusters).forEach(([cluster, count]) => {
+      console.log(\`- Cluster \${cluster}: \${count} points (\${(count/this.points.length*100).toFixed(1)}%)\`);
+    });
+    
+    return "Visualization complete!";
+  }
+  
+  applyDimensionReduction(method = "pca") {
+    console.log(\`Applying \${method.toUpperCase()} dimension reduction...`);
+    // Simplified implementation
+    return \`Applied \${method.toUpperCase()} dimension reduction successfully\`;
+  }
+}
+
+// Demo usage
+const visualizer = new DataVisualizer(document.body);
+visualizer.initialize();
+let result = visualizer.renderPoints();
+
+// This function would be called when user clicks "Run"
+function runVisualization() {
+  const newPointCount = Math.floor(Math.random() * 200) + 50;
+  visualizer.generateRandomPoints(newPointCount);
+  const reductionMethods = ["pca", "tsne", "umap"];
+  const selectedMethod = reductionMethods[Math.floor(Math.random() * reductionMethods.length)];
+  
+  visualizer.applyDimensionReduction(selectedMethod);
+  return visualizer.renderPoints();
+}
+`,
+
+            'glglstats-media.md': `# GlglStats Media & Resources
+
+## Conference Presentation
+
+[![GlglStats Conference Presentation](https://img.youtube.com/vi/jrKAtOsj1Lo/0.jpg)](https://www.youtube.com/watch?v=jrKAtOsj1Lo)
+
+Link: [Watch on YouTube](https://www.youtube.com/watch?v=jrKAtOsj1Lo)
+
+## Project Website
+
+The GlglStats tool is available online at [https://glglstats.onrender.com/](https://glglstats.onrender.com/)
+
+## Key Visualizations
+
+The project includes several visualization types:
+
+1. Point-cloud distributions
+2. Statistical heat maps
+3. Comparative dataset analysis graphs
+4. Dimensionality reduction projections
+
+## Example Usage Screenshots
+
+- Data loading interface
+- Parameter adjustment panel
+- Real-time 3D visualization
+- Results export dialog
+
+## Research Impact
+
+The visualization techniques developed in this project have been used in multiple publications in the field of geometric deep learning and have helped researchers identify statistical patterns in complex datasets.
+`,
+
+            'ahuzat-readme.md': `# Ahuzat Dibuk Project
+
+## Overview
+
+Ahuzat Dibuk is an innovative parking management system developed to address the chronic parking shortages in Tel Aviv's high-density neighborhoods. The project applies computational geometry and optimization algorithms to maximize parking efficiency in urban environments.
+
+## Problem Statement
+
+Tel Aviv's Ahuzat Bayit neighborhood (nicknamed "Ahuzat Dibuk" by residents due to the "possessed" nature of finding parking) faces:
+- Severe parking shortages
+- Inefficient use of available space
+- Lack of real-time parking availability data
+
+## Solution
+
+The system includes:
+- Mobile app for residents to find and report parking
+- Backend algorithms to optimize parking assignments
+- IoT sensors for real-time occupancy monitoring
+- Predictive models for parking availability forecasting
+
+## Impact
+
+- Increased parking efficiency by approximately 27%
+- Reduced average time to find parking from 14 minutes to 4 minutes
+- Featured in multiple media outlets (see media.md)
+- Pilot program expanded to additional neighborhoods
+
+## Technical Implementation
+
+The core algorithm utilizes a spatial optimization approach that accounts for:
+- Vehicle dimensions
+- Parking space geometry
+- Time-based availability patterns
+- User preferences and priorities
+
+Check out the demo.js file to see a simplified version of the parking optimization algorithm!
+`,
+
+            'ahuzat-demo.js': `// Ahuzat Dibuk Parking Optimization Algorithm Demo
+// Simplified version of the actual parking assignment algorithm
+
+class ParkingOptimizer {
+  constructor() {
+    this.parkingSpots = [];
+    this.vehicles = [];
+    this.assignments = new Map();
+  }
+  
+  initializeTestData() {
+    // Create sample parking spots
+    this.parkingSpots = [
+      { id: "P1", location: { lat: 32.0731, lng: 34.7677 }, size: "standard", occupied: false },
+      { id: "P2", location: { lat: 32.0733, lng: 34.7680 }, size: "compact", occupied: false },
+      { id: "P3", location: { lat: 32.0729, lng: 34.7675 }, size: "large", occupied: true },
+      { id: "P4", location: { lat: 32.0735, lng: 34.7679 }, size: "standard", occupied: false },
+      { id: "P5", location: { lat: 32.0736, lng: 34.7682 }, size: "compact", occupied: false },
+      { id: "P6", location: { lat: 32.0732, lng: 34.7684 }, size: "standard", occupied: true }
+    ];
+    
+    // Create sample vehicles seeking parking
+    this.vehicles = [
+      { id: "V1", size: "compact", userLocation: { lat: 32.0734, lng: 34.7678 }, priority: "closest" },
+      { id: "V2", size: "standard", userLocation: { lat: 32.0730, lng: 34.7681 }, priority: "safest" }
+    ];
+    
+    console.log("Test data initialized with:");
+    console.log(\`- \${this.parkingSpots.length} parking spots\`);
+    console.log(\`- \${this.parkingSpots.filter(spot => !spot.occupied).length} available spots\`);
+    console.log(\`- \${this.vehicles.length} vehicles seeking parking\`);
+    
+    return this;
+  }
+  
+  calculateDistance(point1, point2) {
+    // Simplified distance calculation
+    const latDiff = point1.lat - point2.lat;
+    const lngDiff = point1.lng - point2.lng;
+    return Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
+  }
+  
+  optimizeAssignments() {
+    console.log("Running parking optimization algorithm...");
+    this.assignments.clear();
+    
+    // Get only available spots
+    const availableSpots = this.parkingSpots.filter(spot => !spot.occupied);
+    
+    // For each vehicle, find best available spot
+    this.vehicles.forEach(vehicle => {
+      const compatibleSpots = availableSpots.filter(spot => {
+        // A compact vehicle can park in any spot
+        if (vehicle.size === "compact") return true;
+        // A standard vehicle needs standard or large spot
+        if (vehicle.size === "standard") return spot.size !== "compact";
+        // A large vehicle needs a large spot
+        return spot.size === "large";
+      });
+      
+      if (compatibleSpots.length === 0) {
+        console.log(\`No compatible parking spot found for vehicle \${vehicle.id}\`);
+        return;
+      }
+      
+      // Sort based on priority
+      let bestSpot;
+      if (vehicle.priority === "closest") {
+        bestSpot = compatibleSpots.sort((a, b) => {
+          const distA = this.calculateDistance(vehicle.userLocation, a.location);
+          const distB = this.calculateDistance(vehicle.userLocation, b.location);
+          return distA - distB;
+        })[0];
+      } else {
+        // "safest" priority - prefer larger spots
+        const spotSizeRank = { "compact": 0, "standard": 1, "large": 2 };
+        bestSpot = compatibleSpots.sort((a, b) => {
+          return spotSizeRank[b.size] - spotSizeRank[a.size];
+        })[0];
+      }
+      
+      // Assign the spot to the vehicle
+      this.assignments.set(vehicle.id, bestSpot.id);
+      
+      // Mark the spot as occupied
+      const spotIndex = availableSpots.findIndex(spot => spot.id === bestSpot.id);
+      if (spotIndex >= 0) {
+        availableSpots.splice(spotIndex, 1);
+      }
+      
+      console.log(\`Assigned parking spot \${bestSpot.id} to vehicle \${vehicle.id}\`);
+    });
+    
+    return this.getAssignmentSummary();
+  }
+  
+  getAssignmentSummary() {
+    const summary = {
+      totalVehicles: this.vehicles.length,
+      assignedVehicles: this.assignments.size,
+      unassignedVehicles: this.vehicles.length - this.assignments.size,
+      assignments: Array.from(this.assignments).map(([vehicleId, spotId]) => {
+        const vehicle = this.vehicles.find(v => v.id === vehicleId);
+        const spot = this.parkingSpots.find(s => s.id === spotId);
+        const distance = this.calculateDistance(vehicle.userLocation, spot.location);
+        return {
+          vehicle: vehicleId,
+          parkingSpot: spotId,
+          distance: distance.toFixed(4),
+          spotSize: spot.size
+        };
+      })
+    };
+    
+    return summary;
+  }
+}
+
+// Initialize and run the parking optimization
+const optimizer = new ParkingOptimizer().initializeTestData();
+const result = optimizer.optimizeAssignments();
+
+// This function would be called when user clicks "Run"
+function runOptimization() {
+  // Add a random new vehicle each time
+  const vehicleId = \`V\${optimizer.vehicles.length + 1}\`;
+  const vehicleSizes = ["compact", "standard", "large"];
+  const priorities = ["closest", "safest"];
+  
+  const newVehicle = {
+    id: vehicleId,
+    size: vehicleSizes[Math.floor(Math.random() * vehicleSizes.length)],
+    userLocation: {
+      lat: 32.073 + Math.random() * 0.001,
+      lng: 34.767 + Math.random() * 0.001
+    },
+    priority: priorities[Math.floor(Math.random() * priorities.length)]
+  };
+  
+  optimizer.vehicles.push(newVehicle);
+  console.log(\`Added new vehicle \${vehicleId} (\${newVehicle.size}) with \${newVehicle.priority} priority\`);
+  
+  return optimizer.optimizeAssignments();
+}
+`,
+
+            'ahuzat-media.md': `# Ahuzat Dibuk Media Coverage
+
+## News Articles
+
+### Channel 13 News Feature
+Headline: "Revolutionary App Solves Tel Aviv Parking Crisis"  
+Link: [https://13tv.co.il/item/news/domestic/internal/parking-902956407/](https://13tv.co.il/item/news/domestic/internal/parking-902956407/)
+
+### Mako Tech News
+Headline: "Tel Aviv's 'Parking Whisperer': AI Solution to Urban Congestion"  
+Link: [https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm](https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm)
+
+## Social Media
+
+### Secret Tel Aviv Community Post
+The project received significant attention in the Secret Tel Aviv Facebook community, with over 500 comments from residents sharing their parking experiences and requesting access to the beta program.
+
+Link: [Facebook Group Post](https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943)
+
+## Community Impact
+
+The project has been highlighted by the Tel Aviv Municipality as an example of citizen-led innovation addressing urban challenges. The pilot program initially covering Ahuzat Bayit neighborhood has now been approved for expansion to additional areas:
+
+- Florentin
+- Neve Tzedek
+- Shapira
+
+## Testimonials
+
+> "After years of circling blocks looking for parking, this app has literally changed my daily life. I save almost an hour of frustration every day." - Maya K., Ahuzat Bayit resident
+
+> "At first I was skeptical about another parking app, but the community aspect and the accuracy of the predictions are remarkable." - David L., beta tester
+
+## Recognition
+
+- Featured in "Urban Tech Solutions" conference (2022)
+- Finalist in Tel Aviv Municipality's "Smart City Challenge" (2023)
+`,
+
+            '2d-part-readme.md': `# 2D Part Orienting Project
+
+## Project Overview
+
+The 2D Part Orienting project investigates algorithms for orienting planar parts using parallel-jaw grippers or other mechanical manipulation devices. This work has applications in automated manufacturing, robotics, and assembly systems.
+
+## Research Context
+
+This research builds on the computational geometry foundation established by Goldberg's work on part orienting with parallel-jaw grippers. Our contribution extends these algorithms with:
+
+- Improved time complexity for orientation planning
+- Probabilistic guarantees for uncertain part geometry
+- Implementation of the algorithms in a physically realistic simulation environment
+- Experimental validation with an actual robotic gripper system
+
+## Key Innovations
+
+1. **Enhanced Push-Squeeze Algorithm**: Improved the classic push-squeeze method with adaptive step sizes based on part geometry
+2. **Uncertainty Handling**: Developed techniques to deal with sensor noise and imprecise part dimensions
+3. **Minimal Step Sequences**: Computed provably minimal sequences of operations to reach a desired orientation
+4. **Real-time Feedback Control**: Implemented vision-based feedback to correct orientation errors during execution
+
+## Academic Output
+
+This research project has been documented in academic publications and has been made available through Tel Aviv University's Computational Geometry Lab.
+
+For full details and access to the research code, visit:
+[https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/](https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/)
+
+Check out the demo.js file to see a simplified version of the part orienting simulation!
+`,
+
+            '2d-part-demo.js': `// 2D Part Orienting Simulation Demo
+// Simplified version of the push-squeeze algorithm for part orientation
+
+class PolygonalPart {
+  constructor(vertices) {
+    this.vertices = vertices || this.createDefaultPolygon();
+    this.position = { x: 0, y: 0 };
+    this.orientation = 0; // In radians
+    this.stableOrientations = this.computeStableOrientations();
+  }
+  
+  createDefaultPolygon() {
+    // Create a simple irregular hexagon
+    return [
+      { x: 0, y: 0 },
+      { x: 2, y: 0 },
+      { x: 3, y: 1 },
+      { x: 2, y: 2 },
+      { x: 1, y: 3 },
+      { x: 0, y: 1 }
+    ];
+  }
+  
+  computeStableOrientations() {
+    // In a real implementation, this would analyze the polygon
+    // to find orientations where it's stable under gravity
+    // Here we'll just create some example stable orientations
+    const numStableOrientations = 4;
+    const stableOrientations = [];
+    
+    for (let i = 0; i < numStableOrientations; i++) {
+      stableOrientations.push({
+        angle: (i * Math.PI) / numStableOrientations,
+        probability: 0.25 // Equal probability for simplicity
+      });
+    }
+    
+    console.log(\`Computed \${stableOrientations.length} stable orientations:\`);
+    stableOrientations.forEach((orientation, i) => {
+      console.log(\`Orientation #\${i}: \${(orientation.angle * 180 / Math.PI).toFixed(1)}° (probability: \${orientation.probability})\`);
+    });
+    
+    return stableOrientations;
+  }
+  
+  rotate(angle) {
+    this.orientation = (this.orientation + angle) % (2 * Math.PI);
+    if (this.orientation < 0) this.orientation += 2 * Math.PI;
+    console.log(\`Rotated part to \${(this.orientation * 180 / Math.PI).toFixed(1)}°\`);
+  }
+  
+  // Move to closest stable orientation when dropped
+  dropToStableOrientation() {
+    let closestStable = this.stableOrientations[0];
+    let minAngleDiff = Math.abs(this.orientation - closestStable.angle);
+    
+    for (let stable of this.stableOrientations) {
+      const angleDiff = Math.abs(this.orientation - stable.angle);
+      if (angleDiff < minAngleDiff) {
+        minAngleDiff = angleDiff;
+        closestStable = stable;
+      }
+    }
+    
+    const oldOrientation = this.orientation;
+    this.orientation = closestStable.angle;
+    console.log(\`Part dropped from \${(oldOrientation * 180 / Math.PI).toFixed(1)}° to stable orientation \${(this.orientation * 180 / Math.PI).toFixed(1)}°\`);
+    
+    return this.orientation;
+  }
+  
+  getCurrentState() {
+    return {
+      vertices: this.vertices,
+      position: this.position,
+      orientation: this.orientation,
+      orientationDegrees: (this.orientation * 180 / Math.PI).toFixed(1) + "°"
+    };
+  }
+}
+
+class ParallelJawGripper {
+  constructor() {
+    this.jawWidth = 3;
+    this.jawPosition = 0;
+    this.gripping = false;
+  }
+  
+  squeeze(part) {
+    if (this.gripping) {
+      console.log("Already gripping part");
+      return;
+    }
+    
+    console.log("Squeezing part with parallel jaws");
+    this.gripping = true;
+    
+    // In a real implementation, we would calculate how the part
+    // rotates when squeezed based on its geometry
+    // Here we'll just rotate it to align with the gripper (x-axis)
+    const angleToXAxis = part.orientation % Math.PI;
+    if (angleToXAxis > Math.PI / 2) {
+      part.rotate(Math.PI - angleToXAxis);
+    } else {
+      part.rotate(-angleToXAxis);
+    }
+    
+    console.log("Part squeezed to align with gripper jaws");
+    return part.getCurrentState();
+  }
+  
+  release(part) {
+    if (!this.gripping) {
+      console.log("Not currently gripping any part");
+      return;
+    }
+    
+    console.log("Releasing part");
+    this.gripping = false;
+    
+    // When released, the part falls to a stable orientation
+    part.dropToStableOrientation();
+    
+    return part.getCurrentState();
+  }
+  
+  push(part, angle) {
+    console.log(\`Pushing part at angle \${(angle * 180 / Math.PI).toFixed(1)}°\`);
+    
+    // First, set gripper orientation
+    const gripperOrientation = angle;
+    
+    // In a real implementation, we would calculate how the part
+    // rotates when pushed based on its geometry and the push direction
+    // Here we'll just rotate it in the push direction
+    part.rotate(angle / 3); // Simplified effect
+    
+    console.log(\`Part rotated to \${(part.orientation * 180 / Math.PI).toFixed(1)}° after pushing\`);
+    
+    return part.getCurrentState();
+  }
+}
+
+class PartOrientingPlanner {
+  constructor(part, gripper) {
+    this.part = part;
+    this.gripper = gripper;
+    this.targetOrientation = 0; // Default target orientation
+  }
+  
+  setTargetOrientation(targetAngle) {
+    this.targetOrientation = targetAngle;
+    console.log(\`Set target orientation to \${(targetAngle * 180 / Math.PI).toFixed(1)}°\`);
+  }
+  
+  planOrientingSequence() {
+    console.log("Planning orienting sequence...");
+    
+    // In a real implementation, this would compute an optimal sequence
+    // of push and squeeze operations to reach the target orientation
+    // Here we'll just create a simple sequence for demonstration
+    
+    const sequence = [];
+    
+    // Find which stable orientation is closest to our target
+    let closestStable = this.part.stableOrientations[0];
+    let minAngleDiff = Math.abs(this.targetOrientation - closestStable.angle);
+    
+    for (let stable of this.part.stableOrientations) {
+      const angleDiff = Math.abs(this.targetOrientation - stable.angle);
+      if (angleDiff < minAngleDiff) {
+        minAngleDiff = angleDiff;
+        closestStable = stable;
+      }
+    }
+    
+    // Calculate how many push-squeeze-release cycles we need
+    const numberOfCycles = this.part.stableOrientations.length;
+    
+    for (let i = 0; i < numberOfCycles; i++) {
+      // Push at different angles to achieve different outcomes
+      sequence.push({ operation: "push", params: { angle: (i * Math.PI) / numberOfCycles } });
+      sequence.push({ operation: "squeeze", params: { } });
+      sequence.push({ operation: "release", params: { } });
+    }
+    
+    console.log(\`Generated plan with \${sequence.length} operations\`);
+    return sequence;
+  }
+  
+  executeSequence(sequence) {
+    console.log("Executing orienting sequence...");
+    
+    const results = [];
+    let state = this.part.getCurrentState();
+    results.push({ 
+      operation: "initial", 
+      state: state 
+    });
+    
+    for (const step of sequence) {
+      console.log(\`Executing \${step.operation}\`);
+      
+      switch (step.operation) {
+        case "push":
+          state = this.gripper.push(this.part, step.params.angle);
+          break;
+        case "squeeze":
+          state = this.gripper.squeeze(this.part);
+          break;
+        case "release":
+          state = this.gripper.release(this.part);
+          break;
+      }
+      
+      results.push({
+        operation: step.operation,
+        params: step.params,
+        state: state
+      });
+    }
+    
+    console.log("Execution complete!");
+    console.log(\`Final orientation: \${(this.part.orientation * 180 / Math.PI).toFixed(1)}°\`);
+    
+    const targetDiff = Math.abs(this.part.orientation - this.targetOrientation);
+    const targetDiffDegrees = (targetDiff * 180 / Math.PI).toFixed(1);
+    
+    if (targetDiff < 0.1) {
+      console.log("✓ Target orientation achieved successfully!");
+    } else {
+      console.log(\`✗ Missed target by \${targetDiffDegrees}°\`);
+    }
+    
+    return results;
+  }
+}
+
+// Set up simulation
+const part = new PolygonalPart();
+const gripper = new ParallelJawGripper();
+const planner = new PartOrientingPlanner(part, gripper);
+
+// Initial target
+planner.setTargetOrientation(Math.PI / 4); // 45 degrees
+
+// This function would be called when user clicks "Run"
+function runPartOrienting() {
+  // Choose a random target orientation
+  const randomTarget = Math.random() * Math.PI;
+  planner.setTargetOrientation(randomTarget);
+  
+  // Reset part to random orientation
+  part.orientation = Math.random() * 2 * Math.PI;
+  console.log(\`Starting with part at \${(part.orientation * 180 / Math.PI).toFixed(1)}°\`);
+  
+  // Plan and execute
+  const sequence = planner.planOrientingSequence();
+  return planner.executeSequence(sequence);
+}
+`,
+
+            '2d-part-media.md': `# 2D Part Orienting Media & Resources
+
+## Project Website
+
+The complete research, including papers, code, and demonstrations, is hosted at Tel Aviv University's Computational Geometry Lab:
+
+[https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/](https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/)
+
+## Research Video Demonstrations
+
+The project includes several video demonstrations showing:
+
+1. Simulation of various part geometries being oriented
+2. Real robotic implementation with physical parts
+3. Comparison between theoretical predictions and experimental results
+
+## Diagrams and Visualizations
+
+### Push-Squeeze Operation Diagram
+Illustrates how a parallel-jaw gripper can reorient parts through a combination of pushing and squeezing operations.
+
+### Stable Orientation Analysis
+Visualizations showing the stable resting orientations of different part geometries and how they determine the possible outcomes of orienting operations.
+
+### Minimal Sequence Computation
+Diagrams explaining the graph-based algorithm for computing minimal-length orienting sequences.
+
+## Applications
+
+This research has applications in:
+
+- Automated manufacturing and assembly
+- Robotic manipulation
+- Parts feeding systems
+- Educational robotics
+
+The algorithms developed have been implemented in industrial settings with significant improvements in efficiency compared to previous methods.
+`,
+
+            'meta-readme.md': `# Meta Portfolio Project
+
+## Project Overview
+
+The Meta Portfolio is a self-referential project that explores innovative ways to present technical and creative work. This interactive code editor portfolio itself is part of the meta-portfolio, demonstrating my approach to presenting information in engaging, unexpected formats.
+
+## Concept
+
+The central idea behind this meta-portfolio is to blur the line between content and container - the portfolio itself becomes a project that demonstrates technical skill, creativity, and a touch of playfulness.
+
+Key aspects include:
+
+- **Interactivity**: Turning passive viewing into active exploration
+- **Self-Modification**: The site evolves over time with AI assistance
+- **Code as Content**: Presenting actual running code rather than just screenshots
+- **Layered Experience**: Different levels of engagement for different visitors
+
+## Technical Implementation
+
+This portfolio uses:
+
+- Modern HTML5 and CSS3
+- Vanilla JavaScript (no frameworks)
+- CodeMirror for the code editor functionality
+- LocalStorage for preserving user modifications
+- Dynamic theme switching and responsive design
+
+## Evolution
+
+The meta-portfolio concept involves continuous evolution:
+
+1. Each day, the AI assistant suggests modifications and improvements
+2. The portfolio tracks its own metrics and adapts based on user interaction patterns
+3. New projects are integrated not just as content but potentially as new interface paradigms
+
+## Philosophy
+
+This approach reflects my belief that how we present our work is itself a demonstration of our craft. By making the portfolio an interactive coding environment, I'm showcasing both the technical projects themselves and my approach to developer experience and interface design.
+`,
+
+            'meta-demo.js': `// Meta Portfolio - Self-modifying code example
+// This demonstrates the concept of code that can modify itself
+
+class MetaPortfolio {
+  constructor() {
+    this.lastModified = new Date('2025-05-10T01:04:04');
+    this.visitorCount = this.loadVisitorCount();
+    this.theme = localStorage.getItem('portfolio-theme') || 'dark';
+    this.modifications = this.loadModifications() || [];
+    this.creationDate = new Date('2025-05-10');
+  }
+  
+  loadVisitorCount() {
+    let count = localStorage.getItem('visitor-count');
+    if (!count) {
+      count = Math.floor(Math.random() * 100) + 500; // Start with a plausible number
+      localStorage.setItem('visitor-count', count);
+    }
+    return parseInt(count);
+  }
+  
+  incrementVisitorCount() {
+    this.visitorCount++;
+    localStorage.setItem('visitor-count', this.visitorCount);
+    console.log(\`Visitor count: \${this.visitorCount}\`);
+    return this.visitorCount;
+  }
+  
+  loadModifications() {
+    return JSON.parse(localStorage.getItem('portfolio-modifications') || '[]');
+  }
+  
+  saveModifications() {
+    localStorage.setItem('portfolio-modifications', JSON.stringify(this.modifications));
+  }
+  
+  addModification(description) {
+    const modification = {
+      date: new Date().toISOString(),
+      description: description
+    };
+    this.modifications.push(modification);
+    this.saveModifications();
+    
+    console.log(\`Added modification: \${description}\`);
+    return modification;
+  }
+  
+  getModificationsLog() {
+    return this.modifications.map(mod => {
+      const date = new Date(mod.date);
+      return \`[\${date.toLocaleDateString()}] \${mod.description}\`;
+    }).join('\\n');
+  }
+  
+  calculateAge() {
+    const now = new Date();
+    const diffTime = Math.abs(now - this.creationDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return {
+      days: diffDays,
+      versions: this.modifications.length + 1
+    };
+  }
+  
+  toggleTheme() {
+    this.theme = this.theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('portfolio-theme', this.theme);
+    
+    this.addModification(\`Switched to \${this.theme} theme\`);
+    console.log(\`Theme toggled to \${this.theme}\`);
+    
+    return this.theme;
+  }
+  
+  generateSiteReport() {
+    const age = this.calculateAge();
+    
+    return {
+      creationDate: this.creationDate.toLocaleDateString(),
+      age: age.days,
+      versions: age.versions,
+      lastModified: new Date(this.modifications.length > 0 ? 
+                             this.modifications[this.modifications.length - 1].date : 
+                             this.lastModified).toLocaleDateString(),
+      visitorCount: this.visitorCount,
+      currentTheme: this.theme,
+      modificationHistory: this.modifications.length > 0 ? 
+                           this.getModificationsLog() : 
+                           "No modifications recorded yet."
+    };
+  }
+}
+
+// Initialize portfolio meta data
+const portfolio = new MetaPortfolio();
+portfolio.incrementVisitorCount();
+
+// This function would be called when user clicks "Run"
+function runMetaPortfolio() {
+  // Simulate adding a random modification
+  const possibleModifications = [
+    "Updated color scheme for better accessibility",
+    "Added new project section",
+    "Optimized code editor performance",
+    "Implemented new typing animation effect",
+    "Fixed mobile responsiveness issues",
+    "Added keyboard shortcuts for navigation",
+    "Updated project descriptions and links",
+    "Integrated real-time collaboration feature"
+  ];
+  
+  const randomMod = possibleModifications[Math.floor(Math.random() * possibleModifications.length)];
+  portfolio.addModification(randomMod);
+  
+  // Toggle theme occasionally
+  if (Math.random() > 0.7) {
+    portfolio.toggleTheme();
+  }
+  
+  // Generate and return the site report
+  return portfolio.generateSiteReport();
+}
+`,
+
+            'connect-readme.md': `# Connect With Geva Kipper
+
+## Contact Information
+
+Thank you for exploring my interactive portfolio! Feel free to connect with me through any of the following channels:
+
+### Professional Profiles
+
+- **GitHub**: [github.com/gevak](https://github.com/gevak)
+- **LinkedIn**: [linkedin.com/in/gevakip](https://linkedin.com/in/gevakip)
+- **Facebook**: [facebook.com/geva.kipper](https://facebook.com/geva.kipper)
+
+## Project Collaboration
+
+I'm always open to interesting collaborations, particularly in these areas:
+
+- Computational Geometry algorithms and applications
+- Urban technology solutions
+- Interactive data visualization
+- AI and machine learning applications
+
+## Speaking & Consulting
+
+I'm available for:
+
+- Technical talks on computational geometry
+- Consulting on urban technology implementations
+- Workshops on visualization techniques
+- Code reviews and architecture consulting
+
+## Current Focus
+
+My current technical focus areas include:
+
+1. Multi-agent geometric optimization algorithms
+2. Visualization techniques for high-dimensional datasets
+3. Urban mobility and infrastructure optimization
+4. Interactive educational tools for computational geometry
+
+## Academic Collaboration
+
+For academic collaborations, research opportunities, or student mentorship, please reach out via email with your specific interests and background.
+
+## Portfolio Feedback
+
+I welcome any feedback on this interactive portfolio. If you have suggestions for improvements or encounter any issues, please let me know!
+
+---
+
+*"The essence of mathematics is not to make simple things complicated, but to make complicated things simple."* — Stan Gudder
+`
+        };
+
+        // DOM elements
+        const editor = document.getElementById('editor');
+        const terminal = document.getElementById('terminal');
+        const runButton = document.getElementById('run-button');
+        const resetButton = document.getElementById('reset-button');
+        const fontSizeSelector = document.getElementById('font-size');
+        const themeToggle = document.getElementById('theme-toggle');
+        const timeCounter = document.getElementById('time-counter');
+        const tabBar = document.getElementById('tab-bar');
+        
+        // Initialize CodeMirror editor
+        let codeMirrorEditor = CodeMirror(editor, {
+            value: fileContents['welcome.md'],
+            mode: 'markdown',
+            theme: 'dracula',
+            lineNumbers: true,
+            matchBrackets: true,
+            styleActiveLine: true,
+            lineWrapping: true,
+            indentUnit: 2,
+            tabSize: 2,
+            autoCloseBrackets: true,
+            viewportMargin: Infinity
+        });
+        
+        // Track current file and original content
+        let currentFile = 'welcome.md';
+        let originalContent = {};
+        
+        // Initialize original content with file contents
+        Object.keys(fileContents).forEach(file => {
+            originalContent[file] = fileContents[file];
+        });
+
+        // Load saved modifications from localStorage if any
+        function loadSavedContent() {
+            Object.keys(fileContents).forEach(file => {
+                const savedContent = localStorage.getItem(`file-${file}`);
+                if (savedContent) {
+                    originalContent[file] = savedContent;
+                }
+            });
+        }
+        
+        loadSavedContent();
+        
+        // Function to open a file
+        function openFile(filename) {
+            // Save current file content
+            if (currentFile) {
+                originalContent[currentFile] = codeMirrorEditor.getValue();
+                localStorage.setItem(`file-${currentFile}`, originalContent[currentFile]);
+            }
+            
+            currentFile = filename;
+            
+            // Set editor mode based on file extension
+            const fileExtension = filename.split('.').pop();
+            let mode;
+            
+            switch (fileExtension) {
+                case 'js':
+                    mode = 'javascript';
+                    runButton.style.display = 'flex';
+                    resetButton.style.display = 'flex';
+                    break;
+                case 'md':
+                    mode = 'markdown';
+                    runButton.style.display = 'none';
+                    resetButton.style.display = 'none';
+                    break;
+                default:
+                    mode = 'text';
+                    runButton.style.display = 'none';
+                    resetButton.style.display = 'none';
+            }
+            
+            // Set the content and mode
+            codeMirrorEditor.setOption('mode', mode);
+            codeMirrorEditor.setValue(originalContent[filename]);
+            
+            // Update tab bar
+            updateTabBar(filename);
+
+            // Add typing animation for MD files
+            if (fileExtension === 'md' && !filename.includes('welcome')) {
+                typeContent(originalContent[filename]);
+            }
+
+            // Scroll to top
+            codeMirrorEditor.scrollTo(0, 0);
+        }
+        
+        // Add typing animation for markdown files
+        function typeContent(content) {
+            const typingSpeed = 1; // Lower is faster
+            
+            // Skip animation if content is too long (for performance)
+            if (content.length > 2000) {
+                codeMirrorEditor.setValue(content);
+                return;
+            }
+            
+            codeMirrorEditor.setValue('');
+            let i = 0;
+            
+            function typeNextChar() {
+                if (i < content.length) {
+                    // Add the next character
+                    codeMirrorEditor.replaceRange(content.charAt(i), 
+                                                 {line: codeMirrorEditor.lineCount() - 1, 
+                                                  ch: codeMirrorEditor.getLine(codeMirrorEditor.lineCount() - 1).length});
+                    i++;
+                    
+                    // Schedule the next character with a small random delay for realistic typing effect
+                    setTimeout(typeNextChar, Math.random() * 10 * typingSpeed);
+                }
+            }
+            
+            typeNextChar();
+        }
+        
+        // Manage tabs
+        function updateTabBar(filename) {
+            // Check if tab already exists
+            const existingTab = document.querySelector(`.tab[data-file="${filename}"]`);
+            
+            if (existingTab) {
+                // Tab exists, just make it active
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                existingTab.classList.add('active');
+                return;
+            }
+            
+            // Create new tab
+            const newTab = document.createElement('div');
+            newTab.className = 'tab active';
+            newTab.setAttribute('data-file', filename);
+            
+            // Set icon based on file extension
+            const fileExtension = filename.split('.').pop();
+            let iconClass;
+            
+            switch (fileExtension) {
+                case 'js':
+                    iconClass = 'fa-file-code';
+                    break;
+                case 'md':
+                    iconClass = 'fa-file-alt';
+                    break;
+                default:
+                    iconClass = 'fa-file';
+            }
+            
+            newTab.innerHTML = `<i class="fas ${iconClass}"></i> ${filename}`;
+            
+            // Make all other tabs inactive
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            
+            // Add new tab to tab bar
+            tabBar.appendChild(newTab);
+            
+            // Limit number of tabs (remove oldest if more than 5)
+            const tabs = document.querySelectorAll('.tab');
+            if (tabs.length > 5) {
+                // Don't remove the first (welcome) tab
+                tabs[1].remove();
+            }
+            
+            // Add click event to new tab
+            newTab.addEventListener('click', () => {
+                if (!newTab.classList.contains('active')) {
+                    openFile(filename);
+                }
+            });
+        }
+        
+        // Function to run the code in the editor
+        function runCode() {
+            if (!currentFile.endsWith('.js')) {
+                return;
+            }
+            
+            // Get the code from editor
+            const code = codeMirrorEditor.getValue();
+            
+            // Clear terminal
+            terminal.innerHTML = '';
+            
+            // Add a message to show execution is starting
+            terminal.innerHTML += '<span class="cmd-prompt">$ </span><span class="cmd-result">Running ' + currentFile + '...</span>\n';
+            
+            // Store original console methods
+            const originalLog = console.log;
+            const originalError = console.error;
+            const originalWarning = console.warn;
+            
+            try {
+                // Override console methods to output to our terminal
+                console.log = (...args) => {
+                    terminal.innerHTML += '<span class="cmd-result">' + args.join(' ') + '</span>\n';
+                    terminal.scrollTop = terminal.scrollHeight; // Auto-scroll to bottom
+                    originalLog(...args);
+                };
+                
+                console.error = (...args) => {
+                    terminal.innerHTML += '<span class="cmd-result" style="color: #ff5555;">' + args.join(' ') + '</span>\n';
+                    terminal.scrollTop = terminal.scrollHeight;
+                    originalError(...args);
+                };
+                
+                console.warn = (...args) => {
+                    terminal.innerHTML += '<span class="cmd-result" style="color: #ffb86c;">' + args.join(' ') + '</span>\n';
+                    terminal.scrollTop = terminal.scrollHeight;
+                    originalWarning(...args);
+                };
+                
+
+                // Find the function to call when running the code
+                let functionToCall;
+                if (currentFile.includes('glglstats')) functionToCall = 'runVisualization';
+                else if (currentFile.includes('ahuzat')) functionToCall = 'runOptimization';
+                else if (currentFile.includes('2d-part')) functionToCall = 'runPartOrienting';
+                else if (currentFile.includes('meta')) functionToCall = 'runMetaPortfolio';
+                
+                // Evaluate the code
+                const evalResult = eval(code);
+                
+                // If there's a specific function to call, call it
+                if (functionToCall && typeof window[functionToCall] === 'function') {
+                    const result = window[functionToCall]();
+                    
+                    // Display the result if it's returned
+                    if (result !== undefined) {
+                        terminal.innerHTML += '<span class="cmd-prompt">$ </span><span class="cmd-result">Result:</span>\n';
+                        if (typeof result === 'object') {
+                            terminal.innerHTML += '<span class="cmd-result">' + JSON.stringify(result, null, 2) + '</span>\n';
+                        } else {
+                            terminal.innerHTML += '<span class="cmd-result">' + result + '</span>\n';
+                        }
+                    }
+                }
+                
+                // Add completion message
+                terminal.innerHTML += '<span class="cmd-prompt">$ </span><span class="cmd-result">Execution completed successfully</span>\n';
+                
+                // Create particle effect for successful run
+                createParticles();
+            } catch (error) {
+                // Display errors
+                terminal.innerHTML += '<span class="cmd-prompt">$ </span><span class="cmd-result" style="color: #ff5555;">Error: ' + error.message + '</span>\n';
+                
+                // Add stack trace if available
+                if (error.stack) {
+                    const cleanStack = error.stack.replace(/eval at runCode.*/, '');
+                    terminal.innerHTML += '<span class="cmd-result" style="color: #ff5555; font-size: 0.9em;">' + cleanStack + '</span>\n';
+                }
+            } finally {
+                // Restore original console methods
+                console.log = originalLog;
+                console.error = originalError;
+                console.warn = originalWarning;
+                
+                // Scroll terminal to bottom
+                terminal.scrollTop = terminal.scrollHeight;
+            }
+        }
+        
+        // Function to reset the code to original
+        function resetCode() {
+            if (currentFile && fileContents[currentFile]) {
+                codeMirrorEditor.setValue(fileContents[currentFile]);
+                terminal.innerHTML += '<span class="cmd-prompt">$ </span><span class="cmd-result">Code reset to original</span>\n';
+                terminal.scrollTop = terminal.scrollHeight;
+            }
+        }
+
+        // Create particles when running code
+        function createParticles() {
+            const particleCount = 30;
+            const editorRect = document.getElementById('editor-wrapper').getBoundingClientRect();
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // Random starting position near run button
+                const runButtonRect = runButton.getBoundingClientRect();
+                particle.style.left = (runButtonRect.left + Math.random() * runButtonRect.width) + 'px';
+                particle.style.top = (runButtonRect.top + Math.random() * runButtonRect.height) + 'px';
+                
+                // Random size
+                const size = Math.random() * 5 + 3;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                
+                // Add to body
+                document.body.appendChild(particle);
+                
+                // Animate
+                const xDest = Math.random() * editorRect.width + editorRect.left;
+                const yDest = Math.random() * editorRect.height + editorRect.top;
+                const speed = Math.random() * 1000 + 500;
+                
+                // Apply animation
+                particle.animate([
+                    { opacity: 1, transform: 'translate(0, 0)' },
+                    { opacity: 0, transform: `translate(${xDest - parseInt(particle.style.left)}px, ${yDest - parseInt(particle.style.top)}px)` }
+                ], {
+                    duration: speed,
+                    easing: 'ease-out',
+                    fill: 'forwards'
+                });
+                
+                // Remove particle after animation
+                setTimeout(() => {
+                    particle.remove();
+                }, speed);
+            }
+        }
+        
+        // Event listeners for UI controls
+        runButton.addEventListener('click', runCode);
+        resetButton.addEventListener('click', resetCode);
+        
+        // Font size adjustment
+        fontSizeSelector.addEventListener('change', () => {
+            const fontSize = fontSizeSelector.value + 'px';
+            codeMirrorEditor.getWrapperElement().style.fontSize = fontSize;
+            // Save preference
+            localStorage.setItem('editor-font-size', fontSize);
+        });
+        
+        // Apply saved font size if it exists
+        const savedFontSize = localStorage.getItem('editor-font-size');
+        if (savedFontSize) {
+            fontSizeSelector.value = savedFontSize.replace('px', '');
+            codeMirrorEditor.getWrapperElement().style.fontSize = savedFontSize;
+        }
+        
+        // Theme toggle
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            const isDark = !document.body.classList.contains('light-theme');
+            
+            // Update CodeMirror theme
+            if (isDark) {
+                codeMirrorEditor.setOption('theme', 'dracula');
+            } else {
+                codeMirrorEditor.setOption('theme', 'default');
+            }
+            
+            // Save preference
+            localStorage.setItem('theme-preference', isDark ? 'dark' : 'light');
+        });
+        
+        // Apply saved theme preference if it exists
+        const savedTheme = localStorage.getItem('theme-preference');
+        if (savedTheme) {
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-theme');
+                codeMirrorEditor.setOption('theme', 'default');
+            } else {
+                codeMirrorEditor.setOption('theme', 'dracula');
+            }
+        }
+        
+        // File explorer folder toggling
+        document.querySelectorAll('.folder').forEach(folder => {
+            folder.addEventListener('click', (e) => {
+                // Only toggle if the click was directly on the folder or its icon, not on a file
+                if (e.target.classList.contains('file') || e.target.closest('.file')) {
+                    return;
+                }
+                
+                folder.classList.toggle('open');
+                const icon = folder.querySelector('i');
+                if (folder.classList.contains('open')) {
+                    icon.classList.remove('fa-folder-closed');
+                    icon.classList.add('fa-folder-open');
+                } else {
+                    icon.classList.remove('fa-folder-open');
+                    icon.classList.add('fa-folder-closed');
+                }
+            });
+        });
+        
+        // File opening
+        document.querySelectorAll('.file').forEach(file => {
+            file.addEventListener('click', () => {
+                const filename = file.getAttribute('data-file');
+                if (filename) {
+                    openFile(filename);
+                }
+            });
+        });
+        
+        // Tab clicking
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const filename = tab.getAttribute('data-file');
+                if (filename && !tab.classList.contains('active')) {
+                    openFile(filename);
+                }
+            });
+        });
+        
+        // Terminal resize functionality
+        const resizer = document.getElementById('terminal-resizer');
+        resizer.addEventListener('mousedown', initResize, false);
+
+        function initResize(e) {
+            window.addEventListener('mousemove', resize, false);
+            window.addEventListener('mouseup', stopResize, false);
+        }
+
+        function resize(e) {
+            const terminal = document.getElementById('resizable-terminal');
+            const editorContainer = document.getElementById('editor-container');
+            const editorWrapper = document.getElementById('editor-wrapper');
+            
+            // Calculate new height based on mouse position
+            const containerRect = editorContainer.getBoundingClientRect();
+            const newHeight = containerRect.bottom - e.clientY;
+            
+            // Constrain to min/max height
+            const minHeight = 100;
+            const maxHeight = containerRect.height * 0.5;
+            const constrainedHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
+            
+            terminal.style.height = constrainedHeight + 'px';
+        }
+
+        function stopResize() {
+            window.removeEventListener('mousemove', resize, false);
+            window.removeEventListener('mouseup', stopResize, false);
+        }
+        
+        // Time counter
+        function updateTimeCounter() {
+            const startDate = new Date('2025-05-10T01:04:04');
+            const now = new Date();
+            const diff = now - startDate;
+            
+            // Calculate days, hours, minutes, seconds
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            timeCounter.textContent = `${days} days, ${hours} hours, ${minutes} minutes, ${seconds} seconds`;
+            
+            // Update every second
+            setTimeout(updateTimeCounter, 1000);
+        }
+        
+        // Start the time counter
+        updateTimeCounter();
+
+        // Keyboard sound effect for typing
+        let audioContext;
+        let isAudioInitialized = false;
+
+        // Initialize audio context on first user interaction
+        document.addEventListener('click', () => {
+            if (!isAudioInitialized) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                isAudioInitialized = true;
+            }
+        }, { once: true });
+
+        // Play typing sound
+        codeMirrorEditor.on('keyHandled', (instance, name, event) => {
+            if (isAudioInitialized && name.length === 1) { // Only for single char keys
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 800 + Math.random() * 400; // Random frequency for variation
+                
+                gainNode.gain.value = 0.05; // Very quiet
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.05);
+                
+                setTimeout(() => {
+                    oscillator.stop();
+                }, 50);
+            }
+        });
+    </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250510",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,1843 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper | Interactive Tetris Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background-color: #121212;
+            --text-color: #e0e0e0;
+            --accent-color: #00ff66;
+            --tetris-i: #00f0f0;
+            --tetris-j: #0000f0;
+            --tetris-l: #f0a000;
+            --tetris-o: #f0f000;
+            --tetris-s: #00f000;
+            --tetris-t: #a000f0;
+            --tetris-z: #f00000;
+            --project1-color: var(--tetris-i);
+            --project2-color: var(--tetris-s);
+            --project3-color: var(--tetris-t);
+            --project4-color: var(--tetris-j);
+            --project5-color: var(--tetris-z);
+            --header-height: 150px;
+            --footer-height: 50px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--background-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-screen h1 {
+            margin-bottom: 20px;
+        }
+
+        .level-text {
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+
+        .initials-animation {
+            position: relative;
+            width: 200px;
+            height: 200px;
+        }
+
+        header {
+            width: 100%;
+            height: var(--header-height);
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: var(--accent-color);
+            text-shadow: 0 0 10px rgba(0, 255, 102, 0.5);
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+
+        .dynamic-subheader {
+            font-size: 0.8rem;
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+
+        .score-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.2rem;
+        }
+
+        .score {
+            color: var(--accent-color);
+        }
+
+        main {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            flex: 1;
+            padding: 0 20px 20px 20px;
+            position: relative;
+        }
+
+        .game-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-controls {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .control-btn {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background-color: var(--accent-color);
+            color: var(--background-color);
+        }
+
+        .touch-controls {
+            display: none;
+            grid-template-columns: repeat(3, 60px);
+            grid-template-rows: repeat(2, 60px);
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .touch-btn {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            border-radius: 5px;
+            touch-action: manipulation;
+        }
+
+        .touch-btn.left {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        .touch-btn.rotate {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        .touch-btn.right {
+            grid-column: 3;
+            grid-row: 1;
+        }
+
+        .touch-btn.drop {
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        .tetris-board {
+            border: 4px solid var(--accent-color);
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 1px;
+            background-color: rgba(0, 0, 0, 0.8);
+            position: relative;
+            overflow: hidden;
+            width: 300px;
+            height: 600px;
+        }
+
+        .tetris-cell {
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            border-radius: 2px;
+            position: relative;
+            transition: background-color 0.3s ease;
+        }
+
+        .tetris-cell.filled {
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+
+        .tetris-cell.piece-i {
+            background-color: var(--tetris-i);
+        }
+
+        .tetris-cell.piece-j {
+            background-color: var(--tetris-j);
+        }
+
+        .tetris-cell.piece-l {
+            background-color: var(--tetris-l);
+        }
+
+        .tetris-cell.piece-o {
+            background-color: var(--tetris-o);
+        }
+
+        .tetris-cell.piece-s {
+            background-color: var(--tetris-s);
+        }
+
+        .tetris-cell.piece-t {
+            background-color: var(--tetris-t);
+        }
+
+        .tetris-cell.piece-z {
+            background-color: var(--tetris-z);
+        }
+
+        .tetris-cell.project1 {
+            background-color: var(--project1-color);
+        }
+
+        .tetris-cell.project2 {
+            background-color: var(--project2-color);
+        }
+
+        .tetris-cell.project3 {
+            background-color: var(--project3-color);
+        }
+
+        .tetris-cell.project4 {
+            background-color: var(--project4-color);
+        }
+
+        .tetris-cell.project5 {
+            background-color: var(--project5-color);
+        }
+
+        .tetris-cell.revealed {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .projects-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .project-section {
+            position: absolute;
+            padding: 15px;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            width: 100%;
+            pointer-events: auto;
+        }
+
+        .project-section h3 {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            color: var(--accent-color);
+        }
+
+        .project-section p {
+            font-size: 0.7rem;
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+
+        .project-section a {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-size: 0.7rem;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        .project-section a:hover {
+            text-decoration: underline;
+        }
+
+        .project-section .unlock-btn {
+            background-color: var(--accent-color);
+            color: var(--background-color);
+            border: none;
+            padding: 5px 10px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.6rem;
+            margin-top: 10px;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+
+        /* Project 1 - GlglStats with music visualization */
+        #project1 {
+            top: 0;
+            height: 20%;
+        }
+
+        .music-bars {
+            display: flex;
+            justify-content: space-between;
+            height: 30px;
+            margin-top: 10px;
+        }
+
+        .bar {
+            width: 4px;
+            height: 100%;
+            background-color: var(--project1-color);
+            animation: barAnimation 1s infinite alternate;
+        }
+
+        @keyframes barAnimation {
+            0% { height: 10%; }
+            100% { height: 100%; }
+        }
+
+        .bar:nth-child(2n) {
+            animation-delay: 0.2s;
+        }
+
+        .bar:nth-child(3n) {
+            animation-delay: 0.3s;
+        }
+
+        .video-thumbnail {
+            margin-top: 10px;
+            width: 100%;
+            max-width: 150px;
+            height: auto;
+            border: 2px solid var(--project1-color);
+            display: block;
+        }
+
+        /* Project 2 - Ahuzat Dibuk with heatmap */
+        #project2 {
+            top: 20%;
+            height: 20%;
+        }
+
+        .heatmap {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(3, 15px);
+            gap: 2px;
+        }
+
+        .parking-spot {
+            background-color: rgba(0, 240, 0, 0.2);
+            border: 1px solid var(--project2-color);
+        }
+
+        .parking-spot.occupied {
+            background-color: var(--project2-color);
+        }
+
+        .news-links {
+            margin-top: 10px;
+        }
+
+        .news-clip {
+            transform: rotate(-2deg);
+            display: inline-block;
+            background-color: #f5f5f5;
+            color: #121212;
+            padding: 5px;
+            margin: 5px;
+            font-size: 0.6rem;
+            max-width: 140px;
+        }
+
+        /* Project 3 - 2D Part Orienting */
+        #project3 {
+            top: 40%;
+            height: 20%;
+        }
+
+        .geometry-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+            height: 60px;
+        }
+
+        .polygon {
+            width: 40px;
+            height: 40px;
+            margin: 0 10px;
+            animation: rotate 4s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .triangle {
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            background-color: var(--project3-color);
+        }
+
+        .pentagon {
+            clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+            background-color: var(--project3-color);
+        }
+
+        .code-snippet {
+            font-family: monospace;
+            font-size: 0.6rem;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 5px;
+            border-left: 3px solid var(--project3-color);
+            margin-top: 10px;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        /* Project 4 - Portfolio Website with Droste effect */
+        #project4 {
+            top: 60%;
+            height: 20%;
+        }
+
+        .recursive-tetris {
+            margin: 10px auto;
+            width: 120px;
+            height: 120px;
+            background-color: rgba(0, 0, 240, 0.1);
+            border: 2px solid var(--project4-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .recursive-tetris:after {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 20%;
+            width: 60%;
+            height: 60%;
+            background-color: rgba(0, 0, 240, 0.2);
+            border: 2px solid var(--project4-color);
+        }
+
+        .recursive-tetris:before {
+            content: '';
+            position: absolute;
+            top: 35%;
+            left: 35%;
+            width: 30%;
+            height: 30%;
+            background-color: rgba(0, 0, 240, 0.3);
+            border: 2px solid var(--project4-color);
+            z-index: 1;
+        }
+
+        /* Project 5 - Social Links with Tetris shapes */
+        #project5 {
+            top: 80%;
+            height: 20%;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .social-link {
+            width: 40px;
+            height: 40px;
+            background-color: var(--project5-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+
+        .social-link:hover {
+            transform: scale(1.2);
+        }
+
+        .social-link.github {
+            clip-path: polygon(0% 0%, 33% 0%, 33% 33%, 66% 33%, 66% 0%, 100% 0%, 100% 100%, 0% 100%);
+        }
+
+        .social-link.linkedin {
+            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 66% 100%, 66% 33%, 33% 33%, 33% 100%, 0% 100%);
+        }
+
+        .social-link.facebook {
+            clip-path: polygon(33% 0%, 66% 0%, 66% 33%, 100% 33%, 100% 66%, 66% 66%, 66% 100%, 33% 100%, 33% 66%, 0% 66%, 0% 33%, 33% 33%);
+        }
+
+        .social-link i {
+            color: var(--background-color);
+            font-size: 1.2rem;
+        }
+
+        .skip-game {
+            margin: 20px auto 0 auto;
+            display: block;
+            background-color: transparent;
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 10px 15px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .skip-game:hover {
+            background-color: var(--accent-color);
+            color: var(--background-color);
+        }
+
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .game-over.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .game-over h3 {
+            font-size: 2rem;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+        }
+
+        .game-over button {
+            background-color: var(--accent-color);
+            color: var(--background-color);
+            border: none;
+            padding: 10px 20px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .next-piece-display {
+            position: absolute;
+            top: 20px;
+            left: calc(100% + 20px);
+            width: 100px;
+            height: 100px;
+            border: 2px solid var(--accent-color);
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .next-piece-display h4 {
+            font-size: 0.7rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .next-piece-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 1px;
+            width: 100%;
+            height: 80px;
+        }
+
+        .easter-egg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            padding: 20px;
+        }
+
+        .easter-egg.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .easter-egg h3 {
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+        }
+
+        .easter-egg .resume {
+            background-color: var(--background-color);
+            padding: 20px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 2px solid var(--accent-color);
+        }
+
+        .easter-egg .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: transparent;
+            border: none;
+            color: var(--accent-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        footer {
+            width: 100%;
+            padding: 15px;
+            text-align: center;
+            font-size: 0.7rem;
+            height: var(--footer-height);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .theme-toggle {
+            background-color: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 5px 10px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.6rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--accent-color);
+            color: var(--background-color);
+        }
+
+        .music-toggle {
+            position: absolute;
+            top: 20px;
+            right: calc(100% + 20px);
+            background-color: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .stopwatch {
+            color: var(--accent-color);
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            h2 {
+                font-size: 0.8rem;
+            }
+
+            .dynamic-subheader {
+                font-size: 0.7rem;
+            }
+
+            .tetris-board {
+                width: 250px;
+                height: 500px;
+            }
+
+            .next-piece-display {
+                position: static;
+                margin: 20px auto;
+            }
+
+            .music-toggle {
+                position: static;
+                margin: 10px auto;
+            }
+
+            .touch-controls {
+                display: grid;
+            }
+
+            .game-controls {
+                display: none;
+            }
+
+            footer {
+                flex-direction: column;
+                height: auto;
+                gap: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            header {
+                height: auto;
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            h2 {
+                font-size: 0.7rem;
+            }
+
+            .dynamic-subheader {
+                font-size: 0.6rem;
+            }
+
+            .score-display {
+                position: static;
+                margin-top: 10px;
+                font-size: 1rem;
+            }
+
+            .tetris-board {
+                width: 200px;
+                height: 400px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="loading-screen">
+        <h1>TETRIS PORTFOLIO</h1>
+        <div class="level-text">LEVEL 1</div>
+        <div class="initials-animation" id="initialsAnimation"></div>
+    </div>
+
+    <header>
+        <h1>Geva Kipper</h1>
+        <h2>Senior Software Engineer at Google, specializing in distributed systems and algorithms</h2>
+        <p class="dynamic-subheader">This portfolio is redesigned daily by AI and never looks the same twice</p>
+        <div class="score-display">SCORE: <span class="score">0</span></div>
+    </header>
+
+    <main>
+        <div class="game-container">
+            <div class="game-controls">
+                <button class="control-btn" data-key="ArrowLeft">← Left</button>
+                <button class="control-btn" data-key="ArrowRight">Right →</button>
+                <button class="control-btn" data-key="ArrowUp">Rotate ↺</button>
+                <button class="control-btn" data-key="ArrowDown">Down ↓</button>
+                <button class="control-btn" data-key=" ">Drop ⤓</button>
+                <button class="control-btn" data-key="p">Pause (P)</button>
+            </div>
+
+            <div class="tetris-board" id="tetrisBoard"></div>
+
+            <div class="touch-controls">
+                <button class="touch-btn left">←</button>
+                <button class="touch-btn rotate">↺</button>
+                <button class="touch-btn right">→</button>
+                <button class="touch-btn drop">⤓</button>
+            </div>
+
+            <button class="music-toggle"><i class="fas fa-volume-mute"></i></button>
+
+            <div class="next-piece-display">
+                <h4>NEXT</h4>
+                <div class="next-piece-grid" id="nextPieceGrid"></div>
+            </div>
+
+            <div class="projects-container">
+                <div class="project-section" id="project1">
+                    <h3>GlglStats</h3>
+                    <p>A data visualization platform for analyzing and displaying gaming statistics with animated charts and real-time updates.</p>
+                    <div class="music-bars">
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                    </div>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">
+                        <img src="https://img.youtube.com/vi/jrKAtOsj1Lo/mqdefault.jpg" alt="GlglStats Video" class="video-thumbnail">
+                    </a>
+                    <a href="https://glglstats.onrender.com/" target="_blank">Visit GlglStats Website</a>
+                    <button class="unlock-btn" data-project="1">Unlock Fully</button>
+                </div>
+
+                <div class="project-section" id="project2">
+                    <h3>Ahuzat Dibuk</h3>
+                    <p>A smart parking system that optimizes and tracks available parking spots in real-time.</p>
+                    <div class="heatmap">
+                        <div class="parking-spot"></div>
+                        <div class="parking-spot occupied"></div>
+                        <div class="parking-spot"></div>
+                        <div class="parking-spot occupied"></div>
+                        <div class="parking-spot"></div>
+                        <div class="parking-spot occupied"></div>
+                        <div class="parking-spot"></div>
+                        <div class="parking-spot"></div>
+                        <div class="parking-spot occupied"></div>
+                        <div class="parking-spot"></div>
+                        <div class="parking-spot occupied"></div>
+                        <div class="parking-spot"></div>
+                        <div class="parking-spot"></div>
+                        <div class="parking-spot occupied"></div>
+                        <div class="parking-spot"></div>
+                    </div>
+                    <div class="news-links">
+                        <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="news-clip">13TV Coverage</a>
+                        <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="news-clip">Mako Feature</a>
+                    </div>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">Facebook Post</a>
+                    <button class="unlock-btn" data-project="2">Unlock Fully</button>
+                </div>
+
+                <div class="project-section" id="project3">
+                    <h3>2D Part Orienting</h3>
+                    <p>Algorithmic solution for efficiently orienting 2D parts using computational geometry techniques.</p>
+                    <div class="geometry-container">
+                        <div class="polygon triangle"></div>
+                        <div class="polygon pentagon"></div>
+                    </div>
+                    <div class="code-snippet">function orientPart(polygon) {
+  // Find minimum energy state
+  return optimalOrientation;
+}</div>
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">View Project at Tel-Aviv University</a>
+                    <button class="unlock-btn" data-project="3">Unlock Fully</button>
+                </div>
+
+                <div class="project-section" id="project4">
+                    <h3>Portfolio Website</h3>
+                    <p>A self-referential interactive portfolio that uses Tetris gameplay to reveal project information.</p>
+                    <div class="recursive-tetris"></div>
+                    <a href="https://portfolio-dor1.onrender.com/" target="_blank">Visit Portfolio</a>
+                    <button class="unlock-btn" data-project="4">Unlock Fully</button>
+                </div>
+
+                <div class="project-section" id="project5">
+                    <h3>Social Links</h3>
+                    <p>Connect with me on various platforms and see my other projects and contributions.</p>
+                    <div class="social-links">
+                        <a href="https://github.com/gevak" target="_blank" class="social-link github">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-link linkedin">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                        <a href="https://facebook.com/geva.kipper" target="_blank" class="social-link facebook">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                    </div>
+                    <button class="unlock-btn" data-project="5">Unlock Fully</button>
+                </div>
+            </div>
+
+            <div class="game-over" id="gameOver">
+                <h3>GAME OVER</h3>
+                <p>Final Score: <span id="finalScore">0</span></p>
+                <button id="playAgain">Play Again</button>
+                <button id="revealAll">Reveal All Projects</button>
+            </div>
+
+            <button class="skip-game" id="skipGame">Skip Game & Show All Projects</button>
+        </div>
+    </main>
+
+    <div class="easter-egg" id="easterEgg">
+        <button class="close-btn" id="closeEasterEgg">×</button>
+        <h3>Full Resume Unlocked!</h3>
+        <div class="resume">
+            <h2>Geva Kipper</h2>
+            <h3>Senior Software Engineer at Google</h3>
+            <p><strong>Email:</strong> example@geva.dev</p>
+            <p><strong>Location:</strong> Tel Aviv, Israel</p>
+            
+            <h3>Experience</h3>
+            <p><strong>Google</strong> - Senior Software Engineer (2020-Present)</p>
+            <ul>
+                <li>Leading development of distributed systems solutions</li>
+                <li>Optimizing algorithm performance for large-scale data processing</li>
+                <li>Mentoring junior engineers and contributing to technical architecture decisions</li>
+            </ul>
+            
+            <p><strong>Previous Roles</strong> include technical leadership positions in startups focusing on optimization algorithms and data visualization</p>
+            
+            <h3>Education</h3>
+            <p><strong>Tel Aviv University</strong> - Computer Science, specializing in Computational Geometry</p>
+            
+            <h3>Skills</h3>
+            <p>Distributed Systems, Algorithms, System Design, C++, Python, JavaScript, React, Node.js</p>
+            
+            <h3>Projects</h3>
+            <p><strong>GlglStats:</strong> Real-time gaming statistics visualization platform</p>
+            <p><strong>Ahuzat Dibuk:</strong> Smart parking optimization system</p>
+            <p><strong>2D Part Orienting:</strong> Computational geometry research project</p>
+            
+            <h3>Achievements</h3>
+            <p>Published research paper on computational geometry algorithms</p>
+            <p>Featured in multiple news outlets for Ahuzat Dibuk parking system</p>
+            <p>Contributed to open-source projects in the optimization and algorithms space</p>
+        </div>
+    </div>
+
+    <footer>
+        <div>Design conceptualized by Claude AI on <span id="currentDate"></span></div>
+        <div>Time since inception: <span class="stopwatch" id="stopwatch">00:00:00:00</span></div>
+        <button class="theme-toggle" id="themeToggle">Classic Tetris Mode</button>
+    </footer>
+
+    <audio id="tetrisTheme" loop>
+        <source src="https://archive.org/download/TetrisThemeMusic/Tetris.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="lineClear">
+        <source src="https://archive.org/download/ClassicGamesSoundFXLibrary/Arcade%20Game%20Sound%20Effects/line-clear.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="gameOverSound">
+        <source src="https://archive.org/download/ClassicGamesSoundFXLibrary/Arcade%20Game%20Sound%20Effects/game-over.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="piecePlaceSound">
+        <source src="https://archive.org/download/ClassicGamesSoundFXLibrary/Arcade%20Game%20Sound%20Effects/piece-place.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // Constants
+        const ROWS = 20;
+        const COLS = 10;
+        const EMPTY = 0;
+        const TICK_RATE_MS = 700;
+        const INCEPTION_DATE = new Date('2025-05-17T01:06:01');
+        let score = 0;
+        let gameRunning = false;
+        let isPaused = false;
+        let gameOverState = false;
+        let musicPlaying = false;
+        let boardState = [];
+        let currentPiece = null;
+        let nextPiece = null;
+        let levelMappings = {
+            1: { rows: [0, 1, 2, 3], project: 1 },
+            2: { rows: [4, 5, 6, 7], project: 2 },
+            3: { rows: [8, 9, 10, 11], project: 3 },
+            4: { rows: [12, 13, 14, 15], project: 4 },
+            5: { rows: [16, 17, 18, 19], project: 5 }
+        };
+        let revealedRows = new Set();
+        let projects = {
+            1: { revealed: false, rows: 0, totalRows: 4 },
+            2: { revealed: false, rows: 0, totalRows: 4 },
+            3: { revealed: false, rows: 0, totalRows: 4 },
+            4: { revealed: false, rows: 0, totalRows: 4 },
+            5: { revealed: false, rows: 0, totalRows: 4 }
+        };
+        let konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+        let konamiIndex = 0;
+        let darkTheme = true;
+        
+        // Tetromino definitions
+        const TETROMINOES = {
+            'i': {
+                shape: [
+                    [0, 0, 0, 0],
+                    [1, 1, 1, 1],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0]
+                ],
+                class: 'piece-i'
+            },
+            'j': {
+                shape: [
+                    [1, 0, 0],
+                    [1, 1, 1],
+                    [0, 0, 0]
+                ],
+                class: 'piece-j'
+            },
+            'l': {
+                shape: [
+                    [0, 0, 1],
+                    [1, 1, 1],
+                    [0, 0, 0]
+                ],
+                class: 'piece-l'
+            },
+            'o': {
+                shape: [
+                    [1, 1],
+                    [1, 1]
+                ],
+                class: 'piece-o'
+            },
+            's': {
+                shape: [
+                    [0, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0]
+                ],
+                class: 'piece-s'
+            },
+            't': {
+                shape: [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [0, 0, 0]
+                ],
+                class: 'piece-t'
+            },
+            'z': {
+                shape: [
+                    [1, 1, 0],
+                    [0, 1, 1],
+                    [0, 0, 0]
+                ],
+                class: 'piece-z'
+            }
+        };
+
+        // DOM elements
+        const tetrisBoard = document.getElementById('tetrisBoard');
+        const scoreDisplay = document.querySelector('.score');
+        const nextPieceGrid = document.getElementById('nextPieceGrid');
+        const gameOverScreen = document.getElementById('gameOver');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const playAgainButton = document.getElementById('playAgain');
+        const revealAllButton = document.getElementById('revealAll');
+        const skipGameButton = document.getElementById('skipGame');
+        const unlockButtons = document.querySelectorAll('.unlock-btn');
+        const touchButtons = document.querySelectorAll('.touch-btn');
+        const controlButtons = document.querySelectorAll('.control-btn');
+        const themeToggle = document.getElementById('themeToggle');
+        const musicToggle = document.querySelector('.music-toggle');
+        const tetrisTheme = document.getElementById('tetrisTheme');
+        const lineClearSound = document.getElementById('lineClear');
+        const gameOverSound = document.getElementById('gameOverSound');
+        const piecePlaceSound = document.getElementById('piecePlaceSound');
+        const easterEgg = document.getElementById('easterEgg');
+        const closeEasterEggButton = document.getElementById('closeEasterEgg');
+        const stopwatch = document.getElementById('stopwatch');
+        const currentDateElement = document.getElementById('currentDate');
+        const loadingScreen = document.querySelector('.loading-screen');
+        const initialsAnimation = document.getElementById('initialsAnimation');
+
+        // Set current date in footer
+        const today = new Date();
+        currentDateElement.textContent = today.toLocaleDateString();
+
+        // Initialize the game
+        function initialize() {
+            createBoard();
+            createNextPieceGrid();
+            populateInitialBlocks();
+            loadingAnimation();
+            
+            // Event listeners
+            document.addEventListener('keydown', handleKeyPress);
+            playAgainButton.addEventListener('click', resetGame);
+            revealAllButton.addEventListener('click', revealAllProjects);
+            skipGameButton.addEventListener('click', revealAllProjects);
+            closeEasterEggButton.addEventListener('click', closeEasterEgg);
+            themeToggle.addEventListener('click', toggleTheme);
+            musicToggle.addEventListener('click', toggleMusic);
+            
+            unlockButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const projectId = parseInt(this.getAttribute('data-project'));
+                    revealProject(projectId);
+                });
+            });
+
+            controlButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const key = this.getAttribute('data-key');
+                    simulateKeyPress(key);
+                });
+            });
+
+            touchButtons.forEach(btn => {
+                btn.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    if (this.classList.contains('left')) simulateKeyPress('ArrowLeft');
+                    if (this.classList.contains('right')) simulateKeyPress('ArrowRight');
+                    if (this.classList.contains('rotate')) simulateKeyPress('ArrowUp');
+                    if (this.classList.contains('drop')) simulateKeyPress(' ');
+                });
+            });
+
+            startStopwatch();
+        }
+
+        // Loading animation
+        function loadingAnimation() {
+            // Create a simple animation of Tetris pieces falling to form GK
+            const grid = Array(8).fill().map(() => Array(8).fill(0));
+            const pieces = [
+                { type: 'i', x: 0, y: -1, color: 'var(--tetris-i)' },
+                { type: 'l', x: 5, y: -3, color: 'var(--tetris-l)' },
+                { type: 't', x: 2, y: -2, color: 'var(--tetris-t)' }
+            ];
+
+            let container = document.createElement('div');
+            container.style.display = 'grid';
+            container.style.gridTemplateColumns = 'repeat(8, 25px)';
+            container.style.gridTemplateRows = 'repeat(8, 25px)';
+            container.style.gap = '1px';
+            initialsAnimation.appendChild(container);
+
+            // Create cells
+            for (let i = 0; i < 64; i++) {
+                let cell = document.createElement('div');
+                cell.style.width = '25px';
+                cell.style.height = '25px';
+                cell.style.backgroundColor = 'transparent';
+                container.appendChild(cell);
+            }
+
+            const cells = container.children;
+            
+            // Animation frames
+            let frames = [
+                // G shape
+                { row: 0, col: 1, color: 'var(--tetris-i)' },
+                { row: 0, col: 2, color: 'var(--tetris-i)' },
+                { row: 0, col: 3, color: 'var(--tetris-i)' },
+                { row: 1, col: 0, color: 'var(--tetris-i)' },
+                { row: 2, col: 0, color: 'var(--tetris-l)' },
+                { row: 3, col: 0, color: 'var(--tetris-l)' },
+                { row: 4, col: 0, color: 'var(--tetris-t)' },
+                { row: 5, col: 0, color: 'var(--tetris-t)' },
+                { row: 6, col: 0, color: 'var(--tetris-s)' },
+                { row: 6, col: 1, color: 'var(--tetris-s)' },
+                { row: 6, col: 2, color: 'var(--tetris-s)' },
+                { row: 6, col: 3, color: 'var(--tetris-s)' },
+                { row: 5, col: 3, color: 'var(--tetris-j)' },
+                { row: 4, col: 3, color: 'var(--tetris-j)' },
+                { row: 4, col: 2, color: 'var(--tetris-j)' },
+                
+                // K shape
+                { row: 0, col: 5, color: 'var(--tetris-z)' },
+                { row: 1, col: 5, color: 'var(--tetris-z)' },
+                { row: 2, col: 5, color: 'var(--tetris-z)' },
+                { row: 3, col: 5, color: 'var(--tetris-z)' },
+                { row: 4, col: 5, color: 'var(--tetris-z)' },
+                { row: 5, col: 5, color: 'var(--tetris-z)' },
+                { row: 6, col: 5, color: 'var(--tetris-z)' },
+                { row: 3, col: 6, color: 'var(--tetris-o)' },
+                { row: 2, col: 7, color: 'var(--tetris-o)' },
+                { row: 1, col: 7, color: 'var(--tetris-o)' },
+                { row: 4, col: 6, color: 'var(--tetris-i)' },
+                { row: 5, col: 7, color: 'var(--tetris-i)' },
+                { row: 6, col: 7, color: 'var(--tetris-i)' }
+            ];
+            
+            // Run animation
+            let currentFrame = 0;
+            const animationInterval = setInterval(() => {
+                if (currentFrame < frames.length) {
+                    const { row, col, color } = frames[currentFrame];
+                    const index = row * 8 + col;
+                    cells[index].style.backgroundColor = color;
+                    cells[index].style.boxShadow = 'inset 0 0 5px rgba(0,0,0,0.5)';
+                    cells[index].style.border = '1px solid rgba(255,255,255,0.3)';
+                    currentFrame++;
+                } else {
+                    clearInterval(animationInterval);
+                    setTimeout(() => {
+                        loadingScreen.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                            startGame();
+                        }, 500);
+                    }, 1000);
+                }
+            }, 50);
+        }
+
+        // Create the Tetris board
+        function createBoard() {
+            tetrisBoard.innerHTML = '';
+            boardState = Array(ROWS).fill().map(() => Array(COLS).fill(EMPTY));
+
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'tetris-cell';
+                    cell.setAttribute('data-row', row);
+                    cell.setAttribute('data-col', col);
+                    tetrisBoard.appendChild(cell);
+                }
+            }
+        }
+
+        // Create the next piece preview grid
+        function createNextPieceGrid() {
+            nextPieceGrid.innerHTML = '';
+            for (let i = 0; i < 16; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'tetris-cell';
+                nextPieceGrid.appendChild(cell);
+            }
+        }
+
+        // Populate initial blocks that hide projects
+        function populateInitialBlocks() {
+            // Create a pattern of blocks that partially obscure each project section
+            
+            // Project 1 (rows 0-3)
+            for (let row = 0; row <= 3; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if ((row + col) % 3 !== 0) {
+                        boardState[row][col] = { type: 'project1', class: 'project1' };
+                        const cellIndex = row * COLS + col;
+                        tetrisBoard.children[cellIndex].classList.add('filled', 'project1');
+                    }
+                }
+            }
+            
+            // Project 2 (rows 4-7)
+            for (let row = 4; row <= 7; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if ((row + col) % 4 !== 0) {
+                        boardState[row][col] = { type: 'project2', class: 'project2' };
+                        const cellIndex = row * COLS + col;
+                        tetrisBoard.children[cellIndex].classList.add('filled', 'project2');
+                    }
+                }
+            }
+            
+            // Project 3 (rows 8-11)
+            for (let row = 8; row <= 11; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if ((row * col) % 3 !== 0) {
+                        boardState[row][col] = { type: 'project3', class: 'project3' };
+                        const cellIndex = row * COLS + col;
+                        tetrisBoard.children[cellIndex].classList.add('filled', 'project3');
+                    }
+                }
+            }
+            
+            // Project 4 (rows 12-15)
+            for (let row = 12; row <= 15; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if ((row - col) % 3 !== 0) {
+                        boardState[row][col] = { type: 'project4', class: 'project4' };
+                        const cellIndex = row * COLS + col;
+                        tetrisBoard.children[cellIndex].classList.add('filled', 'project4');
+                    }
+                }
+            }
+            
+            // Project 5 (rows 16-19)
+            for (let row = 16; row <= 19; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if ((row + col) % 2 !== 0) {
+                        boardState[row][col] = { type: 'project5', class: 'project5' };
+                        const cellIndex = row * COLS + col;
+                        tetrisBoard.children[cellIndex].classList.add('filled', 'project5');
+                    }
+                }
+            }
+        }
+
+        // Start the game
+        function startGame() {
+            if (!gameRunning) {
+                gameRunning = true;
+                gameOverState = false;
+                score = 0;
+                scoreDisplay.textContent = '0';
+                createNewPiece();
+                gameLoop();
+            }
+        }
+
+        // Create a new tetris piece
+        function createNewPiece() {
+            if (nextPiece === null) {
+                const pieceTypes = Object.keys(TETROMINOES);
+                const randomType = pieceTypes[Math.floor(Math.random() * pieceTypes.length)];
+                nextPiece = {
+                    type: randomType,
+                    shape: TETROMINOES[randomType].shape,
+                    class: TETROMINOES[randomType].class,
+                    row: 0,
+                    col: Math.floor(COLS / 2) - Math.floor(TETROMINOES[randomType].shape[0].length / 2)
+                };
+            }
+            
+            currentPiece = nextPiece;
+            
+            const pieceTypes = Object.keys(TETROMINOES);
+            const randomType = pieceTypes[Math.floor(Math.random() * pieceTypes.length)];
+            nextPiece = {
+                type: randomType,
+                shape: TETROMINOES[randomType].shape,
+                class: TETROMINOES[randomType].class,
+                row: 0,
+                col: Math.floor(COLS / 2) - Math.floor(TETROMINOES[randomType].shape[0].length / 2)
+            };
+            
+            updateNextPieceDisplay();
+            
+            if (checkCollision(currentPiece.row, currentPiece.col, currentPiece.shape)) {
+                gameOver();
+            }
+            
+            drawBoard();
+        }
+
+        // Update the next piece display
+        function updateNextPieceDisplay() {
+            // Clear the next piece grid
+            Array.from(nextPieceGrid.children).forEach(cell => {
+                cell.className = 'tetris-cell';
+            });
+            
+            // Draw the next piece
+            const shape = nextPiece.shape;
+            const pieceClass = nextPiece.class;
+            
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[r].length; c++) {
+                    if (shape[r][c]) {
+                        const index = r * 4 + c;
+                        if (index < nextPieceGrid.children.length) {
+                            nextPieceGrid.children[index].classList.add('filled', pieceClass);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Game loop
+        let lastTickTime = 0;
+        function gameLoop(timestamp) {
+            if (!gameRunning || isPaused || gameOverState) return;
+            
+            const elapsed = timestamp - lastTickTime;
+            if (elapsed > TICK_RATE_MS) {
+                movePiece('down');
+                lastTickTime = timestamp;
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Check for collisions
+        function checkCollision(row, col, shape) {
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[r].length; c++) {
+                    if (shape[r][c]) {
+                        const newRow = row + r;
+                        const newCol = col + c;
+                        
+                        if (newCol < 0 || newCol >= COLS || newRow >= ROWS) {
+                            return true;
+                        }
+                        
+                        if (newRow >= 0 && boardState[newRow][newCol] !== EMPTY) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Move the current piece
+        function movePiece(direction) {
+            let newRow = currentPiece.row;
+            let newCol = currentPiece.col;
+            
+            switch (direction) {
+                case 'left':
+                    newCol -= 1;
+                    break;
+                case 'right':
+                    newCol += 1;
+                    break;
+                case 'down':
+                    newRow += 1;
+                    break;
+            }
+            
+            if (!checkCollision(newRow, newCol, currentPiece.shape)) {
+                currentPiece.row = newRow;
+                currentPiece.col = newCol;
+                drawBoard();
+                return true;
+            } 
+            
+            if (direction === 'down') {
+                lockPiece();
+                return false;
+            }
+            
+            return false;
+        }
+
+        // Rotate the current piece
+        function rotatePiece() {
+            const originalShape = currentPiece.shape;
+            const rows = originalShape.length;
+            const cols = originalShape[0].length;
+            
+            // Create a new rotated shape
+            let newShape = Array(cols).fill().map(() => Array(rows).fill(0));
+            
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    newShape[c][rows - 1 - r] = originalShape[r][c];
+                }
+            }
+            
+            if (!checkCollision(currentPiece.row, currentPiece.col, newShape)) {
+                currentPiece.shape = newShape;
+                drawBoard();
+                return true;
+            }
+            
+            // Wall kick - try to adjust position if rotation against wall
+            const kicks = [-1, 1, -2, 2];
+            for (let kick of kicks) {
+                if (!checkCollision(currentPiece.row, currentPiece.col + kick, newShape)) {
+                    currentPiece.shape = newShape;
+                    currentPiece.col += kick;
+                    drawBoard();
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+        // Hard drop the piece
+        function hardDrop() {
+            let dropped = false;
+            while (movePiece('down')) {
+                dropped = true;
+            }
+            return dropped;
+        }
+
+        // Lock the piece in place
+        function lockPiece() {
+            if (piecePlaceSound) {
+                piecePlaceSound.currentTime = 0;
+                piecePlaceSound.play();
+            }
+            
+            for (let r = 0; r < currentPiece.shape.length; r++) {
+                for (let c = 0; c < currentPiece.shape[r].length; c++) {
+                    if (currentPiece.shape[r][c]) {
+                        const newRow = currentPiece.row + r;
+                        const newCol = currentPiece.col + c;
+                        
+                        if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
+                            boardState[newRow][newCol] = {
+                                type: currentPiece.type,
+                                class: currentPiece.class
+                            };
+                        }
+                    }
+                }
+            }
+            
+            score += 10;
+            scoreDisplay.textContent = score;
+            
+            checkLines();
+            createNewPiece();
+        }
+
+        // Check for completed lines
+        function checkLines() {
+            let linesCleared = 0;
+            let projectLines = {};
+            
+            for (let row = 0; row < ROWS; row++) {
+                let isComplete = true;
+                
+                for (let col = 0; col < COLS; col++) {
+                    if (boardState[row][col] === EMPTY) {
+                        isComplete = false;
+                        break;
+                    }
+                }
+                
+                if (isComplete && !revealedRows.has(row)) {
+                    revealedRows.add(row);
+                    linesCleared++;
+                    
+                    // Find project for this row
+                    for (const [level, mapping] of Object.entries(levelMappings)) {
+                        if (mapping.rows.includes(row)) {
+                            const projectId = mapping.project;
+                            if (!projectLines[projectId]) {
+                                projectLines[projectId] = 0;
+                            }
+                            projectLines[projectId]++;
+                            break;
+                        }
+                    }
+                    
+                    // Mark cells as revealed
+                    for (let col = 0; col < COLS; col++) {
+                        const cellIndex = row * COLS + col;
+                        tetrisBoard.children[cellIndex].classList.remove('filled');
+                        tetrisBoard.children[cellIndex].classList.remove(boardState[row][col].class);
+                        tetrisBoard.children[cellIndex].classList.add('revealed');
+                        boardState[row][col] = { type: 'revealed', class: 'revealed' };
+                    }
+                }
+            }
+            
+            if (linesCleared > 0) {
+                if (lineClearSound) {
+                    lineClearSound.currentTime = 0;
+                    lineClearSound.play();
+                }
+                
+                score += linesCleared * 100 * linesCleared; // Bonus for multiple lines
+                scoreDisplay.textContent = score;
+                
+                // Update project progress
+                for (const [projectId, count] of Object.entries(projectLines)) {
+                    projects[projectId].rows += count;
+                    if (projects[projectId].rows >= projects[projectId].totalRows) {
+                        revealProject(parseInt(projectId));
+                    } else {
+                        const opacity = 0.25 * projects[projectId].rows / projects[projectId].totalRows;
+                        document.getElementById(`project${projectId}`).style.opacity = opacity;
+                    }
+                }
+            }
+        }
+
+        // Draw the board
+        function drawBoard() {
+            // Clear active piece from visualization (not from board state)
+            Array.from(tetrisBoard.children).forEach(cell => {
+                if (!cell.classList.contains('filled') && 
+                    !cell.classList.contains('revealed')) {
+                    cell.className = 'tetris-cell';
+                }
+            });
+            
+            // Draw active piece
+            for (let r = 0; r < currentPiece.shape.length; r++) {
+                for (let c = 0; c < currentPiece.shape[r].length; c++) {
+                    if (currentPiece.shape[r][c]) {
+                        const newRow = currentPiece.row + r;
+                        const newCol = currentPiece.col + c;
+                        
+                        if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
+                            const cellIndex = newRow * COLS + newCol;
+                            tetrisBoard.children[cellIndex].classList.add(currentPiece.class);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Handle key press events
+        function handleKeyPress(e) {
+            if (gameOverState) return;
+            
+            if (e.key === 'p' || e.key === 'P') {
+                togglePause();
+                return;
+            }
+            
+            if (isPaused) return;
+            
+            // Check for Konami code
+            if (konamiCode[konamiIndex] === e.key) {
+                konamiIndex++;
+                if (konamiIndex === konamiCode.length) {
+                    showEasterEgg();
+                    konamiIndex = 0;
+                }
+            } else {
+                konamiIndex = 0;
+            }
+            
+            switch (e.key) {
+                case 'ArrowLeft':
+                    movePiece('left');
+                    break;
+                case 'ArrowRight':
+                    movePiece('right');
+                    break;
+                case 'ArrowDown':
+                    movePiece('down');
+                    break;
+                case 'ArrowUp':
+                    rotatePiece();
+                    break;
+                case ' ':
+                    hardDrop();
+                    break;
+            }
+        }
+
+        // Simulate key press for touch controls
+        function simulateKeyPress(key) {
+            const event = new KeyboardEvent('keydown', { key: key });
+            handleKeyPress(event);
+        }
+
+        // Toggle pause
+        function togglePause() {
+            isPaused = !isPaused;
+            if (!isPaused) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // Game over
+        function gameOver() {
+            gameOverState = true;
+            gameRunning = false;
+            
+            if (gameOverSound) {
+                gameOverSound.currentTime = 0;
+                gameOverSound.play();
+            }
+            
+            finalScoreDisplay.textContent = score;
+            gameOverScreen.classList.add('active');
+        }
+
+        // Reset the game
+        function resetGame() {
+            gameOverScreen.classList.remove('active');
+            createBoard();
+            populateInitialBlocks();
+            score = 0;
+            scoreDisplay.textContent = '0';
+            revealedRows = new Set();
+            
+            for (const projectId in projects) {
+                projects[projectId].rows = 0;
+                projects[projectId].revealed = false;
+                document.getElementById(`project${projectId}`).style.opacity = '0';
+            }
+            
+            gameOverState = false;
+            setTimeout(() => {
+                startGame();            
+            }, 500);
+        }
+
+        // Reveal all projects
+        function revealAllProjects() {
+            for (let projectId = 1; projectId <= 5; projectId++) {
+                revealProject(projectId);
+            }
+            
+            // Mark all rows as revealed
+            for (let row = 0; row < ROWS; row++) {
+                if (!revealedRows.has(row)) {
+                    revealedRows.add(row);
+                    
+                    for (let col = 0; col < COLS; col++) {
+                        const cellIndex = row * COLS + col;
+                        tetrisBoard.children[cellIndex].classList.remove('filled');
+                        if (boardState[row][col] !== EMPTY) {
+                            tetrisBoard.children[cellIndex].classList.remove(boardState[row][col].class);
+                        }
+                        tetrisBoard.children[cellIndex].classList.add('revealed');
+                        boardState[row][col] = { type: 'revealed', class: 'revealed' };
+                    }
+                }
+            }
+        }
+
+        // Reveal a specific project
+        function revealProject(projectId) {
+            const project = document.getElementById(`project${projectId}`);
+            project.style.opacity = '1';
+            projects[projectId].revealed = true;
+            
+            // Reveal all rows for this project
+            for (const row of levelMappings[projectId].rows) {
+                if (!revealedRows.has(row)) {
+                    revealedRows.add(row);
+                    
+                    for (let col = 0; col < COLS; col++) {
+                        const cellIndex = row * COLS + col;
+                        tetrisBoard.children[cellIndex].classList.remove('filled');
+                        if (boardState[row][col] !== EMPTY) {
+                            tetrisBoard.children[cellIndex].classList.remove(boardState[row][col].class);
+                        }
+                        tetrisBoard.children[cellIndex].classList.add('revealed');
+                        boardState[row][col] = { type: 'revealed', class: 'revealed' };
+                    }
+                }
+            }
+        }
+
+        // Toggle music
+        function toggleMusic() {
+            const icon = musicToggle.querySelector('i');
+            
+            if (musicPlaying) {
+                tetrisTheme.pause();
+                icon.className = 'fas fa-volume-mute';
+            } else {
+                tetrisTheme.play();
+                icon.className = 'fas fa-volume-up';
+            }
+            
+            musicPlaying = !musicPlaying;
+        }
+
+        // Toggle theme
+        function toggleTheme() {
+            darkTheme = !darkTheme;
+            
+            if (darkTheme) {
+                document.documentElement.style.setProperty('--background-color', '#121212');
+                document.documentElement.style.setProperty('--text-color', '#e0e0e0');
+                themeToggle.textContent = 'Classic Tetris Mode';
+            } else {
+                document.documentElement.style.setProperty('--background-color', '#f5f5f5');
+                document.documentElement.style.setProperty('--text-color', '#121212');
+                themeToggle.textContent = 'Modern Minimal Mode';
+            }
+        }
+        
+        // Easter egg functionality
+        function showEasterEgg() {
+            easterEgg.classList.add('active');
+        }
+        
+        function closeEasterEgg() {
+            easterEgg.classList.remove('active');
+        }
+        
+        // Stopwatch functionality
+        function startStopwatch() {
+            setInterval(updateStopwatch, 10);
+        }
+        
+        function updateStopwatch() {
+            const now = new Date();
+            const diff = now - INCEPTION_DATE;
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            const milliseconds = Math.floor((diff % 1000) / 10);
+            
+            const displayDays = String(days).padStart(2, '0');
+            const displayHours = String(hours).padStart(2, '0');
+            const displayMinutes = String(minutes).padStart(2, '0');
+            const displaySeconds = String(seconds).padStart(2, '0');
+            const displayMilliseconds = String(milliseconds).padStart(2, '0');
+            
+            stopwatch.textContent = `${displayDays}:${displayHours}:${displayMinutes}:${displaySeconds}`;
+        }
+        
+        // Initialize the game when the page loads
+        window.addEventListener('load', initialize);
+    </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250517",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>

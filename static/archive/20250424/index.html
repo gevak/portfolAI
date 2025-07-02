@@ -1,0 +1,748 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geva Kipper - Debug Portfolio</title>
+  <style>
+    :root {
+      --terminal-bg: #1a1a1a;
+      --terminal-text: #00ff00;
+      --terminal-amber: #ffb000;
+      --terminal-error: #ff3333;
+      --terminal-fixed: #66d9ef;
+      --terminal-comment: #777777;
+      --terminal-header: #ff79c6;
+      --terminal-success: #50fa7b;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Courier New', monospace;
+      background-color: var(--terminal-bg);
+      color: var(--terminal-text);
+      line-height: 1.5;
+      padding: 20px;
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    a {
+      color: var(--terminal-amber);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+    
+    a:hover {
+      color: var(--terminal-fixed);
+      text-decoration: underline;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      flex: 1;
+    }
+    
+    header {
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--terminal-text);
+      padding-bottom: 1rem;
+      position: relative;
+    }
+    
+    .terminal-prompt {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    
+    .blinking-cursor {
+      display: inline-block;
+      width: 10px;
+      height: 18px;
+      background-color: var(--terminal-text);
+      animation: blink 1s infinite;
+      margin-left: 5px;
+    }
+    
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+    
+    .typing-text {
+      white-space: nowrap;
+      overflow: hidden;
+      border-right: 3px solid transparent;
+      animation: typing 3.5s steps(40, end) 1s forwards;
+      width: 0;
+    }
+    
+    @keyframes typing {
+      from { width: 0 }
+      to { width: 100% }
+    }
+    
+    .comment {
+      color: var(--terminal-comment);
+    }
+    
+    .terminal-clock {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 0.8rem;
+      color: var(--terminal-amber);
+    }
+    
+    .section {
+      margin-bottom: 2rem;
+      padding: 1rem;
+      border: 1px solid rgba(0, 255, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .section:before {
+      content: attr(data-line-numbers);
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 30px;
+      background-color: rgba(0, 0, 0, 0.3);
+      color: var(--terminal-comment);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      padding: 1rem 5px;
+      font-size: 0.8rem;
+    }
+    
+    .section-content {
+      margin-left: 35px;
+    }
+    
+    .bug {
+      display: inline-block;
+      color: var(--terminal-error);
+      cursor: pointer;
+      position: relative;
+      text-decoration: wavy underline var(--terminal-error);
+      animation: glitch 0.3s infinite alternate;
+    }
+    
+    @keyframes glitch {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(1px); }
+      50% { transform: translateX(-1px); }
+      75% { transform: translateX(1px); }
+      100% { transform: translateX(-1px); }
+    }
+    
+    .bug-sprite {
+      position: absolute;
+      font-size: 12px;
+      z-index: 10;
+      pointer-events: none;
+      animation: crawl 15s linear infinite;
+    }
+    
+    @keyframes crawl {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      25% { transform: translate(50px, 20px) rotate(90deg); }
+      50% { transform: translate(100px, 0) rotate(180deg); }
+      75% { transform: translate(50px, -20px) rotate(270deg); }
+      100% { transform: translate(0, 0) rotate(360deg); }
+    }
+    
+    .fixed {
+      color: var(--terminal-fixed);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      animation: fix 0.5s ease-in-out;
+    }
+    
+    @keyframes fix {
+      0% { transform: scale(1); filter: blur(4px); }
+      50% { transform: scale(1.05); filter: blur(0); }
+      100% { transform: scale(1); }
+    }
+    
+    .section-title {
+      color: var(--terminal-header);
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+    
+    .debug-console {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: rgba(0, 0, 0, 0.8);
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      border-top: 1px solid var(--terminal-text);
+      z-index: 100;
+    }
+    
+    .debug-input {
+      background-color: transparent;
+      border: none;
+      color: var(--terminal-text);
+      font-family: 'Courier New', monospace;
+      width: calc(100% - 30px);
+      outline: none;
+      margin-left: 5px;
+    }
+    
+    footer {
+      margin-top: 4rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--terminal-text);
+      font-size: 0.8rem;
+      text-align: center;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .project-link {
+      display: inline-block;
+      margin: 5px 10px 5px 0;
+      padding: 3px 10px;
+      border: 1px solid var(--terminal-amber);
+      border-radius: 3px;
+      transition: all 0.3s ease;
+    }
+    
+    .project-link:hover {
+      background-color: var(--terminal-amber);
+      color: var(--terminal-bg);
+      text-decoration: none;
+    }
+    
+    .social-icon {
+      font-size: 1.5rem;
+      margin: 0 10px;
+    }
+    
+    .flicker {
+      animation: flicker 2s infinite;
+    }
+    
+    @keyframes flicker {
+      0% { opacity: 1; }
+      92% { opacity: 1; }
+      93% { opacity: 0.3; }
+      94% { opacity: 1; }
+      97% { opacity: 0.5; }
+      98% { opacity: 1; }
+    }
+    
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      
+      .terminal-clock {
+        position: static;
+        display: block;
+        margin-top: 10px;
+      }
+      
+      .section:before {
+        display: none;
+      }
+      
+      .section-content {
+        margin-left: 0;
+      }
+      
+      .debug-console {
+        padding: 5px 10px;
+      }
+    }
+    
+    /* Animation for fixed content */
+    .wave-animation {
+      height: 100px;
+      background: linear-gradient(to bottom, transparent 50%, var(--terminal-fixed) 50%);
+      background-size: 100% 20px;
+      width: 100%;
+      animation: wave 2s linear infinite;
+      margin: 20px 0;
+    }
+    
+    @keyframes wave {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 -20px; }
+    }
+    
+    .heat-map {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 5px;
+      margin: 20px 0;
+    }
+    
+    .heat-cell {
+      height: 20px;
+      background-color: var(--terminal-amber);
+      opacity: 0.1;
+    }
+    
+    .polygon-animation {
+      width: 100px;
+      height: 100px;
+      background-color: transparent;
+      border: 2px solid var(--terminal-fixed);
+      margin: 20px auto;
+      animation: rotate 4s linear infinite;
+    }
+    
+    @keyframes rotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="terminal-clock" id="terminal-clock">00:00:00</div>
+      <div class="terminal-prompt">
+        <span>> run portfolio.js</span>
+        <span class="blinking-cursor"></span>
+      </div>
+      <h1 id="name" class="typing-text"></h1>
+      <div class="terminal-output">Current work: <span class="terminal-output-text">Machine Learning Engineer @ Google</span></div>
+      <div class="comment">// This website is re-designed each day by AI and is thus ever-changing</div>
+    </header>
+
+    <main>
+      <section class="section" data-line-numbers="1\n2\n3\n4\n5\n6\n7\n8\n9\n10">
+        <div class="section-content">
+          <div class="section-title">class GlglStats {</div>
+          <div>&nbsp;&nbsp;constructor() {</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;this.description = "A web application measuring song <span class="bug" data-correct="repetitiveness">repetivness</span>";</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;this.tech = ["JavaScript", "D3.js", "Web Audio API"];</div>
+          <div>&nbsp;&nbsp;}</div>
+          <div>&nbsp;&nbsp;render() { /* Visualization code */ }</div>
+          <div>}</div>
+          <div class="hidden fixed-content">
+            <h3>GlglStats Project</h3>
+            <p>A web application measuring song repetitiveness through interactive audio analysis and visualization.</p>
+            <div class="wave-animation"></div>
+            <p>Technologies: JavaScript, D3.js, Web Audio API</p>
+            <a href="https://glglstats.onrender.com/" class="project-link" target="_blank">View Project</a>
+            <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" class="project-link" target="_blank">Conference Presentation</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" data-line-numbers="1\n2\n3\n4\n5\n6\n7\n8\n9\n10">
+        <div class="section-content">
+          <div class="section-title">db.query("AhuzatDibuk", {</div>
+          <div>&nbsp;&nbsp;SELECT: ["parking_data", "heat_maps", "media"]</div>
+          <div>&nbsp;&nbsp;WHERE: {</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;project_type: "urban <span class="bug" data-correct="analysis">analisys</span>"</div>
+          <div>&nbsp;&nbsp;}</div>
+          <div>&nbsp;&nbsp;ORDER_BY: "date_desc"</div>
+          <div>});</div>
+          <div class="hidden fixed-content">
+            <h3>Ahuzat Dibuk Project</h3>
+            <p>An urban analysis project studying parking patterns and traffic flow in Tel Aviv's historical neighborhoods.</p>
+            <div class="heat-map">
+              <!-- Simulated heat map cells -->
+              <div class="heat-cell" style="opacity: 0.2;"></div>
+              <div class="heat-cell" style="opacity: 0.5;"></div>
+              <div class="heat-cell" style="opacity: 0.8;"></div>
+              <div class="heat-cell" style="opacity: 0.3;"></div>
+              <div class="heat-cell" style="opacity: 0.7;"></div>
+              <div class="heat-cell" style="opacity: 0.9;"></div>
+              <div class="heat-cell" style="opacity: 0.4;"></div>
+              <div class="heat-cell" style="opacity: 0.2;"></div>
+              <div class="heat-cell" style="opacity: 0.6;"></div>
+              <div class="heat-cell" style="opacity: 0.3;"></div>
+              <div class="heat-cell" style="opacity: 0.7;"></div>
+              <div class="heat-cell" style="opacity: 0.5;"></div>
+              <div class="heat-cell" style="opacity: 0.9;"></div>
+              <div class="heat-cell" style="opacity: 0.4;"></div>
+              <div class="heat-cell" style="opacity: 0.3;"></div>
+              <div class="heat-cell" style="opacity: 0.8;"></div>
+              <div class="heat-cell" style="opacity: 0.6;"></div>
+              <div class="heat-cell" style="opacity: 0.4;"></div>
+              <div class="heat-cell" style="opacity: 0.7;"></div>
+              <div class="heat-cell" style="opacity: 0.3;"></div>
+            </div>
+            <p>Media coverage:</p>
+            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" class="project-link" target="_blank">Channel 13 News</a>
+            <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" class="project-link" target="_blank">Mako News</a>
+            <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" class="project-link" target="_blank">Secret Tel Aviv Post</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" data-line-numbers="1\n2\n3\n4\n5\n6\n7\n8\n9\n10">
+        <div class="section-content">
+          <div class="section-title">class PartOrienting2D {</div>
+          <div>&nbsp;&nbsp;private:</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;std::vector<Polygon> parts;</div>
+          <div>&nbsp;&nbsp;public:</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;void optimizeOrientation() <span class="bug" data-correct="{">}</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Algorithm for 2D part orientation</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Tel Aviv University research project</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;}</div>
+          <div>};</div>
+          <div class="hidden fixed-content">
+            <h3>2D Part Orienting Project</h3>
+            <p>A computational geometry research project at Tel Aviv University focusing on optimal orientation algorithms for polygonal parts.</p>
+            <div class="polygon-animation"></div>
+            <p>This algorithm efficiently orients 2D polygonal parts using geometric principles and computational optimization.</p>
+            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" class="project-link" target="_blank">Project Details & Code</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" data-line-numbers="1\n2\n3\n4\n5\n6\n7\n8\n9\n10">
+        <div class="section-content">
+          <div class="section-title">function renderPortfolio() {</div>
+          <div>&nbsp;&nbsp;const portfolio = {</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;title: "Debug-driven Portfolio",</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;author: "Geva Kipper",</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;designedBy: <span class="bug" data-correct="\"AI\"">'AI"</span>,</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;lastUpdated: new Date()</div>
+          <div>&nbsp;&nbsp;};</div>
+          <div>&nbsp;&nbsp;return renderPortfolio(); // Recursive call</div>
+          <div>}</div>
+          <div class="hidden fixed-content">
+            <h3>Portfolio Website</h3>
+            <p>A unique debug-driven portfolio concept where visitors find and fix "bugs" to reveal content in a terminal-inspired interface.</p>
+            <p>Each section of this website is designed as code with intentional bugs, creating an interactive experience that showcases both content and creativity.</p>
+            <p>The site is redesigned daily using AI assistance, ensuring a constantly evolving and fresh experience.</p>
+            <a href="https://portfolio-dor1.onrender.com/" class="project-link" target="_blank">Current Portfolio</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" data-line-numbers="1\n2\n3\n4\n5\n6\n7\n8\n9\n10">
+        <div class="section-content">
+          <div class="section-title">async function loadSocialLinks() {</div>
+          <div>&nbsp;&nbsp;try {</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;const links = await API.get(<span class="bug" data-correct="'/social'">'social'</span>);</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;return links;</div>
+          <div>&nbsp;&nbsp;} catch (error) {</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;console.error("Failed to load social links");</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;return null;</div>
+          <div>&nbsp;&nbsp;}</div>
+          <div>}</div>
+          <div class="hidden fixed-content">
+            <h3>Connect With Me</h3>
+            <p>Find me on these platforms to connect or see more of my work:</p>
+            <div style="margin-top: 20px; text-align: center;">
+              <a href="https://github.com/gevak" class="social-icon" target="_blank">
+                <i>GitHub</i>
+              </a>
+              <a href="https://linkedin.com/in/gevakip" class="social-icon" target="_blank">
+                <i>LinkedIn</i>
+              </a>
+              <a href="https://facebook.com/geva.kipper" class="social-icon" target="_blank">
+                <i>Facebook</i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div>
+        <span class="comment">// Generated by AI Assistant</span>
+      </div>
+      <div id="uptime-counter">
+        System uptime: <span id="uptime">0d 0h 0m 0s</span>
+      </div>
+      <div>
+        <span>> type 'help' for more commands</span>
+      </div>
+    </footer>
+  </div>
+
+  <div class="debug-console">
+    <span>> </span>
+    <input type="text" class="debug-input" id="debug-input" placeholder="Enter command..." autocomplete="off">
+    <div id="debug-status">0/5 bugs fixed. Keep debugging!</div>
+  </div>
+
+  <script>
+    // Initialize variables
+    let bugsFixed = 0;
+    const totalBugs = 5;
+    const bugSprites = ['🐞', '🐛', '🦗', '🐜', '🕷️'];
+    
+    // Initialize typing animation for name
+    document.addEventListener('DOMContentLoaded', () => {
+      const nameElement = document.getElementById('name');
+      const text = "Geva Kipper";
+      let i = 0;
+      
+      function typeWriter() {
+        if (i < text.length) {
+          nameElement.textContent += text.charAt(i);
+          i++;
+          setTimeout(typeWriter, 100);
+        }
+      }
+      
+      setTimeout(typeWriter, 1000);
+      
+      // Add bug sprites randomly
+      addBugSprites();
+      
+      // Update terminal clock
+      updateClock();
+      setInterval(updateClock, 1000);
+      
+      // Update uptime counter
+      setInterval(updateUptime, 1000);
+      
+      // Setup bug fixing
+      setupBugFixing();
+      
+      // Setup debug input
+      setupDebugInput();
+    });
+    
+    function updateClock() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      
+      document.getElementById('terminal-clock').textContent = `${hours}:${minutes}:${seconds}`;
+    }
+    
+    function updateUptime() {
+      // Use a fixed start date for demonstration
+      const startDate = new Date(2023, 0, 1); // January 1, 2023
+      const now = new Date();
+      const diff = now - startDate;
+      
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      document.getElementById('uptime').textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+    }
+    
+    function addBugSprites() {
+      for (let i = 0; i < 5; i++) {
+        const bugSprite = document.createElement('div');
+        bugSprite.className = 'bug-sprite';
+        bugSprite.textContent = bugSprites[Math.floor(Math.random() * bugSprites.length)];
+        
+        // Random position
+        const x = Math.floor(Math.random() * window.innerWidth);
+        const y = Math.floor(Math.random() * window.innerHeight);
+        
+        bugSprite.style.left = `${x}px`;
+        bugSprite.style.top = `${y}px`;
+        
+        // Add random speed and direction
+        bugSprite.style.animationDuration = `${10 + Math.random() * 20}s`;
+        bugSprite.style.animationDelay = `${Math.random() * 5}s`;
+        
+        document.body.appendChild(bugSprite);
+        
+        // Make them scatter when clicked
+        bugSprite.addEventListener('click', (e) => {
+          e.target.style.transition = 'all 0.5s ease';
+          e.target.style.opacity = 0;
+          e.target.style.transform = `translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) scale(0)`;
+          
+          setTimeout(() => {
+            e.target.remove();
+          }, 500);
+        });
+      }
+    }
+    
+    function setupBugFixing() {
+      const bugs = document.querySelectorAll('.bug');
+      
+      bugs.forEach(bug => {
+        bug.addEventListener('click', (e) => {
+          const correctValue = e.target.getAttribute('data-correct');
+          const currentValue = e.target.textContent;
+          
+          if (correctValue) {
+            // Replace bug with correct value
+            e.target.textContent = correctValue;
+            e.target.classList.remove('bug');
+            e.target.classList.add('fixed');
+            
+            // Increment bugs fixed counter
+            bugsFixed++;
+            updateDebugStatus();
+            
+            // Replace section content with fixed content
+            const section = e.target.closest('.section');
+            const fixedContent = section.querySelector('.fixed-content');
+            const sectionContent = section.querySelector('.section-content');
+            
+            // Add a terminal flicker effect
+            section.classList.add('flicker');
+            
+            setTimeout(() => {
+              // Show the fixed content
+              sectionContent.innerHTML = '';
+              fixedContent.classList.remove('hidden');
+              sectionContent.appendChild(fixedContent);
+              section.classList.remove('flicker');
+              
+              // Check if all bugs are fixed
+              checkAllBugsFixed();
+            }, 1000);
+          }
+        });
+      });
+    }
+    
+    function updateDebugStatus() {
+      const debugStatus = document.getElementById('debug-status');
+      debugStatus.textContent = `${bugsFixed}/${totalBugs} bugs fixed. ${bugsFixed === totalBugs ? 'All bugs fixed! Type "help" for more commands.' : 'Keep debugging!'}`;
+    }
+    
+    function checkAllBugsFixed() {
+      if (bugsFixed === totalBugs) {
+        // Add some celebration effect
+        setTimeout(() => {
+          alert('Congratulations! You found and fixed all bugs in the portfolio. Type "help" in the console for more hidden features!');
+        }, 1000);
+      }
+    }
+    
+    function setupDebugInput() {
+      const debugInput = document.getElementById('debug-input');
+      
+      debugInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const command = e.target.value.trim().toLowerCase();
+          handleCommand(command);
+          e.target.value = '';
+        }
+      });
+    }
+    
+    function handleCommand(command) {
+      switch (command) {
+        case 'help':
+          showHelp();
+          break;
+        case 'clear':
+          clearConsole();
+          break;
+        case 'about':
+          showAbout();
+          break;
+        case 'contact':
+          showContact();
+          break;
+        case 'projects':
+          listProjects();
+          break;
+        case 'fix all':
+          if (bugsFixed < totalBugs) {
+            fixAllBugs();
+          }
+          break;
+        default:
+          showUnknownCommand(command);
+          break;
+      }
+    }
+    
+    function showHelp() {
+      alert(`Available commands:
+      
+- help: Show this help message
+- clear: Clear the console
+- about: Show information about Geva Kipper
+- contact: Show contact information
+- projects: List all projects
+- fix all: Automatically fix all bugs (cheating!)
+      
+Try these commands in the debug console at the bottom of the page.`);
+    }
+    
+    function clearConsole() {
+      // Visual effect for clearing
+      document.body.classList.add('flicker');
+      
+      setTimeout(() => {
+        document.body.classList.remove('flicker');
+      }, 500);
+    }
+    
+    function showAbout() {
+      alert("Geva Kipper is a Machine Learning Engineer at Google, with expertise in computational geometry, data visualization, and web development.");
+    }
+    
+    function showContact() {
+      alert("Contact Geva Kipper:\n\nGitHub: github.com/gevak\nLinkedIn: linkedin.com/in/gevakip\nFacebook: facebook.com/geva.kipper");
+    }
+    
+    function listProjects() {
+      alert("Projects by Geva Kipper:\n\n1. GlglStats: Sound repetitiveness analysis\n2. Ahuzat Dibuk: Urban parking analysis\n3. 2D Part Orienting: Computational geometry\n4. Portfolio Website: This debug-driven portfolio");
+    }
+    
+    function fixAllBugs() {
+      const bugs = document.querySelectorAll('.bug');
+      
+      if (bugs.length > 0) {
+        // Fix all bugs with a delay between each
+        let index = 0;
+        
+        function fixNextBug() {
+          if (index < bugs.length) {
+            bugs[index].click();
+            index++;
+            setTimeout(fixNextBug, 1000);
+          }
+        }
+        
+        fixNextBug();
+      }
+    }
+    
+    function showUnknownCommand(command) {
+      const debugStatus = document.getElementById('debug-status');
+      const originalText = debugStatus.textContent;
+      
+      debugStatus.textContent = `Unknown command: '${command}'. Type 'help' for available commands.`;
+      setTimeout(() => {
+        debugStatus.textContent = originalText;
+      }, 3000);
+    }
+  </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250424",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>

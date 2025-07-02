@@ -1,0 +1,475 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper API</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #1a1a1a;
+            --bg-nav: #252526;
+            --text-main: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-blue: #00BFFF;
+            --font-mono: 'Fira Code', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .container {
+            display: flex;
+        }
+
+        /* Left Navigation Pane */
+        .nav-pane {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 300px;
+            height: 100vh;
+            background-color: var(--bg-nav);
+            padding: 2rem;
+            border-right: 1px solid #333;
+        }
+
+        .nav-pane h2 {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-weight: 400;
+        }
+
+        .nav-endpoints {
+            list-style: none;
+        }
+
+        .nav-endpoints li a {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            text-decoration: none;
+            color: var(--text-main);
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .nav-endpoints li a .http-method {
+            color: var(--accent-blue);
+            min-width: 40px;
+            font-weight: 500;
+        }
+
+        .nav-endpoints li a:hover {
+            background-color: rgba(0, 191, 255, 0.1);
+            color: var(--accent-blue);
+            text-shadow: 0 0 8px rgba(0, 191, 255, 0.5);
+        }
+
+        .nav-endpoints li a.active {
+            background-color: rgba(0, 191, 255, 0.15);
+            color: var(--accent-blue);
+            font-weight: 500;
+        }
+        
+        .loading-ellipsis {
+            display: inline-block;
+            margin-left: 8px;
+            animation: ellipsis-anim 1.4s infinite;
+        }
+
+        @keyframes ellipsis-anim {
+            0% { content: "."; }
+            33% { content: ".."; }
+            66% { content: "..."; }
+        }
+
+        /* Right Content Pane */
+        .content-pane {
+            margin-left: 300px; /* Same as nav-pane width */
+            padding: 3rem 4rem;
+            width: calc(100% - 300px);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-header h1 {
+            font-size: 3rem;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        .content-header .role {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin-top: 0.5rem;
+        }
+
+        .status-message {
+            display: flex;
+            align-items: center;
+            margin-top: 2rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background-color: #202020;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent-blue);
+            border-radius: 50%;
+            margin-right: 0.75rem;
+            box-shadow: 0 0 8px var(--accent-blue);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 6px var(--accent-blue); }
+            50% { box-shadow: 0 0 12px var(--accent-blue); }
+            100% { box-shadow: 0 0 6px var(--accent-blue); }
+        }
+
+        .blinking-cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2rem;
+            background-color: var(--text-main);
+            animation: blink 1s step-end infinite;
+            margin-left: 4px;
+            vertical-align: bottom;
+        }
+
+        @keyframes blink {
+            from, to { background-color: transparent; }
+            50% { background-color: var(--text-main); }
+        }
+
+        #response-container {
+            margin-top: 2.5rem;
+            flex-grow: 1;
+            transition: opacity 0.4s ease-in-out;
+        }
+
+        #response-container.loading {
+            opacity: 0.3;
+        }
+        
+        #response-content {
+            background-color: #202020;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 1.5rem;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        .json-key { color: var(--accent-blue); }
+        .json-string { color: var(--text-main); }
+        .json-boolean { color: #d8a0df; }
+        .json-link {
+            color: #9cdcfe;
+            text-decoration: none;
+            transition: text-decoration 0.2s;
+        }
+        .json-link:hover { text-decoration: underline; }
+
+        .youtube-embed {
+            margin-top: 1.5rem;
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            overflow: hidden;
+            max-width: 100%;
+            background: #000;
+             border-radius: 4px;
+        }
+
+        .youtube-embed iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem 0 1rem 0;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+        .footer .credit {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .container { flex-direction: column; }
+            .nav-pane {
+                position: relative;
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid #333;
+            }
+            .content-pane {
+                margin-left: 0;
+                width: 100%;
+                padding: 2rem;
+            }
+             .content-header h1 { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="nav-pane">
+            <h2>// ENDPOINTS</h2>
+            <ul class="nav-endpoints">
+                <li><a href="#" data-endpoint="/projects/glglstats"><span class="http-method">GET</span>/projects/glglstats</a></li>
+                <li><a href="#" data-endpoint="/projects/ahuzat_dibuk"><span class="http-method">GET</span>/projects/ahuzat_dibuk</a></li>
+                <li><a href="#" data-endpoint="/projects/2d_part_orienting"><span class="http-method">GET</span>/projects/2d_part_orienting</a></li>
+                <li><a href="#" data-endpoint="/source"><span class="http-method">GET</span>/source</a></li>
+                <li><a href="#" data-endpoint="/contact_info"><span class="http-method">GET</span>/contact_info</a></li>
+            </ul>
+        </nav>
+
+        <main class="content-pane">
+            <header class="content-header">
+                <h1>Geva Kipper</h1>
+                <p class="role">Software Engineer at Google, focusing on large-scale data processing and infrastructure.</p>
+                <div class="status-message">
+                    <div class="status-dot"></div>
+                    SYSTEM STATUS: This interface is procedurally regenerated by a design AI every 24 hours. Current build is volatile.<span class="blinking-cursor">_</span>
+                </div>
+            </header>
+
+            <div id="response-container">
+                <!-- Content will be injected here -->
+            </div>
+
+            <footer class="footer">
+                <p class="credit">> Site architecture &amp; design generated by a GPT-4 instance.</p>
+                <div class="stopwatch">
+                    AI_INSTANCE_UPTIME: <span id="uptime-timer">00:00:00</span>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- DATA STORE ---
+            const portfolioData = {
+                "/projects/glglstats": {
+                    "project_name": "GlglStats",
+                    "description": "A Python project measuring the repetitiveness of Israeli pop-chart songs using LZ77 compression, including visualizations of repetition patterns.",
+                    "stack": ["Python", "LZ77", "Data Visualization"],
+                    "assets": {
+                        "live_site": "https://glglstats.onrender.com/",
+                        "conference_talk": "https://www.youtube.com/watch?v=jrKAtOsj1Lo"
+                    }
+                },
+                "/projects/ahuzat_dibuk": {
+                    "project_name": "Ahuzat Dibuk",
+                    "description": "A Python scraping and data visualization project that collects and analyzes occupancy statistics for Tel-Aviv parking lots, generating heat-maps for public use.",
+                    "press": {
+                        "13tv_news": "https://13tv.co.il/item/news/domestic/internal/parking-902956407/",
+                        "mako_nexter": "https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm",
+                        "original_publication": "https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943"
+                    }
+                },
+                "/projects/2d_part_orienting": {
+                    "project_name": "2D Part Orienting",
+                    "description": "A C++ implementation of an efficient algorithm that constructs a 'push plan' to orient any given polygon, contributed to an open-source computational geometry library.",
+                    "stack": ["C++", "Computational Geometry", "Algorithm Design"],
+                    "repository": "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/"
+                },
+                "/source": {
+                    "project_name": "Dynamic API Portfolio",
+                    "description": "A self-referential portfolio concept designed to appear as an API documentation page. The user interface you are currently interacting with.",
+                    "is_meta": true,
+                    "live_instance": "https://portfolio-dor1.onrender.com/"
+                },
+                "/contact_info": {
+                    "message": "Feel free to connect or browse my work.",
+                    "channels": {
+                        "github": "github.com/gevak",
+                        "linkedin": "linkedin.com/in/gevakip",
+                        "facebook": "facebook.com/geva.kipper"
+                    }
+                }
+            };
+            
+            const responseContainer = document.getElementById('response-container');
+            const navLinks = document.querySelectorAll('.nav-endpoints a');
+
+            // --- JSON TO HTML FORMATTER ---
+            function valueToHtml(value, indentLevel) {
+                if (typeof value === 'string') {
+                    const href = value.startsWith('www.') ? `https://${value}` : value;
+                    if (value.startsWith('http') || value.startsWith('www.')) {
+                        return `"<a href="${href}" target="_blank" rel="noopener noreferrer" class="json-link">${value}</a>"`;
+                    }
+                    return `<span class="json-string">"${value}"</span>`;
+                }
+                if (typeof value === 'boolean') return `<span class="json-boolean">${value}</span>`;
+                if (Array.isArray(value)) {
+                    const items = value.map(item => `${'  '.repeat(indentLevel + 1)}${valueToHtml(item, indentLevel + 1)}`).join(',\n');
+                    return `[\n${items}\n${'  '.repeat(indentLevel)}]`;
+                }
+                if (typeof value === 'object' && value !== null) {
+                    return objectToHtml(value, indentLevel + 1);
+                }
+                return `<span class="json-value">${value}</span>`;
+            }
+
+            function objectToHtml(obj, indentLevel = 1) {
+                const indent = '  '.repeat(indentLevel);
+                const keys = Object.keys(obj);
+                const entries = keys.map((key, index) => {
+                    const value = obj[key];
+                    const isLast = index === keys.length - 1;
+                    return `${indent}<span class="json-key">"${key}"</span>: ${valueToHtml(value, indentLevel)}${isLast ? '' : ','}`;
+                }).join('\n');
+                return `{\n${entries}\n${'  '.repeat(indentLevel - 1)}}`;
+            }
+            
+            // --- CONTENT RENDERING ---
+            function renderContent(endpoint) {
+                const data = portfolioData[endpoint];
+                if (!data) return;
+
+                const formattedJson = objectToHtml(data);
+                
+                let contentHtml = `
+                    <div id="response-content">
+                        <pre><code>${formattedJson}</code></pre>
+                    </div>
+                `;
+
+                // Special case for YouTube embed
+                if (endpoint === '/projects/glglstats' && data.assets && data.assets.conference_talk) {
+                    const videoUrl = data.assets.conference_talk;
+                    const videoId = videoUrl.split('v=')[1];
+                    if (videoId) {
+                        const embedUrl = `https://www.youtube.com/embed/${videoId.split('&')[0]}`;
+                        contentHtml += `
+                            <div class="youtube-embed">
+                                <iframe src="${embedUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                            </div>
+                        `;
+                    }
+                }
+                
+                responseContainer.innerHTML = contentHtml;
+            }
+
+            // --- EVENT HANDLING & INTERACTIVITY ---
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    const currentActive = document.querySelector('.nav-endpoints a.active');
+                    if(currentActive === link) return;
+
+                    // Update active state
+                    if (currentActive) currentActive.classList.remove('active');
+                    link.classList.add('active');
+                    
+                    // Show loading state
+                    responseContainer.classList.add('loading');
+                    const originalText = link.innerHTML;
+                    link.innerHTML += ' <span class="loading-ellipsis">...</span>';
+
+
+                    setTimeout(() => {
+                        const endpoint = link.getAttribute('data-endpoint');
+                        renderContent(endpoint);
+                        responseContainer.classList.remove('loading');
+                        link.innerHTML = originalText;
+                        link.classList.add('active'); // re-add active class after innerHTML reset
+                    }, 500); // Simulate network delay
+                });
+            });
+
+            // --- UPTIME TIMER ---
+            const timerSpan = document.getElementById('uptime-timer');
+            const aiStartDate = new Date('2025-06-09T01:11:32');
+
+            function updateTimer() {
+                const now = new Date();
+                const diff = now - aiStartDate;
+
+                if (diff < 0) {
+                    timerSpan.textContent = '00:00:00 [Awaiting sync]';
+                    return;
+                }
+
+                const totalSeconds = Math.floor(diff / 1000);
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+                
+                const format = (num) => String(num).padStart(2, '0');
+                
+                timerSpan.textContent = `${format(hours)}:${format(minutes)}:${format(seconds)}`;
+            }
+
+            // --- INITIALIZATION ---
+            function init() {
+                // Set initial content
+                const initialLink = document.querySelector('.nav-endpoints a');
+                if (initialLink) {
+                    initialLink.classList.add('active');
+                    const initialEndpoint = initialLink.getAttribute('data-endpoint');
+                    renderContent(initialEndpoint);
+                }
+
+                // Start timer
+                setInterval(updateTimer, 1000);
+                updateTimer();
+            }
+
+            init();
+        });
+    </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250609",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,580 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dor Portfolio - Code Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .editor-container {
+            display: flex;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: #2d2d30;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .sidebar-toggle {
+            width: 50px;
+            height: 100%;
+            background-color: #2d2d30;
+            border: none;
+            color: #cccccc;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-toggle:hover {
+            background-color: #3e3e42;
+        }
+
+        .main-area {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 0;
+            background-color: #252526;
+            border-right: 1px solid #3e3e42;
+            transition: width 0.3s ease;
+            overflow: hidden;
+        }
+
+        .sidebar.open {
+            width: 250px;
+        }
+
+        .sidebar-content {
+            padding: 10px;
+            min-width: 250px;
+        }
+
+        .file-tree {
+            list-style: none;
+        }
+
+        .file-tree li {
+            padding: 2px 0;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .file-tree li:hover {
+            background-color: #2a2d2e;
+        }
+
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tab-bar {
+            display: flex;
+            background-color: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            background-color: #2d2d30;
+            border: none;
+            color: #969696;
+            cursor: pointer;
+            border-right: 1px solid #3e3e42;
+            white-space: nowrap;
+            font-size: 13px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .tab:hover {
+            background-color: #1e1e1e;
+        }
+
+        .tab.active {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            box-shadow: 0 -2px 0 #007acc inset;
+        }
+
+        .editor-content {
+            flex: 1;
+            background-color: #1e1e1e;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .code-section {
+            display: none;
+            animation: typeIn 0.5s ease-out;
+        }
+
+        .code-section.active {
+            display: block;
+        }
+
+        @keyframes typeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.2em;
+            background-color: #ffffff;
+            animation: blink 1s infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .line-numbers {
+            display: inline-block;
+            width: 40px;
+            color: #858585;
+            text-align: right;
+            margin-right: 20px;
+            vertical-align: top;
+            user-select: none;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .code-content {
+            display: inline-block;
+            width: calc(100% - 60px);
+            vertical-align: top;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Syntax Highlighting */
+        .keyword { color: #569cd6; }
+        .string { color: #ce9178; }
+        .comment { color: #6a9955; }
+        .function { color: #dcdcaa; }
+        .number { color: #b5cea8; }
+        .operator { color: #d4d4d4; }
+        .tag { color: #92c5f8; }
+        .attribute { color: #9cdcfe; }
+        .link { color: #4fc1ff; text-decoration: underline; }
+        .type { color: #4ec9b0; }
+        .variable { color: #9cdcfe; }
+
+        .status-bar {
+            background-color: #007acc;
+            color: #ffffff;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            font-size: 12px;
+            justify-content: space-between;
+        }
+
+        .status-left {
+            display: flex;
+            gap: 15px;
+        }
+
+        .status-right {
+            display: flex;
+            gap: 15px;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: underline;
+        }
+
+        a:hover {
+            color: #4fc1ff;
+        }
+
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="editor-container">
+        <div class="header">
+            <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+        </div>
+        
+        <div class="main-area">
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-content">
+                    <h3 style="color: #cccccc; margin-bottom: 10px;">EXPLORER</h3>
+                    <ul class="file-tree">
+                        <li onclick="switchTab('about')">📄 about.js</li>
+                        <li onclick="switchTab('glglstats')">🐍 glglstats.py</li>
+                        <li onclick="switchTab('parking')">🐍 parking.py</li>
+                        <li onclick="switchTab('geometry')">⚡ geometry.cpp</li>
+                        <li onclick="switchTab('portfolio')">🌐 portfolio.html</li>
+                        <li onclick="switchTab('contact')">📝 contact.md</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="editor-area">
+                <div class="tab-bar">
+                    <button class="tab active" onclick="switchTab('about')">about.js</button>
+                    <button class="tab" onclick="switchTab('glglstats')">glglstats.py</button>
+                    <button class="tab" onclick="switchTab('parking')">parking.py</button>
+                    <button class="tab" onclick="switchTab('geometry')">geometry.cpp</button>
+                    <button class="tab" onclick="switchTab('portfolio')">portfolio.html</button>
+                    <button class="tab" onclick="switchTab('contact')">contact.md</button>
+                </div>
+
+                <div class="editor-content" id="editor-content">
+                    <!-- About Section -->
+                    <div class="code-section active" id="about-section">
+                        <div class="line-numbers">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12<br>13<br>14<br>15<br>16<br>17<br>18<br>19<br>20</div>
+                        <div class="code-content">
+                            <pre><span class="comment">/**</span>
+<span class="comment"> * Software Engineer & Full-Stack Developer</span>
+<span class="comment"> * Specializing in Python, JavaScript, and C++</span>
+<span class="comment"> * @author Dor Kipper (Geva)</span>
+<span class="comment"> */</span>
+
+<span class="keyword">class</span> <span class="type">SoftwareEngineer</span> {
+    <span class="keyword">constructor</span>() {
+        <span class="keyword">this</span>.<span class="variable">name</span> = <span class="string">"Dor Kipper (Geva)"</span>;
+        <span class="keyword">this</span>.<span class="variable">role</span> = <span class="string">"Full-Stack Developer"</span>;
+        <span class="keyword">this</span>.<span class="variable">skills</span> = [<span class="string">"Python"</span>, <span class="string">"JavaScript"</span>, <span class="string">"C++"</span>, <span class="string">"React"</span>, <span class="string">"Node.js"</span>];
+        <span class="keyword">this</span>.<span class="variable">passion</span> = <span class="string">"Creating innovative solutions through code"</span>;
+    }
+
+    <span class="function">getExperience</span>() {
+        <span class="keyword">return</span> <span class="string">"Experienced in web development, data analysis, and algorithmic problem solving"</span>;
+    }
+
+    <span class="comment">// Always learning, always coding...</span><span class="cursor"></span>
+}</pre>
+                        </div>
+                    </div>
+
+                    <!-- GlglStats Section -->
+                    <div class="code-section" id="glglstats-section">
+                        <div class="line-numbers">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12<br>13<br>14<br>15<br>16<br>17<br>18<br>19<br>20<br>21<br>22<br>23<br>24<br>25</div>
+                        <div class="code-content">
+                            <pre><span class="comment">"""</span>
+<span class="comment">GlglStats - Advanced Political Data Analysis Platform</span>
+<span class="comment">Real-time visualization of political trends and voting patterns</span>
+<span class="comment">Technologies: Python, Flask, JavaScript, D3.js, PostgreSQL</span>
+<span class="comment">"""</span>
+
+<span class="keyword">import</span> <span class="variable">real_time_data_processing</span>
+<span class="keyword">import</span> <span class="variable">advanced_visualization</span>
+<span class="keyword">from</span> <span class="variable">political_analysis</span> <span class="keyword">import</span> <span class="function">trend_detection</span>
+
+<span class="keyword">class</span> <span class="type">GlglStatsAnalyzer</span>:
+    <span class="comment"># Live demo available at:</span>
+    <span class="variable">DEMO_URL</span> = <span class="string">"<a href="https://glglstats.onrender.com/" target="_blank" class="link">https://glglstats.onrender.com/</a>"</span>
+    
+    <span class="keyword">def</span> <span class="function">__init__</span>(<span class="variable">self</span>):
+        <span class="variable">self</span>.<span class="variable">features</span> = [
+            <span class="string">"Real-time political data aggregation"</span>,
+            <span class="string">"Interactive data visualizations"</span>,
+            <span class="string">"Trend analysis and predictions"</span>,
+            <span class="string">"Multi-platform responsive design"</span>
+        ]
+    
+    <span class="keyword">def</span> <span class="function">watch_conference_presentation</span>(<span class="variable">self</span>):
+        <span class="keyword">return</span> <span class="string">"<a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="link">Conference Presentation Video</a>"</span><span class="cursor"></span></pre>
+                        </div>
+                    </div>
+
+                    <!-- Parking Section -->
+                    <div class="code-section" id="parking-section">
+                        <div class="line-numbers">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12<br>13<br>14<br>15<br>16<br>17<br>18<br>19<br>20<br>21<br>22<br>23<br>24</div>
+                        <div class="code-content">
+                            <pre><span class="comment">"""</span>
+<span class="comment">Ahuzat Dibuk - Tel Aviv Parking Data Analysis</span>
+<span class="comment">Heat-map visualization of parking fines across Tel Aviv</span>
+<span class="comment">Technologies: Python, Pandas, Matplotlib, Folium</span>
+<span class="comment">"""</span>
+
+<span class="keyword">import</span> <span class="variable">pandas</span> <span class="keyword">as</span> <span class="variable">pd</span>
+<span class="keyword">import</span> <span class="variable">folium</span>
+<span class="keyword">from</span> <span class="variable">data_analysis</span> <span class="keyword">import</span> <span class="function">create_heatmap</span>
+
+<span class="comment"># Original publication and media coverage:</span>
+<span class="variable">FACEBOOK_POST</span> = <span class="string">"<a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="link">Secret Tel Aviv Group Post</a>"</span>
+
+<span class="variable">MEDIA_COVERAGE</span> = [
+    <span class="string">"<a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="link">Channel 13 News Coverage</a>"</span>,
+    <span class="string">"<a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="link">Mako News Article</a>"</span>
+]
+
+<span class="keyword">def</span> <span class="function">analyze_parking_patterns</span>(<span class="variable">data</span>):
+    <span class="comment"># Created comprehensive heat-map visualization</span>
+    <span class="comment"># showing parking fine distribution across Tel Aviv</span>
+    <span class="comment"># Gained significant media attention and public interest</span>
+    <span class="keyword">return</span> <span class="function">generate_insights</span>(<span class="variable">data</span>)<span class="cursor"></span></pre>
+                        </div>
+                    </div>
+
+                    <!-- Geometry Section -->
+                    <div class="code-section" id="geometry-section">
+                        <div class="line-numbers">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12<br>13<br>14<br>15<br>16<br>17<br>18<br>19<br>20<br>21<br>22<br>23</div>
+                        <div class="code-content">
+                            <pre><span class="comment">/*</span>
+<span class="comment"> * 2D Part Orienting Algorithm</span>
+<span class="comment"> * Computational Geometry Research Project</span>
+<span class="comment"> * Tel Aviv University - Computer Graphics Lab</span>
+<span class="comment"> */</span>
+
+<span class="keyword">#include</span> <span class="string">&lt;vector&gt;</span>
+<span class="keyword">#include</span> <span class="string">&lt;algorithm&gt;</span>
+<span class="keyword">#include</span> <span class="string">&lt;geometry_utils.h&gt;</span>
+
+<span class="keyword">class</span> <span class="type">PartOrientingAlgorithm</span> {
+<span class="keyword">private</span>:
+    <span class="comment">// Project details and source code available at:</span>
+    <span class="comment">// <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="link">https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/</a></span>
+    
+<span class="keyword">public</span>:
+    <span class="type">OptimalOrientation</span> <span class="function">findOptimalOrientation</span>(<span class="type">Polygon2D</span> <span class="variable">part</span>) {
+        <span class="comment">// Advanced algorithm for optimal 2D shape orientation</span>
+        <span class="comment">// Minimizes material waste in manufacturing processes</span>
+        <span class="keyword">return</span> <span class="function">computeOptimalFit</span>(<span class="variable">part</span>);
+    }
+};<span class="cursor"></span></pre>
+                        </div>
+                    </div>
+
+                    <!-- Portfolio Section -->
+                    <div class="code-section" id="portfolio-section">
+                        <div class="line-numbers">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12<br>13<br>14<br>15<br>16<br>17<br>18<br>19<br>20<br>21<br>22</div>
+                        <div class="code-content">
+                            <pre><span class="tag">&lt;!DOCTYPE html&gt;</span>
+<span class="tag">&lt;html</span> <span class="attribute">lang</span>=<span class="string">"en"</span><span class="tag">&gt;</span>
+<span class="tag">&lt;head&gt;</span>
+    <span class="tag">&lt;title&gt;</span>Meta Portfolio - A Portfolio About This Portfolio<span class="tag">&lt;/title&gt;</span>
+    <span class="comment">&lt;!-- Recursive reference: This portfolio showcases itself --&gt;</span>
+<span class="tag">&lt;/head&gt;</span>
+<span class="tag">&lt;body&gt;</span>
+    <span class="tag">&lt;div</span> <span class="attribute">class</span>=<span class="string">"portfolio-inception"</span><span class="tag">&gt;</span>
+        <span class="comment">&lt;!-- Live at: <a href="https://portfolio-dor1.onrender.com/" target="_blank" class="link">https://portfolio-dor1.onrender.com/</a> --&gt;</span>
+        
+        <span class="tag">&lt;script&gt;</span>
+            <span class="keyword">const</span> <span class="variable">portfolioData</span> = {
+                <span class="variable">concept</span>: <span class="string">"Code editor themed portfolio"</span>,
+                <span class="variable">technologies</span>: [<span class="string">"HTML5"</span>, <span class="string">"CSS3"</span>, <span class="string">"Vanilla JavaScript"</span>],
+                <span class="variable">features</span>: [<span class="string">"Syntax highlighting"</span>, <span class="string">"Tab navigation"</span>, <span class="string">"Responsive design"</span>],
+                <span class="function">recursion</span>() {
+                    <span class="keyword">return</span> <span class="string">"This section describes the portfolio you're currently viewing"</span>;
+                }
+            };
+        <span class="tag">&lt;/script&gt;</span>
+    <span class="tag">&lt;/div&gt;</span><span class="cursor"></span></pre>
+                        </div>
+                    </div>
+
+                    <!-- Contact Section -->
+                    <div class="code-section" id="contact-section">
+                        <div class="line-numbers">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12<br>13<br>14<br>15<br>16<br>17<br>18<br>19</div>
+                        <div class="code-content">
+                            <pre><span class="comment"># Contact Information</span>
+
+<span class="keyword">##</span> <span class="function">Get In Touch</span>
+
+<span class="string">Let's connect and discuss opportunities, collaborations, or just chat about code!</span>
+
+<span class="keyword">###</span> <span class="function">Professional Links</span>
+
+- <span class="keyword">**GitHub:**</span> <span class="string"><a href="https://github.com/gevak" target="_blank" class="link">github.com/gevak</a></span>
+- <span class="keyword">**LinkedIn:**</span> <span class="string"><a href="https://linkedin.com/in/gevakip" target="_blank" class="link">linkedin.com/in/gevakip</a></span>  
+- <span class="keyword">**Facebook:**</span> <span class="string"><a href="https://facebook.com/geva.kipper" target="_blank" class="link">facebook.com/geva.kipper</a></span>
+
+<span class="keyword">###</span> <span class="function">Current Status</span>
+
+<span class="string">🟢 Available for new opportunities</span>
+<span class="string">💻 Open to freelance projects</span>
+<span class="string">🤝 Interested in collaboration</span>
+
+<span class="comment"><!-- Always excited to work on innovative projects --></span><span class="cursor"></span></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-left">
+                <span id="current-file">about.js</span>
+                <span id="line-col">Ln 1, Col 1</span>
+                <span>UTF-8</span>
+                <span>JavaScript</span>
+            </div>
+            <div class="status-right">
+                <span id="stopwatch">Time active: 0d 0h 0m 0s</span>
+                <span>// AI-assisted development</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize portfolio
+        const startDate = new Date('2024-01-01'); // Set your desired start date
+        let currentTab = 'about';
+        let sidebarOpen = false;
+
+        // Tab switching functionality
+        function switchTab(tabName) {
+            // Update active tab
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update active section
+            document.querySelectorAll('.code-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(tabName + '-section').classList.add('active');
+
+            // Update status bar
+            const fileNames = {
+                'about': 'about.js',
+                'glglstats': 'glglstats.py',
+                'parking': 'parking.py',
+                'geometry': 'geometry.cpp',
+                'portfolio': 'portfolio.html',
+                'contact': 'contact.md'
+            };
+            
+            document.getElementById('current-file').textContent = fileNames[tabName];
+            currentTab = tabName;
+        }
+
+        // Sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebarOpen = !sidebarOpen;
+            
+            if (sidebarOpen) {
+                sidebar.classList.add('open');
+            } else {
+                sidebar.classList.remove('open');
+            }
+        }
+
+        // Update stopwatch
+        function updateStopwatch() {
+            const now = new Date();
+            const diff = now - startDate;
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            document.getElementById('stopwatch').textContent = 
+                `Time active: ${days}d ${hours}h ${minutes}m ${seconds}s`;
+        }
+
+        // Update line/column numbers on scroll
+        function updateLineCol() {
+            const editor = document.getElementById('editor-content');
+            const scrollPercent = editor.scrollTop / (editor.scrollHeight - editor.clientHeight);
+            const totalLines = document.querySelector('.code-section.active .line-numbers').textContent.split('\n').length;
+            const currentLine = Math.floor(scrollPercent * totalLines) + 1;
+            
+            document.getElementById('line-col').textContent = `Ln ${currentLine}, Col 1`;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStopwatch();
+            setInterval(updateStopwatch, 1000);
+            
+            document.getElementById('editor-content').addEventListener('scroll', updateLineCol);
+            
+            // Add click handlers for sidebar files
+            document.querySelectorAll('.file-tree li').forEach((item, index) => {
+                const tabs = ['about', 'glglstats', 'parking', 'geometry', 'portfolio', 'contact'];
+                item.addEventListener('click', function() {
+                    // Find corresponding tab button and trigger click
+                    const tabButtons = document.querySelectorAll('.tab');
+                    if (tabButtons[index]) {
+                        tabButtons[index].click();
+                    }
+                });
+            });
+        });
+
+        // Handle keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey) {
+                switch(e.key) {
+                    case 'b':
+                        e.preventDefault();
+                        toggleSidebar();
+                        break;
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                        e.preventDefault();
+                        const tabs = ['about', 'glglstats', 'parking', 'geometry', 'portfolio', 'contact'];
+                        const tabIndex = parseInt(e.key) - 1;
+                        if (tabs[tabIndex]) {
+                            document.querySelectorAll('.tab')[tabIndex].click();
+                        }
+                        break;
+                }
+            }
+        });
+    </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250526",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>

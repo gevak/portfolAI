@@ -1,0 +1,1023 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geva Kipper - Digital Subway Portfolio</title>
+  <style>
+    :root {
+      --red-line: #e74c3c;
+      --blue-line: #3498db;
+      --green-line: #2ecc71;
+      --yellow-line: #f1c40f;
+      --gray-line: #95a5a6;
+      --background: #f8f9fa;
+      --text-dark: #2c3e50;
+      --text-light: #ecf0f1;
+      --station-color: #fff;
+      --station-border: #333;
+      --interchange-color: #fff;
+      --modal-background: #f8f9fa;
+      --header-height: 120px;
+    }
+
+    @font-face {
+      font-family: 'TransitFont';
+      src: url('https://fonts.googleapis.com/css2?family=Barlow:wght@500;700&display=swap');
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Barlow', 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--background);
+      color: var(--text-dark);
+      overflow-x: hidden;
+    }
+
+    header {
+      background-color: var(--text-dark);
+      color: var(--text-light);
+      padding: 1.5rem;
+      position: fixed;
+      width: 100%;
+      top: 0;
+      z-index: 100;
+      height: var(--header-height);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-content {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .header-title {
+      font-family: 'TransitFont', 'Barlow', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .header-subtitle {
+      font-size: 1rem;
+      font-weight: 400;
+      opacity: 0.9;
+    }
+
+    .ticker-display {
+      font-family: monospace;
+      background-color: #000;
+      color: #f8f9fa;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      width: fit-content;
+      margin-top: 0.5rem;
+      animation: blink 2s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .nav-controls {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .line-button {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 50px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .line-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .line-button.red { background-color: var(--red-line); }
+    .line-button.blue { background-color: var(--blue-line); }
+    .line-button.green { background-color: var(--green-line); }
+    .line-button.yellow { background-color: var(--yellow-line); color: #333; }
+    .line-button.gray { background-color: var(--gray-line); }
+    .line-button.all { background-color: #333; }
+
+    main {
+      margin-top: calc(var(--header-height) + 20px);
+      padding: 1rem;
+      position: relative;
+    }
+
+    .map-container {
+      position: relative;
+      width: 100%;
+      height: 80vh;
+      overflow: hidden;
+      background-color: #f0f0f0;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .subway-map {
+      position: absolute;
+      width: 2000px;
+      height: 1500px;
+      transform-origin: center;
+      transition: transform 0.3s ease;
+    }
+
+    .map-controls {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      gap: 0.5rem;
+      z-index: 10;
+    }
+
+    .zoom-control {
+      width: 36px;
+      height: 36px;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.2rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .line {
+      position: absolute;
+      height: 8px;
+      border-radius: 4px;
+    }
+
+    .line.red { background-color: var(--red-line); }
+    .line.blue { background-color: var(--blue-line); }
+    .line.green { background-color: var(--green-line); }
+    .line.yellow { background-color: var(--yellow-line); }
+    .line.gray { background-color: var(--gray-line); }
+
+    .station {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background-color: var(--station-color);
+      border: 3px solid var(--station-border);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      z-index: 5;
+      transition: all 0.3s ease;
+    }
+
+    .station:hover, .station.highlighted {
+      transform: translate(-50%, -50%) scale(1.3);
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
+      z-index: 6;
+    }
+
+    .station.interchange {
+      width: 26px;
+      height: 26px;
+      background-color: var(--interchange-color);
+      border: 4px solid var(--station-border);
+    }
+
+    .station-label {
+      position: absolute;
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 6px;
+      background-color: rgba(255, 255, 255, 0.9);
+      border-radius: 3px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      z-index: 4;
+    }
+
+    .station:hover + .station-label, .station.highlighted + .station-label {
+      opacity: 1;
+      z-index: 7;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 200;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .project-modal {
+      width: 90%;
+      max-width: 600px;
+      background-color: var(--modal-background);
+      border-radius: 8px;
+      padding: 2rem;
+      position: relative;
+      transform: translateY(-20px);
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-overlay.active .project-modal {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .modal-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.5rem;
+      color: white;
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .modal-subtitle {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .modal-content {
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-links {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .modal-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background-color: var(--text-dark);
+      color: var(--text-light);
+      text-decoration: none;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .modal-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      font-size: 1.5rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #666;
+    }
+
+    .close-modal:hover {
+      color: #333;
+    }
+
+    .terminal-text {
+      background-color: #282a36;
+      color: #f8f8f2;
+      font-family: 'Courier New', monospace;
+      padding: 1rem;
+      border-radius: 4px;
+      margin: 1rem 0;
+    }
+
+    .media-coverage {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .media-link {
+      display: flex;
+      align-items: center;
+      padding: 0.25rem 0.5rem;
+      background-color: #eee;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      text-decoration: none;
+      color: var(--text-dark);
+    }
+
+    .media-link:hover {
+      background-color: #ddd;
+    }
+
+    footer {
+      background-color: var(--text-dark);
+      color: var(--text-light);
+      padding: 1.5rem;
+      text-align: center;
+      margin-top: 2rem;
+      border-top: 4px solid #333;
+    }
+
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .transit-clock {
+      font-family: 'Courier New', monospace;
+      font-size: 1.2rem;
+      letter-spacing: 1px;
+      cursor: pointer;
+      background-color: #000;
+      padding: 0.5rem;
+      border-radius: 4px;
+    }
+
+    .service-announcement {
+      background-color: #f39c12;
+      color: black;
+      padding: 1rem;
+      margin-top: 1rem;
+      border-radius: 4px;
+      display: none;
+    }
+
+    .service-announcement.active {
+      display: block;
+      animation: slideDown 0.3s forwards;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Responsive styles */
+    @media (max-width: 768px) {
+      .header-title {
+        font-size: 1.8rem;
+      }
+      
+      .header-subtitle {
+        font-size: 0.9rem;
+      }
+      
+      .subway-map {
+        transform-origin: top left;
+      }
+      
+      .nav-controls {
+        flex-wrap: wrap;
+      }
+      
+      .modal-links {
+        flex-direction: column;
+      }
+      
+      .footer-content {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .map-container {
+        height: 60vh;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header-title {
+        font-size: 1.5rem;
+      }
+      
+      .subway-map {
+        width: 100%;
+        height: auto;
+      }
+      
+      .line-button {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <h1 class="header-title">GEVA KIPPER</h1>
+      <p class="header-subtitle">Senior Software Engineer at Google, focusing on cloud infrastructure and reliability systems</p>
+      <div class="ticker-display" id="ticker">This portfolio is redesigned daily by AI and is ever-changing - today's design generated on <span id="current-date"></span></div>
+    </div>
+    <div class="nav-controls">
+      <button class="line-button all" data-line="all">All Lines</button>
+      <button class="line-button red" data-line="red">Programming Projects</button>
+      <button class="line-button blue" data-line="blue">Data Science</button>
+      <button class="line-button green" data-line="green">Computational Geometry</button>
+      <button class="line-button yellow" data-line="yellow">Web Development</button>
+      <button class="line-button gray" data-line="gray">Professional Experience</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="map-container">
+      <div class="subway-map" id="subway-map">
+        <!-- Lines will be dynamically generated -->
+        <!-- Stations will be dynamically generated -->
+      </div>
+      <div class="map-controls">
+        <div class="zoom-control" id="zoom-in">+</div>
+        <div class="zoom-control" id="zoom-out">−</div>
+        <div class="zoom-control" id="zoom-reset">⟲</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modals -->
+  <div class="modal-overlay" id="glglstats-modal">
+    <div class="project-modal">
+      <div class="modal-header">
+        <div class="modal-icon" style="background-color: var(--red-line);">
+          <i>🎵</i>
+        </div>
+        <div>
+          <h2 class="modal-title">GlglStats Station</h2>
+          <p class="modal-subtitle">Music Data Visualization & Analysis</p>
+        </div>
+      </div>
+      <button class="close-modal">&times;</button>
+      <div class="modal-content">
+        <p>A comprehensive digital platform for analyzing and visualizing music statistics. This project combines data science with interactive web interfaces to provide insights into music consumption patterns.</p>
+        <div class="terminal-text">
+          $ ./analyze_music_data.py<br>
+          > Loading datasets...<br>
+          > Processing 10,493 tracks<br>
+          > Generating insights...<br>
+          > Visualization complete!
+        </div>
+        <div class="modal-links">
+          <a href="https://glglstats.onrender.com/" class="modal-link" target="_blank">
+            <span>↗</span> Live Demo
+          </a>
+          <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" class="modal-link" target="_blank">
+            <span>🎬</span> Conference Talk
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="ahuzat-modal">
+    <div class="project-modal">
+      <div class="modal-header">
+        <div class="modal-icon" style="background-color: var(--blue-line);">
+          <i>🅿️</i>
+        </div>
+        <div>
+          <h2 class="modal-title">Ahuzat Dibuk Station</h2>
+          <p class="modal-subtitle">Urban Parking Analysis & Visualization</p>
+        </div>
+      </div>
+      <button class="close-modal">&times;</button>
+      <div class="modal-content">
+        <p>An innovative solution for urban parking problems, using data visualization and heatmaps to identify optimal parking locations in dense urban environments. The project received significant media coverage for its practical applications.</p>
+        <img src="https://via.placeholder.com/500x250?text=Parking+Heatmap+Visualization" alt="Parking Heatmap" style="width: 100%; border-radius: 4px; margin: 1rem 0;">
+        <p>Media Coverage:</p>
+        <div class="media-coverage">
+          <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" class="media-link" target="_blank">13TV News</a>
+          <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" class="media-link" target="_blank">Mako Nexter</a>
+          <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" class="media-link" target="_blank">Secret Tel Aviv</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="orienting-modal">
+    <div class="project-modal">
+      <div class="modal-header">
+        <div class="modal-icon" style="background-color: var(--green-line);">
+          <i>📐</i>
+        </div>
+        <div>
+          <h2 class="modal-title">2D Part Orienting Station</h2>
+          <p class="modal-subtitle">Computational Geometry Research</p>
+        </div>
+      </div>
+      <button class="close-modal">&times;</button>
+      <div class="modal-content">
+        <p>An advanced computational geometry algorithm that solves the problem of orienting parts in two dimensions. This research project developed efficient solutions for robotics and manufacturing applications.</p>
+        <div style="display: flex; justify-content: center;">
+          <div style="width: 300px; height: 150px; background-color: #eee; display: flex; justify-content: center; align-items: center; margin: 1rem 0; border-radius: 4px;">
+            <div style="width: 80px; height: 80px; background-color: var(--green-line); transform: rotate(30deg);"></div>
+            <span style="margin-left: 10px; font-size: 24px;">→</span>
+            <div style="width: 80px; height: 80px; background-color: var(--green-line); margin-left: 10px;"></div>
+          </div>
+        </div>
+        <div class="terminal-text">
+          struct Part {<br>
+          &nbsp;&nbsp;std::vector&lt;Point_2&gt; vertices;<br>
+          &nbsp;&nbsp;bool is_oriented() const;<br>
+          };<br><br>
+          // Find optimal orientation sequence<br>
+          Sequence find_orientation(const Part& p);
+        </div>
+        <div class="modal-links">
+          <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" class="modal-link" target="_blank">
+            <span>🎫</span> Project Details & Code
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="portfolio-modal">
+    <div class="project-modal">
+      <div class="modal-header">
+        <div class="modal-icon" style="background-color: var(--yellow-line); color: #333;">
+          <i>🗺️</i>
+        </div>
+        <div>
+          <h2 class="modal-title">Portfolio Website Station</h2>
+          <p class="modal-subtitle">Self-Referential Web Design</p>
+        </div>
+      </div>
+      <button class="close-modal">&times;</button>
+      <div class="modal-content">
+        <p>The very website you're exploring! A meta-project that showcases web development skills through a unique transit map interface. This design is regenerated daily using artificial intelligence.</p>
+        <div style="background-color: #f5f5f5; padding: 1rem; border-radius: 4px; margin: 1rem 0; text-align: center;">
+          <strong>🚩 YOU ARE HERE 🚩</strong>
+          <p style="margin-top: 0.5rem; font-size: 0.9rem;">This self-referential station represents the portfolio itself</p>
+        </div>
+        <div class="modal-links">
+          <a href="https://portfolio-dor1.onrender.com/" class="modal-link" target="_blank">
+            <span>🔄</span> Return to Current Location
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="social-modal">
+    <div class="project-modal">
+      <div class="modal-header">
+        <div class="modal-icon" style="background: linear-gradient(45deg, var(--red-line), var(--blue-line), var(--green-line), var(--yellow-line));">
+          <i>🔗</i>
+        </div>
+        <div>
+          <h2 class="modal-title">Social Connection Hub</h2>
+          <p class="modal-subtitle">Central Interchange Station</p>
+        </div>
+      </div>
+      <button class="close-modal">&times;</button>
+      <div class="modal-content">
+        <p>This central hub connects to all of Geva's professional and social platforms. Follow different exits to explore various profiles and connections.</p>
+        <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
+          <div style="display: flex; align-items: center;">
+            <div style="width: 40px; height: 40px; background-color: #333; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white;">
+              <span>A1</span>
+            </div>
+            <div style="margin-left: 1rem;">
+              <h3 style="font-size: 1.1rem;">GitHub Exit</h3>
+              <p style="font-size: 0.9rem; color: #666;">Code repositories and open-source contributions</p>
+            </div>
+            <a href="https://github.com/gevak" style="margin-left: auto; background-color: #333; color: white; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none;" target="_blank">Exit →</a>
+          </div>
+          
+          <div style="display: flex; align-items: center;">
+            <div style="width: 40px; height: 40px; background-color: #0077b5; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white;">
+              <span>B2</span>
+            </div>
+            <div style="margin-left: 1rem;">
+              <h3 style="font-size: 1.1rem;">LinkedIn Exit</h3>
+              <p style="font-size: 0.9rem; color: #666;">Professional profile and work history</p>
+            </div>
+            <a href="https://linkedin.com/in/gevakip" style="margin-left: auto; background-color: #0077b5; color: white; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none;" target="_blank">Exit →</a>
+          </div>
+          
+          <div style="display: flex; align-items: center;">
+            <div style="width: 40px; height: 40px; background-color: #1877f2; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white;">
+              <span>C3</span>
+            </div>
+            <div style="margin-left: 1rem;">
+              <h3 style="font-size: 1.1rem;">Facebook Exit</h3>
+              <p style="font-size: 0.9rem; color: #666;">Social profile and personal updates</p>
+            </div>
+            <a href="https://facebook.com/geva.kipper" style="margin-left: auto; background-color: #1877f2; color: white; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none;" target="_blank">Exit →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-content">
+      <div>
+        <p>Designed by AI Assistant</p>
+      </div>
+      <div class="transit-clock" id="transit-clock">00:00:00</div>
+    </div>
+    <div class="service-announcement" id="service-announcement">
+      <p><strong>Service Announcement:</strong> Did you know? Geva can solve a Rubik's cube in under 2 minutes while explaining how distributed systems work!</p>
+    </div>
+  </footer>
+
+  <script>
+    // Current date for ticker
+    document.getElementById('current-date').textContent = new Date().toLocaleDateString();
+    
+    // Transit clock countdown since May 7, 2025
+    const targetDate = new Date('May 7, 2025 01:06:07').getTime();
+    
+    function updateClock() {
+      const now = new Date().getTime();
+      const timeElapsed = Math.max(0, now - targetDate);
+      
+      const hours = Math.floor(timeElapsed / (1000 * 60 * 60));
+      const minutes = Math.floor((timeElapsed % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeElapsed % (1000 * 60)) / 1000);
+      
+      const formattedHours = hours.toString().padStart(2, '0');
+      const formattedMinutes = minutes.toString().padStart(2, '0');
+      const formattedSeconds = seconds.toString().padStart(2, '0');
+      
+      document.getElementById('transit-clock').textContent = 
+        `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+    }
+    
+    // Update clock every second
+    setInterval(updateClock, 1000);
+    updateClock(); // Initial call
+    
+    // Clock easter egg
+    document.getElementById('transit-clock').addEventListener('click', function() {
+      const announcement = document.getElementById('service-announcement');
+      announcement.classList.toggle('active');
+      setTimeout(() => {
+        announcement.classList.remove('active');
+      }, 8000);
+    });
+    
+    // Map data
+    const lines = [
+      {
+        id: 'red-line',
+        color: 'red',
+        path: [
+          { x: 300, y: 200 },
+          { x: 400, y: 200 },
+          { x: 550, y: 250 },
+          { x: 700, y: 300 },
+          { x: 850, y: 300 },
+          { x: 1000, y: 250 }
+        ]
+      },
+      {
+        id: 'blue-line',
+        color: 'blue',
+        path: [
+          { x: 200, y: 400 },
+          { x: 300, y: 350 },
+          { x: 550, y: 250 },
+          { x: 800, y: 200 }
+        ]
+      },
+      {
+        id: 'green-line',
+        color: 'green',
+        path: [
+          { x: 300, y: 600 },
+          { x: 400, y: 500 },
+          { x: 550, y: 450 },
+          { x: 700, y: 500 },
+          { x: 900, y: 600 }
+        ]
+      },
+      {
+        id: 'yellow-line',
+        color: 'yellow',
+        path: [
+          { x: 100, y: 500 },
+          { x: 250, y: 500 },
+          { x: 400, y: 500 },
+          { x: 550, y: 450 },
+          { x: 600, y: 400 },
+          { x: 700, y: 300 }
+        ]
+      },
+      {
+        id: 'gray-line',
+        color: 'gray',
+        path: [
+          { x: 400, y: 700 },
+          { x: 500, y: 600 },
+          { x: 550, y: 450 },
+          { x: 600, y: 350 },
+          { x: 700, y: 300 }
+        ]
+      }
+    ];
+    
+    const stations = [
+      {
+        id: 'glglstats-station',
+        name: 'GlglStats',
+        x: 700,
+        y: 300,
+        lines: ['red', 'yellow', 'gray'], // Intersection of these lines
+        modalId: 'glglstats-modal'
+      },
+      {
+        id: 'ahuzat-station',
+        name: 'Ahuzat Dibuk',
+        x: 550,
+        y: 250,
+        lines: ['red', 'blue'],
+        modalId: 'ahuzat-modal'
+      },
+      {
+        id: 'orienting-station',
+        name: '2D Part Orienting',
+        x: 550,
+        y: 450,
+        lines: ['green', 'yellow', 'gray'],
+        modalId: 'orienting-modal'
+      },
+      {
+        id: 'portfolio-station',
+        name: 'Portfolio Website',
+        x: 400,
+        y: 500,
+        lines: ['yellow', 'green'],
+        modalId: 'portfolio-modal'
+      },
+      {
+        id: 'social-station',
+        name: 'Social Connection Hub',
+        x: 550,
+        y: 350,
+        lines: ['red', 'blue', 'green', 'yellow', 'gray'],
+        modalId: 'social-modal'
+      }
+    ];
+
+    // Render the subway map
+    function renderSubwayMap() {
+      const mapContainer = document.getElementById('subway-map');
+      mapContainer.innerHTML = ''; // Clear map
+      
+      // Render lines
+      lines.forEach(line => {
+        for (let i = 0; i < line.path.length - 1; i++) {
+          const start = line.path[i];
+          const end = line.path[i + 1];
+          
+          const length = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
+          const angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI;
+          
+          const lineElement = document.createElement('div');
+          lineElement.className = `line ${line.color}`;
+          lineElement.style.width = `${length}px`;
+          lineElement.style.left = `${start.x}px`;
+          lineElement.style.top = `${start.y}px`;
+          lineElement.style.transform = `rotate(${angle}deg)`;
+          lineElement.style.transformOrigin = '0 4px';
+          lineElement.dataset.line = line.color;
+          
+          mapContainer.appendChild(lineElement);
+        }
+      });
+      
+      // Render stations
+      stations.forEach(station => {
+        const stationElement = document.createElement('div');
+        stationElement.id = station.id;
+        stationElement.className = `station ${station.lines.length > 1 ? 'interchange' : ''}`;
+        stationElement.style.left = `${station.x}px`;
+        stationElement.style.top = `${station.y}px`;
+        stationElement.dataset.lines = station.lines.join(',');
+        stationElement.dataset.modalId = station.modalId;
+        
+        // Add station border colors for interchanges
+        if (station.lines.length > 1) {
+          stationElement.style.borderColor = '#333';
+        }
+        
+        // Add station label
+        const labelElement = document.createElement('div');
+        labelElement.className = 'station-label';
+        labelElement.textContent = station.name;
+        labelElement.style.left = `${station.x + 15}px`;
+        labelElement.style.top = `${station.y - 15}px`;
+        
+        mapContainer.appendChild(stationElement);
+        mapContainer.appendChild(labelElement);
+        
+        // Add click event to open modal
+        stationElement.addEventListener('click', function() {
+          const modalId = this.dataset.modalId;
+          document.getElementById(modalId).classList.add('active');
+        });
+      });
+    }
+    
+    // Initialize map
+    renderSubwayMap();
+    
+    // Map interactions
+    let scale = 1;
+    let translateX = 0;
+    let translateY = 0;
+    let isDragging = false;
+    let startX, startY;
+    const map = document.getElementById('subway-map');
+    
+    // Zoom controls
+    document.getElementById('zoom-in').addEventListener('click', function() {
+      scale = Math.min(scale + 0.2, 2);
+      updateMapTransform();
+    });
+    
+    document.getElementById('zoom-out').addEventListener('click', function() {
+      scale = Math.max(scale - 0.2, 0.5);
+      updateMapTransform();
+    });
+    
+    document.getElementById('zoom-reset').addEventListener('click', function() {
+      scale = 1;
+      translateX = 0;
+      translateY = 0;
+      updateMapTransform();
+    });
+    
+    function updateMapTransform() {
+      map.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
+    }
+    
+    // Map dragging
+    map.addEventListener('mousedown', function(e) {
+      isDragging = true;
+      startX = e.clientX - translateX;
+      startY = e.clientY - translateY;
+      map.style.cursor = 'grabbing';
+    });
+    
+    document.addEventListener('mousemove', function(e) {
+      if (isDragging) {
+        translateX = e.clientX - startX;
+        translateY = e.clientY - startY;
+        updateMapTransform();
+      }
+    });
+    
+    document.addEventListener('mouseup', function() {
+      isDragging = false;
+      map.style.cursor = 'grab';
+    });
+    
+    // Mouse wheel zoom
+    document.querySelector('.map-container').addEventListener('wheel', function(e) {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        scale = Math.min(scale + 0.05, 2);
+      } else {
+        scale = Math.max(scale - 0.05, 0.5);
+      }
+      updateMapTransform();
+    });
+    
+    // Line toggle buttons
+    document.querySelectorAll('.line-button').forEach(button => {
+      button.addEventListener('click', function() {
+        const line = this.dataset.line;
+        
+        if (line === 'all') {
+          document.querySelectorAll('.line, .station').forEach(el => {
+            el.style.opacity = '1';
+          });
+          return;
+        }
+        
+        // Dim all lines
+        document.querySelectorAll('.line').forEach(el => {
+          el.style.opacity = '0.2';
+        });
+        
+        // Highlight selected line
+        document.querySelectorAll(`.line.${line}`).forEach(el => {
+          el.style.opacity = '1';
+        });
+        
+        // Dim all stations, then highlight those on the selected line
+        document.querySelectorAll('.station').forEach(el => {
+          el.style.opacity = '0.2';
+          el.classList.remove('highlighted');
+        });
+        
+        document.querySelectorAll('.station').forEach(el => {
+          const stationLines = el.dataset.lines.split(',');
+          if (stationLines.includes(line)) {
+            el.style.opacity = '1';
+            el.classList.add('highlighted');
+          }
+        });
+      });
+    });
+    
+    // Modal controls
+    document.querySelectorAll('.close-modal').forEach(button => {
+      button.addEventListener('click', function() {
+        this.closest('.modal-overlay').classList.remove('active');
+      });
+    });
+    
+    // Close modal when clicking outside
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', function(e) {
+        if (e.target === this) {
+          this.classList.remove('active');
+        }
+      });
+    });
+    
+    // Make the map initially grabbable
+    map.style.cursor = 'grab';
+    
+    // Handle responsive behavior
+    function handleResponsiveMap() {
+      if (window.innerWidth <= 768) {
+        // Center map on smaller screens
+        translateX = 300;
+        translateY = 0;
+        updateMapTransform();
+      }
+    }
+    
+    // Initial responsive setup
+    handleResponsiveMap();
+    
+    // Update on resize
+    window.addEventListener('resize', handleResponsiveMap);
+  </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250507",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>

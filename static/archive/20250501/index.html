@@ -1,0 +1,1566 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper - Physics Playground Portfolio</title>
+    <style>
+        :root {
+            --primary: #4285F4;
+            --secondary: #34A853;
+            --accent1: #EA4335;
+            --accent2: #FBBC05;
+            --light: #F8F9FA;
+            --dark: #202124;
+            --grid-color: rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* Grid background */
+        .grid-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+            background-size: 20px 20px;
+            z-index: -1;
+        }
+
+        header {
+            padding: 2rem 1rem;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 800;
+            color: var(--dark);
+            display: inline-block;
+            position: relative;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            font-weight: 400;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .daily-note {
+            font-size: 1rem;
+            font-weight: 300;
+            color: var(--dark);
+            opacity: 0.8;
+            margin-bottom: 2rem;
+            animation: pulse 3s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        .playground {
+            position: relative;
+            height: calc(100vh - 350px);
+            min-height: 400px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            display: flex;
+            gap: 12px;
+        }
+
+        .control-btn {
+            background: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .control-btn:hover {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .reset-btn {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .reset-btn.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .physics-object {
+            position: absolute;
+            cursor: grab;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            transform-origin: center;
+            will-change: transform;
+            user-select: none;
+        }
+
+        .physics-object:active {
+            cursor: grabbing;
+        }
+
+        .physics-object .label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-align: center;
+            pointer-events: none;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
+        }
+
+        .project-detail {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .project-detail.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .detail-container {
+            background: white;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.15);
+            overflow-y: auto;
+            position: relative;
+            transform: translateY(30px);
+            opacity: 0;
+            transition: transform 0.4s ease, opacity 0.4s ease;
+        }
+
+        .project-detail.show .detail-container {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .detail-header {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .detail-title {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .detail-description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: rgba(0,0,0,0.8);
+        }
+
+        .detail-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .detail-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 1.5rem;
+        }
+
+        .detail-link {
+            padding: 8px 16px;
+            background: var(--light);
+            border-radius: 20px;
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+
+        .detail-link:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(66, 133, 244, 0.3);
+        }
+
+        .detail-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease;
+        }
+
+        .detail-close:hover {
+            background: rgba(0,0,0,0.05);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .playground {
+                height: 500px;
+            }
+            
+            .physics-object {
+                width: 80px !important;
+                height: 80px !important;
+            }
+        }
+
+        /* Object-specific styles */
+        #glglstats {
+            background: linear-gradient(135deg, var(--primary), #9C27B0);
+            color: white;
+            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.3);
+        }
+
+        #ahuzat {
+            background: linear-gradient(135deg, var(--accent2), var(--secondary));
+            color: var(--dark);
+            box-shadow: 0 6px 20px rgba(251, 188, 5, 0.3);
+        }
+
+        #orienting {
+            background: linear-gradient(135deg, var(--accent1), #FF9800);
+            color: white;
+            box-shadow: 0 6px 20px rgba(234, 67, 53, 0.3);
+        }
+
+        #portfolio {
+            background: linear-gradient(135deg, var(--secondary), #00BCD4);
+            color: white;
+            box-shadow: 0 6px 20px rgba(52, 168, 83, 0.3);
+        }
+
+        #social {
+            background: linear-gradient(135deg, #9C27B0, var(--primary));
+            color: white;
+            box-shadow: 0 6px 20px rgba(156, 39, 176, 0.3);
+        }
+
+        /* Trail effects */
+        .trail {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0.5;
+            z-index: -1;
+        }
+
+        /* Footer styles */
+        footer {
+            padding: 2rem 1rem;
+            text-align: center;
+            margin-top: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .credit {
+            font-size: 0.9rem;
+            color: var(--dark);
+            opacity: 0.7;
+        }
+
+        .timer {
+            font-family: "Space Mono", monospace;
+            font-size: 1.2rem;
+            background: var(--light);
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: inline-flex;
+            gap: 2px;
+            margin-top: 0.5rem;
+        }
+
+        .timer-digit {
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+            width: 0.8em;
+            height: 1.2em;
+            line-height: 1.2em;
+            text-align: center;
+        }
+
+        .timer-separator {
+            opacity: 0.7;
+        }
+
+        /* Visualization styles for each project */
+        .waveform-view {
+            width: 100%;
+            height: 150px;
+            margin: 1rem 0;
+            background: rgba(66, 133, 244, 0.1);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .waveform {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-view {
+            width: 100%;
+            height: 200px;
+            margin: 1rem 0;
+            background: #f5f5f5;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .map-grid {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            gap: 2px;
+        }
+
+        .map-cell {
+            background: white;
+            border-radius: 2px;
+            transition: background 0.5s ease;
+        }
+
+        .car {
+            position: absolute;
+            width: 10px;
+            height: 18px;
+            background: var(--dark);
+            border-radius: 3px;
+        }
+
+        .geo-view {
+            width: 100%;
+            height: 180px;
+            margin: 1rem 0;
+            background: rgba(234, 67, 53, 0.1);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .polygon {
+            width: 100px;
+            height: 100px;
+            position: relative;
+        }
+
+        .code-snippet {
+            background: var(--dark);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            line-height: 1.4;
+        }
+
+        .infinity-view {
+            width: 100%;
+            height: 180px;
+            margin: 1rem 0;
+            background: linear-gradient(rgba(52, 168, 83, 0.1), rgba(0, 188, 212, 0.1));
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            perspective: 1000px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .infinity-mirror {
+            width: 80%;
+            max-width: 200px;
+            aspect-ratio: 1;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: rotateInfinity 10s infinite linear;
+        }
+
+        @keyframes rotateInfinity {
+            0% { transform: rotateY(0deg) rotateX(5deg); }
+            100% { transform: rotateY(360deg) rotateX(5deg); }
+        }
+
+        .infinity-layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background: white;
+            border: 1px solid rgba(52, 168, 83, 0.3);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            color: var(--secondary);
+            transform: translateZ(0px);
+            backface-visibility: visible;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .network-view {
+            width: 100%;
+            height: 180px;
+            margin: 1rem 0;
+            background: rgba(156, 39, 176, 0.1);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .network-node {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .network-node:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .network-line {
+            position: absolute;
+            height: 2px;
+            background: rgba(156, 39, 176, 0.3);
+            transform-origin: left center;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-background"></div>
+
+    <header>
+        <h1 id="name">Geva Kipper</h1>
+        <p class="subtitle">Software Engineer at Google, building intelligent systems that empower users.</p>
+        <p class="daily-note">This website is redesigned daily by AI and is never the same twice.</p>
+    </header>
+
+    <main>
+        <div class="playground" id="playground">
+            <div class="controls">
+                <button class="control-btn" id="gravity-toggle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M8 12h8M12 8v8"></path>
+                    </svg>
+                    Toggle Gravity
+                </button>
+                <button class="control-btn reset-btn" id="reset-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 1 1 18 0 9 9 0 0 1-18 0z"></path>
+                        <path d="M15 9l-6 6M9 9l6 6"></path>
+                    </svg>
+                    Reset Playground
+                </button>
+            </div>
+
+            <div class="physics-object" id="glglstats" style="width: 100px; height: 100px; left: 20%; top: 30%;">
+                <span class="label">GlglStats</span>
+            </div>
+
+            <div class="physics-object" id="ahuzat" style="width: 100px; height: 100px; left: 40%; top: 50%;">
+                <span class="label">Ahuzat Dibuk</span>
+            </div>
+
+            <div class="physics-object" id="orienting" style="width: 100px; height: 100px; left: 60%; top: 30%;">
+                <span class="label">2D Part Orienting</span>
+            </div>
+
+            <div class="physics-object" id="portfolio" style="width: 100px; height: 100px; left: 70%; top: 50%;">
+                <span class="label">Portfolio Website</span>
+            </div>
+
+            <div class="physics-object" id="social" style="width: 100px; height: 100px; left: 30%; top: 20%;">
+                <span class="label">Social Links</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Project Details -->
+    <div class="project-detail" id="glglstats-detail">
+        <div class="detail-container">
+            <button class="detail-close">&times;</button>
+            <div class="detail-header">
+                <h2 class="detail-title">GlglStats</h2>
+                <p class="detail-description">An intelligent system for visualizing and analyzing complex data sets through interactive waveforms and statistical models.</p>
+            </div>
+            <div class="detail-content">
+                <div class="waveform-view" id="glgl-viz">
+                    <div class="waveform"></div>
+                </div>
+                <p>GlglStats provides intuitive data visualization and analysis tools that make complex statistical patterns accessible and actionable. The system leverages advanced audio-inspired visualization techniques to represent multidimensional data.</p>
+                <div class="detail-links">
+                    <a href="https://glglstats.onrender.com/" target="_blank" class="detail-link">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <path d="M15 3h6v6"></path>
+                            <path d="M10 14L21 3"></path>
+                        </svg>
+                        Visit Website
+                    </a>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="detail-link">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.33z"></path>
+                            <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon>
+                        </svg>
+                        Watch Presentation
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="project-detail" id="ahuzat-detail">
+        <div class="detail-container">
+            <button class="detail-close">&times;</button>
+            <div class="detail-header">
+                <h2 class="detail-title">Ahuzat Dibuk</h2>
+                <p class="detail-description">A smart parking solution that uses real-time data to help drivers find available parking spots in urban areas.</p>
+            </div>
+            <div class="detail-content">
+                <div class="map-view" id="map-viz">
+                    <div class="map-grid" id="parking-grid"></div>
+                </div>
+                <p>Ahuzat Dibuk revolutionizes urban parking by providing real-time parking availability data. This project combines IoT sensors, data analytics, and user-friendly interfaces to solve a persistent urban challenge.</p>
+                <p>The system has received notable attention in Israeli media for its innovative approach to urban mobility.</p>
+                <div class="detail-links">
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="detail-link">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"></path>
+                        </svg>
+                        Facebook Publication
+                    </a>
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="detail-link">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"></path>
+                        </svg>
+                        News Coverage (13tv)
+                    </a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="detail-link">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"></path>
+                        </svg>
+                        Mako Article
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="project-detail" id="orienting-detail">
+        <div class="detail-container">
+            <button class="detail-close">&times;</button>
+            <div class="detail-header">
+                <h2 class="detail-title">2D Part Orienting</h2>
+                <p class="detail-description">An algorithmic approach to solving the problem of orienting two-dimensional parts to a desired stable position.</p>
+            </div>
+            <div class="detail-content">
+                <div class="geo-view" id="geo-viz">
+                    <div class="polygon" id="orienting-polygon"></div>
+                </div>
+                <p>This project tackles a fundamental problem in computational geometry and robotics: how to efficiently orient physical parts to a desired position using a minimal sequence of operations.</p>
+                <div class="code-snippet">
+                    function findStableOrientation(polygon) {<br>
+                    &nbsp;&nbsp;const orientations = computePotentialOrientations(polygon);<br>
+                    &nbsp;&nbsp;return orientations.sort((a, b) => a.energy - b.energy)[0];<br>
+                    }
+                </div>
+                <p>The algorithm has applications in industrial automation, robotic manipulation, and parts feeding systems.</p>
+                <div class="detail-links">
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="detail-link">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"></path>
+                            <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"></path>
+                        </svg>
+                        Tel-Aviv University Project Page
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="project-detail" id="portfolio-detail">
+        <div class="detail-container">
+            <button class="detail-close">&times;</button>
+            <div class="detail-header">
+                <h2 class="detail-title">Portfolio Website</h2>
+                <p class="detail-description">A physics-based interactive playground that showcases projects in a unique and engaging way.</p>
+            </div>
+            <div class="detail-content">
+                <div class="infinity-view">
+                    <div class="infinity-mirror" id="infinity-mirror"></div>
+                </div>
+                <p>This portfolio website uses modern web technologies to create an interactive physics playground. Each project is represented as a physical object with unique properties that visitors can interact with.</p>
+                <p>The site is redesigned daily by AI, ensuring a fresh experience each time it's visited. It combines aesthetic design with functional interaction to create a memorable portfolio experience.</p>
+                <div class="detail-links">
+                    <a href="https://portfolio-dor1.onrender.com/" target="_blank" class="detail-link">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <path d="M15 3h6v6"></path>
+                            <path d="M10 14L21 3"></path>
+                        </svg>
+                        Current Portfolio
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="project-detail" id="social-detail">
+        <div class="detail-container">
+            <button class="detail-close">&times;</button>
+            <div class="detail-header">
+                <h2 class="detail-title">Connect</h2>
+                <p class="detail-description">Find me across the web and get in touch.</p>
+            </div>
+            <div class="detail-content">
+                <div class="network-view" id="network-viz"></div>
+                <p>I'm always interested in connecting with fellow engineers, researchers, and technology enthusiasts. Feel free to reach out through any of these platforms:</p>
+                <div class="detail-links">
+                    <a href="https://github.com/gevak" target="_blank" class="detail-link">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                        </svg>
+                        GitHub
+                    </a>
+                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="detail-link">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                            <rect x="2" y="9" width="4" height="12"></rect>
+                            <circle cx="4" cy="4" r="2"></circle>
+                        </svg>
+                        LinkedIn
+                    </a>
+                    <a href="https://facebook.com/geva.kipper" target="_blank" class="detail-link">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"></path>
+                        </svg>
+                        Facebook
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <p class="credit">Site designed by Claude AI by Anthropic</p>
+            <div class="timer" id="timer">
+                <span class="timer-digit" id="days">00</span>
+                <span class="timer-separator">d</span>
+                <span class="timer-digit" id="hours">00</span>
+                <span class="timer-separator">h</span>
+                <span class="timer-digit" id="minutes">00</span>
+                <span class="timer-separator">m</span>
+                <span class="timer-digit" id="seconds">00</span>
+                <span class="timer-separator">s</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Matter.js Physics Engine
+        // Using ES6 module syntax
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js';
+        script.async = true;
+        document.head.appendChild(script);
+
+        script.onload = function() {
+            // Initialize physics engine after library loads
+            initPhysicsEngine();
+        };
+
+        // Elements
+        const nameElement = document.getElementById('name');
+        const playground = document.getElementById('playground');
+        const gravityToggleBtn = document.getElementById('gravity-toggle');
+        const resetButton = document.getElementById('reset-btn');
+        const physicsObjects = document.querySelectorAll('.physics-object');
+        const projectDetails = document.querySelectorAll('.project-detail');
+        const closeButtons = document.querySelectorAll('.detail-close');
+
+        // Global variables
+        let engine, render, world, runner;
+        let mouseConstraint, bodies = [], initialPositions = [];
+        let gravityOn = true;
+        let isDragging = false;
+        let chaosLevel = 0;
+        let lastInteractionTime = Date.now();
+
+        // Project detail interaction
+        physicsObjects.forEach(obj => {
+            obj.addEventListener('click', function() {
+                const detailId = this.id + '-detail';
+                const detail = document.getElementById(detailId);
+                if (detail) {
+                    detail.classList.add('show');
+                    // Initialize the specific visualization for the project
+                    initProjectVisualization(this.id);
+                }
+            });
+        });
+
+        closeButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const detail = this.closest('.project-detail');
+                detail.classList.remove('show');
+            });
+        });
+
+        // Name element animation
+        function animateName() {
+            nameElement.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            nameElement.style.transform = 'translateY(-10px)';
+            
+            setTimeout(() => {
+                nameElement.style.transform = 'translateY(0px)';
+            }, 500);
+        }
+
+        // Run the animation when page loads
+        window.addEventListener('load', animateName);
+
+        // Initialize Matter.js physics engine
+        function initPhysicsEngine() {
+            // Extract Matter.js modules
+            const { Engine, Render, Runner, Bodies, Body, Composite, MouseConstraint, Mouse, Events, Vector } = Matter;
+
+            // Create engine and world
+            engine = Engine.create({
+                gravity: { x: 0, y: 1, scale: 0.001 }
+            });
+            world = engine.world;
+
+            // Create renderer
+            render = Render.create({
+                element: playground,
+                engine: engine,
+                options: {
+                    width: playground.clientWidth,
+                    height: playground.clientHeight,
+                    wireframes: false,
+                    background: 'transparent'
+                }
+            });
+            Render.run(render);
+
+            // Create runner
+            runner = Runner.create();
+            Runner.run(runner, engine);
+
+            // Create objects
+            createPhysicsObjects();
+
+            // Create mouse control
+            const mouse = Mouse.create(render.canvas);
+            mouseConstraint = MouseConstraint.create(engine, {
+                mouse: mouse,
+                constraint: {
+                    stiffness: 0.2,
+                    render: {
+                        visible: false
+                    }
+                }
+            });
+            Composite.add(world, mouseConstraint);
+
+            // Keep render centered on objects
+            render.mouse = mouse;
+
+            // Create boundaries (invisible walls)
+            const wallThickness = 50;
+            const walls = [
+                // Bottom wall
+                Bodies.rectangle(
+                    playground.clientWidth / 2,
+                    playground.clientHeight + wallThickness / 2,
+                    playground.clientWidth,
+                    wallThickness,
+                    { isStatic: true, render: { visible: false } }
+                ),
+                // Left wall
+                Bodies.rectangle(
+                    -wallThickness / 2,
+                    playground.clientHeight / 2,
+                    wallThickness,
+                    playground.clientHeight,
+                    { isStatic: true, render: { visible: false } }
+                ),
+                // Right wall
+                Bodies.rectangle(
+                    playground.clientWidth + wallThickness / 2,
+                    playground.clientHeight / 2,
+                    wallThickness,
+                    playground.clientHeight,
+                    { isStatic: true, render: { visible: false } }
+                ),
+                // Top wall
+                Bodies.rectangle(
+                    playground.clientWidth / 2,
+                    -wallThickness / 2,
+                    playground.clientWidth,
+                    wallThickness,
+                    { isStatic: true, render: { visible: false } }
+                )
+            ];
+            Composite.add(world, walls);
+
+            // Events
+            Events.on(mouseConstraint, 'startdrag', function(e) {
+                isDragging = true;
+                lastInteractionTime = Date.now();
+                createTrail(e.body);
+            });
+
+            Events.on(mouseConstraint, 'enddrag', function() {
+                isDragging = false;
+                chaosLevel++;
+                updateChaosState();
+            });
+
+            Events.on(engine, 'afterUpdate', function() {
+                syncDOMObjects();
+                
+                if (!isDragging && Date.now() - lastInteractionTime > 5000) {
+                    // Gradually move objects back to their initial positions
+                    resetObjectsGradually();
+                }
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                render.options.width = playground.clientWidth;
+                render.options.height = playground.clientHeight;
+                render.canvas.width = playground.clientWidth;
+                render.canvas.height = playground.clientHeight;
+
+                // Update wall positions
+                walls[0].position.x = playground.clientWidth / 2;
+                walls[0].position.y = playground.clientHeight + wallThickness / 2;
+                walls[2].position.x = playground.clientWidth + wallThickness / 2;
+                walls[1].position.y = playground.clientHeight / 2;
+                walls[2].position.y = playground.clientHeight / 2;
+                walls[3].position.x = playground.clientWidth / 2;
+                
+                // Also update the initial positions reference
+                updateInitialPositions();
+                
+                // Update mobile specific settings
+                if (window.innerWidth <= 768) {
+                    bodies.forEach(body => {
+                        Body.scale(body, 0.8, 0.8);
+                    });
+                }
+            });
+
+            // Gravity toggle button
+            gravityToggleBtn.addEventListener('click', toggleGravity);
+
+            // Reset button
+            resetButton.addEventListener('click', resetObjects);
+        }
+
+        function createPhysicsObjects() {
+            bodies = [];
+            initialPositions = [];
+            
+            physicsObjects.forEach(obj => {
+                const rect = obj.getBoundingClientRect();
+                const playgroundRect = playground.getBoundingClientRect();
+                
+                // Calculate position relative to playground
+                const x = rect.left - playgroundRect.left + rect.width / 2;
+                const y = rect.top - playgroundRect.top + rect.height / 2;
+                
+                // Create the physics body - use rectangles with rounded corners
+                const body = Matter.Bodies.rectangle(
+                    x, y, 
+                    rect.width, rect.height, 
+                    {
+                        chamfer: { radius: 10 },
+                        render: { 
+                            visible: false 
+                        },
+                        friction: 0.05,
+                        frictionAir: 0.02,
+                        restitution: 0.7,
+                        id: obj.id,
+                        // Add unique properties for each object
+                        ...(obj.id === 'glglstats' ? { frictionAir: 0.01, restitution: 0.9 } :
+                           obj.id === 'ahuzat' ? { density: 0.008, friction: 0.1 } :
+                           obj.id === 'orienting' ? { restitution: 0.5, friction: 0.08 } :
+                           obj.id === 'portfolio' ? { frictionAir: 0.01, density: 0.006 } :
+                           obj.id === 'social' ? { restitution: 0.7, frictionAir: 0.02 } : {})
+                    }
+                );
+                
+                bodies.push(body);
+                initialPositions.push({ x, y });
+                
+                // Add the body to the world
+                Matter.Composite.add(world, body);
+            });
+        }
+
+        function syncDOMObjects() {
+            bodies.forEach((body, index) => {
+                const obj = document.getElementById(body.id);
+                if (obj) {
+                    // Update DOM element positions to match physics body
+                    const angle = body.angle * (180 / Math.PI);
+                    obj.style.transform = `translate(${body.position.x - obj.offsetWidth/2}px, ${body.position.y - obj.offsetHeight/2}px) rotate(${angle}deg)`;
+                    
+                    // Apply special effects based on velocity
+                    const speed = Math.sqrt(body.velocity.x * body.velocity.x + body.velocity.y * body.velocity.y);
+                    
+                    if (speed > 1) {
+                        // Create motion trail for fast-moving objects
+                        createTrail(body);
+                    }
+                    
+                    // Scale shadow based on height/motion
+                    const shadowBlur = Math.min(16, 4 + speed * 2);
+                    const shadowY = 6 + speed * 0.5;
+                    obj.style.boxShadow = `0 ${shadowY}px ${shadowBlur}px rgba(0, 0, 0, 0.15)`;
+                }
+            });
+        }
+
+        function createTrail(body) {
+            if (!body || !body.id) return;
+            
+            const obj = document.getElementById(body.id);
+            if (!obj) return;
+
+            // Create a trail element
+            const trail = document.createElement('div');
+            trail.className = 'trail';
+            trail.style.width = `${obj.offsetWidth * 0.8}px`;
+            trail.style.height = `${obj.offsetHeight * 0.8}px`;
+            trail.style.left = `${body.position.x - obj.offsetWidth * 0.4}px`;
+            trail.style.top = `${body.position.y - obj.offsetHeight * 0.4}px`;
+            
+            // Match the gradient color of the original object
+            const computedStyle = window.getComputedStyle(obj);
+            trail.style.background = computedStyle.background;
+            trail.style.opacity = '0.2';
+            
+            // Add to playground and animate
+            playground.appendChild(trail);
+            
+            // Animate the trail to fade out
+            setTimeout(() => {
+                trail.style.transition = 'opacity 0.5s ease';
+                trail.style.opacity = '0';
+                
+                // Remove after animation
+                setTimeout(() => {
+                    playground.removeChild(trail);
+                }, 500);
+            }, 10);
+        }
+
+        function toggleGravity() {
+            gravityOn = !gravityOn;
+            
+            if (gravityOn) {
+                Matter.Engine.update(engine, 0, { gravity: { x: 0, y: 1, scale: 0.001 } });
+                gravityToggleBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M8 12h8M12 8v8"></path>
+                    </svg>
+                    Toggle Gravity
+                `;
+            } else {
+                Matter.Engine.update(engine, 0, { gravity: { x: 0, y: 0, scale: 0 } });
+                gravityToggleBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M8 12h8"></path>
+                    </svg>
+                    Toggle Gravity
+                `;
+            }
+        }
+
+        function resetObjects() {
+            bodies.forEach((body, index) => {
+                Matter.Body.setPosition(body, initialPositions[index]);
+                Matter.Body.setVelocity(body, { x: 0, y: 0 });
+                Matter.Body.setAngularVelocity(body, 0);
+                Matter.Body.setAngle(body, 0);
+            });
+            
+            chaosLevel = 0;
+            updateChaosState();
+            lastInteractionTime = Date.now();
+        }
+
+        function resetObjectsGradually() {
+            bodies.forEach((body, index) => {
+                // Calculate vector to original position
+                const dx = initialPositions[index].x - body.position.x;
+                const dy = initialPositions[index].y - body.position.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance > 5) {
+                    // Apply a gentle force towards original position
+                    const forceMagnitude = 0.0005 * body.mass;
+                    Matter.Body.applyForce(body, body.position, {
+                        x: dx * forceMagnitude / distance,
+                        y: dy * forceMagnitude / distance
+                    });
+                    
+                    // Dampen angular velocity
+                    Matter.Body.setAngularVelocity(body, body.angularVelocity * 0.95);
+                }
+            });
+        }
+
+        function updateInitialPositions() {
+            initialPositions = bodies.map((body, i) => {
+                const obj = document.getElementById(body.id);
+                const rect = obj.getBoundingClientRect();
+                const playgroundRect = playground.getBoundingClientRect();
+                
+                // Calculate initial positions based on current layout
+                const x = (i + 1) * (playground.clientWidth / (bodies.length + 1));
+                const y = playground.clientHeight * (0.3 + (i % 2) * 0.3);
+                
+                return { x, y };
+            });
+        }
+
+        function updateChaosState() {
+            if (chaosLevel > 3) {
+                resetButton.classList.add('show');
+            } else {
+                resetButton.classList.remove('show');
+            }
+        }
+
+        // Project-specific visualizations
+        function initProjectVisualization(projectId) {
+            switch(projectId) {
+                case 'glglstats':
+                    initWaveformViz();
+                    break;
+                case 'ahuzat':
+                    initMapViz();
+                    break;
+                case 'orienting':
+                    initGeoViz();
+                    break;
+                case 'portfolio':
+                    initInfinityViz();
+                    break;
+                case 'social':
+                    initNetworkViz();
+                    break;
+            }
+        }
+
+        function initWaveformViz() {
+            const container = document.querySelector('#glgl-viz .waveform');
+            container.innerHTML = '';
+
+            // Create SVG for waveform
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            container.appendChild(svg);
+
+            // Generate a random waveform
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            const points = 100;
+            const amplitude = height * 0.4;
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            
+            // Create the waveform path
+            let d = `M 0,${height/2}`;
+            for (let i = 0; i < points; i++) {
+                const x = i * (width / points);
+                const y = height/2 + Math.sin(i * 0.2) * amplitude * Math.random() * 0.5 + Math.sin(i * 0.05) * amplitude * 0.5;
+                d += ` L ${x},${y}`;
+            }
+            
+            path.setAttribute('d', d);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', 'url(#waveGradient)');
+            path.setAttribute('stroke-width', '3');
+            
+            // Create gradient for the waveform
+            const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+            gradient.setAttribute('id', 'waveGradient');
+            gradient.setAttribute('gradientTransform', 'rotate(90)');
+            
+            const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+            stop1.setAttribute('offset', '0%');
+            stop1.setAttribute('stop-color', 'var(--primary)');
+            
+            const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+            stop2.setAttribute('offset', '100%');
+            stop2.setAttribute('stop-color', '#9C27B0');
+            
+            gradient.appendChild(stop1);
+            gradient.appendChild(stop2);
+            
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            defs.appendChild(gradient);
+            svg.appendChild(defs);
+            svg.appendChild(path);
+            
+            // Animate the waveform
+            let phase = 0;
+            function animateWave() {
+                phase += 0.05;
+                let d = `M 0,${height/2}`;
+                for (let i = 0; i < points; i++) {
+                    const x = i * (width / points);
+                    const y = height/2 + 
+                              Math.sin(i * 0.2 + phase) * amplitude * 0.3 + 
+                              Math.sin(i * 0.05 - phase * 0.5) * amplitude * 0.5;
+                    d += ` L ${x},${y}`;
+                }
+                path.setAttribute('d', d);
+                requestAnimationFrame(animateWave);
+            }
+            
+            animateWave();
+        }
+
+        function initMapViz() {
+            const grid = document.getElementById('parking-grid');
+            grid.innerHTML = '';
+            
+            // Create heat map grid cells
+            for (let i = 0; i < 100; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'map-cell';
+                grid.appendChild(cell);
+            }
+            
+            // Update cells randomly to simulate parking availability
+            function updateHeatMap() {
+                const cells = grid.querySelectorAll('.map-cell');
+                cells.forEach(cell => {
+                    const availability = Math.random();
+                    if (availability < 0.3) {
+                        cell.style.background = 'rgba(234, 67, 53, 0.7)'; // occupied (red)
+                    } else if (availability < 0.6) {
+                        cell.style.background = 'rgba(251, 188, 5, 0.7)'; // limited (yellow)
+                    } else {
+                        cell.style.background = 'rgba(52, 168, 83, 0.7)'; // available (green)
+                    }
+                });
+            }
+            
+            updateHeatMap();
+            setInterval(updateHeatMap, 2000);
+            
+            // Add animated cars
+            const container = document.getElementById('map-viz');
+            for (let i = 0; i < 5; i++) {
+                createCar(container);
+            }
+        }
+        
+        function createCar(container) {
+            const car = document.createElement('div');
+            car.className = 'car';
+            
+            // Random starting position
+            const isHorizontal = Math.random() > 0.5;
+            const size = isHorizontal ? 
+                { width: '18px', height: '10px' } : 
+                { width: '10px', height: '18px' };
+            
+            car.style.width = size.width;
+            car.style.height = size.height;
+            
+            // Random start position along the edge
+            if (isHorizontal) {
+                car.style.top = Math.random() < 0.5 ? '0px' : (container.clientHeight - 10) + 'px';
+                car.style.left = (Math.random() * container.clientWidth) + 'px';
+            } else {
+                car.style.left = Math.random() < 0.5 ? '0px' : (container.clientWidth - 10) + 'px';
+                car.style.top = (Math.random() * container.clientHeight) + 'px';
+            }
+            
+            container.appendChild(car);
+            
+            // Animate the car
+            animateCar(car, container, isHorizontal);
+        }
+        
+        function animateCar(car, container, isHorizontal) {
+            const speed = 0.5 + Math.random() * 1.5;
+            const rect = car.getBoundingClientRect();
+            
+            // New position is across the container
+            let newX, newY;
+            
+            if (isHorizontal) {
+                newX = rect.left < container.clientWidth / 2 ? 
+                      container.clientWidth - parseInt(car.style.width) : 
+                      -parseInt(car.style.width);
+                newY = parseInt(car.style.top);
+            } else {
+                newX = parseInt(car.style.left);
+                newY = rect.top < container.clientHeight / 2 ? 
+                      container.clientHeight - parseInt(car.style.height) : 
+                      -parseInt(car.style.height);
+            }
+            
+            // Calculate animation duration based on distance and speed
+            const distance = isHorizontal ? 
+                Math.abs(newX - parseInt(car.style.left)) : 
+                Math.abs(newY - parseInt(car.style.top));
+            
+            const duration = distance / speed;
+            
+            car.style.transition = `left ${duration}ms linear, top ${duration}ms linear`;
+            car.style.left = newX + 'px';
+            car.style.top = newY + 'px';
+            
+            // When car reaches the edge, create a new one
+            setTimeout(() => {
+                container.removeChild(car);
+                createCar(container);
+            }, duration);
+        }
+
+        function initGeoViz() {
+            const container = document.getElementById('orienting-polygon');
+            container.innerHTML = '';
+            
+            // Create SVG for polygon
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.setAttribute('viewBox', '-50 -50 100 100');
+            container.appendChild(svg);
+            
+            // Create a random polygon
+            const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            
+            // Generate random polygon points (5-8 points)
+            const numPoints = 5 + Math.floor(Math.random() * 4);
+            const points = [];
+            
+            for (let i = 0; i < numPoints; i++) {
+                const angle = (i / numPoints) * Math.PI * 2;
+                const radius = 30 + Math.random() * 10;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                points.push(`${x},${y}`);
+            }
+            
+            polygon.setAttribute('points', points.join(' '));
+            polygon.setAttribute('fill', 'var(--accent1)');
+            polygon.setAttribute('stroke', 'rgba(0,0,0,0.2)');
+            polygon.setAttribute('stroke-width', '1');
+            
+            svg.appendChild(polygon);
+            
+            // Add center of mass indicator
+            const com = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            com.setAttribute('cx', '0');
+            com.setAttribute('cy', '0');
+            com.setAttribute('r', '3');
+            com.setAttribute('fill', 'white');
+            svg.appendChild(com);
+            
+            // Animate polygon rotation and reorienting
+            let currentAngle = 0;
+            let targetAngle = 0;
+            let angularVelocity = 0;
+            
+            function updatePolygon() {
+                // Update angular velocity based on difference from target
+                const angleDiff = targetAngle - currentAngle;
+                angularVelocity += angleDiff * 0.01;
+                angularVelocity *= 0.95; // Damping
+                
+                currentAngle += angularVelocity;
+                
+                // Apply rotation to polygon
+                svg.style.transform = `rotate(${currentAngle}deg)`;
+                
+                // Occasionally change target angle
+                if (Math.random() < 0.01) {
+                    // Prefer stable orientations (multiples of 60 degrees)
+                    const stableAngle = Math.floor(Math.random() * 6) * 60;
+                    targetAngle = stableAngle;
+                }
+                
+                requestAnimationFrame(updatePolygon);
+            }
+            
+            updatePolygon();
+        }
+
+        function initInfinityViz() {
+            const container = document.getElementById('infinity-mirror');
+            container.innerHTML = '';
+            
+            // Create 8 nested layers
+            for (let i = 0; i < 8; i++) {
+                const layer = document.createElement('div');
+                layer.className = 'infinity-layer';
+                layer.textContent = i === 0 ? 'Portfolio' : '';
+                layer.style.transform = `translateZ(${-i * 20}px) scale(${1 - i * 0.1})`;
+                layer.style.opacity = 1 - (i * 0.1);
+                container.appendChild(layer);
+            }
+        }
+
+        function initNetworkViz() {
+            const container = document.getElementById('network-viz');
+            container.innerHTML = '';
+            
+            const networks = [
+                { name: 'GitHub', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg>' },
+                { name: 'LinkedIn', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"></path></svg>' },
+                { name: 'Facebook', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"></path></svg>' }
+            ];
+            
+            // Create nodes
+            networks.forEach((network, i) => {
+                const node = document.createElement('div');
+                node.className = 'network-node';
+                node.innerHTML = network.icon;
+                node.setAttribute('title', network.name);
+                
+                // Position in a triangular arrangement
+                const angle = (i / networks.length) * Math.PI * 2;
+                const radius = 60;
+                const x = container.clientWidth / 2 + Math.cos(angle) * radius;
+                const y = container.clientHeight / 2 + Math.sin(angle) * radius;
+                
+                node.style.left = `${x - 20}px`;
+                node.style.top = `${y - 20}px`;
+                
+                container.appendChild(node);
+            });
+            
+            // Create connecting lines between all nodes
+            const nodes = container.querySelectorAll('.network-node');
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    createNetworkLine(nodes[i], nodes[j], container);
+                }
+            }
+            
+            // Pulse animation
+            function pulseNodes() {
+                nodes.forEach((node, i) => {
+                    setTimeout(() => {
+                        node.style.transform = 'scale(1.1)';
+                        setTimeout(() => {
+                            node.style.transform = 'scale(1)';
+                        }, 300);
+                    }, i * 200);
+                });
+                
+                setTimeout(pulseNodes, 3000);
+            }
+            
+            pulseNodes();
+        }
+        
+        function createNetworkLine(nodeA, nodeB, container) {
+            const rectA = nodeA.getBoundingClientRect();
+            const rectB = nodeB.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
+            const ax = rectA.left - containerRect.left + rectA.width / 2;
+            const ay = rectA.top - containerRect.top + rectA.height / 2;
+            const bx = rectB.left - containerRect.left + rectB.width / 2;
+            const by = rectB.top - containerRect.top + rectB.height / 2;
+            
+            const line = document.createElement('div');
+            line.className = 'network-line';
+            
+            const length = Math.sqrt(Math.pow(bx - ax, 2) + Math.pow(by - ay, 2));
+            const angle = Math.atan2(by - ay, bx - ax);
+            
+            line.style.width = `${length}px`;
+            line.style.left = `${ax}px`;
+            line.style.top = `${ay}px`;
+            line.style.transform = `rotate(${angle}rad)`;
+            
+            container.appendChild(line);
+        }
+
+        // Timer functionality
+        function updateTimer() {
+            const startDate = new Date('May 1, 2025 01:10:18');
+            const now = new Date();
+            const diff = now - startDate;
+            
+            // Calculate days, hours, minutes, seconds
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            // Update digital digits with animation
+            updateDigit('days', days.toString().padStart(2, '0'));
+            updateDigit('hours', hours.toString().padStart(2, '0'));
+            updateDigit('minutes', minutes.toString().padStart(2, '0'));
+            updateDigit('seconds', seconds.toString().padStart(2, '0'));
+            
+            setTimeout(updateTimer, 1000);
+        }
+        
+        function updateDigit(id, newValue) {
+            const element = document.getElementById(id);
+            if (element.textContent !== newValue) {
+                // Add flip animation
+                element.style.animation = 'none';
+                void element.offsetWidth; // Trigger reflow
+                element.style.animation = 'flipDigit 0.5s';
+                element.textContent = newValue;
+            }
+        }
+        
+        // Start timer on load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTimer();
+        });
+    </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250501",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>

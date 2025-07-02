@@ -1,0 +1,654 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper Scroll</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Reset & Global Styles */
+        :root {
+            --dark-navy: #0a192f;
+            --light-cyan: #64ffda;
+            --light-slate: #ccd6f6;
+            --slate: #8892b0;
+            --glow: 0 0 5px var(--light-cyan), 0 0 10px var(--light-cyan), 0 0 15px var(--light-cyan);
+            --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            --scroll-width: 600vw; /* Total width of the scrolling world */
+            --milestone-width: 100vw; /* Each section takes up a screen width */
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--dark-navy);
+            color: var(--light-slate);
+            font-family: var(--font-sans);
+            margin: 0;
+            padding: 0;
+            overflow-y: hidden;
+            overflow-x: scroll;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Hide scrollbar */
+        body::-webkit-scrollbar {
+            display: none; /* for Chrome, Safari, and Opera */
+        }
+        body {
+            -ms-overflow-style: none;  /* for IE and Edge */
+            scrollbar-width: none;  /* for Firefox */
+        }
+
+        /* ----- Core Layout ----- */
+        .scroll-world {
+            position: relative;
+            width: var(--scroll-width);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        
+        #background-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+        }
+
+        .avatar {
+            position: fixed;
+            left: 5vw; /* Positioned near the left edge */
+            bottom: calc(50vh - 10px); /* Centered on the ground line */
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            box-shadow: 0 0 8px white, 0 0 15px white;
+            animation: pulse 2s infinite ease-in-out;
+            z-index: 10;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 8px white, 0 0 15px white; }
+            50% { transform: scale(1.1); box-shadow: 0 0 12px white, 0 0 25px white; }
+            100% { transform: scale(1); box-shadow: 0 0 8px white, 0 0 15px white; }
+        }
+
+        .ground-line {
+            position: absolute;
+            left: 0;
+            top: 50vh;
+            width: 100%;
+            height: 1px;
+            background-color: rgba(204, 214, 246, 0.3);
+        }
+
+        /* ----- Milestone & Content Styling ----- */
+        .milestone {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50vw;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+        }
+
+        .milestone.is-visible {
+            opacity: 1;
+        }
+
+        .content-container {
+            position: relative;
+            z-index: 5;
+            text-align: center;
+            max-width: 600px;
+            padding: 2rem;
+            transform: translateY(40px); /* Start below final position */
+            transition: transform 1s ease-out;
+        }
+        
+        .milestone.is-visible .content-container {
+            transform: translateY(0);
+        }
+
+        .monolith {
+            position: absolute;
+            bottom: 50vh; /* Sits on the ground line */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1;
+            transition: opacity 0.8s ease-in-out;
+        }
+        
+        h1, h2 {
+            font-size: 2.5rem;
+            color: var(--light-slate);
+            margin: 0 0 10px 0;
+        }
+        
+        h2 {
+            font-size: 2rem;
+            color: var(--light-cyan);
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--slate);
+        }
+        
+        /* ----- Specific Milestones ----- */
+
+        /* 0: Intro */
+        #intro { left: 10vw; width: 60vw; }
+        #intro p {
+            font-size: 1.25rem;
+        }
+        #intro .subtitle {
+            margin-top: 2rem;
+            font-family: monospace;
+            color: var(--light-cyan);
+            font-size: 1rem;
+            height: 1em; /* Prevent layout shift */
+        }
+        #intro .subtitle::after {
+            content: '_';
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        .scroll-prompt {
+            position: absolute;
+            bottom: 20vh;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounceRight 2s infinite;
+        }
+        .scroll-prompt svg {
+            width: 40px;
+            height: 40px;
+        }
+        @keyframes bounceRight {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(0); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(5px); }
+        }
+
+        /* 1: GlglStats */
+        #glglstats { left: var(--milestone-width); }
+        .equalizer {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            height: 150px;
+        }
+        .equalizer .bar {
+            width: 10px;
+            background-color: var(--light-cyan);
+            opacity: 0.5;
+            animation: dance 1.5s infinite ease-in-out;
+        }
+        .equalizer .bar:nth-child(1) { height: 40%; animation-delay: 0s; }
+        .equalizer .bar:nth-child(2) { height: 80%; animation-delay: 0.2s; }
+        .equalizer .bar:nth-child(3) { height: 60%; animation-delay: 0.4s; }
+        .equalizer .bar:nth-child(4) { height: 90%; animation-delay: 0.6s; }
+        .equalizer .bar:nth-child(5) { height: 50%; animation-delay: 0.8s; }
+        .equalizer .bar:nth-child(6) { height: 70%; animation-delay: 1s; }
+        @keyframes dance {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(0.3); }
+        }
+
+        /* 2: Ahuzat Dibuk */
+        #ahuzat-dibuk { left: calc(var(--milestone-width) * 2); }
+        .heatmap-block {
+            width: 250px;
+            height: 150px;
+            background: linear-gradient(135deg, #440154, #3b528b, #21918c, #5ec962, #fde725);
+            animation: heat-shift 10s ease infinite;
+            background-size: 400% 400%;
+        }
+        @keyframes heat-shift {
+            0%{background-position:0% 50%}
+            50%{background-position:100% 50%}
+            100%{background-position:0% 50%}
+        }
+        .icon-links { margin-top: 1.5rem; display: flex; gap: 2rem; justify-content: center; }
+        .icon-links a { position: relative; }
+        .icon-links a .tooltip {
+            visibility: hidden; opacity: 0;
+            background-color: var(--light-cyan); color: var(--dark-navy);
+            text-align: center; border-radius: 6px; padding: 5px 10px;
+            position: absolute; z-index: 1; bottom: 125%; left: 50%;
+            transform: translateX(-50%); transition: opacity 0.3s;
+            font-size: 0.8rem; font-weight: bold;
+        }
+        .icon-links a:hover .tooltip { visibility: visible; opacity: 1; }
+
+        /* 3: Part Orienting */
+        #part-orienting { left: calc(var(--milestone-width) * 3); }
+        .crystalline-structure svg {
+            width: 150px;
+            height: 150px;
+            animation: rotate 20s linear infinite;
+        }
+        @keyframes rotate {
+            from { transform: rotate(0deg); } to { transform: rotate(360deg); }
+        }
+        
+        /* 4: Meta */
+        #meta { left: calc(var(--milestone-width) * 4); }
+        .penrose-triangle svg {
+            width: 150px;
+            height: 150px;
+            animation: rotate-subtle 30s ease-in-out infinite;
+        }
+        @keyframes rotate-subtle {
+            0%, 100% { transform: rotateY(0deg) rotateX(10deg); }
+            50% { transform: rotateY(45deg) rotateX(-10deg); }
+        }
+        #meta a { 
+            color: var(--light-cyan); 
+            text-decoration: underline; 
+            text-decoration-color: rgba(100, 255, 218, 0.5);
+            font-size: 1rem;
+        }
+
+        /* 5: Contact */
+        #contact {  left: calc(var(--milestone-width) * 5); }
+        .hub-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background-color: rgba(100, 255, 218, 0.1);
+            box-shadow: inset 0 0 40px rgba(100, 255, 218, 0.5), 0 0 20px rgba(100, 255, 218, 0.2);
+        }
+        .contact-orbs {
+            display: flex;
+            gap: 4rem;
+        }
+        .contact-orbs a {
+            transition: transform 0.3s ease, filter 0.3s ease;
+        }
+        .contact-orbs a:hover {
+            transform: scale(1.2);
+            filter: drop-shadow(0 0 10px var(--light-cyan));
+        }
+
+        /* ----- Shared Interactive Elements (Buttons, Icons) ----- */
+        .cta-button {
+            display: inline-block;
+            margin: 1rem 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: 1px solid var(--light-cyan);
+            border-radius: 4px;
+            color: var(--light-cyan);
+            background-color: transparent;
+            text-decoration: none;
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .cta-button:hover {
+            background-color: rgba(100, 255, 218, 0.1);
+        }
+
+        .icon {
+            width: 40px;
+            height: 40px;
+            fill: var(--slate);
+            transition: fill 0.3s ease;
+        }
+        a:hover .icon {
+            fill: var(--light-cyan);
+        }
+
+        /* ----- Footer ----- */
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--slate);
+            background-color: var(--dark-navy);
+            z-index: 20;
+        }
+        footer span {
+            color: var(--light-cyan);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="background-canvas"></canvas>
+
+    <div class="avatar"></div>
+    
+    <main class="scroll-world">
+        <div class="ground-line"></div>
+
+        <!-- MILESTONE 0: INTRO -->
+        <section id="intro" class="milestone">
+             <div class="content-container">
+                <h1>Geva Kipper</h1>
+                <p>Software Engineer at Google, focusing on large-scale data processing and machine learning infrastructure.</p>
+                <div class="subtitle-container">
+                    <p class="subtitle" id="typewriter"></p>
+                </div>
+            </div>
+            <div class="scroll-prompt">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--light-cyan);">
+                    <path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path>
+                </svg>
+            </div>
+        </section>
+
+        <!-- MILESTONE 1: GlglStats -->
+        <section id="glglstats" class="milestone">
+            <div class="monolith equalizer">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            </div>
+            <div class="content-container">
+                <h2>GlglStats</h2>
+                <p>A Python project measuring the repetitiveness of Israeli pop music using LZ77 compression, featuring interactive visualizations of song patterns.</p>
+                <div>
+                    <a href="https://glglstats.onrender.com/" target="_blank" class="cta-button">Explore the Site</a>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="cta-button">Watch PyData Talk</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- MILESTONE 2: Ahuzat Dibuk -->
+        <section id="ahuzat-dibuk" class="milestone">
+            <div class="monolith heatmap-block"></div>
+            <div class="content-container">
+                <h2>Ahuzat Dibuk</h2>
+                <p>A data project that scrapes and visualizes parking occupancy in Tel-Aviv, generating predictive heatmaps to help residents find parking.</p>
+                <div class="icon-links">
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">
+                        <!-- Newspaper Icon -->
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2zM6 7h12v2H6V7zm0 4h12v2H6v-2zm0 4h8v2H6v-2z"></path></svg>
+                        <span class="tooltip">Channel 13 News</span>
+                    </a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">
+                        <!-- Newspaper Icon -->
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2zM6 7h12v2H6V7zm0 4h12v2H6v-2zm0 4h8v2H6v-2z"></path></svg>
+                        <span class="tooltip">Mako</span>
+                    </a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">
+                        <!-- Facebook Icon -->
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+                        <span class="tooltip">Secret Tel Aviv</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- MILESTONE 3: 2D Part Orienting -->
+        <section id="part-orienting" class="milestone">
+            <div class="monolith crystalline-structure">
+                <!-- Rotating Wireframe Polygon SVG -->
+                <svg viewBox="-100 -100 200 200" fill="none" stroke="rgba(100, 255, 218, 0.6)" stroke-width="2">
+                    <polygon points="0,-90 87,-50 87,50 0,90 -87,50 -87,-50" />
+                    <polygon points="0,-60 52,-30 52,30 0,60 -52,30 -52,-30" />
+                    <line x1="0" y1="-90" x2="0" y2="-60" /> <line x1="87" y1="-50" x2="52" y2="-30" />
+                    <line x1="87" y1="50" x2="52" y2="30" /> <line x1="0" y1="90" x2="0" y2="60" />
+                    <line x1="-87" y1="50" x2="-52" y2="30" /> <line x1="-87" y1="-50" x2="-52" y2="-30" />
+                </svg>
+            </div>
+            <div class="content-container">
+                <h2>2D Part Orienting</h2>
+                <p>A C++ implementation of an efficient algorithm for constructing a 'push plan' to orient any given polygon, contributed to an open-source computational geometry library.</p>
+                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="cta-button">View Code & Details</a>
+            </div>
+        </section>
+        
+        <!-- MILESTONE 4: Meta -->
+        <section id="meta" class="milestone">
+            <div class="monolith penrose-triangle">
+                <!-- Penrose Triangle SVG -->
+                <svg width="150" height="150" viewBox="0 0 120 120" stroke="rgba(100, 255, 218, 0.7)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none">
+                    <path d="M60 10 L110 97 H10 Z"></path>
+                    <path d="M60 10 L85 55 M110 97 L35 97 M10 97 L60 55"></path>
+                </svg>
+            </div>
+             <div class="content-container">
+                <h2>This Portfolio</h2>
+                <p>A meta-project demonstrating a unique approach to a personal website, built with modern web technologies and a dynamic, game-like interface.</p>
+                <a href="https://portfolio-dor1.onrender.com/" target="_blank">You are here: portfolio-dor1.onrender.com</a>
+            </div>
+        </section>
+
+        <!-- MILESTONE 5: Contact -->
+        <section id="contact" class="milestone">
+             <div class="monolith hub-circle"></div>
+             <div class="content-container contact-orbs">
+                 <a href="https://github.com/gevak" target="_blank">
+                     <!-- Github Icon -->
+                    <svg class="icon" viewBox="0 0 24 24" style="width:50px; height:50px;"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.475 2 2 6.475 2 12C2 16.425 4.8625 20.1625 8.8375 21.4875C9.3375 21.575 9.525 21.275 9.525 21.0125C9.525 20.775 9.5125 19.9875 9.5125 19.15C7.0375 19.6125 6.3375 18.525 6.15 18.075C6.0375 17.8125 5.55 17.025 5.125 16.775C4.775 16.575 4.275 16.1 5.1125 16.0875C5.875 16.075 6.45 16.775 6.65 17.075C7.5125 18.575 8.9375 18.15 9.5625 17.875C9.65 17.225 9.9125 16.775 10.2 16.5C8.1625 16.275 5.9875 15.4625 5.9875 11.9625C5.9875 10.875 6.375 9.9875 7.025 9.325C6.925 9.0875 6.575 8.0125 7.125 6.7875C7.125 6.7875 7.8625 6.55 9.525 7.7125C10.225 7.5125 11.1125 7.4125 12 7.4125C12.8875 7.4125 13.775 7.5125 14.475 7.7125C16.1375 6.55 16.875 6.7875 16.875 6.7875C17.425 8.0125 17.075 9.0875 16.975 9.325C17.625 9.9875 18.0125 10.875 18.0125 11.9625C18.0125 15.475 15.8375 16.275 13.8 16.5C14.1375 16.8 14.475 17.375 14.475 18.2C14.475 19.4125 14.4625 20.425 14.4625 20.7375C14.4625 21.0125 14.65 21.2875 15.1625 21.4875C19.1375 20.1625 22 16.425 22 12C22 6.475 17.525 2 12 2Z"></path></svg>
+                 </a>
+                 <a href="https://linkedin.com/in/gevakip" target="_blank">
+                    <!-- LinkedIn Icon -->
+                    <svg class="icon" viewBox="0 0 24 24" style="width:50px; height:50px;"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"></path></svg>
+                 </a>
+                 <a href="https://facebook.com/geva.kipper" target="_blank">
+                    <!-- Facebook Icon -->
+                    <svg class="icon" viewBox="0 0 24 24" style="width:50px; height:50px;"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+                 </a>
+             </div>
+        </section>
+
+    </main>
+
+    <footer>
+        AI Design by <span>GPT-4o</span> | Time since last evolution: <span id="stopwatch"></span>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- CONFIGURATION ---
+            const SCROLL_WIDTH = document.querySelector('.scroll-world').scrollWidth;
+            const VIEWPORT_WIDTH = window.innerWidth;
+
+            const milestones = [
+                { el: document.getElementById('intro'), start: 0, end: 0.15 },
+                { el: document.getElementById('glglstats'), start: 0.16, end: 0.32 },
+                { el: document.getElementById('ahuzat-dibuk'), start: 0.33, end: 0.49 },
+                { el: document.getElementById('part-orienting'), start: 0.50, end: 0.66 },
+                { el: document.getElementById('meta'), start: 0.67, end: 0.83 },
+                { el: document.getElementById('contact'), start: 0.84, end: 1.0 }
+            ];
+
+            // --- TYPING ANIMATION ---
+            function typewriter() {
+                const el = document.getElementById('typewriter');
+                const text = '> This portfolio is procedurally redesigned by AI daily. The experience is always evolving.';
+                let i = 0;
+                el.innerHTML = '';
+                
+                function type() {
+                    if (i < text.length) {
+                        el.innerHTML += text.charAt(i);
+                        i++;
+                        setTimeout(type, 50);
+                    }
+                }
+                setTimeout(type, 1000); // Start typing after a delay
+            }
+
+            // --- FOOTER STOPWATCH ---
+            function stopwatch() {
+                const el = document.getElementById('stopwatch');
+                const startTime = new Date('2025-06-22T01:15:38Z').getTime();
+
+                setInterval(() => {
+                    const now = new Date().getTime();
+                    const diff = now - startTime;
+
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                    el.textContent = `${String(hours).padStart(2, '0')} hours, ${String(minutes).padStart(2, '0')} minutes, ${String(seconds).padStart(2, '0')} seconds`;
+                }, 1000);
+            }
+            
+            // --- CANVAS BACKGROUND ---
+            const canvas = document.getElementById('background-canvas');
+            const ctx = canvas.getContext('2d');
+            let w, h, scrollRatio = 0;
+            let currentBackgroundMode = 'grid'; // 'grid', 'sine', 'city', 'code'
+
+            function resizeCanvas() {
+                w = canvas.width = window.innerWidth;
+                h = canvas.height = window.innerHeight;
+            }
+
+            const codeSnippets = [
+                'const portfolio = new Experience();', 'body { overflow-x: scroll; }',
+                'el.classList.add("is-visible");', 'requestAnimationFrame(animate);',
+                'ctx.strokeStyle = "rgba(100, 255, 218, 0.1)";', 'let scrollRatio = scrollX / maxScroll;',
+                '.monolith { transition: opacity 1s; }', 'let x = Math.sin(angle) * radius;'
+            ];
+
+            function draw() {
+                ctx.clearRect(0, 0, w, h);
+                const parallaxOffset = scrollRatio * w * 0.2;
+
+                ctx.save();
+                ctx.translate(-parallaxOffset, 0);
+
+                switch (currentBackgroundMode) {
+                    case 'sine':
+                        ctx.strokeStyle = "rgba(100, 255, 218, 0.15)";
+                        ctx.lineWidth = 1;
+                        for (let i = 0; i < 5; i++) {
+                            ctx.beginPath();
+                            for (let x = 0; x < w * 1.5; x++) {
+                                let y = h / 2 + Math.sin(x * 0.01 + performance.now() * 0.0005 * (i + 1)) * (h / 10 * (i * 0.5 + 1));
+                                ctx.lineTo(x, y);
+                            }
+                            ctx.stroke();
+                        }
+                        break;
+                    case 'city':
+                        ctx.strokeStyle = "rgba(100, 255, 218, 0.1)";
+                        ctx.lineWidth = 0.5;
+                        for (let i = 0; i < w * 1.5; i += 40) {
+                            ctx.beginPath();
+                            ctx.moveTo(i, 0);
+                            ctx.lineTo(i, h);
+                            ctx.stroke();
+                        }
+                        for (let i = 0; i < h; i += 40) {
+                            ctx.beginPath();
+                            ctx.moveTo(0, i);
+                            ctx.lineTo(w * 1.5, i);
+                            ctx.stroke();
+                        }
+                        break;
+                    case 'code':
+                        ctx.fillStyle = "rgba(100, 255, 218, 0.15)";
+                        ctx.font = "14px monospace";
+                        for (let i = 0; i < 20; i++) {
+                            const snippet = codeSnippets[i % codeSnippets.length];
+                            const y = (i * 50 + performance.now() * 0.01) % (h + 50) - 50;
+                            const x = (i % 4) * (w / 3.5);
+                            ctx.fillText(snippet, x, y);
+                        }
+                        break;
+                    case 'grid':
+                    default:
+                        ctx.strokeStyle = "rgba(100, 255, 218, 0.1)";
+                        ctx.lineWidth = 0.5;
+                        for (let i = 0; i < w * 1.5; i += 50) {
+                            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, h); ctx.stroke();
+                        }
+                        for (let i = 0; i < h; i += 50) {
+                            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(w * 1.5, i); ctx.stroke();
+                        }
+                }
+                ctx.restore();
+                requestAnimationFrame(draw);
+            }
+
+            // --- SCROLL HANDLING ---
+            function handleScroll() {
+                const maxScroll = SCROLL_WIDTH - VIEWPORT_WIDTH;
+                const currentScroll = window.scrollX;
+                scrollRatio = currentScroll / maxScroll;
+
+                let activeMilestone = false;
+                
+                // Update milestone visibility and background mode
+                for (const milestone of milestones) {
+                    const milestoneCenter = (milestone.start + (milestone.end - milestone.start) / 2) * maxScroll;
+                    const activationDistance = VIEWPORT_WIDTH / 2;
+
+                    if (Math.abs(currentScroll - milestoneCenter) < activationDistance) {
+                        milestone.el.classList.add('is-visible');
+                        
+                        // Set background based on the active milestone
+                        if (!activeMilestone) {
+                            switch(milestone.el.id) {
+                                case 'glglstats': currentBackgroundMode = 'sine'; break;
+                                case 'ahuzat-dibuk': currentBackgroundMode = 'city'; break;
+                                case 'meta': currentBackgroundMode = 'code'; break;
+                                default: currentBackgroundMode = 'grid';
+                            }
+                            activeMilestone = true;
+                        }
+                    } else {
+                        milestone.el.classList.remove('is-visible');
+                    }
+                }
+            }
+
+            // --- INITIALIZATION ---
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                handleScroll(); // Recalculate on resize
+            });
+            window.addEventListener('scroll', handleScroll, { passive: true });
+
+            // Fire initial states
+            resizeCanvas();
+            requestAnimationFrame(draw);
+            handleScroll();
+            typewriter();
+            stopwatch();
+
+            // Set intro to be visible on load
+             setTimeout(() => {
+                document.getElementById('intro').classList.add('is-visible');
+            }, 100);
+        });
+    </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250622",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>

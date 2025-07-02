@@ -1,0 +1,561 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper // AI Portfolio</title>
+    <style>
+        :root {
+            --background-color: #0d0d10;
+            --text-color: #e0e0e0;
+            --accent-color: #00bfff; /* Deep Sky Blue */
+            --accent-glow: rgba(0, 191, 255, 0.4);
+            --font-family: 'monospace', 'Courier New', Courier;
+            --typing-speed: 50ms;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            font-size: 16px;
+            overscroll-behavior: contain;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+            overflow-y: auto;
+        }
+
+        #chat-container {
+            width: 100%;
+            max-width: 800px;
+            padding-bottom: 200px; /* Space for options and footer */
+        }
+        
+        .initial-cursor-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            background-color: var(--background-color);
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background-color: var(--accent-color);
+            animation: blink 1s step-end infinite;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+        
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        .message {
+            margin: 0.5rem 0;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        .message.no-prefix::before {
+            content: none !important;
+        }
+
+        .message::before {
+            content: '> ';
+            color: var(--accent-color);
+        }
+        
+        .ephemeral-notice {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 800px;
+            font-size: 0.8rem;
+            color: #888;
+            text-align: center;
+            padding: 10px;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+        
+        .ephemeral-notice.visible {
+            opacity: 1;
+        }
+
+        #options-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        #options-container.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .option-button {
+            background-color: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 0.8rem 1.5rem;
+            font-family: var(--font-family);
+            font-size: 0.9rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .option-button:hover {
+            background-color: var(--accent-color);
+            color: var(--background-color);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .content-container {
+            margin-top: 1rem;
+            opacity: 0;
+            animation: fadeIn 1s forwards;
+            animation-delay: 0.5s;
+        }
+        
+        .project-link {
+            display: inline-block;
+            background-color: var(--accent-color);
+            color: var(--background-color);
+            padding: 0.8rem 1.8rem;
+            font-family: var(--font-family);
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+        }
+        
+        .project-link:hover {
+            box-shadow: 0 0 20px var(--accent-glow);
+            transform: translateY(-2px);
+        }
+
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+            max-width: 100%;
+            background: #000;
+            margin: 1rem 0;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .link-card-container {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .link-card {
+            flex: 1;
+            min-width: 200px;
+            border: 1px solid #444;
+            padding: 1.5rem;
+            text-align: center;
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .link-card:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-glow);
+            transform: translateY(-3px);
+        }
+        
+        .social-links-container {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        
+        .social-link {
+            color: #888;
+            transition: all 0.3s ease;
+        }
+        
+        .social-link:hover {
+            color: var(--accent-color);
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 8px var(--accent-glow));
+        }
+        
+        .social-link svg {
+            width: 48px;
+            height: 48px;
+            fill: currentColor;
+        }
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            font-size: 0.75rem;
+            color: #666;
+            border-top: 1px solid #222;
+        }
+        
+        footer::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--accent-color);
+            opacity: 0.5;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="initial-cursor-container">
+        <div class="cursor"></div>
+    </div>
+    
+    <div id="chat-container"></div>
+    
+    <div id="options-container"></div>
+
+    <div id="ephemeral-notice" class="ephemeral-notice">
+        This interface is re-designed by AI every 24 hours. The content you see is ephemeral.
+    </div>
+    
+    <footer>
+        <span id="footer-left">DESIGN AND CONTENT GENERATED BY CLAUDE 3</span>
+        <span id="footer-right">TIME SINCE LAST REGENERATION: <span id="stopwatch"></span></span>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatContainer = document.getElementById('chat-container');
+            const optionsContainer = document.getElementById('options-container');
+            const initialCursorContainer = document.getElementById('initial-cursor-container');
+            const ephemeralNotice = document.getElementById('ephemeral-notice');
+            const stopwatchEl = document.getElementById('stopwatch');
+
+            const TYPING_SPEED = 40;
+            const INITIAL_PAUSE = 2000;
+
+            const contentData = {
+                glglstats: {
+                    buttonText: 'GlglStats: Music Repetitiveness Analysis',
+                    loadingMessage: '> Accessing \'GlglStats\' data...',
+                    steps: [
+                        { type: 'message', text: 'Project: GlglStats. A Python-based analysis of song repetitiveness in the Israeli pop charts using the LZ77 compression algorithm.' },
+                        { type: 'message', text: 'The project includes interactive visualizations of repetition patterns in famous songs.' },
+                        { type: 'message', text: 'Geva presented this work at the PyData TLV conference. You can watch the recording here:' },
+                        { type: 'video', videoId: 'jrKAtOsj1Lo' },
+                        { type: 'message', text: 'To interact with the live project, use the link below.' },
+                        { type: 'button', text: 'Explore GlglStats ->', href: 'https://glglstats.onrender.com/' }
+                    ]
+                },
+                ahuzatdibuk: {
+                    buttonText: 'Ahuzat Dibuk: Tel Aviv Parking Data',
+                    loadingMessage: '> Accessing \'Ahuzat Dibuk\' data...',
+                    steps: [
+                        { type: 'message', text: 'Project: Ahuzat Dibuk. A Python scraping and data visualization tool.' },
+                        { type: 'message', text: 'It collects and analyzes real-time occupancy statistics for parking lots in Tel-Aviv, generating predictive heat-maps for residents.' },
+                        { type: 'message', text: 'The project gained media attention. Here are the relevant publications:' },
+                        { type: 'link_cards', links: [
+                            { text: '13tv News Story', href: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/' },
+                            { text: 'Mako News Story', href: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm' },
+                            { text: 'Original Facebook Publication', href: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943' }
+                        ]}
+                    ]
+                },
+                partorienting: {
+                    buttonText: '2D Part Orienting: Computational Geometry',
+                    loadingMessage: '> Accessing \'2D Part Orienting\' library...',
+                    steps: [
+                        { type: 'message', text: 'Project: 2D Part Orienting.' },
+                        { type: 'message', text: 'A C++ implementation of an efficient algorithm that constructs a \'push plan\' to orient any given polygon.' },
+                        { type: 'message', text: 'This work was contributed to an open-source computational geometry library.' },
+                        { type: 'message', text: 'The academic paper, additional information, and source code are available here:' },
+                        { type: 'button', text: 'View Project & Code ->', href: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/' }
+                    ]
+                },
+                meta: {
+                    buttonText: 'This Website: A Meta Project',
+                    loadingMessage: '> Running self-diagnostic...',
+                    steps: [
+                        { type: 'message', text: 'An interesting selection. The project you are asking about is the interface you are currently using.' },
+                        { type: 'message', text: 'This portfolio is a demonstration of a dynamic, AI-generated, single-page application.' },
+                        { type: 'message', text: 'You can find the direct link to this experience here:' },
+                        { type: 'button', text: 'Self-Reference Link ->', href: 'https://portfolio-dor1.onrender.com/' }
+                    ]
+                },
+                contact: {
+                    buttonText: 'Establish External Connection',
+                    loadingMessage: '> Accessing Geva\'s professional and social hubs...',
+                    steps: [
+                        { type: 'social_links', links: {
+                            github: 'https://github.com/gevak',
+                            linkedin: 'https://linkedin.com/in/gevakip',
+                            facebook: 'https://facebook.com/geva.kipper'
+                        }}
+                    ]
+                }
+            };
+            
+            const socialIconSVGs = {
+                github: `<svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>`,
+                linkedin: `<svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-1.34-.025-3.065-1.868-3.065-1.868 0-2.157 1.458-2.157 2.965v5.704h-3v-11h2.889v1.396h.04c.423-.8 1.461-1.638 2.859-1.638 3.055 0 3.617 2.009 3.617 4.621v5.621z"/></svg>`,
+                facebook: `<svg viewBox="0 0 24 24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>`
+            };
+
+            const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+            async function typeMessage(text) {
+                const messageEl = document.createElement('div');
+                messageEl.classList.add('message');
+                chatContainer.appendChild(messageEl);
+
+                const cursor = document.createElement('span');
+                cursor.classList.add('cursor');
+                
+                for (let i = 0; i < text.length; i++) {
+                    messageEl.textContent = text.substring(0, i + 1);
+                    await sleep(TYPING_SPEED);
+                }
+                
+                messageEl.appendChild(cursor);
+                await sleep(300);
+                cursor.style.animation = 'none';
+                cursor.style.opacity = '1';
+                await sleep(200);
+                cursor.style.animation = '';
+                
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                return messageEl;
+            }
+
+            function addContent(element) {
+                const container = document.createElement('div');
+                container.classList.add('content-container');
+                container.appendChild(element);
+                chatContainer.appendChild(container);
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }
+
+            function createVideo(videoId) {
+                const videoContainer = document.createElement('div');
+                videoContainer.className = 'video-container';
+                videoContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+                return videoContainer;
+            }
+
+            function createButton(text, href) {
+                const button = document.createElement('a');
+                button.className = 'project-link';
+                button.textContent = text;
+                button.href = href;
+                button.target = '_blank';
+                return button;
+            }
+            
+            function createLinkCards(links) {
+                const container = document.createElement('div');
+                container.className = 'link-card-container';
+                links.forEach(linkInfo => {
+                    const card = document.createElement('a');
+                    card.className = 'link-card';
+                    card.href = linkInfo.href;
+                    card.target = '_blank';
+                    card.textContent = linkInfo.text;
+                    container.appendChild(card);
+                });
+                return container;
+            }
+            
+            function createSocialLinks(links) {
+                const container = document.createElement('div');
+                container.className = 'social-links-container';
+                for (const [platform, href] of Object.entries(links)) {
+                    const link = document.createElement('a');
+                    link.className = 'social-link';
+                    link.href = href;
+                    link.target = '_blank';
+                    link.innerHTML = socialIconSVGs[platform];
+                    link.setAttribute('aria-label', `Geva Kipper's ${platform}`);
+                    container.appendChild(link);
+                }
+                return container;
+            }
+
+            function showOptions() {
+                optionsContainer.innerHTML = '';
+                for (const key in contentData) {
+                    const button = document.createElement('button');
+                    button.classList.add('option-button');
+                    button.textContent = contentData[key].buttonText;
+                    button.dataset.key = key;
+                    button.addEventListener('click', () => handleOptionClick(key));
+                    optionsContainer.appendChild(button);
+                }
+                chatContainer.appendChild(optionsContainer);
+                setTimeout(() => optionsContainer.classList.add('visible'), 100);
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }
+
+            function hideOptions() {
+                optionsContainer.classList.remove('visible');
+            }
+
+            async function handleOptionClick(key) {
+                hideOptions();
+                await sleep(500);
+                
+                const data = contentData[key];
+                
+                const loadingMessageEl = await typeMessage(data.loadingMessage);
+                await sleep(1000);
+                loadingMessageEl.remove();
+
+                for (const step of data.steps) {
+                    switch (step.type) {
+                        case 'message':
+                            await typeMessage(step.text);
+                            await sleep(500);
+                            break;
+                        case 'video':
+                            addContent(createVideo(step.videoId));
+                            await sleep(500);
+                            break;
+                        case 'button':
+                            addContent(createButton(step.text, step.href));
+                            await sleep(500);
+                            break;
+                        case 'link_cards':
+                            addContent(createLinkCards(step.links));
+                            await sleep(500);
+                            break;
+                        case 'social_links':
+                            addContent(createSocialLinks(step.links));
+                            await sleep(500);
+                            break;
+                    }
+                }
+                
+                await sleep(1500);
+                await typeMessage('> What would you like to explore next?');
+                showOptions();
+            }
+
+            function startStopwatch() {
+                const regenerationTime = new Date('2025-06-07T01:06:31Z').getTime();
+                
+                setInterval(() => {
+                    const now = new Date().getTime();
+                    const diff = now - regenerationTime;
+
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                    stopwatchEl.textContent = 
+                        `${String(hours).padStart(2, '0')}:` +
+                        `${String(minutes).padStart(2, '0')}:` +
+                        `${String(seconds).padStart(2, '0')}`;
+                }, 1000);
+            }
+
+            async function init() {
+                await sleep(INITIAL_PAUSE);
+                initialCursorContainer.style.transition = 'opacity 1s';
+                initialCursorContainer.style.opacity = '0';
+                await sleep(1000);
+                initialCursorContainer.remove();
+
+                await typeMessage('> Initializing connection...');
+                await sleep(500);
+                await typeMessage('> System online. Welcome.');
+                await sleep(500);
+                await typeMessage('> I am the AI architect for this portfolio. I am here to present the work of Geva Kipper.');
+                await sleep(500);
+                await typeMessage('> Geva is a Software Engineer at Google, focusing on large-scale infrastructure and developer tooling.');
+                
+                ephemeralNotice.classList.add('visible');
+                
+                await sleep(1000);
+                await typeMessage('> What subject would you like me to elaborate on?');
+
+                showOptions();
+                startStopwatch();
+            }
+
+            init();
+        });
+    </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250607",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>

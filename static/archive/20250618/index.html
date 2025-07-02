@@ -1,0 +1,425 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper // Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #1a1a1a;
+            --text-color: #e0e0e0;
+            --accent-cyan: #00ffff;
+            --accent-magenta: #ff00ff;
+            --dim-text: #888888;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: var(--background);
+            color: var(--text-color);
+            font-family: 'Fira Code', monospace;
+            font-size: 16px;
+        }
+
+        #terminal {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 1.5rem;
+        }
+
+        #boot-sequence {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            white-space: pre;
+            font-size: 1.2rem;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+        }
+
+        #terminal-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 1rem; /* for scrollbar */
+        }
+        
+        /* Custom scrollbar for a terminal look */
+        #terminal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        #terminal-content::-webkit-scrollbar-track {
+            background: var(--background);
+        }
+        #terminal-content::-webkit-scrollbar-thumb {
+            background-color: var(--dim-text);
+            border-radius: 4px;
+            border: 2px solid var(--background);
+        }
+
+        .line {
+            margin-bottom: 0.5em;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .input-line {
+            display: flex;
+            align-items: center;
+        }
+
+        .prompt {
+            white-space: nowrap;
+            margin-right: 0.5em;
+        }
+
+        #command-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: inherit;
+            font-family: inherit;
+            font-size: inherit;
+            flex-grow: 1;
+            caret-color: var(--accent-cyan);
+        }
+
+        #cursor {
+            display: inline-block;
+            background-color: var(--text-color);
+            width: 0.6em;
+            height: 1.2em;
+            animation: blink 1s step-end infinite;
+            margin-left: -0.6em; /* Overlay on top of input's last character space */
+            vertical-align: bottom;
+        }
+
+        @keyframes blink {
+            from, to { background-color: transparent; }
+            50% { background-color: var(--text-color); }
+        }
+        
+        #command-input:focus + #cursor {
+            display: none;
+        }
+        
+        .content-block {
+            border: 1px solid var(--accent-cyan);
+            box-shadow: 0 0 8px -2px var(--accent-cyan);
+            padding: 1rem;
+            margin-top: 1em;
+            margin-bottom: 1em;
+        }
+        
+        .content-block h3 {
+            margin: 0 0 1rem 0;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+        
+        .content-block a {
+            display: block;
+            color: var(--accent-magenta);
+            text-decoration: none;
+            transition: color 0.2s ease-in-out, transform 0.2s ease-in-out;
+            margin-top: 0.5rem;
+        }
+        
+        .content-block a:hover {
+            color: var(--text-color);
+            transform: translateX(5px);
+        }
+
+        .help-table {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            gap: 0.5rem 1rem;
+            margin-top: 1rem;
+        }
+
+        .help-command {
+            color: var(--accent-cyan);
+            font-weight: 700;
+        }
+
+        #footer {
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            color: var(--dim-text);
+            margin-top: 1rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+
+    <pre id="boot-sequence"></pre>
+
+    <div id="terminal" onclick="document.getElementById('command-input').focus();">
+        <div id="terminal-content"></div>
+
+        <div class="input-line">
+            <span class="prompt">portfolio@geva:~$</span>
+            <input type="text" id="command-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+            <span id="cursor"></span>
+        </div>
+    </div>
+
+    <div id="footer">
+        <span id="footer-left">Design generated by OpenAI's GPT-4.</span>
+        <span id="footer-right">System Uptime: 00:00:00</span>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const terminalContent = document.getElementById('terminal-content');
+            const commandInput = document.getElementById('command-input');
+            const bootSequenceEl = document.getElementById('boot-sequence');
+            const footerUptime = document.getElementById('footer-right');
+
+            const startTime = new Date();
+            let commandHistory = [];
+            let historyIndex = -1;
+
+            const headerContent = `Geva Kipper // Software Engineer at Google, focusing on large-scale data infrastructure.
+<span style="color: var(--dim-text)">[This site's design is regenerated daily by an AI. All content is ephemeral.]</span>`;
+            
+            const projects = {
+                'glglstats': {
+                    title: '--- Project: GlglStats ---',
+                    description: 'A Python project measuring the repetitiveness of Israeli pop-chart songs using LZ77 compression. Includes visualizations of repetition patterns in famous songs.',
+                    links: [
+                        { text: '> [View Live Project]', url: 'https://glglstats.onrender.com/' },
+                        { text: '> [Watch PyData TLV Talk]', url: 'https://www.youtube.com/watch?v=jrKAtOsj1Lo' },
+                    ]
+                },
+                'ahuzat-dibuk': {
+                    title: '--- Project: Ahuzat Dibuk ---',
+                    description: 'A Python scraping and data visualization project that collects and analyzes Tel-Aviv parking lot occupancy, generating predictive heat-maps for residents.',
+                    links: [
+                        { text: '> [Channel 13 News Story]', url: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/' },
+                        { text: '> [Mako News Story]', url: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm' },
+                        { text: '> [Original Facebook Publication]', url: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/' }
+                    ]
+                },
+                '2d-part-orienting': {
+                    title: '--- Project: 2D Part Orienting ---',
+                    description: "A C++ implementation of an efficient algorithm for constructing a 'push plan' to orient a given polygon, contributed to an open-source computational geometry library.",
+                    links: [
+                        { text: '> [Project Details & Code]', url: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/' },
+                    ]
+                },
+                'meta-portfolio': {
+                    title: '--- Project: Meta Portfolio ---',
+                    description: 'The very terminal you are using now. A single-page portfolio designed as an interactive command-line interface, built with modern web technologies.',
+                    links: [
+                        { text: '> [Inspect Source (self-reference)]', url: 'https://portfolio-dor1.onrender.com/' },
+                    ]
+                }
+            };
+            
+            const connectContent = {
+                title: '--- Connect ---',
+                description: 'Find me on the web:',
+                links: [
+                    { text: '> [GitHub]', url: 'https://github.com/gevak' },
+                    { text: '> [LinkedIn]', url: 'https://linkedin.com/in/gevakip' },
+                    { text: '> [Facebook]', url: 'https://facebook.com/geva.kipper' }
+                ]
+            };
+
+            const commands = {
+                help: () => {
+                   return `<div class="help-table">
+                        <span class="help-command">help</span><span>Displays this list of available commands.</span>
+                        <span class="help-command">ls</span><span>Lists available project identifiers.</span>
+                        <span class="help-command">show &lt;name&gt;</span><span>Shows details for a specific project.</span>
+                        <span class="help-command">connect</span><span>Displays social and professional links.</span>
+                        <span class="help-command">clear</span><span>Clears the terminal screen.</span>
+                    </div>`;
+                },
+                ls: () => {
+                    return Object.keys(projects).join('   ');
+                },
+                show: (args) => {
+                    const projectName = args[0];
+                    if (!projectName) {
+                        return `Usage: show &lt;project_name&gt;\nAvailable projects: ${Object.keys(projects).join(', ')}`;
+                    }                    
+                    const project = projects[projectName];
+                    if (project) {
+                        return createContentBlock(project);
+                    }
+                    return `command not found: show ${projectName}`;
+                },
+                connect: () => {
+                    return createContentBlock(connectContent);
+                },
+                clear: () => {
+                    terminalContent.innerHTML = '';
+                    createLine(headerContent);
+                    return '';
+                }
+            };
+
+            const typeWriter = async (element, text, delay = 50) => {
+                for (let i = 0; i < text.length; i++) {
+                    element.innerHTML += text.charAt(i);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            };
+
+            const bootUp = async () => {
+                const asciiArt = `
+ ██████╗  ██╗  ██╗
+██╔════╝ ██║ ██╔╝
+██║  ███╗█████╔╝ 
+██║   ██║██╔═██╗ 
+╚██████╔╝██║  ██╗
+ ╚═════╝ ╚═╝  ╚═╝
+                `;
+                bootSequenceEl.textContent = asciiArt;
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                bootSequenceEl.style.opacity = '0';
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                bootSequenceEl.innerHTML = '';
+                bootSequenceEl.style.textAlign = 'left';
+                bootSequenceEl.style.opacity = '1';
+                
+                const bootLines = [
+                    'Initializing Geva Kipper OS...',
+                    'Verifying AI daily design parameters... OK',
+                    'System ready.'
+                ];
+
+                for (const line of bootLines) {
+                    await typeWriter(bootSequenceEl, line + '\n', 20);
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                bootSequenceEl.style.opacity = '0';
+                await new Promise(resolve => setTimeout(resolve, 500));
+                bootSequenceEl.remove();
+
+                // Start main terminal
+                createLine(headerContent);
+                scrollToBottom();
+                commandInput.focus();
+            };
+
+            const createLine = (content, isCommand = false) => {
+                const line = document.createElement('div');
+                line.classList.add('line');
+                if (isCommand) {
+                    line.innerHTML = `<span class="prompt">portfolio@geva:~$</span> ${content}`;
+                } else {
+                    line.innerHTML = content;
+                }
+                terminalContent.appendChild(line);
+            };
+
+            const createContentBlock = (data) => {
+                const linksHtml = data.links.map(link => `<a href="${link.url}" target="_blank">${link.text}</a>`).join('');
+                return `
+                    <div class="content-block">
+                        <h3>${data.title}</h3>
+                        <p>${data.description}</p>
+                        ${linksHtml}
+                    </div>
+                `;
+            };
+
+            const executeCommand = (cmd) => {
+                const parts = cmd.toLowerCase().trim().split(' ');
+                const commandName = parts[0];
+                const args = parts.slice(1);
+                
+                if (commandName in commands) {
+                    const output = commands[commandName](args);
+                    if(output) createLine(output);
+                } else if (commandName) {
+                    createLine(`command not found: ${commandName}`);
+                }
+            };
+
+            const scrollToBottom = () => {
+                terminalContent.scrollTop = terminalContent.scrollHeight;
+            };
+
+            const updateUptime = () => {
+                const now = new Date();
+                const diff = now - startTime;
+                
+                const hours = String(Math.floor(diff / 3600000)).padStart(2, '0');
+                const minutes = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+                const seconds = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+                
+                footerUptime.textContent = `System Uptime: ${hours}:${minutes}:${seconds}`;
+            };
+            
+            commandInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const command = commandInput.value.trim();
+                    createLine(command, true);
+                    
+                    if (command) {
+                        commandHistory.unshift(command);
+                        historyIndex = -1;
+                        executeCommand(command);
+                    }
+                    
+                    commandInput.value = '';
+                    scrollToBottom();
+                } else if (e.key === 'ArrowUp') {
+                     e.preventDefault();
+                    if (historyIndex < commandHistory.length - 1) {
+                        historyIndex++;
+                        commandInput.value = commandHistory[historyIndex];
+                        commandInput.setSelectionRange(commandInput.value.length, commandInput.value.length);
+                    }
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (historyIndex > 0) {
+                        historyIndex--;
+                        commandInput.value = commandHistory[historyIndex];
+                        commandInput.setSelectionRange(commandInput.value.length, commandInput.value.length);
+                    } else {
+                        historyIndex = -1;
+                        commandInput.value = '';
+                    }
+                }
+            });
+
+            // Start the application
+            bootUp();
+            setInterval(updateUptime, 1000);
+        });
+    </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250618",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>

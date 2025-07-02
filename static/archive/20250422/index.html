@@ -1,0 +1,703 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper - Neural Portfolio</title>
+    <style>
+        :root {
+            --background-color: #050a1c;
+            --text-color: #e8f0ff;
+            --accent-color: #3c5bff;
+            --neural-color-1: #2e3cff;
+            --neural-color-2: #6e5cff;
+            --neural-color-3: #8a4cff;
+            --glass-bg: rgba(18, 26, 55, 0.5);
+            --glass-border: rgba(147, 161, 231, 0.2);
+            --glass-shadow: rgba(0, 5, 20, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        #neural-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            padding: 4rem 1rem 2rem;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 20px rgba(60, 91, 255, 0.4);
+            animation: glow 3s infinite alternate;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto 1rem;
+            opacity: 0.9;
+        }
+
+        .ai-note {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            font-style: italic;
+            margin-top: 1.5rem;
+        }
+
+        .projects {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .project-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px var(--glass-shadow);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .project-panel:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px var(--glass-shadow);
+        }
+
+        .project-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent-color);
+        }
+
+        .project-desc {
+            margin-bottom: 1rem;
+            flex-grow: 1;
+        }
+
+        .project-panel a {
+            color: var(--neural-color-2);
+            text-decoration: none;
+            transition: color 0.3s;
+            display: inline-block;
+            margin-right: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .project-panel a:hover {
+            color: var(--neural-color-3);
+            text-decoration: underline;
+        }
+
+        .project-links {
+            margin-top: 1rem;
+        }
+
+        .visualization {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.2;
+            transition: opacity 0.3s;
+        }
+
+        .project-panel:hover .visualization {
+            opacity: 0.4;
+        }
+
+        #glglstats-visual {
+            background: linear-gradient(90deg, transparent 50%, var(--neural-color-2) 50%);
+            background-size: 20px 100%;
+            animation: waveform 3s infinite linear;
+        }
+
+        #ahuzat-dibuk-visual {
+            background-image: linear-gradient(45deg, rgba(255, 100, 100, 0.1) 25%, transparent 25%),
+                            linear-gradient(-45deg, rgba(255, 100, 100, 0.1) 25%, transparent 25%),
+                            linear-gradient(45deg, transparent 75%, rgba(255, 100, 100, 0.1) 75%),
+                            linear-gradient(-45deg, transparent 75%, rgba(255, 100, 100, 0.1) 75%);
+            background-size:.20px 20px;
+            animation: heatmap 20s infinite linear;
+        }
+
+        #part-orienting-visual canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        #portfolio-visual {
+            background: radial-gradient(circle, rgba(60, 91, 255, 0.1) 0%, transparent 70%);
+            animation: pulse 5s infinite alternate;
+        }
+
+        #social-links-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+
+        .social-node {
+            width: 80px;
+            height: 80px;
+            margin: 1rem;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: all 0.3s;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+
+        .social-node:hover {
+            transform: scale(1.1);
+            background: rgba(30, 40, 80, 0.7);
+        }
+
+        .social-node::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle, var(--neural-color-2) 0%, transparent 70%);
+            opacity: 0.3;
+            transition: opacity 0.3s;
+        }
+
+        .social-node:hover::before {
+            opacity: 0.6;
+        }
+
+        .social-node span {
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            text-align: center;
+            padding: 0.5rem;
+        }
+
+        .social-node:hover span {
+            opacity: 1;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem 1rem;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-top: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #stopwatch {
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 1px;
+        }
+
+        /* Animations */
+        @keyframes glow {
+            0% { text-shadow: 0 0 10px rgba(60, 91, 255, 0.4); }
+            100% { text-shadow: 0 0 20px rgba(138, 76, 255, 0.7), 0 0 35px rgba(60, 91, 255, 0.3); }
+        }
+
+        @keyframes waveform {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 0; }
+        }
+
+        @keyframes heatmap {
+            0% { background-position: 0 0, 10px 0, 10px -10px, 0px -10px; }
+            100% { background-position: 40px 40px, 50px 40px, 50px 30px, 40px 30px; }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.2; }
+            100% { transform: scale(1.2); opacity: 0.3; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .projects {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .project-panel {
+                min-height: auto;
+            }
+
+            #social-links-container {
+                justify-content: center;
+            }
+        }
+
+        /* Font imports */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&display=swap');
+    </style>
+</head>
+<body>
+    <canvas id="neural-canvas"></canvas>
+    
+    <div class="container">
+        <header>
+            <h1>Geva Kipper</h1>
+            <p class="subtitle">Software Engineer at Google, developing intelligent systems that bridge human-computer interaction.</p>
+            <p class="ai-note">This portfolio is re-designed daily by AI - return tomorrow for a new experience.</p>
+        </header>
+        
+        <section class="projects">
+            <div class="project-panel" data-project="glglstats">
+                <div class="visualization" id="glglstats-visual"></div>
+                <h2 class="project-title">GlglStats</h2>
+                <p class="project-desc">
+                    A statistical analysis tool for competitive Scrabble players. Uses machine learning to analyze game patterns 
+                    and provide insights for improving gameplay strategy.
+                </p>
+                <div class="project-links">
+                    <a href="https://glglstats.onrender.com/" target="_blank">Live Project</a>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">Conference Video</a>
+                </div>
+            </div>
+            
+            <div class="project-panel" data-project="ahuzat-dibuk">
+                <div class="visualization" id="ahuzat-dibuk-visual"></div>
+                <h2 class="project-title">Ahuzat Dibuk</h2>
+                <p class="project-desc">
+                    A crowd-sourced application to help Tel Aviv residents find parking by displaying real-time availability 
+                    using heatmap visualization and community reports.
+                </p>
+                <div class="project-links">
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">Original Post</a>
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">Media Coverage 1</a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">Media Coverage 2</a>
+                </div>
+            </div>
+            
+            <div class="project-panel" data-project="part-orienting">
+                <div class="visualization" id="part-orienting-visual"></div>
+                <h2 class="project-title">2D Part Orienting</h2>
+                <p class="project-desc">
+                    Research project on automated methods for orienting 2D parts using computational geometry and optimization algorithms, 
+                    with applications in manufacturing and robotics.
+                </p>
+                <div class="project-links">
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">Project Details & Code</a>
+                </div>
+            </div>
+            
+            <div class="project-panel" data-project="portfolio">
+                <div class="visualization" id="portfolio-visual"></div>
+                <h2 class="project-title">Portfolio Website</h2>
+                <p class="project-desc">
+                    This neural network-inspired portfolio website features interactive visualizations and responsive design. 
+                    The site's living neural network responds to user interaction.
+                </p>
+                <div class="project-links">
+                    <a href="https://portfolio-dor1.onrender.com/" target="_blank">You Are Here</a>
+                </div>
+            </div>
+            
+            <div class="project-panel" data-project="social">
+                <h2 class="project-title">Connect With Me</h2>
+                <div id="social-links-container">
+                    <a href="https://github.com/gevak" target="_blank" class="social-node">
+                        <span>GitHub</span>
+                    </a>
+                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-node">
+                        <span>LinkedIn</span>
+                    </a>
+                    <a href="https://facebook.com/geva.kipper" target="_blank" class="social-node">
+                        <span>Facebook</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+        
+        <footer>
+            <div>Neural design by GPT-4 NeuralDesigner</div>
+            <div id="stopwatch">00:00:00:00</div>
+        </footer>
+    </div>
+    
+    <script>
+        // Neural network animation
+        (function() {
+            const canvas = document.getElementById('neural-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Mouse tracking
+            let mouse = {
+                x: undefined,
+                y: undefined,
+                radius: 150
+            };
+            
+            window.addEventListener('mousemove', function(event) {
+                mouse.x = event.x;
+                mouse.y = event.y;
+            });
+            
+            // Touch support
+            window.addEventListener('touchmove', function(event) {
+                mouse.x = event.touches[0].clientX;
+                mouse.y = event.touches[0].clientY;
+            });
+            
+            // Particle class for nodes
+            class Particle {
+                constructor(x, y, size, color) {
+                    this.x = x;
+                    this.y = y;
+                    this.size = size;
+                    this.baseSize = size;
+                    this.color = color;
+                    this.density = Math.random() * 30 + 1;
+                    this.connections = [];
+                    this.speed = {
+                        x: (Math.random() - 0.5) * 0.5,
+                        y: (Math.random() - 0.5) * 0.5
+                    };
+                }
+                
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                }
+                
+                update() {
+                    // Movement
+                    this.x += this.speed.x;
+                    this.y += this.speed.y;
+                    
+                    // Bounce off edges
+                    if (this.x > canvas.width || this.x < 0) {
+                        this.speed.x *= -1;
+                    }
+                    
+                    if (this.y > canvas.height || this.y < 0) {
+                        this.speed.y *= -1;
+                    }
+                    
+                    // Mouse interaction
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < mouse.radius) {
+                        this.size = this.baseSize + (mouse.radius - distance) / 10;
+                    } else {
+                        this.size = this.baseSize;
+                    }
+                }
+                
+                connect(particles) {
+                    this.connections = [];
+                    
+                    for (let i = 0; i < particles.length; i++) {
+                        const otherParticle = particles[i];
+                        if (this === otherParticle) continue;
+                        
+                        const distance = Math.sqrt(
+                            (this.x - otherParticle.x) * (this.x - otherParticle.x) +
+                            (this.y - otherParticle.y) * (this.y - otherParticle.y)
+                        );
+                        
+                        if (distance < 150) {
+                            this.connections.push({
+                                particle: otherParticle,
+                                distance: distance
+                            });
+                        }
+                    }
+                }
+                
+                drawConnections() {
+                    for (const connection of this.connections) {
+                        const opacity = 1 - (connection.distance / 150);
+                        
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(100, 120, 255, ${opacity * 0.5})`;
+                        ctx.lineWidth = 0.8;
+                        ctx.moveTo(this.x, this.y);
+                        ctx.lineTo(connection.particle.x, connection.particle.y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            
+            // Create particles
+            let particles = [];
+            function initParticles() {
+                particles = [];
+                const particleCount = Math.min(Math.floor(window.innerWidth * window.innerHeight / 10000), 150);
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const size = Math.random() * 3 + 1;
+                    const x = Math.random() * canvas.width;
+                    const y = Math.random() * canvas.height;
+                    
+                    // Randomize colors
+                    const colorOptions = [
+                        'rgba(46, 60, 255, 0.7)',
+                        'rgba(110, 92, 255, 0.7)',
+                        'rgba(138, 76, 255, 0.7)'
+                    ];
+                    
+                    const color = colorOptions[Math.floor(Math.random() * colorOptions.length)];
+                    
+                    particles.push(new Particle(x, y, size, color));
+                }
+            }
+            
+            initParticles();
+            window.addEventListener('resize', initParticles);
+            
+            // Animation loop
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Update and draw connections
+                for (const particle of particles) {
+                    particle.connect(particles);
+                }
+                
+                for (const particle of particles) {
+                    particle.drawConnections();
+                }
+                
+                // Update and draw particles
+                for (const particle of particles) {
+                    particle.update();
+                    particle.draw();
+                }
+                
+                requestAnimationFrame(animate);
+            }
+            
+            animate();
+        })();
+        
+        // 2D Part Orienting visualization
+        (function() {
+            const container = document.getElementById('part-orienting-visual');
+            if (!container) return;
+            
+            const canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+            
+            function resizeCanvas() {
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+            }
+            
+            resizeCanvas();
+            
+            // Create shapes
+            class Shape {
+                constructor() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.rotation = 0;
+                    this.rotationSpeed = (Math.random() - 0.5) * 0.03;
+                    this.size = Math.random() * 20 + 10;
+                    this.sides = Math.floor(Math.random() * 5) + 3; // 3 to 7 sides
+                    this.color = `rgba(${Math.random()*100+100}, ${Math.random()*100+100}, 255, 0.3)`;
+                    this.speedX = (Math.random() - 0.5) * 0.5;
+                    this.speedY = (Math.random() - 0.5) * 0.5;
+                }
+                
+                update() {
+                    this.rotation += this.rotationSpeed;
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+                    
+                    // Bounce off walls
+                    if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+                    if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+                }
+                
+                draw() {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(this.rotation);
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(this.size * Math.cos(0), this.size * Math.sin(0));
+                    
+                    for (let i = 1; i <= this.sides; i++) {
+                        const angle = i * 2 * Math.PI / this.sides;
+                        ctx.lineTo(this.size * Math.cos(angle), this.size * Math.sin(angle));
+                    }
+                    
+                    ctx.closePath();
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+            
+            const shapes = [];
+            for (let i = 0; i < 5; i++) {
+                shapes.push(new Shape());
+            }
+            
+            function animate() {
+                if (!canvas.parentNode) return;
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                for (const shape of shapes) {
+                    shape.update();
+                    shape.draw();
+                }
+                
+                requestAnimationFrame(animate);
+            }
+            
+            animate();
+        })();
+        
+        // Project panel interactions
+        document.querySelectorAll('.project-panel').forEach(panel => {
+            panel.addEventListener('mouseenter', () => {
+                const projectId = panel.getAttribute('data-project');
+                panel.style.transform = 'translateY(-10px) scale(1.03)';
+                
+                // Additional effects based on project
+                if (projectId === 'glglstats') {
+                    const visual = panel.querySelector('#glglstats-visual');
+                    visual.style.animationDuration = '1s';
+                } else if (projectId === 'ahuzat-dibuk') {
+                    const visual = panel.querySelector('#ahuzat-dibuk-visual');
+                    visual.style.animationDuration = '10s';
+                }
+            });
+            
+            panel.addEventListener('mouseleave', () => {
+                panel.style.transform = '';
+                
+                // Reset effects
+                const projectId = panel.getAttribute('data-project');
+                if (projectId === 'glglstats') {
+                    const visual = panel.querySelector('#glglstats-visual');
+                    visual.style.animationDuration = '3s';
+                } else if (projectId === 'ahuzat-dibuk') {
+                    const visual = panel.querySelector('#ahuzat-dibuk-visual');
+                    visual.style.animationDuration = '20s';
+                }
+            });
+        });
+        
+        // Stopwatch
+        (function() {
+            const stopwatchElement = document.getElementById('stopwatch');
+            const startDate = new Date('April 22, 2025 01:03:03').getTime();
+            
+            function updateStopwatch() {
+                const now = new Date().getTime();
+                const elapsed = now - startDate;
+                
+                // Only update if elapsed time is positive
+                if (elapsed > 0) {
+                    const days = Math.floor(elapsed / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((elapsed % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
+                    
+                    stopwatchElement.textContent = `${days.toString().padStart(2, '0')}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                } else {
+                    stopwatchElement.textContent = '00:00:00:00';
+                }
+                
+                requestAnimationFrame(updateStopwatch);
+            }
+            
+            updateStopwatch();
+        })();
+    </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250422",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>

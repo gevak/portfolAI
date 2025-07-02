@@ -1,0 +1,750 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper // Neural Core</title>
+    <style>
+        /* --- GLOBAL & SETUP --- */
+        :root {
+            --color-background: #050508;
+            --color-text: #e0e0e0;
+            --color-glow: #ffffff;
+            --color-highlight: #00aaff;
+            --color-dormant: #2a2a3a;
+            --color-dormant-line: #1a1a25;
+            --color-hotspot-intense: #ff4d4d;
+            --color-hotspot-dim: #8b0000;
+            --font-main: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            --node-size: 8; /* vmin */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--color-background);
+            color: var(--color-text);
+            font-family: var(--font-main);
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image: radial-gradient(var(--color-dormant) 1px, transparent 1px);
+            background-size: 25px 25px;
+            opacity: 0.1;
+            z-index: -1;
+            animation: drift 120s linear infinite;
+        }
+
+        @keyframes drift {
+            from { background-position: 0 0; }
+            to { background-position: -200px 100px; }
+        }
+
+        /* --- SVG NETWORK --- */
+        .neural-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+
+        .node-path {
+            stroke: var(--color-dormant-line);
+            stroke-width: 2;
+            fill: none;
+            transition: stroke 1s ease-in-out;
+        }
+
+        .node-path.unlocked {
+            stroke: var(--color-glow);
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draw-path 2s ease-out forwards;
+        }
+
+        @keyframes draw-path {
+            to { stroke-dashoffset: 0; }
+        }
+
+        .node {
+            cursor: not-allowed;
+            transition: all 0.5s ease;
+        }
+
+        .node-shape {
+            stroke: var(--color-dormant);
+            stroke-width: 2;
+            fill: var(--color-background);
+            transition: all 0.5s ease;
+        }
+        
+        .node.active .node-shape,
+        .node.unlocked .node-shape {
+            fill: #111115;
+            stroke: var(--color-glow);
+        }
+
+        .node.unlocked {
+            cursor: pointer;
+        }
+
+        .node.active {
+            animation: pulse-glow 3s infinite ease-in-out;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { filter: drop-shadow(0 0 4px var(--color-glow)); }
+            50% { filter: drop-shadow(0 0 12px var(--color-glow)); }
+        }
+        
+        .node:not(.unlocked):not(.active):hover .node-shape {
+            stroke: #444;
+        }
+        
+        .node.unlocked:hover .node-shape {
+             filter: drop-shadow(0 0 8px var(--color-highlight));
+             stroke: var(--color-highlight);
+        }
+
+        .node-content {
+            color: var(--color-text);
+            font-size: calc(var(--node-size) * 0.14vmin);
+            line-height: 1.4;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 10%;
+            user-select: none;
+        }
+
+        .node-content h1 {
+            font-size: calc(var(--node-size) * 0.2vmin);
+            font-weight: 600;
+        }
+        
+        .node-content h1 + p {
+             font-size: calc(var(--node-size) * 0.12vmin);
+             opacity: 0.8;
+             margin-top: 2%;
+        }
+
+        .node-content .ai-disclaimer {
+            font-size: calc(var(--node-size) * 0.08vmin);
+            opacity: 0.6;
+            font-style: italic;
+            margin-top: 5%;
+        }
+
+        .puzzle {
+            margin-top: 8%;
+            width: 100%;
+            font-size: calc(var(--node-size) * 0.1vmin);
+            display: none; /* Hidden by default */
+        }
+        
+        .node.active .puzzle {
+            display: block;
+        }
+        
+        .puzzle-prompt {
+            opacity: 0.7;
+            font-style: italic;
+            margin-bottom: 5px;
+        }
+        
+        /* --- PUZZLE SPECIFIC STYLES --- */
+        #puzzle-1 .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        #puzzle-1 .option {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 3px 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
+        #puzzle-1 .option:hover {
+            background-color: var(--color-highlight);
+            color: var(--color-background);
+        }
+
+        #puzzle-2 .hotspot-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5%;
+            width: 60%;
+            margin: 5px auto 0;
+        }
+        #puzzle-2 .hotspot-cell {
+            aspect-ratio: 1 / 1;
+            background-color: var(--color-hotspot-dim);
+            border-radius: 3px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        #puzzle-2 .hotspot-cell:hover { transform: scale(1.1); }
+        .hotspot-cell.pulse-1 { animation: pulse-hotspot 2.5s infinite ease-in-out; }
+        .hotspot-cell.pulse-2 { animation: pulse-hotspot 1.8s infinite ease-in-out; }
+        .hotspot-cell.pulse-3 { animation: pulse-hotspot 1.2s infinite ease-in-out; }
+        .hotspot-cell.pulse-4 { animation: pulse-hotspot 0.6s infinite ease-in-out; }
+
+        @keyframes pulse-hotspot {
+            0%, 100% { background-color: var(--color-hotspot-dim); }
+            50% { background-color: var(--color-hotspot-intense); }
+        }
+
+        #puzzle-3 .orient-container { display: flex; align-items: center; justify-content: center; gap: 15%; margin-top: 5%; }
+        #puzzle-3 .shape, #puzzle-3 .target { fill: none; stroke: var(--color-text); stroke-width: 1.5; }
+        #puzzle-3 .target { stroke-dasharray: 3,3; stroke: #888; }
+        #puzzle-3 .push-path { fill: none; stroke: #666; stroke-width: 1; cursor: pointer; transition: all 0.3s; }
+        #puzzle-3 .push-path:hover { stroke: var(--color-highlight); stroke-width: 2; }
+
+        #puzzle-4 code {
+            background: #222;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: calc(var(--node-size) * 0.11vmin);
+        }
+        #puzzle-4 .bug {
+            color: #ff8080;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+        #puzzle-4 .bug:hover {
+            background: #ff8080;
+            color: var(--color-background);
+        }
+
+        /* --- OVERLAY PANELS --- */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(10, 10, 15, 0.5);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s, visibility 0s 0.5s;
+        }
+        
+        .overlay.visible {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.5s;
+        }
+
+        .panel {
+            background: rgba(20, 20, 25, 0.8);
+            border: 1px solid var(--color-dormant);
+            border-radius: 8px;
+            padding: 40px 50px;
+            width: 90%;
+            max-width: 650px;
+            transform: scale(0.95);
+            transition: transform 0.5s;
+            position: relative;
+        }
+        
+        .overlay.visible .panel {
+            transform: scale(1);
+        }
+
+        .panel-close {
+            position: absolute;
+            top: 15px; right: 15px;
+            font-size: 24px;
+            color: #888;
+            cursor: pointer;
+            transition: color 0.3s, transform 0.3s;
+        }
+        
+        .panel-close:hover {
+            color: var(--color-text);
+            transform: rotate(90deg);
+        }
+
+        .panel-title {
+            font-size: 2.5rem;
+            font-weight: 300;
+            border-bottom: 1px solid var(--color-dormant);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .panel-body {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel-description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        .panel-links {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .panel-link, .social-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 18px;
+            background: var(--color-dormant-line);
+            border: 1px solid var(--color-dormant);
+            border-radius: 5px;
+            text-decoration: none;
+            color: var(--color-text);
+            transition: all 0.3s;
+        }
+        
+        .panel-link:hover, .social-link:hover {
+            background: var(--color-highlight);
+            border-color: var(--color-highlight);
+            transform: translateY(-2px);
+            color: var(--color-background);
+        }
+        
+        .panel-link svg, .social-link svg {
+            width: 20px;
+            height: 20px;
+            transition: fill 0.3s;
+            fill: var(--color-text);
+        }
+        
+        .panel-link:hover svg, .social-link:hover svg {
+            fill: var(--color-background);
+        }
+
+        .social-link svg { width: 24px; height: 24px; }
+        
+        .panel-bg-viz {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            opacity: 0.1;
+            overflow: hidden;
+        }
+        
+        #glglstats-viz, #partorienting-viz, #ahuzat-viz, #portfolio-viz {
+            /* Styles for specific panel background animations */
+        }
+
+        /* --- FOOTER --- */
+        .footer {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <main>
+        <svg id="neural-canvas" class="neural-canvas" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
+    </main>
+
+    <!-- Overlay Panels Container -->
+    <div id="panels-container"></div>
+    
+    <footer class="footer">
+        Design generated by a large language model. Time elapsed since last system reset: <span id="stopwatch">00:00:00</span>
+    </footer>
+
+    <!-- SVG Icon Definitions -->
+    <svg width="0" height="0" style="position:absolute">
+        <defs>
+            <symbol id="icon-link" viewBox="0 0 24 24"><path d="M10.586 13.414a1 1 0 0 1-1.414 1.414l-3-3a1 1 0 0 1 1.414-1.414l3 3zm2.828-2.828a1 1 0 0 1 1.414 0l3 3a1 1 0 0 1-1.414 1.414l-3-3a1 1 0 0 1 0-1.414z"/><path d="M8.464 16.536L5.636 13.707a3.001 3.001 0 0 1 0-4.243l2.828-2.828a3.002 3.002 0 0 1 4.243 0l.707.707a1 1 0 1 1-1.414 1.414l-.707-.707a1 1 0 0 0-1.414 0l-2.828 2.828a1 1 0 0 0 0 1.414l2.828 2.829a1 1 0 1 0 1.414-1.414l-.707-.707a1 1 0 1 1 1.414-1.414l.707.707a3.002 3.002 0 0 1 0 4.243l-2.828 2.828a3.001 3.001 0 0 1-4.243 0L5.636 19.364a1 1 0 1 1 1.414-1.414l1.414 1.414a1.001 1.001 0 0 0 1.414 0l1.414-1.414a1 1 0 1 1-1.414-1.414zm7.072-7.072l2.828 2.829a3.001 3.001 0 0 1 0 4.243l-2.828 2.828a3.002 3.002 0 0 1-4.243 0l-.707-.707a1 1 0 1 1 1.414-1.414l.707.707a1 1 0 0 0 1.414 0l2.828-2.828a1 1 0 0 0 0-1.414l-2.828-2.829a1 1 0 1 0-1.414 1.414l.707.707a1 1 0 1 1-1.414 1.414l-.707-.707a3.002 3.002 0 0 1 0-4.243l2.828-2.828a3.001 3.001 0 0 1 4.243 0l1.414 1.414a1 1 0 1 1-1.414 1.414l-1.414-1.414a1 1 0 0 0-1.414 0l-1.414 1.414a1 1 0 1 1 1.414 1.414z"/></symbol>
+            <symbol id="icon-video" viewBox="0 0 24 24"><path d="M10 16.5l6-4.5-6-4.5z"/><path d="M21 5H3a2 2 0 00-2 2v10a2 2 0 002 2h18a2 2 0 002-2V7a2 2 0 00-2-2zm-2 12H5V7h14z"/></symbol>
+            <symbol id="icon-code" viewBox="0 0 24 24"><path d="M8.5 16.5l-4-4 4-4"/><path d="M15.5 16.5l4-4-4-4"/><path d="M12.214 4.333l-4 16"/></symbol>
+            <symbol id="icon-news" viewBox="0 0 24 24"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2zM5 6v12h14V6H5z"/><path d="M7 8h10v2H7zM7 11h10v2H7zM7 14h7v2H7z"/></symbol>
+            <symbol id="icon-github" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.865 8.166 6.839 9.49.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.031-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.378.203 2.398.1 2.651.64.7 1.03 1.595 1.03 2.688 0 3.848-2.338 4.695-4.566 4.942.359.308.678.92.678 1.852 0 1.338-.012 2.419-.012 2.747 0 .268.18.577.688.48A10.002 10.002 0 0 0 22 12 10 10 0 0 0 12 2z"/></symbol>
+            <symbol id="icon-linkedin" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zM8.5 11.5v6H6v-6h2.5zM7.25 10a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5zM18 17.5h-2.5v-3.09c0-.75-.01-1.71-1.04-1.71s-1.2.81-1.2 1.65V17.5h-2.5v-6H13v1.16h.04c.35-.66 1.2-1.36 2.46-1.36 2.64 0 3.12 1.74 3.12 4v4.2z"/></symbol>
+            <symbol id="icon-facebook" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3V2z"/></symbol>
+        </defs>
+    </svg>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const SVG_NS = "http://www.w3.org/2000/svg";
+        const canvas = document.getElementById('neural-canvas');
+        const panelsContainer = document.getElementById('panels-container');
+
+        const state = {
+            unlocked_nodes: [0], // Start with central node unlocked
+            active_node: 0
+        };
+
+        const nodeData = [
+            { // Node 0: Core
+                id: 0,
+                pos: { x: 50, y: 50 },
+                content: `<h1>Geva Kipper</h1><p>Software Engineer at Google, crafting solutions for large-scale data systems.</p><p class="ai-disclaimer">This site's design is regenerated daily by an AI. What you see is unique to today.</p>`,
+                puzzle: {
+                    id: 'puzzle-1',
+                    prompt: 'A-B-B :: C-D-C &nbsp; | &nbsp; Find the matching pattern:',
+                    html: `
+                        <div class="options-container">
+                            <div class="option" data-correct="false">●-●-◆</div>
+                            <div class="option" data-correct="true">◆-●-●</div>
+                            <div class="option" data-correct="false">◆-●-◆</div>
+                        </div>
+                    `
+                },
+                unlocks: 1
+            },
+            { // Node 1: GlglStats
+                id: 1,
+                pos: { x: 25, y: 35 },
+                panel: {
+                    title: 'GlglStats',
+                    description: `An open-source visualization tool for the LZ77 compression algorithm. It brings the concept of 'repetition' to life, making it easier to understand how data is compressed.`,
+                    links: [
+                        { text: 'View Live Project', url: 'https://glglstats.onrender.com/', icon: 'link' },
+                        { text: 'Watch PyData Talk', url: 'https://www.youtube.com/watch?v=jrKAtOsj1Lo', icon: 'video' }
+                    ]
+                },
+                unlocks: 2
+            },
+            { // Node 2: Ahuzat Dibuk
+                id: 2,
+                pos: { x: 40, y: 80 },
+                puzzle: {
+                    id: 'puzzle-2',
+                    prompt: 'Identify the hotspot.',
+                    html: `
+                        <div class="hotspot-grid">
+                            <div class="hotspot-cell pulse-1"></div> <div class="hotspot-cell pulse-2"></div> <div class="hotspot-cell pulse-1"></div>
+                            <div class="hotspot-cell pulse-2"></div> <div class="hotspot-cell pulse-4" data-correct="true"></div> <div class="hotspot-cell pulse-2"></div>
+                            <div class="hotspot-cell pulse-1"></div> <div class="hotspot-cell pulse-3"></div> <div class="hotspot-cell pulse-1"></div>
+                        </div>
+                    `
+                },
+                panel: {
+                    title: 'Ahuzat Dibuk',
+                    description: `A data analysis project that identified a systemic issue with Tel Aviv's public parking system, revealing how certain cars remained parked for months. The findings were covered by major Israeli news outlets.`,
+                    links: [
+                        { text: 'Channel 13 News', url: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/', icon: 'news'},
+                        { text: 'Mako News Story', url: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm', icon: 'news' },
+                        { text: 'Original Facebook Post', url: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943', icon: 'facebook' }
+                    ]
+                },
+                unlocks: 3
+            },
+            { // Node 3: 2D Part Orienting
+                id: 3,
+                pos: { x: 75, y: 70 },
+                puzzle: {
+                    id: 'puzzle-3',
+                    prompt: 'Select the correct push path.',
+                    html: `
+                        <div class="orient-container">
+                            <svg viewBox="0 0 50 40">
+                                <polygon class="shape" points="5,5 20,5 20,15 30,15 30,25 5,25" />
+                                <polygon class="target" points="20,35 35,35 35,25 45,25 45,15 20,15" />
+                            </svg>
+                            <svg viewBox="0 0 100 50">
+                               <path class="push-path" data-correct="false" d="M2,2 C20,40 40,40 58,10" />
+                               <path class="push-path" data-correct="true" d="M10,48 C30,30 50,20 80,15" />
+                               <path class="push-path" data-correct="false" d="M25,2 C25,20 5,25 10,48" />
+                            </svg>
+                        </div>
+                    `
+                },
+                panel: {
+                    title: '2D Part Orienting',
+                    description: 'A university project in computational geometry that focused on developing an algorithm to orient any simple polygon using a sequence of pushes. The implementation was done in C++.',
+                    links: [
+                        { text: 'Project Details & C++ Code', url: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/', icon: 'code' }
+                    ]
+                },
+                unlocks: 4
+            },
+            { // Node 4: Portfolio
+                id: 4,
+                pos: { x: 70, y: 25 },
+                 puzzle: {
+                    id: 'puzzle-4',
+                     prompt: 'Find the bug.',
+                    html: `<code>if ( a <span class="bug" data-correct="true">=</span> b ) { unlock_final_node(); }</code>`
+                },
+                panel: {
+                    title: 'This Portfolio Site',
+                    description: 'You are here. This entire website is a single, self-contained HTML file. The design, concept, and content were generated by an AI assistant based on a high-level specification.',
+                    links: [
+                        { text: 'View The Source Of This Site', url: 'https://github.com/gevak/portfolio/blob/main/index.html', icon: 'code' },
+                    ]
+                },
+                unlocks: 5
+            },
+            { // Node 5: Contact
+                id: 5,
+                pos: { x: 50, y: 15 },
+                panel: {
+                    title: 'Contact & Socials',
+                    description: 'Connect with me on these platforms.',
+                    links: [
+                        { text: 'GitHub', url: 'https://github.com/gevak', icon: 'github'},
+                        { text: 'LinkedIn', url: 'https://linkedin.com/in/gevakip', icon: 'linkedin' },
+                        { text: 'Facebook', url: 'https://facebook.com/geva.kipper', icon: 'facebook' },
+                    ]
+                }
+            }
+        ];
+        
+        function createNode(node) {
+            // Create group
+            const group = document.createElementNS(SVG_NS, 'g');
+            group.id = `node-${node.id}`;
+            group.classList.add('node');
+            if (state.unlocked_nodes.includes(node.id)) group.classList.add('unlocked');
+            if (state.active_node === node.id) group.classList.add('active');
+            
+            // Create hexagon shape
+            const size = 8; // vmin
+            const points = [];
+            for (let i = 0; i < 6; i++) {
+                const angle_deg = 60 * i;
+                const angle_rad = Math.PI / 180 * angle_deg;
+                const x_point = node.pos.x + size * 0.5 * Math.cos(angle_rad);
+                const y_point = node.pos.y + size * 0.75 * Math.sin(angle_rad);
+                points.push(`${x_point},${y_point}`);
+            }
+            const hexagon = document.createElementNS(SVG_NS, 'polygon');
+            hexagon.setAttribute('points', points.join(' '));
+            hexagon.classList.add('node-shape');
+
+            // Create foreignObject for HTML content
+            const fo = document.createElementNS(SVG_NS, 'foreignObject');
+            const foSize = size * 1.5
+            fo.setAttribute('x', node.pos.x - foSize / 2);
+            fo.setAttribute('y', node.pos.y - foSize / 2);
+            fo.setAttribute('width', foSize);
+            fo.setAttribute('height', foSize);
+
+            const contentDiv = document.createElement('div');
+            contentDiv.classList.add('node-content');
+            contentDiv.innerHTML = node.content || '';
+
+            if (node.puzzle) {
+                const puzzleDiv = document.createElement('div');
+                puzzleDiv.classList.add('puzzle');
+                puzzleDiv.id = node.puzzle.id;
+                puzzleDiv.innerHTML = `
+                    <p class="puzzle-prompt">${node.puzzle.prompt}</p>
+                    ${node.puzzle.html}
+                `;
+                contentDiv.appendChild(puzzleDiv);
+            }
+
+            fo.appendChild(contentDiv);
+            group.appendChild(hexagon);
+            group.appendChild(fo);
+            canvas.appendChild(group);
+
+            // Add event listeners
+            group.addEventListener('click', () => handleNodeClick(node.id));
+            
+            if (node.puzzle) {
+                const correctEl = group.querySelector('[data-correct="true"]');
+                if (correctEl) {
+                    correctEl.addEventListener('click', (e) => {
+                         e.stopPropagation();
+                         solvePuzzle(node.id);
+                    });
+                }
+            }
+        }
+        
+        function createPath(nodeA_id, nodeB_id) {
+            const nodeA = nodeData[nodeA_id];
+            const nodeB = nodeData[nodeB_id];
+            
+            const path = document.createElementNS(SVG_NS, 'path');
+            path.id = `path-${nodeA_id}-${nodeB_id}`;
+            path.classList.add('node-path');
+            path.setAttribute('d', `M ${nodeA.pos.x} ${nodeA.pos.y} L ${nodeB.pos.x} ${nodeB.pos.y}`);
+            
+            canvas.insertBefore(path, canvas.firstChild);
+        }
+        
+        function createPanel(node) {
+            if (!node.panel) return;
+            
+            const overlay = document.createElement('div');
+            overlay.id = `panel-${node.id}`;
+            overlay.className = 'overlay';
+            overlay.addEventListener('click', () => closePanel(node.id));
+            
+            const panel = document.createElement('div');
+            panel.className = 'panel';
+            panel.addEventListener('click', e => e.stopPropagation());
+
+            let linksHtml = node.panel.links.map(link => {
+                const linkClass = (node.id === 5) ? 'social-link' : 'panel-link';
+                 return `<a href="${link.url}" class="${linkClass}" target="_blank" rel="noopener noreferrer">
+                    <svg><use href="#icon-${link.icon}" /></svg>
+                    <span>${link.text}</span>
+                 </a>`;
+            }).join('');
+
+            panel.innerHTML = `
+                <div class="panel-close" onclick="document.getElementById('panel-${node.id}').classList.remove('visible')">&times;</div>
+                <h2 class="panel-title">${node.panel.title}</h2>
+                <div class="panel-body">
+                   <p class="panel-description">${node.panel.description}</p>
+                   <div class="panel-links">${linksHtml}</div>
+                </div>
+            `;
+            
+            overlay.appendChild(panel);
+            panelsContainer.appendChild(overlay);
+        }
+
+        function handleNodeClick(id) {
+            if (state.unlocked_nodes.includes(id) && nodeData[id].panel) {
+                openPanel(id);
+            }
+        }
+        
+        function openPanel(id) {
+            document.getElementById(`panel-${id}`).classList.add('visible');
+        }
+
+        function closePanel(id) {
+             document.getElementById(`panel-${id}`).classList.remove('visible');
+        }
+        
+        function solvePuzzle(id) {
+            const solvedNode = nodeData.find(n => n.id === id);
+            if (!solvedNode || !solvedNode.unlocks) return;
+            
+            const nextNodeId = solvedNode.unlocks;
+            if (state.unlocked_nodes.includes(nextNodeId)) return; // Already unlocked
+
+            unlockNode(id, nextNodeId);
+
+            // Special case for puzzle 4 unlocking node 5
+            if(id === 4) {
+                const finalNodeId = 5;
+                if (!state.unlocked_nodes.includes(finalNodeId)) {
+                    state.unlocked_nodes.push(finalNodeId);
+                    document.getElementById(`node-${finalNodeId}`).classList.add('unlocked');
+                }
+            }
+        }
+
+        function unlockNode(fromId, toId) {
+             // Deactivate current node
+            const fromNodeEl = document.getElementById(`node-${fromId}`);
+            fromNodeEl.classList.remove('active');
+
+            // Light up path
+            const pathEl = document.getElementById(`path-${fromId}-${toId}`);
+            if (pathEl) {
+                pathEl.classList.add('unlocked');
+            }
+
+            // After path animation, activate next node
+            const animationDuration = 2000; // ms, should match CSS
+            setTimeout(() => {
+                state.unlocked_nodes.push(toId);
+                state.active_node = toId;
+                
+                const toNodeEl = document.getElementById(`node-${toId}`);
+                toNodeEl.classList.add('unlocked');
+                
+                const nextNodeData = nodeData.find(n => n.id === toId);
+                if (nextNodeData.puzzle) {
+                    toNodeEl.classList.add('active');
+                } else {
+                     // No more puzzles, final node.
+                     toNodeEl.classList.add('active'); // Pulse the final node
+                }
+
+            }, animationDuration);
+        }
+
+        function initStopwatch() {
+            const stopwatchEl = document.getElementById('stopwatch');
+            const startTime = new Date('2025-06-30T01:14:19').getTime();
+            
+            setInterval(() => {
+                const now = new Date().getTime();
+                const diff = now - startTime;
+                
+                if (diff < 0) {
+                  stopwatchEl.textContent = '00:00:00';
+                  return;
+                }
+                
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                const format = (num) => num.toString().padStart(2, '0');
+                
+                stopwatchEl.textContent = `${format(hours)}:${format(minutes)}:${format(seconds)}`;
+            }, 1000);
+        }
+        
+        // --- INITIALIZATION ---
+        // Create paths first (as background layer)
+        nodeData.forEach(node => {
+            if (node.unlocks !== undefined && nodeData[node.unlocks]) {
+                createPath(node.id, node.unlocks);
+            }
+        });
+
+        // Create nodes and panels
+        nodeData.forEach(node => {
+            createNode(node);
+            createPanel(node);
+        });
+
+        initStopwatch();
+    });
+    </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250630",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>

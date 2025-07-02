@@ -1,0 +1,618 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper - The Adventurer's Path</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Montserrat:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS STYLES */
+
+        :root {
+            --primary-glow-color: #00ffff;
+            --secondary-glow-color: #ff00ff;
+            --dark-bg: #0a0a14;
+            --text-color: #e0e0e0;
+            --text-muted: #a0a0b0;
+            --panel-bg: rgba(16, 16, 32, 0.7);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 300;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* --- Canvas & Background --- */
+
+        #scene-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        
+        #avatar {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            background-color: var(--primary-glow-color);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--primary-glow-color), 0 0 20px var(--primary-glow-color), 0 0 30px white;
+            z-index: 1;
+            transition: all 0.1s linear;
+            transform: translate(-50%, -50%); /* Center on its coordinates */
+        }
+        
+        /* --- General Layout & Typography --- */
+
+        main {
+            position: relative;
+            z-index: 2;
+        }
+
+        section {
+            min-height: 110vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 2rem;
+            position: relative;
+        }
+
+        h1, h2 {
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            text-shadow: 0 0 8px var(--primary-glow-color);
+        }
+
+        a {
+            color: var(--primary-glow-color);
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s, text-shadow 0.3s;
+        }
+
+        a:hover {
+            color: white;
+            text-shadow: 0 0 10px var(--primary-glow-color);
+        }
+
+        /* --- Header Section --- */
+
+        .header-content {
+            text-align: center;
+            max-width: 800px;
+        }
+
+        .header-content h1 {
+            font-size: 3.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-content p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .status-text {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--secondary-glow-color);
+            text-shadow: 0 0 5px var(--secondary-glow-color);
+            transition: opacity 0.2s;
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 5vh;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-glow-color);
+            box-shadow: 0 0 15px var(--primary-glow-color);
+            animation: pulse 2s infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .scroll-indicator svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--dark-bg);
+            stroke-width: 3;
+        }
+
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(0.9); box-shadow: 0 0 0 0 rgba(0, 255, 255, 0.7); }
+            70% { transform: translateX(-50%) scale(1); box-shadow: 0 0 0 20px rgba(0, 255, 255, 0); }
+            100% { transform: translateX(-50%) scale(0.9); box-shadow: 0 0 0 0 rgba(0, 255, 255, 0); }
+        }
+
+        /* --- Quest Log Panel --- */
+
+        .quest-container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: flex-start; /* Default for quests 1 & 3 */
+        }
+        
+        .quest-container.align-right {
+            justify-content: flex-end; /* For quests 2 & 4 */
+        }
+
+        .quest-log {
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+            opacity: 0;
+            transform: translateX(-50px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+
+        .quest-container.align-right .quest-log {
+            transform: translateX(50px);
+        }
+
+        .quest-log.is-visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .quest-log h2 {
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+            padding-bottom: 0.5rem;
+        }
+
+        .quest-log p {
+            margin-bottom: 1.5rem;
+            color: var(--text-muted);
+        }
+
+        .quest-log ul {
+            list-style: none;
+        }
+
+        .quest-log li {
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .quest-log .icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            stroke: var(--primary-glow-color);
+            stroke-width: 2;
+            fill: none;
+            filter: drop-shadow(0 0 3px var(--primary-glow-color));
+        }
+
+        /* --- Social & Footer --- */
+
+        #guild-hall .guild-content {
+            display: flex;
+            justify-content: center;
+            gap: 4rem;
+        }
+        
+        .pedestal {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .pedestal .sigil {
+            width: 60px;
+            height: 60px;
+            fill: var(--text-muted);
+            transition: fill 0.3s, filter 0.3s;
+        }
+        
+        .pedestal span {
+            margin-top: 1rem;
+            opacity: 0;
+            color: white;
+            font-weight: bold;
+            transition: opacity 0.3s;
+        }
+        
+        .pedestal:hover .sigil {
+            fill: var(--primary-glow-color);
+            filter: drop-shadow(0 0 10px var(--primary-glow-color));
+        }
+        
+        .pedestal:hover span {
+            opacity: 1;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- BACKGROUND AND AVATAR -->
+    <canvas id="scene-canvas"></canvas>
+    <div id="avatar"></div>
+
+    <!-- MAIN CONTENT -->
+    <main>
+
+        <!-- Header Section (The Starting Point) -->
+        <section id="start">
+            <div class="header-content">
+                <h1>Geva Kipper</h1>
+                <p>Software Engineer at Google, building the next generation of developer tools.</p>
+                <p class="status-text" id="status-text">
+                    This world is procedurally regenerated daily by AI. Its design is ever-changing.
+                </p>
+            </div>
+            <div class="scroll-indicator">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <polyline points="19 12 12 19 5 12"></polyline>
+                </svg>
+            </div>
+        </section>
+
+        <!-- Quest 1: The Echoes of Pop -->
+        <section id="quest1">
+            <div class="quest-container">
+                <div class="quest-log">
+                    <h2>Quest Acquired: The Echoes of Pop</h2>
+                    <p>
+                        A Python project measuring the repetitiveness of Israeli pop-chart songs using LZ77 compression. It visualizes the repetition patterns within famous songs to reveal their underlying structure.
+                    </p>
+                    <strong>Objectives:</strong>
+                    <ul>
+                        <li>
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></svg>
+                            <a href="https://glglstats.onrender.com/" target="_blank">Explore the Data</a>
+                        </li>
+                        <li>
+                            <svg class="icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">Watch the Sage's Lecture (PyData TLV)</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quest 2: The Parking Prophecy -->
+        <section id="quest2">
+            <div class="quest-container align-right">
+                <div class="quest-log">
+                    <h2>Quest Acquired: The Parking Prophecy</h2>
+                    <p>
+                        A Python scraping project that collects and visualizes statistics on Tel-Aviv's car parking occupancy. It generates real-time heatmaps to guide residents to available spots.
+                    </p>
+                    <strong>Objectives:</strong>
+                    <ul>
+                         <li>
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>
+                            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">Read the Town Herald (13tv)</a>
+                        </li>
+                        <li>
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>
+                            <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">Consult the Mako Scrolls</a>
+                        </li>
+                        <li>
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">View the Public Decree (Facebook)</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quest 3: The Orienting Polygon -->
+        <section id="quest3">
+            <div class="quest-container">
+                <div class="quest-log">
+                    <h2>Quest Acquired: The Orienting Polygon</h2>
+                    <p>
+                        A C++ implementation of an efficient algorithm that constructs a 'push plan' to orient any given polygon. Contributed to a leading open-source computational geometry library.
+                    </p>
+                    <strong>Objectives:</strong>
+                    <ul>
+                        <li>
+                            <svg class="icon" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">Study the Blueprints</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Quest 4: The World Weaver's Map -->
+        <section id="quest4">
+            <div class="quest-container align-right">
+                <div class="quest-log">
+                    <h2>Quest Acquired: The World Weaver's Map</h2>
+                    <p>
+                        A perpetual quest to explore the very world you inhabit. This single-page portfolio, designed as a top-down RPG, is a project in its own right.
+                    </p>
+                    <strong>Objectives:</strong>
+                    <ul>
+                        <li>
+                            <svg class="icon" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>
+                            <a href="https://portfolio-dor1.onrender.com/" target="_blank">Gaze into the Aether</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final Section: The Guild Hall -->
+        <section id="guild-hall">
+            <div class="guild-content">
+                <a href="https://github.com/gevak" target="_blank" class="pedestal">
+                    <svg class="sigil" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.168 6.839 9.492.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.031-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.378.203 2.398.1 2.651.64.7 1.03 1.595 1.03 2.688 0 3.848-2.338 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12c0-5.523-4.477-10-10-10z"></path></svg>
+                    <span>GitHub</span>
+                </a>
+                <a href="https://linkedin.com/in/gevakip" target="_blank" class="pedestal">
+                    <svg class="sigil" viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+                    <span>LinkedIn</span>
+                </a>
+                <a href="https://facebook.com/geva.kipper" target="_blank" class="pedestal">
+                    <svg class="sigil" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+                    <span>Facebook</span>
+                </a>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>This world was procedurally generated by Claude, an AI model from Anthropic.</p>
+        <p>Time since last world reset: <span id="stopwatch">00:00:00</span></p>
+    </footer>
+
+    <script>
+    /* JAVASCRIPT LOGIC */
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- Canvas & Scene Setup ---
+        const canvas = document.getElementById('scene-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        const avatar = document.getElementById('avatar');
+
+        // Path is defined in percentages of canvas width and height
+        const pathPoints = [
+            { x: 50, y: 0 },
+            { x: 50, y: 15 },
+            { x: 30, y: 25 },
+            { x: 70, y: 40 },
+            { x: 30, y: 60 },
+            { x: 70, y: 75 },
+            { x: 50, y: 90 },
+            { x: 50, y: 100 }
+        ];
+        
+        let particles = [];
+        const numParticles = 200;
+
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            initParticles();
+            drawScene(); // Redraw immediately on resize
+            updateAvatarPosition(); // Also update avatar
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < numParticles; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    radius: Math.random() * 1.5 + 0.5,
+                    layer: Math.random() * 3 + 1, // Parallax layers
+                    alpha: Math.random() * 0.5 + 0.2
+                });
+            }
+        }
+        
+        function drawPath() {
+            ctx.beginPath();
+            ctx.moveTo(pathPoints[0].x / 100 * width, pathPoints[0].y / 100 * height);
+            
+            // Simple straight line path
+            for(let i=1; i < pathPoints.length; i++) {
+                ctx.lineTo(pathPoints[i].x / 100 * width, pathPoints[i].y / 100 * height);
+            }
+
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.4)';
+            ctx.shadowColor = 'rgba(0, 255, 255, 1)';
+            ctx.shadowBlur = 10;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        function drawParticles(scrollY) {
+            particles.forEach(p => {
+                // Parallax effect
+                const y = (p.y - scrollY / p.layer) % height;
+                const adjustedY = y < 0 ? y + height : y;
+
+                ctx.beginPath();
+                ctx.arc(p.x, adjustedY, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(224, 224, 224, ${p.alpha})`;
+                ctx.fill();
+            });
+        }
+        
+        function drawScene() {
+            ctx.clearRect(0, 0, width, height);
+            const scrollY = window.scrollY;
+            drawParticles(scrollY);
+            drawPath();
+        }
+        
+        function animate() {
+            drawScene();
+            requestAnimationFrame(animate); 
+        }
+
+        resizeCanvas();
+        animate();
+        window.addEventListener('resize', resizeCanvas);
+
+
+        // --- Scrolling Interaction ---
+        
+        let pathSegments = [];
+        let totalPathLength = 0;
+        
+        function calculatePath() {
+            pathSegments = [];
+            totalPathLength = 0;
+            const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+            
+            for (let i = 0; i < pathPoints.length - 1; i++) {
+                const p1 = { x: pathPoints[i].x / 100 * width, y: pathPoints[i].y / 100 * height + i * height };
+                const p2 = { x: pathPoints[i+1].x / 100 * width, y: pathPoints[i+1].y / 100 * height + (i+1) * height };
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                pathSegments.push({ p1, p2, dx, dy, length, startLength: totalPathLength });
+                totalPathLength += length;
+            }
+        }
+        
+        // Simplified path positioning for performance
+        function getPointOnPath(scrollPercent) {
+            const sections = document.querySelectorAll('section');
+            const sectionHeight = (document.documentElement.scrollHeight - window.innerHeight) / (sections.length-1);
+
+            // Determine current and next segment based on scroll
+            const currentSegmentIndex = Math.min(Math.floor(window.scrollY / sectionHeight), pathPoints.length - 2);
+            const nextSegmentIndex = currentSegmentIndex + 1;
+           
+            // Calculate progress within the current section
+            const segmentScroll = window.scrollY % sectionHeight;
+            const segmentProgress = segmentScroll / sectionHeight;
+
+            const p1 = pathPoints[currentSegmentIndex];
+            const p2 = pathPoints[nextSegmentIndex];
+
+            const x = p1.x + (p2.x - p1.x) * segmentProgress;
+            const y = p1.y + (p2.y - p1.y) * segmentProgress;
+            
+            return { x: x/100 * width, y: y/100 * height };
+        }
+        
+        function updateAvatarPosition() {
+             if (window.scrollY > document.documentElement.scrollHeight - window.innerHeight - 10) {
+                // At the bottom, snap to last point
+                const lastPoint = pathPoints[pathPoints.length-1];
+                avatar.style.left = `${lastPoint.x/100 * width}px`;
+                avatar.style.top = `${lastPoint.y/100 * height}px`;
+                return;
+            }
+            
+            const pos = getPointOnPath();
+            avatar.style.left = `${pos.x}px`;
+            avatar.style.top = `${pos.y}px`;
+        }
+        
+        window.addEventListener('scroll', updateAvatarPosition);
+        updateAvatarPosition(); // Initial position
+
+        // --- Quest Log Visibility ---
+        const questLogs = document.querySelectorAll('.quest-log');
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.querySelector('.quest-log').classList.add('is-visible');
+                } else {
+                    entry.target.querySelector('.quest-log').classList.remove('is-visible');
+                }
+            });
+        }, {
+            root: null, // viewport
+            threshold: 0.4, // 40% of the item must be visible
+        });
+
+        questLogs.forEach(log => {
+            observer.observe(log.closest('section'));
+        });
+
+
+        // --- Timers and Flickering Text ---
+        const statusText = document.getElementById('status-text');
+        setInterval(() => {
+            statusText.style.opacity = 0.7 + Math.random() * 0.3;
+        }, 300);
+
+        const stopwatchEl = document.getElementById('stopwatch');
+        const resetTime = new Date('2025-06-14T01:05:35Z').getTime();
+
+        function updateStopwatch() {
+            const now = new Date().getTime();
+            const diff = now - resetTime;
+
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            const format = (num) => num.toString().padStart(2, '0');
+            stopwatchEl.textContent = `${format(hours)}:${format(minutes)}:${format(seconds)}`;
+        }
+
+        setInterval(updateStopwatch, 1000);
+        updateStopwatch(); // Initial call
+    });
+    </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250614",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>

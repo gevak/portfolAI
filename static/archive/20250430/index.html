@@ -1,0 +1,1097 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper - Software Engineer</title>
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --secondary-color: #34a853;
+            --accent-color: #ea4335;
+            --background-light: #f8f9fa;
+            --background-dark: #202124;
+            --text-light: #fff;
+            --text-dark: #202124;
+            --ground-color: #34a853;
+            --sky-color: #4285f4;
+            --obstacle-color: #ea4335;
+            --code-bg: rgba(30, 30, 30, 0.8);
+            --project-bg: rgba(255, 255, 255, 0.9);
+            --project-bg-dark: rgba(40, 40, 40, 0.9);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            overflow-x: hidden;
+            background: var(--background-light);
+            color: var(--text-dark);
+            transition: background-color 0.5s, color 0.5s;
+        }
+
+        body.dark-mode {
+            background: var(--background-dark);
+            color: var(--text-light);
+        }
+
+        header {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: titleFade 2s ease-in-out;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            max-width: 800px;
+            margin-bottom: 2rem;
+            opacity: 0;
+            animation: fadeIn 2s ease-in-out forwards;
+            animation-delay: 0.5s;
+        }
+
+        .ai-indicator {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            position: absolute;
+            top: 1rem;
+            animation: pulse 4s infinite;
+            display: flex;
+            align-items: center;
+        }
+
+        .dark-mode .ai-indicator {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .ai-indicator::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            margin-right: 8px;
+            animation: blink 2s infinite;
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            font-size: 1.2rem;
+            animation: bounce 2s infinite;
+        }
+
+        .game-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .parallax-bg {
+            position: absolute;
+            width: 300%;
+            height: 100%;
+            background: linear-gradient(180deg, #a1c4fd 0%, #c2e9fb 100%);
+            transition: background 2s;
+        }
+
+        .dark-mode .parallax-bg {
+            background: linear-gradient(180deg, #2c3e50 0%, #4c669f 100%);
+        }
+
+        .cityscape {
+            position: absolute;
+            bottom: 30%;
+            width: 200%;
+            height: 20%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 200" preserveAspectRatio="none"><path d="M0,200 L0,100 L50,110 L100,80 L150,100 L200,70 L250,90 L300,60 L350,80 L400,50 L450,70 L500,40 L550,60 L600,30 L650,50 L700,20 L750,40 L800,10 L850,30 L900,0 L950,20 L1000,10 L1000,200 Z" fill="%234285f4" opacity="0.2"/></svg>');
+            background-repeat: repeat-x;
+            background-size: contain;
+        }
+
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 200%;
+            height: 20%;
+            background-color: var(--ground-color);
+            transition: background-color 2s;
+        }
+
+        .dark-mode .ground {
+            background-color: #1c2331;
+        }
+
+        .character {
+            position: absolute;
+            bottom: 20%;
+            left: 20%;
+            width: 60px;
+            height: 90px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 90"><rect x="20" y="0" width="20" height="20" rx="5" fill="%234285f4"/><rect x="10" y="20" width="40" height="30" rx="5" fill="%23ea4335"/><rect x="15" y="50" width="10" height="30" rx="2" fill="%235f6368"/><rect x="35" y="50" width="10" height="30" rx="2" fill="%235f6368"/></svg>');
+            background-repeat: no-repeat;
+            transition: transform 0.2s;
+            z-index: 10;
+        }
+
+        .character.running {
+            animation: run 0.5s infinite alternate;
+        }
+
+        .character.jumping {
+            animation: jump 0.5s forwards;
+        }
+
+        .obstacles {
+            position: absolute;
+            bottom: 20%;
+            width: 100%;
+            height: 20%;
+        }
+
+        .obstacle {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-color: var(--obstacle-color);
+            border-radius: 5px;
+        }
+
+        .code-snippet {
+            position: absolute;
+            padding: 0.5rem;
+            background: var(--code-bg);
+            color: #fff;
+            font-family: monospace;
+            border-radius: 5px;
+            opacity: 0.8;
+            transform: rotate(-2deg);
+            transition: opacity 0.3s;
+        }
+
+        .code-snippet:hover {
+            opacity: 1;
+            z-index: 100;
+        }
+
+        .project-section {
+            min-height: 100vh;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            opacity: 0;
+            transition: opacity 1s;
+        }
+
+        .project-section.active {
+            opacity: 1;
+        }
+
+        .project-card {
+            max-width: 600px;
+            background: var(--project-bg);
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            transform: translateY(50px);
+            opacity: 0;
+            transition: transform 0.5s, opacity 0.5s, background-color 0.5s;
+        }
+
+        .dark-mode .project-card {
+            background: var(--project-bg-dark);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .project-card.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .project-title {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .project-description {
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .project-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .project-link {
+            padding: 0.5rem 1rem;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .project-link:hover {
+            background: var(--secondary-color);
+        }
+
+        footer {
+            min-height: 50vh;
+            padding: 4rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.1), transparent);
+        }
+
+        .dark-mode footer {
+            background: linear-gradient(to top, rgba(255, 255, 255, 0.05), transparent);
+        }
+
+        .social-links {
+            display: flex;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .social-link {
+            font-size: 2rem;
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: transform 0.3s, color 0.3s;
+        }
+
+        .social-link:hover {
+            color: var(--secondary-color);
+            transform: scale(1.2);
+        }
+
+        .finish-line {
+            position: absolute;
+            bottom: 20%;
+            width: 10px;
+            height: 30%;
+            background: repeating-linear-gradient(
+                to bottom,
+                black,
+                black 10px,
+                white 10px,
+                white 20px
+            );
+        }
+
+        .stopwatch {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            margin-top: 2rem;
+            padding: 0.5rem;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-mode .stopwatch {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        .restart-btn {
+            margin-top: 2rem;
+            padding: 0.5rem 1rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .restart-btn:hover {
+            background: var(--secondary-color);
+        }
+
+        .level-indicator {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            z-index: 100;
+            transition: background-color 0.3s;
+        }
+
+        .dark-mode .level-indicator {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .collectible {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            z-index: 5;
+            transition: transform 0.3s;
+            animation: float 2s infinite alternate;
+        }
+
+        .collectible.collected {
+            animation: collect 0.5s forwards;
+        }
+
+        /* Animations */
+        @keyframes titleFade {
+            0% { opacity: 0; transform: translateY(-20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes blink {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0; }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes run {
+            0% { transform: skewX(5deg); }
+            100% { transform: skewX(-5deg); }
+        }
+
+        @keyframes jump {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-100px); }
+            100% { transform: translateY(0); }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-10px); }
+        }
+
+        @keyframes collect {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 3rem;
+            }
+            
+            .subtitle {
+                font-size: 1.2rem;
+            }
+            
+            .project-card {
+                padding: 1.5rem;
+            }
+            
+            .project-title {
+                font-size: 1.5rem;
+            }
+            
+            .character {
+                left: 10%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Geva Kipper</h1>
+        <p class="subtitle">Software Engineer at Google, creating intelligent solutions for cloud infrastructure</p>
+        <div class="ai-indicator">This website is re-designed daily by AI and is ever-changing</div>
+        <div class="scroll-indicator">Scroll to start the journey ↓</div>
+    </header>
+
+    <div class="game-container">
+        <div class="parallax-bg"></div>
+        <div class="cityscape"></div>
+        <div class="ground"></div>
+        <div class="character"></div>
+        <div class="obstacles"></div>
+        <div class="finish-line" style="right: -100px;"></div>
+    </div>
+
+    <div class="level-indicator">Level: Start</div>
+
+    <button class="theme-toggle">🌗</button>
+
+    <div id="project-1" class="project-section">
+        <div class="project-card">
+            <h2 class="project-title">GlglStats</h2>
+            <p class="project-description">
+                A music data visualization platform that presents statistical insights about artists, albums, and songs. The platform processes and visualizes complex musical data using Python and modern web technologies.
+            </p>
+            <div class="project-links">
+                <a href="https://glglstats.onrender.com/" class="project-link" target="_blank">Visit Website</a>
+                <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" class="project-link" target="_blank">Watch Presentation</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="project-2" class="project-section">
+        <div class="project-card">
+            <h2 class="project-title">Ahuzat Dibuk</h2>
+            <p class="project-description">
+                A city parking analysis project that uses data visualization to map parking availability in urban areas. The project has been featured in multiple media outlets for its innovative approach to urban planning.
+            </p>
+            <div class="project-links">
+                <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" class="project-link" target="_blank">Publication Post</a>
+                <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" class="project-link" target="_blank">Media Mention 1</a>
+                <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" class="project-link" target="_blank">Media Mention 2</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="project-3" class="project-section">
+        <div class="project-card">
+            <h2 class="project-title">2D Part Orienting</h2>
+            <p class="project-description">
+                A computational geometry project focused on algorithms for orienting 2D parts. Using C++ and computational geometry principles, this research explores efficient methods for part orientation in manufacturing.
+            </p>
+            <div class="project-links">
+                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" class="project-link" target="_blank">Project Details</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="project-4" class="project-section">
+        <div class="project-card">
+            <h2 class="project-title">Portfolio Website</h2>
+            <p class="project-description">
+                This very website you're exploring! A meta-project that demonstrates creative web design principles using modern HTML, CSS, and JavaScript. The endless runner concept parallels a software engineer's journey.
+            </p>
+            <div class="project-links">
+                <a href="https://portfolio-dor1.onrender.com/" class="project-link" target="_blank">Visit Website</a>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <h2>Connect With Me</h2>
+        <div class="social-links">
+            <a href="https://github.com/gevak" class="social-link" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+            </a>
+            <a href="https://linkedin.com/in/gevakip" class="social-link" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854V1.146zm4.943 12.248V6.169H2.542v7.225h2.401zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248-.822 0-1.359.54-1.359 1.248 0 .694.521 1.248 1.327 1.248h.016zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016a5.54 5.54 0 0 1 .016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225h2.4z"/>
+                </svg>
+            </a>
+            <a href="https://facebook.com/geva.kipper" class="social-link" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M16 8.049c0-4.446-3.582-8.05-8-8.05C3.58 0-.002 3.603-.002 8.05c0 4.017 2.926 7.347 6.75 7.951v-5.625h-2.03V8.05H6.75V6.275c0-2.017 1.195-3.131 3.022-3.131.876 0 1.791.157 1.791.157v1.98h-1.009c-.993 0-1.303.621-1.303 1.258v1.51h2.218l-.354 2.326H9.25V16c3.824-.604 6.75-3.934 6.75-7.951z"/>
+                </svg>
+            </a>
+        </div>
+        <div class="stopwatch">Running since: 00:00:00</div>
+        <p>Website designed by AI Assistant</p>
+        <button class="restart-btn">Restart Journey</button>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const body = document.body;
+        const character = document.querySelector('.character');
+        const obstacles = document.querySelector('.obstacles');
+        const parallaxBg = document.querySelector('.parallax-bg');
+        const cityscape = document.querySelector('.cityscape');
+        const ground = document.querySelector('.ground');
+        const projectSections = document.querySelectorAll('.project-section');
+        const projectCards = document.querySelectorAll('.project-card');
+        const finishLine = document.querySelector('.finish-line');
+        const themeToggle = document.querySelector('.theme-toggle');
+        const restartBtn = document.querySelector('.restart-btn');
+        const levelIndicator = document.querySelector('.level-indicator');
+        const stopwatch = document.querySelector('.stopwatch');
+
+        // Game variables
+        let scrollPosition = 0;
+        let isJumping = false;
+        let currentLevel = 0;
+        let obstacleInterval;
+        let codeSnippetInterval;
+        let collectibleInterval;
+        let isRunning = false;
+        let collectedItems = 0;
+        let currentObstacles = [];
+        const levels = ['Start', 'GlglStats', 'Ahuzat Dibuk', '2D Part Orienting', 'Portfolio Website', 'Contact'];
+
+        // Code snippets for different levels
+        const codeSnippets = [
+            // Level 1: GlglStats
+            [
+                "def analyze_music_data(tracks):\n    return stats.mean([t.tempo for t in tracks])",
+                "import pandas as pd\ndf = pd.DataFrame(music_data)",
+                "plt.plot(years, popularity, 'r-')\nplt.title('Popularity Over Time')"
+            ],
+            // Level 2: Ahuzat Dibuk
+            [
+                "parking_data = geopandas.read_file('parking.geojson')",
+                "fig, ax = plt.subplots(1, figsize=(10, 10))\nparking_data.plot(column='occupancy', ax=ax)",
+                "def calculate_hotspots(data):\n    return KMeans(n_clusters=5).fit(data)"
+            ],
+            // Level 3: 2D Part Orienting
+            [
+                "template <typename T>\nclass Polygon {\n    vector<Point<T>> vertices;\n};",
+                "bool isConvex(const Polygon<double>& poly) {\n    // Check convexity\n}",
+                "Vector2D calculateForce(const Part& part) {\n    return Vector2D(fx, fy);\n}"
+            ],
+            // Level 4: Portfolio Website
+            [
+                "const character = document.querySelector('.character');",
+                "function updateGameState() {\n    // Game logic here\n}",
+                "@keyframes jump {\n    0% { transform: translateY(0); }\n    50% { transform: translateY(-100px); }\n}"
+            ]
+        ];
+
+        // Initialize the game
+        function initGame() {
+            document.addEventListener('scroll', handleScroll);
+            document.addEventListener('keydown', handleKeyDown);
+            themeToggle.addEventListener('click', toggleTheme);
+            restartBtn.addEventListener('click', restartGame);
+            
+            updateStopwatch();
+            setInterval(updateStopwatch, 1000);
+            
+            // Add some initial collectibles
+            spawnCollectibles();
+        }
+
+        // Handle scrolling
+        function handleScroll() {
+            const newScrollPosition = window.scrollY;
+            const scrollDelta = newScrollPosition - scrollPosition;
+            scrollPosition = newScrollPosition;
+            
+            // Start running once user scrolls
+            if (scrollPosition > 100 && !isRunning) {
+                startRunning();
+            }
+            
+            // Update game state based on scroll
+            if (isRunning) {
+                updateGameState(scrollDelta);
+            }
+            
+            // Check which project section is in view
+            updateVisibleProject();
+        }
+
+        // Start the running game
+        function startRunning() {
+            isRunning = true;
+            character.classList.add('running');
+            
+            // Start spawning obstacles and code snippets
+            obstacleInterval = setInterval(spawnObstacle, 2000);
+            codeSnippetInterval = setInterval(spawnCodeSnippet, 3000);
+            collectibleInterval = setInterval(spawnCollectibles, 5000);
+        }
+
+        // Update game state based on scroll
+        function updateGameState(scrollDelta) {
+            // Move parallax layers
+            moveLayers(scrollDelta);
+            
+            // Update obstacles and check collisions
+            updateObstacles();
+            
+            // Check level progression
+            checkLevelProgression();
+        }
+
+        // Move parallax layers
+        function moveLayers(scrollDelta) {
+            const parallaxFactor = 0.5;
+            const bgPosition = parseFloat(parallaxBg.style.transform?.replace('translateX(', '')?.replace('px)', '') || 0) - (scrollDelta * parallaxFactor);
+            const cityscapePosition = parseFloat(cityscape.style.transform?.replace('translateX(', '')?.replace('px)', '') || 0) - (scrollDelta * 0.3);
+            const groundPosition = parseFloat(ground.style.transform?.replace('translateX(', '')?.replace('px)', '') || 0) - (scrollDelta * 0.8);
+            
+            parallaxBg.style.transform = `translateX(${bgPosition}px)`;
+            cityscape.style.transform = `translateX(${cityscapePosition}px)`;
+            ground.style.transform = `translateX(${groundPosition}px)`;
+            
+            // Move finish line if we're approaching the end
+            if (currentLevel >= 4) {
+                const finishLinePos = parseFloat(finishLine.style.right || '-100px');
+                finishLine.style.right = `${Math.max(finishLinePos - (scrollDelta * 0.1), 20)}px`;
+            }
+        }
+
+        // Spawn an obstacle
+        function spawnObstacle() {
+            if (!isRunning) return;
+            
+            const obstacle = document.createElement('div');
+            obstacle.classList.add('obstacle');
+            
+            // Different obstacles for different levels
+            switch (currentLevel) {
+                case 1: // GlglStats Level
+                    obstacle.style.backgroundImage = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="15" fill="%23ea4335"/><path d="M15,15 L15,25 L25,20 Z" fill="white"/></svg>')`;
+                    break;
+                case 2: // Ahuzat Dibuk Level
+                    obstacle.style.backgroundImage = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect x="5" y="10" width="30" height="20" rx="2" fill="%234285f4"/><circle cx="10" cy="30" r="5" fill="black"/><circle cx="30" cy="30" r="5" fill="black"/></svg>')`;
+                    break;
+                case 3: // 2D Part Orienting Level
+                    obstacle.style.backgroundImage = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><polygon points="20,5 35,20 20,35 5,20" fill="%2334a853"/></svg>')`;
+                    break;
+                case 4: // Portfolio Website Level
+                    obstacle.style.backgroundImage = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect x="5" y="5" width="30" height="25" rx="2" fill="%23fbbc05"/><rect x="10" y="10" width="20" height="15" fill="white"/></svg>')`;
+                    break;
+                default:
+                    // Default obstacle
+                    obstacle.style.height = '40px';
+                    obstacle.style.width = '20px';
+            }
+            
+            obstacle.style.right = '-50px';
+            obstacle.dataset.position = -50;
+            obstacles.appendChild(obstacle);
+            
+            currentObstacles.push(obstacle);
+        }
+
+        // Spawn code snippets in the background
+        function spawnCodeSnippet() {
+            if (!isRunning || currentLevel === 0 || currentLevel > 4) return;
+            
+            const snippets = codeSnippets[currentLevel - 1];
+            const snippet = snippets[Math.floor(Math.random() * snippets.length)];
+            
+            const codeElement = document.createElement('div');
+            codeElement.classList.add('code-snippet');
+            codeElement.textContent = snippet;
+            codeElement.style.right = '-300px';
+            codeElement.style.bottom = `${Math.random() * 50 + 30}%`;
+            codeElement.style.transform = `rotate(${Math.random() * 5 - 2.5}deg)`;
+            codeElement.dataset.position = -300;
+            
+            document.querySelector('.game-container').appendChild(codeElement);
+            
+            // Remove code snippet after it passes
+            setTimeout(() => {
+                codeElement.remove();
+            }, 20000);
+        }
+
+        // Spawn collectible items
+        function spawnCollectibles() {
+            if (currentLevel !== 4) return;
+            
+            const icons = ['github', 'linkedin', 'facebook'];
+            const iconData = {
+                github: 'M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z',
+                linkedin: 'M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854V1.146zm4.943 12.248V6.169H2.542v7.225h2.401zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248-.822 0-1.359.54-1.359 1.248 0 .694.521 1.248 1.327 1.248h.016zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016a5.54 5.54 0 0 1 .016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225h2.4z',
+                facebook: 'M16 8.049c0-4.446-3.582-8.05-8-8.05C3.58 0-.002 3.603-.002 8.05c0 4.017 2.926 7.347 6.75 7.951v-5.625h-2.03V8.05H6.75V6.275c0-2.017 1.195-3.131 3.022-3.131.876 0 1.791.157 1.791.157v1.98h-1.009c-.993 0-1.303.621-1.303 1.258v1.51h2.218l-.354 2.326H9.25V16c3.824-.604 6.75-3.934 6.75-7.951z'
+            };
+            
+            const icon = icons[Math.floor(Math.random() * icons.length)];
+            const collectible = document.createElement('div');
+            collectible.classList.add('collectible');
+            collectible.dataset.type = icon;
+            collectible.style.backgroundImage = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="%234285f4" viewBox="0 0 16 16"><path d="${iconData[icon]}"/></svg>')`;
+            
+            collectible.style.right = '-50px';
+            collectible.style.bottom = `${Math.random() * 30 + 30}%`;
+            collectible.dataset.position = -50;
+            
+            document.querySelector('.game-container').appendChild(collectible);
+            
+            collectible.addEventListener('click', () => {
+                collectItem(collectible);
+            });
+            
+            // Remove collectible after it passes
+            setTimeout(() => {
+                collectible.remove();
+            }, 20000);
+        }
+
+        // Collect an item
+        function collectItem(item) {
+            item.classList.add('collected');
+            collectedItems++;
+            
+            // Remove after animation completes
+            setTimeout(() => {
+                item.remove();
+            }, 500);
+        }
+
+        // Update obstacles position and check collisions
+        function updateObstacles() {
+            const characterRect = character.getBoundingClientRect();
+            
+            // Update all obstacles
+            document.querySelectorAll('.obstacle, .code-snippet, .collectible').forEach(element => {
+                // Move the element leftward
+                const currentPosition = parseFloat(element.dataset.position);
+                const newPosition = currentPosition + 5;
+                element.dataset.position = newPosition;
+                element.style.right = `${newPosition}px`;
+                
+                // Check collision for obstacles
+                if (element.classList.contains('obstacle')) {
+                    const obstacleRect = element.getBoundingClientRect();
+                    
+                    if (
+                        characterRect.right > obstacleRect.left &&
+                        characterRect.left < obstacleRect.right &&
+                        characterRect.bottom > obstacleRect.top &&
+                        !isJumping
+                    ) {
+                        // Collision detected, make character jump automatically
+                        jump();
+                    }
+                }
+                
+                // Check collision for collectibles
+                if (element.classList.contains('collectible') && !element.classList.contains('collected')) {
+                    const collectibleRect = element.getBoundingClientRect();
+                    
+                    if (
+                        characterRect.right > collectibleRect.left &&
+                        characterRect.left < collectibleRect.right &&
+                        characterRect.top < collectibleRect.bottom &&
+                        characterRect.bottom > collectibleRect.top
+                    ) {
+                        collectItem(element);
+                    }
+                }
+                
+                // Remove if off-screen
+                if (newPosition > window.innerWidth + 300) {
+                    element.remove();
+                }
+            });
+        }
+
+        // Make the character jump
+        function jump() {
+            if (isJumping) return;
+            
+            isJumping = true;
+            character.classList.remove('running');
+            character.classList.add('jumping');
+            
+            // Add particle effect for jump
+            addJumpParticles();
+            
+            setTimeout(() => {
+                character.classList.remove('jumping');
+                character.classList.add('running');
+                isJumping = false;
+            }, 500);
+        }
+
+        // Add particles for jump effect
+        function addJumpParticles() {
+            const characterRect = character.getBoundingClientRect();
+            
+            for (let i = 0; i < 5; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'absolute';
+                particle.style.width = '8px';
+                particle.style.height = '8px';
+                particle.style.backgroundColor = 'white';
+                particle.style.borderRadius = '50%';
+                particle.style.left = `${characterRect.left + Math.random() * characterRect.width}px`;
+                particle.style.bottom = `${characterRect.bottom - 10}px`;
+                particle.style.opacity = '0.8';
+                particle.style.zIndex = '5';
+                
+                document.querySelector('.game-container').appendChild(particle);
+                
+                // Animate particle
+                const angle = Math.random() * Math.PI;
+                const speed = Math.random() * 2 + 1;
+                
+                let posX = parseInt(particle.style.left);
+                let posY = parseInt(particle.style.bottom);
+                let opacity = 0.8;
+                
+                const animateParticle = () => {
+                    posX += Math.cos(angle) * speed;
+                    posY += Math.sin(angle) * speed;
+                    opacity -= 0.02;
+                    
+                    particle.style.left = `${posX}px`;
+                    particle.style.bottom = `${posY}px`;
+                    particle.style.opacity = opacity.toString();
+                    
+                    if (opacity > 0) {
+                        requestAnimationFrame(animateParticle);
+                    } else {
+                        particle.remove();
+                    }
+                };
+                
+                requestAnimationFrame(animateParticle);
+            }
+        }
+
+        // Check level progression
+        function checkLevelProgression() {
+            // Determine level based on scroll position
+            const scrollPercentage = (scrollPosition / (document.body.scrollHeight - window.innerHeight)) * 100;
+            const newLevel = Math.min(
+                Math.floor(scrollPercentage / (100 / (levels.length - 1))),
+                levels.length - 1
+            );
+            
+            if (newLevel !== currentLevel) {
+                currentLevel = newLevel;
+                levelIndicator.textContent = `Level: ${levels[currentLevel]}`;
+                
+                // Update game environment based on level
+                updateEnvironment();
+            }
+            
+            // Check if reached the finish line
+            if (currentLevel === levels.length - 1 && scrollPercentage > 95) {
+                finishGame();
+            }
+        }
+
+        // Update environment based on current level
+        function updateEnvironment() {
+            // Change background colors based on level
+            switch (currentLevel) {
+                case 0: // Start
+                    parallaxBg.style.background = 'linear-gradient(180deg, #a1c4fd 0%, #c2e9fb 100%)';
+                    ground.style.backgroundColor = '#34a853';
+                    break;
+                case 1: // GlglStats
+                    parallaxBg.style.background = 'linear-gradient(180deg, #8EC5FC 0%, #E0C3FC 100%)';
+                    ground.style.backgroundColor = '#4285f4';
+                    break;
+                case 2: // Ahuzat Dibuk
+                    parallaxBg.style.background = 'linear-gradient(180deg, #fbc2eb 0%, #a6c1ee 100%)';
+                    ground.style.backgroundColor = '#FBBC05';
+                    break;
+                case 3: // 2D Part Orienting
+                    parallaxBg.style.background = 'linear-gradient(180deg, #a1c4fd 0%, #fbc2eb 100%)';
+                    ground.style.backgroundColor = '#34a853';
+                    break;
+                case 4: // Portfolio Website
+                    parallaxBg.style.background = 'linear-gradient(180deg, #f6d365 0%, #fda085 100%)';
+                    ground.style.backgroundColor = '#EA4335';
+                    break;
+            }
+            
+            // If in dark mode, adjust colors
+            if (body.classList.contains('dark-mode')) {
+                switch (currentLevel) {
+                    case 0:
+                        parallaxBg.style.background = 'linear-gradient(180deg, #2c3e50 0%, #4c669f 100%)';
+                        ground.style.backgroundColor = '#1c2331';
+                        break;
+                    case 1:
+                        parallaxBg.style.background = 'linear-gradient(180deg, #3a4d65 0%, #3f5473 100%)';
+                        ground.style.backgroundColor = '#2c3e50';
+                        break;
+                    case 2:
+                        parallaxBg.style.background = 'linear-gradient(180deg, #414345 0%, #232526 100%)';
+                        ground.style.backgroundColor = '#34495e';
+                        break;
+                    case 3:
+                        parallaxBg.style.background = 'linear-gradient(180deg, #283048 0%, #859398 100%)';
+                        ground.style.backgroundColor = '#2c3e50';
+                        break;
+                    case 4:
+                        parallaxBg.style.background = 'linear-gradient(180deg, #434343 0%, #000000 100%)';
+                        ground.style.backgroundColor = '#1c2331';
+                        break;
+                }
+            }
+        }
+
+        // Finish the game
+        function finishGame() {
+            if (!isRunning) return;
+            
+            isRunning = false;
+            character.classList.remove('running');
+            character.style.transform = 'translateX(50px)';
+            
+            clearInterval(obstacleInterval);
+            clearInterval(codeSnippetInterval);
+            clearInterval(collectibleInterval);
+            
+            // Victory animation
+            character.style.animation = 'bounce 0.5s infinite';
+        }
+
+        // Handle keyboard controls
+        function handleKeyDown(e) {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                e.preventDefault();
+                jump();
+            }
+        }
+
+        // Update visible project section
+        function updateVisibleProject() {
+            projectSections.forEach((section, index) => {
+                const rect = section.getBoundingClientRect();
+                
+                if (rect.top < window.innerHeight * 0.75 && rect.bottom > window.innerHeight * 0.25) {
+                    section.classList.add('active');
+                    projectCards[index].classList.add('visible');
+                } else {
+                    section.classList.remove('active');
+                }
+            });
+        }
+
+        // Toggle dark/light theme
+        function toggleTheme() {
+            body.classList.toggle('dark-mode');
+            
+            // Update environment colors
+            updateEnvironment();
+            
+            // Change toggle icon
+            themeToggle.textContent = body.classList.contains('dark-mode') ? '☀️' : '🌗';
+        }
+
+        // Restart the game
+        function restartGame() {
+            // Scroll back to top
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+            
+            // Reset game state
+            setTimeout(() => {
+                isRunning = false;
+                character.classList.remove('running', 'jumping');
+                character.style.animation = '';
+                character.style.transform = '';
+                
+                // Clear all obstacles
+                document.querySelectorAll('.obstacle, .code-snippet, .collectible').forEach(el => el.remove());
+                
+                // Reset finish line
+                finishLine.style.right = '-100px';
+                
+                // Clear intervals
+                clearInterval(obstacleInterval);
+                clearInterval(codeSnippetInterval);
+                clearInterval(collectibleInterval);
+                
+                // Reset level
+                currentLevel = 0;
+                levelIndicator.textContent = `Level: ${levels[currentLevel]}`;
+                
+                // Reset environment
+                updateEnvironment();
+            }, 1000);
+        }
+
+        // Update stopwatch
+        function updateStopwatch() {
+            const startDate = new Date('2025-04-30T01:05:25Z');
+            const now = new Date();
+            
+            // If current date is before start date, show 00:00:00
+            if (now < startDate) {
+                stopwatch.textContent = 'Running since: 00:00:00';
+                return;
+            }
+            
+            const diff = now - startDate;
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            const timeString = `${padZero(days)}:${padZero(hours)}:${padZero(minutes)}:${padZero(seconds)}`;
+            stopwatch.textContent = `Running since: ${timeString}`;
+        }
+
+        // Helper function to pad zeros
+        function padZero(num) {
+            return num.toString().padStart(2, '0');
+        }
+
+        // Initialize the game
+        window.addEventListener('load', initGame);
+    </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250430",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>

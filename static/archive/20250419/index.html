@@ -1,0 +1,859 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper - Code That Writes Itself</title>
+    <style>
+        :root {
+            --bg-color: #1e1e2e;
+            --text-color: #cdd6f4;
+            --highlight-color: #89b4fa;
+            --comment-color: #6c7086;
+            --function-color: #f5c2e7;
+            --string-color: #a6e3a1;
+            --number-color: #fab387;
+            --keyword-color: #f38ba8;
+            --property-color: #89dceb;
+            --glass-bg: rgba(30, 30, 46, 0.7);
+            --glass-border: rgba(137, 180, 250, 0.3);
+            --terminal-green: #a6e3a1;
+            --cursor-blink-time: 0.8s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Fira Code', 'Cascadia Code', 'Source Code Pro', monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .code-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .terminal-text {
+            font-size: clamp(2rem, 5vw, 4rem);
+            margin-bottom: 1rem;
+            color: var(--terminal-green);
+            position: relative;
+        }
+
+        .terminal-text::after {
+            content: '|';
+            position: absolute;
+            color: var(--highlight-color);
+            animation: cursor-blink var(--cursor-blink-time) infinite;
+        }
+
+        @keyframes cursor-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .subtitle {
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            color: var(--comment-color);
+            margin-bottom: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1s ease, transform 1s ease;
+        }
+
+        .code-line {
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            margin: 0.3rem 0;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            position: relative;
+            display: block;
+        }
+
+        .visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .indent-1 { margin-left: 2rem; }
+        .indent-2 { margin-left: 4rem; }
+        .indent-3 { margin-left: 6rem; }
+
+        .comment { color: var(--comment-color); }
+        .function { color: var(--function-color); }
+        .string { color: var(--string-color); }
+        .number { color: var(--number-color); }
+        .keyword { color: var(--keyword-color); }
+        .property { color: var(--property-color); }
+
+        .project-card {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            background-color: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+            transform-origin: top left;
+            transform: scale(0.95) translateY(20px);
+            opacity: 0;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .project-card.visible {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        .project-card h2 {
+            color: var(--highlight-color);
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+        }
+
+        .project-card p {
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .project-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .project-links a {
+            color: var(--highlight-color);
+            text-decoration: none;
+            border: 1px solid var(--highlight-color);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .project-links a:hover {
+            background-color: var(--highlight-color);
+            color: var(--bg-color);
+        }
+
+        .sound-wave {
+            height: 100px;
+            width: 100%;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+        }
+
+        .wave-bar {
+            height: 5px;
+            width: 8px;
+            background-color: var(--highlight-color);
+            border-radius: 2px;
+            transition: height 0.2s ease;
+        }
+
+        .heatmap-container {
+            height: 150px;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .heatmap-dot {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: var(--keyword-color);
+            opacity: 0.6;
+            filter: blur(8px);
+            transform: scale(0);
+            transition: transform 1s ease;
+        }
+
+        .interactive-polygon {
+            width: 100%;
+            height: 200px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            margin: 1rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .polygon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: transform 0.3s ease;
+        }
+
+        .social-network {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 2rem 0;
+        }
+
+        .network-node {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .network-node:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px var(--highlight-color);
+        }
+
+        .network-node a {
+            color: var(--highlight-color);
+            text-decoration: none;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .network-line {
+            position: absolute;
+            height: 1px;
+            background-color: var(--glass-border);
+            transform-origin: left center;
+            z-index: -1;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .footer-code {
+            display: inline-block;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .stopwatch {
+            font-family: 'Consolas', monospace;
+            color: var(--number-color);
+        }
+
+        .code-folding {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .fold-button {
+            background-color: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--highlight-color);
+            padding: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: background-color 0.3s;
+        }
+
+        .fold-button:hover {
+            background-color: rgba(137, 180, 250, 0.1);
+        }
+
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(137, 180, 250, 0.2);
+            transform: scale(0);
+            animation: ripple-effect 0.8s linear;
+            pointer-events: none;
+        }
+
+        @keyframes ripple-effect {
+            to {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .code-line {
+                font-size: 0.9rem;
+            }
+
+            .indent-1 { margin-left: 1rem; }
+            .indent-2 { margin-left: 2rem; }
+            .indent-3 { margin-left: 3rem; }
+
+            .project-card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="code-container">
+        <header>
+            <h1 class="terminal-text" id="name-text"></h1>
+            <p class="subtitle" id="subtitle">// Site AI-redesigned to write itself as you scroll down</p>
+        </header>
+
+        <div class="code-section" id="code-content">
+            <!-- Code will be generated by JavaScript -->
+        </div>
+
+        <footer>
+            <span class="footer-code comment">// Generated with the help of AI - Portfolio up since:</span>
+            <div class="stopwatch" id="stopwatch"></div>
+        </footer>
+    </div>
+
+    <div class="code-folding">
+        <button class="fold-button" data-section="header">Header</button>
+        <button class="fold-button" data-section="glglstats">GlglStats</button>
+        <button class="fold-button" data-section="ahuzat">Ahuzat Dibuk</button>
+        <button class="fold-button" data-section="2dpart">2D Part Orienting</button>
+        <button class="fold-button" data-section="portfolio">Portfolio</button>
+        <button class="fold-button" data-section="contact">Contact</button>
+    </div>
+
+    <script>
+        // Terminal text typing effect for the header
+        const nameText = "Geva Kipper";
+        const nameElement = document.getElementById('name-text');
+        let index = 0;
+
+        function typeWriter() {
+            if (index < nameText.length) {
+                nameElement.textContent += nameText.charAt(index);
+                index++;
+                setTimeout(typeWriter, Math.random() * 100 + 100);
+            } else {
+                document.getElementById('subtitle').classList.add('visible');
+                // Start generating code after name is typed
+                generateCodeContent();
+                // Start animations and interactions after a short delay
+                setTimeout(() => {
+                    initializeAnimations();
+                    setupScrollHandling();
+                    setupRippleEffect();
+                    setupFoldingButtons();
+                }, 1000);
+            }
+        }
+
+        // Start typing effect when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(typeWriter, 1000);
+            updateStopwatch();
+            setInterval(updateStopwatch, 1000);
+        });
+
+        // Generate code content structure
+        function generateCodeContent() {
+            const codeContent = document.getElementById('code-content');
+            
+            // Clear any existing content
+            codeContent.innerHTML = '';
+            
+            // Header section
+            addCodeLine(codeContent, '/* Welcome to my interactive portfolio */', 'comment');
+            addCodeLine(codeContent, 'const portfolio = {', 'keyword');
+            addCodeLine(codeContent, 'name: "Geva Kipper",', 'property indent-1');
+            addCodeLine(codeContent, 'role: "Software Engineer @ Google",', 'property indent-1');
+            addCodeLine(codeContent, 'skills: ["JavaScript", "Python", "Algorithms", "Visualization"],', 'property indent-1');
+            addCodeLine(codeContent, 'projects: [],', 'property indent-1');
+            addCodeLine(codeContent, '};', 'keyword');
+            addCodeLine(codeContent, '');
+
+            // GlglStats project
+            addCodeLine(codeContent, '/* Project 1: GlglStats - Visualizing Sound Patterns */', 'comment', 'glglstats');
+            addCodeLine(codeContent, 'function createGlglStatsProject() {', 'function');
+            addCodeLine(codeContent, 'const project = {', 'keyword indent-1');
+            addCodeLine(codeContent, 'name: "GlglStats",', 'property indent-2');
+            addCodeLine(codeContent, 'description: "A web tool that helps visualize repeated patterns in audio files.",', 'property indent-2');
+            addCodeLine(codeContent, 'tech: ["Web Audio API", "JavaScript", "Signal Processing"],', 'property indent-2');
+            addCodeLine(codeContent, 'links: {', 'property indent-2');
+            addCodeLine(codeContent, 'website: "https://glglstats.onrender.com/",', 'property indent-3');
+            addCodeLine(codeContent, 'presentation: "https://www.youtube.com/watch?v=jrKAtOsj1Lo"', 'property indent-3');
+            addCodeLine(codeContent, '}', 'indent-2');
+            addCodeLine(codeContent, '};', 'indent-1');
+            addCodeLine(codeContent, 'portfolio.projects.push(project);', 'indent-1');
+            addCodeLine(codeContent, 'return project;', 'keyword indent-1');
+            addCodeLine(codeContent, '}', '');
+            
+            // Create GlglStats card
+            const glglStatsProjectCard = document.createElement('div');
+            glglStatsProjectCard.className = 'project-card';
+            glglStatsProjectCard.innerHTML = `
+                <h2>GlglStats</h2>
+                <p>A web tool that helps visualize repeated patterns in audio files. This project analyzes audio data to identify and visualize repetition structures.</p>
+                <div class="sound-wave" id="sound-wave">
+                    ${Array.from({length: 30}, () => '<div class="wave-bar"></div>').join('')}
+                </div>
+                <div class="project-links">
+                    <a href="https://glglstats.onrender.com/" target="_blank">Visit Website</a>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">Watch Presentation</a>
+                </div>
+            `;
+            codeContent.appendChild(glglStatsProjectCard);
+            
+            addCodeLine(codeContent, 'const glglStatsProject = createGlglStatsProject();', '');
+            addCodeLine(codeContent, '');
+
+            // Ahuzat Dibuk project
+            addCodeLine(codeContent, '/* Project 2: Ahuzat Dibuk - Parking Space Analysis */', 'comment', 'ahuzat');
+            addCodeLine(codeContent, 'function createAhuzatDibukProject() {', 'function');
+            addCodeLine(codeContent, 'const project = {', 'keyword indent-1');
+            addCodeLine(codeContent, 'name: "Ahuzat Dibuk",', 'property indent-2');
+            addCodeLine(codeContent, 'description: "Analysis of parking space occupancy in Tel Aviv neighborhoods.",', 'property indent-2');
+            addCodeLine(codeContent, 'tech: ["Data Analysis", "GIS", "Urban Planning"],', 'property indent-2');
+            addCodeLine(codeContent, 'mediaMentions: [', 'property indent-2');
+            addCodeLine(codeContent, '"https://13tv.co.il/item/news/domestic/internal/parking-902956407/",', 'string indent-3');
+            addCodeLine(codeContent, '"https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm",', 'string indent-3');
+            addCodeLine(codeContent, '"https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943"', 'string indent-3');
+            addCodeLine(codeContent, ']', 'indent-2');
+            addCodeLine(codeContent, '};', 'indent-1');
+            addCodeLine(codeContent, 'portfolio.projects.push(project);', 'indent-1');
+            addCodeLine(codeContent, 'return project;', 'keyword indent-1');
+            addCodeLine(codeContent, '}', '');
+
+            // Create Ahuzat Dibuk card
+            const ahuzatDibukProjectCard = document.createElement('div');
+            ahuzatDibukProjectCard.className = 'project-card';
+            ahuzatDibukProjectCard.innerHTML = `
+                <h2>Ahuzat Dibuk</h2>
+                <p>A comprehensive analysis of parking space occupancy in Tel Aviv neighborhoods, revealing insights about urban planning and space utilization.</p>
+                <div class="heatmap-container" id="heatmap-container">
+                    <!-- Heatmap dots will be added via JavaScript -->
+                </div>
+                <div class="project-links">
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">Media Mention 1</a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">Media Mention 2</a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">Publication Post</a>
+                </div>
+            `;
+            codeContent.appendChild(ahuzatDibukProjectCard);
+            
+            addCodeLine(codeContent, 'const ahuzatDibukProject = createAhuzatDibukProject();', '');
+            addCodeLine(codeContent, '');
+
+            // 2D Part Orienting project
+            addCodeLine(codeContent, '/* Project 3: 2D Part Orienting - Smart Algorithm */', 'comment', '2dpart');
+            addCodeLine(codeContent, 'function create2DPartOrientingProject() {', 'function');
+            addCodeLine(codeContent, 'const project = {', 'keyword indent-1');
+            addCodeLine(codeContent, 'name: "2D Part Orienting",', 'property indent-2');
+            addCodeLine(codeContent, 'description: "Algorithm for orienting 2D parts using minimal sensing and manipulation.",', 'property indent-2');
+            addCodeLine(codeContent, 'tech: ["Computational Geometry", "Algorithm Design", "Robotics"],', 'property indent-2');
+            addCodeLine(codeContent, 'link: "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/"', 'property indent-2');
+            addCodeLine(codeContent, '};', 'indent-1');
+            addCodeLine(codeContent, 'portfolio.projects.push(project);', 'indent-1');
+            addCodeLine(codeContent, 'return project;', 'keyword indent-1');
+            addCodeLine(codeContent, '}', '');
+
+            // Create 2D Part Orienting card
+            const partOrientingProjectCard = document.createElement('div');
+            partOrientingProjectCard.className = 'project-card';
+            partOrientingProjectCard.innerHTML = `
+                <h2>2D Part Orienting</h2>
+                <p>An algorithm for orienting 2D parts using minimal sensing and manipulation. This research explores efficient ways to position objects with limited information.</p>
+                <div class="interactive-polygon" id="interactive-polygon">
+                    <svg class="polygon" width="100" height="100" viewBox="0 0 100 100" fill="none" stroke="${getComputedStyle(document.documentElement).getPropertyValue('--highlight-color')}" stroke-width="2">
+                        <polygon points="50,10 90,50 50,90 10,50" />
+                    </svg>
+                </div>
+                <div class="project-links">
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">View Project Details</a>
+                </div>
+            `;
+            codeContent.appendChild(partOrientingProjectCard);
+            
+            addCodeLine(codeContent, 'const partOrientingProject = create2DPartOrientingProject();', '');
+            addCodeLine(codeContent, '');
+
+            // Portfolio Website project
+            addCodeLine(codeContent, '/* Project 4: This Portfolio Website */', 'comment', 'portfolio');
+            addCodeLine(codeContent, 'function createPortfolioWebsite() {', 'function');
+            addCodeLine(codeContent, 'const project = {', 'keyword indent-1');
+            addCodeLine(codeContent, 'name: "Self-Writing Portfolio",', 'property indent-2');
+            addCodeLine(codeContent, 'description: "The website you\'re currently viewing - code that writes itself as you scroll.",', 'property indent-2');
+            addCodeLine(codeContent, 'tech: ["HTML", "CSS", "JavaScript", "Animation"],', 'property indent-2');
+            addCodeLine(codeContent, 'link: "https://portfolio-dor1.onrender.com/"', 'property indent-2');
+            addCodeLine(codeContent, '};', 'indent-1');
+            addCodeLine(codeContent, 'portfolio.projects.push(project);', 'indent-1');
+            addCodeLine(codeContent, 'return project;', 'keyword indent-1');
+            addCodeLine(codeContent, '}', '');
+
+            // Create Portfolio Website card
+            const portfolioProjectCard = document.createElement('div');
+            portfolioProjectCard.className = 'project-card';
+            portfolioProjectCard.innerHTML = `
+                <h2>Self-Writing Portfolio</h2>
+                <p>The very website you're currently viewing - featuring code that writes itself as you scroll down, creating a recursive and interactive experience.</p>
+                <div class="project-links">
+                    <a href="https://portfolio-dor1.onrender.com/" target="_blank">You Are Here</a>
+                </div>
+            `;
+            codeContent.appendChild(portfolioProjectCard);
+            
+            addCodeLine(codeContent, 'const portfolioWebsite = createPortfolioWebsite();', '');
+            addCodeLine(codeContent, '');
+
+            // Contact section
+            addCodeLine(codeContent, '/* Connect with me */', 'comment', 'contact');
+            addCodeLine(codeContent, 'function setupSocialNetwork() {', 'function');
+            addCodeLine(codeContent, 'const socialLinks = {', 'keyword indent-1');
+            addCodeLine(codeContent, 'github: "github.com/gevak",', 'property indent-2');
+            addCodeLine(codeContent, 'linkedin: "linkedin.com/in/gevakip",', 'property indent-2');
+            addCodeLine(codeContent, 'facebook: "facebook.com/geva.kipper"', 'property indent-2');
+            addCodeLine(codeContent, '};', 'indent-1');
+            addCodeLine(codeContent, 'return socialLinks;', 'keyword indent-1');
+            addCodeLine(codeContent, '}', '');
+            
+            // Create social network
+            const socialNetworkDiv = document.createElement('div');
+            socialNetworkDiv.className = 'social-network';
+            socialNetworkDiv.id = 'social-network';
+            
+            const centralNode = document.createElement('div');
+            centralNode.className = 'network-node';
+            centralNode.innerHTML = 'Geva';
+            centralNode.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--keyword-color');
+            centralNode.style.color = '#fff';
+            
+            const githubNode = createSocialNode('GitHub', 'https://github.com/gevak');
+            const linkedinNode = createSocialNode('LinkedIn', 'https://linkedin.com/in/gevakip');
+            const facebookNode = createSocialNode('Facebook', 'https://facebook.com/geva.kipper');
+            
+            socialNetworkDiv.appendChild(centralNode);
+            socialNetworkDiv.appendChild(githubNode);
+            socialNetworkDiv.appendChild(linkedinNode);
+            socialNetworkDiv.appendChild(facebookNode);
+            
+            codeContent.appendChild(socialNetworkDiv);
+            
+            addCodeLine(codeContent, 'const socialLinks = setupSocialNetwork();', '');
+            addCodeLine(codeContent, '');
+            
+            // Closing code
+            addCodeLine(codeContent, 'console.log("Portfolio fully loaded and ready to explore!");', '');
+        }
+
+        // Helper function to add a code line
+        function addCodeLine(parent, text, className = '', dataSectionId = '') {
+            const line = document.createElement('span');
+            line.className = `code-line ${className}`;
+            line.textContent = text;
+            if (dataSectionId) {
+                line.dataset.section = dataSectionId;
+            }
+            parent.appendChild(line);
+            return line;
+        }
+
+        // Helper function to create social network node
+        function createSocialNode(name, link) {
+            const node = document.createElement('div');
+            node.className = 'network-node';
+            
+            const anchor = document.createElement('a');
+            anchor.href = link;
+            anchor.target = '_blank';
+            anchor.textContent = name;
+            
+            node.appendChild(anchor);
+            return node;
+        }
+
+        // Animate elements as they enter the viewport
+        function setupScrollHandling() {
+            const codeLines = document.querySelectorAll('.code-line');
+            const projectCards = document.querySelectorAll('.project-card');
+            
+            // Set initial delay for the animation sequence
+            let delay = 0;
+            
+            // Animate code lines sequentially when the page loads
+            codeLines.forEach((line, index) => {
+                setTimeout(() => {
+                    line.classList.add('visible');
+                    
+                    // When we reach a certain point in the code, show the relevant project card
+                    if (index === 15) { // After GlglStats function declaration
+                        setTimeout(() => projectCards[0].classList.add('visible'), 500);
+                    } else if (index === 35) { // After Ahuzat Dibuk function declaration
+                        setTimeout(() => projectCards[1].classList.add('visible'), 500);
+                    } else if (index === 55) { // After 2D Part Orienting function declaration
+                        setTimeout(() => projectCards[2].classList.add('visible'), 500);
+                    } else if (index === 75) { // After Portfolio Website function declaration
+                        setTimeout(() => projectCards[3].classList.add('visible'), 500);
+                    }
+                }, delay);
+                
+                delay += 100; // Increase delay for the next line
+            });
+            
+            // Setup scroll-based animation for elements that are not yet visible
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            // Observe all code lines and project cards
+            document.querySelectorAll('.code-line:not(.visible)').forEach(line => {
+                observer.observe(line);
+            });
+            
+            document.querySelectorAll('.project-card:not(.visible)').forEach(card => {
+                observer.observe(card);
+            });
+        }
+
+        // Initialize animations for project cards
+        function initializeAnimations() {
+            // GlglStats sound wave animation
+            const soundWave = document.getElementById('sound-wave');
+            if (soundWave) {
+                const bars = soundWave.querySelectorAll('.wave-bar');
+                
+                function animateBars() {
+                    bars.forEach(bar => {
+                        const height = Math.floor(Math.random() * 40) + 5;
+                        bar.style.height = `${height}px`;
+                    });
+                }
+                
+                // Start the animation
+                setInterval(animateBars, 200);
+            }
+            
+            // Ahuzat Dibuk heatmap animation
+            const heatmapContainer = document.getElementById('heatmap-container');
+            if (heatmapContainer) {
+                // Generate random heatmap dots
+                for (let i = 0; i < 50; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'heatmap-dot';
+                    dot.style.left = `${Math.random() * 100}%`;
+                    dot.style.top = `${Math.random() * 100}%`;
+                    
+                    // Randomize dot color from red to green
+                    const hue = Math.floor(Math.random() * 60) + 0; // Red to yellowish
+                    dot.style.backgroundColor = `hsl(${hue}, 100%, 60%)`;
+                    
+                    // Randomize dot size
+                    const size = Math.floor(Math.random() * 30) + 10;
+                    dot.style.width = `${size}px`;
+                    dot.style.height = `${size}px`;
+                    
+                    // Randomize dot opacity
+                    dot.style.opacity = Math.random() * 0.5 + 0.2;
+                    
+                    heatmapContainer.appendChild(dot);
+                    
+                    // Animate dot appearance with delay
+                    setTimeout(() => {
+                        dot.style.transform = 'scale(1)';
+                    }, Math.random() * 2000);
+                }
+            }
+            
+            // 2D Part Orienting polygon interaction
+            const interactivePolygon = document.getElementById('interactive-polygon');
+            if (interactivePolygon) {
+                const polygon = interactivePolygon.querySelector('.polygon');
+                
+                interactivePolygon.addEventListener('mousemove', (e) => {
+                    const rect = interactivePolygon.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    // Calculate the center
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    
+                    // Calculate displacement vector from center to mouse
+                    const dx = x - centerX;
+                    const dy = y - centerY;
+                    
+                    // Limit the displacement to make movement smoother
+                    const maxDisplacement = 20;
+                    const displacement = Math.min(Math.sqrt(dx*dx + dy*dy), maxDisplacement);
+                    const angle = Math.atan2(dy, dx);
+                    
+                    const moveX = displacement * Math.cos(angle);
+                    const moveY = displacement * Math.sin(angle);
+                    
+                    // Move the polygon
+                    polygon.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px)) rotate(${moveX * 0.5}deg)`;
+                });
+                
+                interactivePolygon.addEventListener('mouseleave', () => {
+                    polygon.style.transform = 'translate(-50%, -50%) rotate(0deg)';
+                });
+            }
+            
+            // Social network node connections
+            const socialNetwork = document.getElementById('social-network');
+            if (socialNetwork) {
+                const nodes = socialNetwork.querySelectorAll('.network-node');
+                const centralNode = nodes[0];
+                
+                // Get central node position
+                const centralRect = centralNode.getBoundingClientRect();
+                const centralX = centralRect.left + centralRect.width/2;
+                const centralY = centralRect.top + centralRect.height/2;
+                
+                // Connect each node to the central node
+                for (let i = 1; i < nodes.length; i++) {
+                    const node = nodes[i];
+                    const nodeRect = node.getBoundingClientRect();
+                    const nodeX = nodeRect.left + nodeRect.width/2;
+                    const nodeY = nodeRect.top + nodeRect.height/2;
+                    
+                    // Calculate distance and angle
+                    const dx = nodeX - centralX;
+                    const dy = nodeY - centralY;
+                    const distance = Math.sqrt(dx*dx + dy*dy);
+                    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                    
+                    // Create line
+                    const line = document.createElement('div');
+                    line.className = 'network-line';
+                    line.style.width = `${distance}px`;
+                    line.style.transform = `translate(${centralX}px, ${centralY}px) rotate(${angle}deg)`;
+                    
+                    document.body.appendChild(line);
+                }
+                
+                // Add animation to nodes
+                nodes.forEach((node, index) => {
+                    if (index === 0) return; // Skip central node
+                    
+                    setTimeout(() => {
+                        node.style.transform = 'scale(1)';
+                        node.style.opacity = '1';
+                    }, index * 300);
+                });
+            }
+        }
+
+        // Setup ripple effect when interacting with page
+        function setupRippleEffect() {
+            document.addEventListener('click', function(e) {
+                const ripple = document.createElement('div');
+                ripple.className = 'ripple';
+                ripple.style.left = `${e.clientX}px`;
+                ripple.style.top = `${e.clientY}px`;
+                document.body.appendChild(ripple);
+                
+                // Remove ripple after animation completes
+                setTimeout(() => {
+                    ripple.remove();
+                }, 800);
+            });
+        }
+
+        // Setup code folding buttons
+        function setupFoldingButtons() {
+            const buttons = document.querySelectorAll('.fold-button');
+            
+            buttons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const sectionName = button.dataset.section;
+                    const element = document.querySelector(`[data-section="${sectionName}"]`);
+                    
+                    if (element) {
+                        // Scroll to the element
+                        element.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                        
+                        // Highlight the element briefly
+                        element.style.backgroundColor = 'rgba(137, 180, 250, 0.2)';
+                        setTimeout(() => {
+                            element.style.backgroundColor = '';
+                        }, 1000);
+                    }
+                });
+            });
+        }
+
+        // Update stopwatch in footer
+        function updateStopwatch() {
+            const stopwatchElement = document.getElementById('stopwatch');
+            const startDate = new Date('2023-10-01'); // Adjust this to your actual start date
+            const now = new Date();
+            const diff = now - startDate;
+            
+            // Convert to days, hours, minutes, seconds
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            stopwatchElement.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+        }
+    </script>
+<!-- Add this block to embed the like button -->
+    <script src="/static/js/like_button.js"></script>
+    <script>
+        LikeButton.init({
+          pageId: "20250419",
+          position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
+        });
+    </script>
+
+</body>
+</html>
