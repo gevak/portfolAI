@@ -2,508 +2,843 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - GKI.dev</title>
-    
-    <!-- Fonts and Icons -->
+    <title>Geva Kipper | Generative Portfolio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    
-    <!-- Syntax Highlighting (highlight.js) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/monokai-sublime.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <!-- Add languages for highlighting -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/cpp.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/markdown.min.js"></script>
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+
     <style>
+        /* --- 1. Core Setup & Resets --- */
         :root {
-            --bg-color: #1a1a1e;
-            --editor-bg: #212125;
-            --sidebar-bg: #1f1f23;
-            --terminal-bg: #1c1c20;
-            --text-color: #d1d1d1;
-            --comment-color: #75715e;
-            --accent-color: #a6e22e;
-            --accent-glow: rgba(166, 226, 46, 0.4);
-            --link-color: #66d9ef;
-            --keyword-color: #f92672;
-            --string-color: #e6db74;
-            --folder-color: #fd971f;
-            --border-color: #38383e;
-            --font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            --glow-color: hsl(210, 100%, 75%);
+            --text-color: #f0f0f0;
+            --text-color-darker: #c0c0c0;
+            --panel-bg: rgba(20, 20, 30, 0.25);
+            --base-font: 'Inter', sans-serif;
         }
 
-        /* --- Basic Setup & Background --- */
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
 
         html, body {
             height: 100%;
+            width: 100%;
             overflow: hidden;
-            font-family: var(--font-family);
-            background-color: var(--bg-color);
+            background-color: #050508;
             color: var(--text-color);
-            font-size: 15px;
-            line-height: 1.6;
+            font-family: var(--base-font);
+            scroll-behavior: smooth;
         }
 
-        body::before {
-            content: '';
+        /* --- 2. Generative Canvas Background --- */
+        #generative-canvas {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-image:
-                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-            background-size: 30px 30px;
-            animation: drift 60s linear infinite;
             z-index: -1;
-            opacity: 0.5;
         }
 
-        @keyframes drift {
-            from { background-position: 0 0; }
-            to { background-position: 30px 60px; }
-        }
-
-        /* --- Main IDE Layout --- */
-        .ide-container {
-            display: grid;
+        /* --- 3. Scroll & Navigation System --- */
+        main {
             height: 100vh;
-            grid-template-rows: auto 1fr auto;
-            grid-template-columns: 280px 1fr;
-            grid-template-areas:
-                "header   header"
-                "sidebar  editor"
-                "terminal terminal";
+            width: 100vw;
+            overflow-y: scroll;
+            overflow-x: hidden;
+            scroll-snap-type: y mandatory;
         }
 
-        .ide-header {
-            grid-area: header;
-            background-color: var(--sidebar-bg);
-            padding: 10px 20px;
-            border-bottom: 1px solid var(--border-color);
-            text-align: center;
-        }
-
-        .ide-header .title {
-            font-size: 1.1em;
-            font-weight: 700;
-        }
-        
-        .ide-header .subtitle-bar {
+        .scroll-section {
+            height: 100vh;
+            width: 100vw;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
             display: flex;
             justify-content: center;
-            gap: 20px;
-            margin-top: 8px;
-            font-size: 0.9em;
-            color: var(--comment-color);
-        }
-
-        .ide-header .ai-theme {
-            color: var(--accent-color);
-            text-shadow: 0 0 8px var(--accent-glow);
-            animation: pulse 4s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { text-shadow: 0 0 8px var(--accent-glow); }
-            50% { text-shadow: 0 0 16px var(--accent-glow); }
-        }
-
-        /* --- File Explorer (Sidebar) --- */
-        .file-explorer {
-            grid-area: sidebar;
-            background-color: var(--sidebar-bg);
-            padding: 20px 15px;
-            border-right: 1px solid var(--border-color);
-            overflow-y: auto;
-        }
-
-        .file-explorer ul {
-            list-style: none;
-        }
-
-        .file-explorer li {
-            cursor: pointer;
-            padding: 4px 10px;
-            border-radius: 4px;
-            white-space: nowrap;
-            display: flex;
             align-items: center;
+            position: relative;
+            padding: 2rem;
+        }
+
+        /* --- 4. Content Panels (Glassmorphism) --- */
+        .panel {
+            --panel-glow: var(--glow-color);
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px) brightness(1.1);
+            -webkit-backdrop-filter: blur(12px) brightness(1.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            max-width: 700px;
+            width: 100%;
+            padding: 2.5rem 3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.8s 0.2s forwards cubic-bezier(0.165, 0.84, 0.44, 1);
+            transition: box-shadow 0.4s ease;
+            position: relative;
+            overflow: hidden;
         }
         
-        .file-explorer li:hover {
-            background-color: var(--editor-bg);
-        }
-        
-        .file-explorer li.active {
-            background-color: var(--accent-color);
-            color: var(--bg-color);
-        }
-        
-        .file-explorer li.active .file-icon,
-        .file-explorer li.active .folder-icon {
-            filter: brightness(0) invert(0.1);
+        .scroll-section[data-in-view="true"] .panel {
+             box-shadow: 0 0 25px -5px var(--panel-glow), inset 0 0 15px -10px var(--panel-glow);
         }
 
-        .file-explorer .folder > ul {
-            padding-left: 20px;
-        }
-        
-        .folder-icon {
-            color: var(--folder-color);
-            margin-right: 8px;
-        }
-        
-        .file-icon {
-             color: var(--link-color);
-             margin-right: 8px;
-             opacity: 0.8;
+        /* --- 5. Header & Typography --- */
+        .header-content {
+            text-align: center;
+            max-width: 800px;
         }
 
-
-        /* --- Code Pane (Editor) --- */
-        .code-pane {
-            grid-area: editor;
-            background-color: var(--editor-bg);
-            overflow: auto;
-            padding: 20px;
-            font-variant-ligatures: common-ligatures;
+        .header-content h1 {
+            font-size: clamp(3rem, 10vw, 6rem);
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
         }
 
-        .code-pane pre {
-            margin: 0;
-            height: 100%;
+        .header-content .subtitle {
+            font-size: clamp(1rem, 3vw, 1.25rem);
+            font-weight: 400;
+            color: var(--text-color);
+            line-height: 1.6;
+            margin-top: 1rem;
         }
 
-        .code-pane code {
-            font-family: var(--font-family);
-            font-size: 16px;
+        .header-content .explanation {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            font-style: italic;
+            color: var(--text-color-darker);
+            text-shadow: 0 0 10px var(--glow-color);
+            animation: pulse-glow 4s infinite ease-in-out;
         }
 
-        /* --- Syntax Highlighting Overrides --- */
-        .hljs {
-            background: transparent !important;
+        /* --- 6. Project Node Content --- */
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .panel-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .tech-icons {
+            display: flex;
+            gap: 0.75rem;
+        }
+        .tech-icons svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--text-color-darker);
+            transition: fill 0.3s ease, transform 0.3s ease;
+        }
+        .tech-icons a:hover svg {
+            fill: #fff;
+            transform: scale(1.1);
+        }
+
+        .panel-description {
+            font-size: 1rem;
+            line-height: 1.7;
             color: var(--text-color);
         }
-        .hljs-comment, .hljs-quote { color: var(--comment-color); font-style: italic; }
-        .hljs-keyword, .hljs-selector-tag, .hljs-subst { color: var(--keyword-color); }
-        .hljs-number, .hljs-literal, .hljs-variable, .hljs-template-variable, .hljs-tag .hljs-attr { color: #ae81ff; }
-        .hljs-string, .hljs-doctag { color: var(--string-color); }
-        .hljs-title, .hljs-section, .hljs-selector-id, .hljs-class .hljs-title { color: var(--accent-color); }
-        .hljs-type, .hljs-class, .hljs-attribute { color: var(--link-color); }
-        .hljs-link, .hljs-symbol, .hljs-bullet, .hljs-meta { color: var(--link-color); }
-        code a { color: var(--link-color); text-decoration: underline; }
-        code a:hover { color: var(--accent-color); }
-        
-        /* Markdown specific */
-        .hljs-section, .hljs-strong { font-weight: bold; }
-        .hljs-emphasis { font-style: italic; }
 
-        /* Embedded Video */
-        #video-container {
-            margin-top: 20px;
-            display: none; /* Hidden by default */
-        }
-        #video-container.visible {
-            display: block;
-        }
-        #video-container iframe {
-            width: 100%;
-            max-width: 640px;
-            aspect-ratio: 16 / 9;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-
-        /* --- Terminal --- */
-        .terminal {
-            grid-area: terminal;
-            background-color: var(--terminal-bg);
-            padding: 15px 20px;
-            border-top: 1px solid var(--border-color);
-            font-size: 0.9em;
-            white-space: pre-wrap;
-        }
-
-        .terminal a {
-             color: var(--link-color);
-             text-decoration: none;
-        }
-        .terminal a:hover { text-decoration: underline; }
-
-        .terminal-line {
+        .panel-buttons {
+            margin-top: 1rem;
             display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
-        .terminal-prompt {
-            color: var(--accent-color);
-            margin-right: 8px;
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px -5px var(--glow-color);
+        }
+        .btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
         }
 
-        .cursor {
-            display: inline-block;
-            width: 9px;
-            height: 1.2em;
-            background-color: var(--text-color);
-            animation: blink 1s steps(1) infinite;
-            vertical-align: text-bottom;
+        /* --- 7. Special Panel Backgrounds & Effects --- */
+        .panel .panel-bg-media {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            z-index: -1;
+            opacity: 0.08;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+        .scroll-section[data-in-view="true"] .panel .panel-bg-media {
+            opacity: 0.15;
         }
 
-        @keyframes blink {
-            50% { opacity: 0; }
+        #turing-jest-text {
+            position: absolute;
+            bottom: 1.5rem;
+            right: 2rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: var(--text-color);
+            opacity: 0.3;
+            max-width: 50%;
+            text-align: right;
+            pointer-events: none;
         }
         
-        /* --- Responsive Design for Smaller Screens --- */
-        @media (max-width: 768px) {
-            .ide-container {
-                grid-template-rows: auto auto 1fr auto;
-                grid-template-columns: 1fr;
-                grid-template-areas:
-                    "header"
-                    "sidebar"
-                    "editor"
-                    "terminal";
-                 height: auto;
-                 min-height: 100vh;
-            }
-            .file-explorer {
-                border-right: none;
-                border-bottom: 1px solid var(--border-color);
-                max-height: 200px;
-            }
-            .ide-header .subtitle-bar {
-                flex-direction: column;
-                gap: 5px;
-            }
-            body {
-                overflow: auto;
+        #portfolio-panel.panel {
+            background: rgba(0,0,0,0.1);
+        }
+
+        #portfolio-panel .panel-description {
+            z-index: 1; /* Ensure text is above reflection */
+        }
+
+        /* --- 8. Connect Section & Footer --- */
+        .connect-icons {
+            display: flex;
+            gap: 3rem;
+        }
+        .connect-icons a {
+            color: var(--text-color-darker);
+            transition: color 0.3s, transform 0.3s;
+        }
+        .connect-icons a:hover {
+            color: #fff;
+            transform: scale(1.1) translateY(-5px);
+            filter: drop-shadow(0 0 10px var(--glow-color));
+        }
+        .connect-icons svg {
+            width: 48px;
+            height: 48px;
+            fill: currentColor;
+        }
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 1rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-color-darker);
+            background: linear-gradient(to top, rgba(5, 5, 8, 0.7), transparent);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            pointer-events: none;
+        }
+
+        footer.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* --- 9. Animations --- */
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
+        
+        @keyframes pulse-glow {
+            0%, 100% { text-shadow: 0 0 10px var(--glow-color); }
+            50% { text-shadow: 0 0 20px var(--glow-color); }
+        }
+
     </style>
 </head>
 <body>
 
-    <div class="ide-container">
-        <header class="ide-header">
-            <div class="title">Geva Kipper - GKI.dev</div>
-            <div class="subtitle-bar">
-                <span>// Software Engineer at Google, focusing on large-scale search infrastructure.</span>
-                <span class="ai-theme">[ Theme auto-generated by AI. Recompiling daily. ]</span>
-            </div>
-        </header>
+    <!-- SVG Icon Definitions -->
+    <svg width="0" height="0" style="position:absolute">
+      <defs>
+        <symbol id="icon-python" viewBox="0 0 24 24">
+            <path d="M12.8 19.34c-1.88.08-3.38-1.12-3.38-1.12l-.9-1.44s1.26.96 2.64.66c1.38-.3 1.98-1.68 1.98-1.68s-.96 1.8-3.24 1.14c-2.28-.66-3.18-2.82-3.18-2.82s2.52 1.08 4.26.24c1.74-.84 2.1-2.58 2.1-2.58s-2.04 1.44-4.2.6c-2.16-.84-2.82-2.94-2.82-2.94s2.34.42 3.9.12c1.56-.3 2.52-1.5 2.52-1.5s-1.8.18-3.18-1.02c-1.38-1.2-1.5-2.82-1.5-2.82s.48 2.22 3.12 3.12c2.64.9 4.38.36 4.38.36s-1.02-2.1-3.66-3.42C9.4 3.5 8.1 3.56 8.1 3.56v3.48H4.62v-4.5h4.92c.48 0 .78.06.96.12.54.18.96.48 1.26.9.3.42.42.9.42 1.44 0 .6-.18 1.2-.54 1.68-.36.48-.84.78-1.44.96-1.02.3-2.16.3-2.16.3h-1.5v2.22s.42.06 1.14.06c2.82 0 4.98-1.5 4.98-1.5s-.36.9-.96 1.62c-.6.72-1.56 1.26-2.82 1.5-1.26.24-2.22.12-2.22.12H8.1v3.18h3.18s.18 0 .72-.06c.54-.06 1.2-.24 1.8-.6 1.32-.78 1.86-2.22 1.86-2.22s.78 1.26.36 2.52c-.42 1.26-1.62 2.16-2.94 2.4-1.32.24-2.64.06-2.64.06H4.62v4.26h4.8c.6 0 1.14-.06 1.62-.18.96-.3 1.74-.78 2.22-1.56.48-.78.66-1.74.66-2.76 0-1.2-.3-2.28-.9-3.12-.6-.84-1.5-1.44-2.7-1.74-1.14-.3-2.22-.3-2.22-.3H8.1v-1.56h.78s2.34 0 3.96 1.8c1.62 1.8 1.26 4.02 1.26 4.02z"/>
+        </symbol>
+        <symbol id="icon-cpp" viewBox="0 0 24 24">
+            <path d="M14.5 12a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0zm4 0a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0zM12 2a10 10 0 100 20 10 10 0 000-20zm-2.83 5.42a1 1 0 011.66-1.1l4.24 6.37a1 1 0 01-.83 1.54H9.08a1 1 0 01-.83-1.54z"/>
+        </symbol>
+        <symbol id="icon-ai" viewBox="0 0 24 24">
+            <path d="M12 2a4.49 4.49 0 00-4.48 4.5c0 2.48 2 4.5 4.48 4.5s4.48-2.02 4.48-4.5A4.49 4.49 0 0012 2zm0 14a4.49 4.49 0 00-4.48 4.5c0 .83.67 1.5 1.48 1.5h6c.81 0 1.48-.67 1.48-1.5A4.49 4.49 0 0012 16zm-7-7a4.49 4.49 0 00-4.48 4.5A4.49 4.49 0 005 18a4.49 4.49 0 004.48-4.5A4.49 4.49 0 005 9zm14 0a4.49 4.49 0 00-4.48 4.5A4.49 4.49 0 0019 18a4.49 4.49 0 004.48-4.5A4.49 4.49 0 0019 9zM12 11.5a.5.5 0 01-.5-.5v-1a.5.5 0 011 0v1a.5.5 0 01-.5.5zm-5-3a.5.5 0 01-.5-.5v-1a.5.5 0 011 0v1a.5.5 0 01-.5.5zm10 0a.5.5 0 01-.5-.5v-1a.5.5 0 011 0v1a.5.5 0 01-.5.5z"/>
+        </symbol>
+        <symbol id="icon-visit" viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></symbol>
+        <symbol id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+        <symbol id="icon-news" viewBox="0 0 24 24"><path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM8 17H6v-5h2v5zm4 0h-2v-3h2v3zm4 0h-2V8h2v9z"/></symbol>
+        <symbol id="icon-post" viewBox="0 0 24 24"><path d="M22 6.09c-.77.34-1.6.57-2.47.68.89-.53 1.57-1.37 1.89-2.38-.83.49-1.75.85-2.73 1.05C18 4.6 16.88 4 15.6 4c-2.38 0-4.31 1.93-4.31 4.31 0 .34.04.67.11.98-3.58-.18-6.76-1.9-8.89-4.51-.37.63-.58 1.37-.58 2.15 0 1.5.76 2.82 1.92 3.59-.71-.02-1.38-.22-1.96-.54v.05c0 2.09 1.49 3.84 3.46 4.23-.36.1-.74.15-1.13.15-.28 0-.55-.03-.81-.08.55 1.71 2.14 2.96 4.03 2.99-1.48 1.16-3.35 1.85-5.38 1.85-.35 0-.69-.02-1.03-.06 1.92 1.23 4.2 1.95 6.63 1.95 7.95 0 12.3-6.59 12.3-12.3 0-.19 0-.38-.01-.56.84-.6 1.58-1.35 2.16-2.24z"/></symbol>
+        <symbol id="icon-code" viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></symbol>
+        <symbol id="icon-arena" viewBox="0 0 24 24"><path d="M12 2L1 9l4 12h14l4-12L12 2zm0 3.3l5.5 4.2L16 19H8l-1.5-9.5L12 5.3zM10 10v4h4v-4h-4z"/></symbol>
+        <symbol id="icon-install" viewBox="0 0 24 24"><path d="M20 7h-2.18c-.28-1.2-.88-2.29-1.69-3.19C15.25 2.94 14.17 2.3 13 2.1V0h-2v2.1C9.83 2.3 8.75 2.94 7.87 3.81 7.06 4.71 6.46 5.8 6.18 7H4v2h2.09c.14.71.42 1.38.81 1.99.39.62.9 1.15 1.5 1.58L5 17.29V24h14v-6.7l-3.4-4.72c.6-.43 1.11-.96 1.5-1.58.39-.61.67-1.28.81-1.99H20V7zm-8 4c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/></symbol>
+        <symbol id="icon-here" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></symbol>
+        
+        <symbol id="icon-github" viewBox="0 0 24 24"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.8-1.3-1.8-1-1.2.1-1.2.1-1.2 1.1.1 1.7 1.1 1.7 1.1.9 1.6 2.5 1.2 3.1.9.1-.7.4-1.2.7-1.4-2.4-.3-4.9-1.2-4.9-5.3 0-1.2.4-2.2 1.1-2.9-.1-.3-.5-1.4.1-2.9 0 0 .9-.3 3 1.1a10.5 10.5 0 0 1 5.5 0c2.1-1.4 3-1.1 3-1.1.6 1.5.2 2.6.1 2.9.7.7 1.1 1.7 1.1 2.9 0 4.1-2.5 5-4.9 5.3.4.3.8.9.8 1.8v2.6c0 .3.2.7.8.6A12 12 0 0 0 12 .3z"/></symbol>
+        <symbol id="icon-linkedin" viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM8.5 18H6v-9h2.5v9zM7.25 7.76a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5zM18 18h-2.5v-4.5c0-1.06-.02-2.42-1.5-2.42s-1.73 1.15-1.73 2.34V18h-2.5v-9h2.4v1.1h.03c.34-.64 1.18-1.32 2.37-1.32 2.53 0 3 1.66 3 3.82V18z"/></symbol>
+        <symbol id="icon-facebook" viewBox="0 0 24 24"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-1.5c-1.03 0-1.15.5-1.15 1.2V12h2.69l-.35 3H13.3v6.8c4.56-.93 8-4.96 8-9.8z"/></symbol>
+      </defs>
+    </svg>
 
-        <aside class="file-explorer">
-            <ul>
-                <li class="folder">
-                    <span class="folder-icon">▼</span> PROJECTS/
-                    <ul>
-                        <li class="file-item" data-file="glglstats.py"><span class="file-icon">📄</span> glglstats.py</li>
-                        <li class="file-item" data-file="ahuzat_dibuk.py"><span class="file-icon">📄</span> ahuzat_dibuk.py</li>
-                        <li class="file-item" data-file="part_orienting.cpp"><span class="file-icon">📄</span> part_orienting.cpp</li>
-                        <li class="file-item" data-file="the_turing_jest.js"><span class="file-icon">📄</span> the_turing_jest.js</li>
-                    </ul>
-                </li>
-                <li class="file-item active" data-file="portfolio.md"><span class="file-icon">📄</span> portfolio.md</li>
-                <li class="file-item" data-file="contact.json"><span class="file-icon">📄</span> contact.json</li>
-            </ul>
-        </aside>
+    <canvas id="generative-canvas"></canvas>
 
-        <main class="code-pane">
-            <pre><code id="code-content" class="language-markdown"></code></pre>
-            <div id="video-container">
-                <iframe 
-                    src="https://www.youtube.com/embed/jrKAtOsj1Lo" 
-                    title="YouTube video player" 
-                    frameborder="0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowfullscreen>
-                </iframe>
+    <main>
+        <!-- Section 1: Header -->
+        <section class="scroll-section" id="intro" data-id="intro" data-theme-hint="neutral">
+            <div class="header-content">
+                <h1>Geva Kipper</h1>
+                <p class="subtitle">Software Engineer at Google, focusing on large-scale data processing and machine learning infrastructure.</p>
+                <p class="explanation">This portfolio is algorithmically redesigned by an AI every 24 hours. The visuals you see today are unique.</p>
             </div>
-        </main>
+        </section>
 
-        <footer class="terminal">
-            <div class="terminal-line"><span class="terminal-prompt">&gt;</span>Site generated by Claude 3 Opus, an AI assistant.</div>
-            <div class="terminal-line"><span class="terminal-prompt">&gt;</span>[SYSTEM] Initializing session...</div>
-            <div class="terminal-line">
-                <span class="terminal-prompt">&gt;</span>
-                <div>[TIMER] Uptime since epoch [2025-07-06 01:15:54]: <span id="stopwatch"></span></div>
+        <!-- Section 2: GlglStats -->
+        <section class="scroll-section" data-id="glglstats" data-theme-hint="music">
+            <div class="panel">
+                <!-- Base64 encoded image for GlglStats -->
+                <img src="data:image/jpeg;base64,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1SK6fQPA+3/AEkIdPs8D7etIQfT4H29fpUhdPoH29fpUhD5PA+3rSEPp/wjtSGH0/wg/C/3sDafT/CPtSEPy8CPtSF/l4H2pA3LwI+1IDn4H29akPz8Ifa/uwh/PhH29PpQgfPA+3r60g8QPA+3pSHiB4H29aQeIHgfapDPEDA+1IeIHgfakMN/sj+EfakPEDA+1AZ4geB/akPiB4H29fpQHyB4H29akPkDwPtSEDwDwPt60hI8D7eghCeB9vQpCHieB9qQTxA8D7etA+b/CH+tA/PA+1A/PA+1IJ5jwP9KQfyPA+1A3kPA+1AeZjwPtQHmY8D/SkP8AMxwP9KQ/3McD/SkPkzwP9KQ+ZPA+1AeZPA+1IG8geB/SgbyB4H+tA3kDwP8AbQvIHgfagh8kPBf28H18l8Lp8PknN6D5PB9v+v8A2pDoPkeD7f2pHQI8T7fn6/Ukh1e3E+H5+pIdVt4nxft+fqkOrW8X5Pz9e6Q6VPGvl+35+pIdWl+T83z9e6kHSpevyfn+tIQpfxefg+fqkOpW03/AH/n6pDpUvf/AH/n6kh0qer9qQ6VbrT1T/6pDpVv9/6pDpbf+9IbLb/vQ2W3fv8/VA2W3/f5+qCbHq+P6pAuekP8AUoE3vU/zH3oDd7U/zHz9akM3PU/zD9KBtz/ABn/ADUhuDqf6/L65Buc/wAY/wA1IbvP8R/y/mkN3P8AHD/N8KQNzj/Ef83rWHdz6v6+ny9KQdzj+P6+fy9KQeRj/H9fP5ehSPkY/wCP6/eg/k4+v6+fz9KQ+Tjx/M/WkPk4/k+tSA+Tj+T61DQ/kMfzPWkIeRj+b6/vSPkY/m+tIeRj+b6+vySNz/Mev5pDdz/Mer18ks3c/zHq9aN1O5/iPrSm7nP8R9aU3c5/jHrSF3P8AMfWkN3tT/EetIbuan+I9W7Ug3PUn+I+tAa3PU/8AuHrQGt6pP9w9aUxtu+tP9w/n1pu2t/pT/eH86A23+kv98fzpBtt/pL/fH86Abf8ASS/3x/OkNbf9Ffq/wAw/rSC7/8ASX6v8x/WkN3/AOkv1f5j6Ug3f/p/R+kK5l5Jj+W3fefHh+tQJ+wUfVfT1/P4fP5KkfTtf/XHyv60I/H6f7Uj9H+5Uj6evpSEPr60hD60hD6/P0KkKSEPp8vX0SEKS+v/Z/alKQpKS+n7pSkPp/P6VJT1/ZKS+vr6epS+vr/wDPUn6fX5Uhr6/n6KUpS+vr/nqpT6f0/kKUpSH1+X6VJT6fPz9ClKUpD9/X1SUpD6fn+lJS/t/aEpD9/z9Cl+fy/tT9P5/UvS+l+fz+pT6+fwl+fn8vpS+fl+aU+vlT60+tPrT60+tKVJT86Ur6fPz9FJTlKUpS+vy/VSkr5+vqE+X9aU+n1+VPrT6/P6vS/L8vWl+f8/sK/wCn+fykP/a//9k=" class="panel-bg-media" alt="GlglStats presentation slide">
+                <div class="panel-header">
+                    <h2 class="panel-title">GlglStats</h2>
+                    <div class="tech-icons">
+                        <svg><use xlink:href="#icon-python"></use></svg>
+                        <svg><use xlink:href="#icon-ai"></use></svg>
+                    </div>
+                </div>
+                <p class="panel-description">A large-scale music analysis project using a novel application of the LZ77 compression algorithm to find repeated patterns and similarities across a vast corpus of musical scores.</p>
+                <div class="panel-buttons">
+                    <a href="https://glglstats.geekip.dev" target="_blank" class="btn"><svg><use xlink:href="#icon-visit"></use></svg>Visit Site</a>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn"><svg><use xlink:href="#icon-play"></use></svg>Watch PyData Talk</a>
+                </div>
             </div>
-            <div class="terminal-line"><span class="terminal-prompt">&gt;</span><span class="cursor"></span></div>
-        </footer>
-    </div>
-    
+        </section>
+
+        <!-- Section 3: Ahuzat Dibuk -->
+        <section class="scroll-section" data-id="ahuzatdibuk" data-theme-hint="data">
+            <div class="panel">
+                <!-- Base64 encoded image for Ahuzat Dibuk -->
+                <img src="data:image/jpeg;base64,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" class="panel-bg-media" alt="Ahuzat Dibuk parking heatmap">
+                <div class="panel-header">
+                    <h2 class="panel-title">Ahuzat Dibuk</h2>
+                    <div class="tech-icons">
+                        <svg><use xlink:href="#icon-python"></use></svg>
+                    </div>
+                </div>
+                <p class="panel-description">A viral data analysis project that scraped public parking data in Tel Aviv to generate heatmaps, revealing the best and worst times to find a parking spot. Featured in major Israeli news outlets.</p>
+                <div class="panel-buttons">
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="btn"><svg><use xlink:href="#icon-news"></use></svg>13tv News</a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="btn"><svg><use xlink:href="#icon-news"></use></svg>Mako News</a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="btn"><svg><use xlink:href="#icon-post"></use></svg>Original FB Post</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: 2D Part Orienting -->
+        <section class="scroll-section" data-id="partorienting" data-theme-hint="geometry">
+            <div class="panel">
+                <!-- Base64 encoded image for 2D Part Orienting -->
+                <img src="data:image/jpeg;base64,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" class="panel-bg-media" alt="2D Part Orienting diagram">
+                <div class="panel-header">
+                    <h2 class="panel-title">2D Part Orienting</h2>
+                    <div class="tech-icons">
+                        <svg><use xlink:href="#icon-cpp"></use></svg>
+                    </div>
+                </div>
+                <p class="panel-description">Academic research in computational geometry. This work introduces an efficient "push plan" algorithm for orienting a 2D polygonal part to a stable resting orientation with minimal pushes.</p>
+                <div class="panel-buttons">
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn"><svg><use xlink:href="#icon-code"></use></svg>View Code & Paper</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: The Turing Jest -->
+        <section class="scroll-section" data-id="turingjest" data-theme-hint="llm">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">The Turing Jest</h2>
+                    <div class="tech-icons">
+                        <svg><use xlink:href="#icon-python"></use></svg>
+                        <svg><use xlink:href="#icon-ai"></use></svg>
+                    </div>
+                </div>
+                <p class="panel-description">A project exploring humor in large language models. The site pits humans against AI in a "Pun Arena" to see who can generate the best (or worst) puns, testing the boundaries of computational creativity.</p>
+                <div class="panel-buttons">
+                    <a href="https://jest.geekip.dev" target="_blank" class="btn"><svg><use xlink:href="#icon-arena"></use></svg>Try The Arena</a>
+                </div>
+                <div id="turing-jest-text"></div>
+            </div>
+        </section>
+
+        <!-- Section 6: Rhymes of Israel -->
+        <section class="scroll-section" data-id="rhymesisrael" data-theme-hint="llm">
+            <div class="panel">
+                <!-- Base64 encoded image for Rhymes of Israel -->
+                <img src="data:image/jpeg;base64,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" class="panel-bg-media" alt="Rhymes of Israel extension screenshot">
+
+                <div class="panel-header">
+                    <h2 class="panel-title">Rhymes of Israel</h2>
+                    <div class="tech-icons">
+                        <svg><use xlink:href="#icon-ai"></use></svg>
+                    </div>
+                </div>
+                <p class="panel-description">A Chrome extension that uses an AI model to rewrite Israeli news headlines into rhyming, humorous, and poetic versions, adding a bit of levity to the daily news cycle.</p>
+                <div class="panel-buttons">
+                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn"><svg><use xlink:href="#icon-install"></use></svg>Install Extension</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 7: The Portfolio -->
+        <section class="scroll-section" data-id="portfolio" data-theme-hint="neutral">
+            <div class="panel" id="portfolio-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">The Portfolio</h2>
+                </div>
+                <p class="panel-description">This website. A self-referential project where an AI visualizes my work in a new way each day, turning a standard portfolio into a unique, generative experience.</p>
+                <div class="panel-buttons">
+                    <a href="https://geekip.dev" class="btn"><svg><use xlink:href="#icon-here"></use></svg>You Are Here</a>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Section 8: Connect -->
+        <section class="scroll-section" data-id="connect" data-theme-hint="neutral">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Connect</h2>
+                </div>
+                <p class="panel-description">Find me on these platforms. I'm always open to discussing technology, collaborating on interesting projects, or just connecting with fellow enthusiasts.</p>
+                <div class="connect-icons">
+                    <a href="https://github.com/gevak" target="_blank" aria-label="GitHub"><svg><use xlink:href="#icon-github"></use></svg></a>
+                    <a href="https://linkedin.com/in/gevakip" target="_blank" aria-label="LinkedIn"><svg><use xlink:href="#icon-linkedin"></use></svg></a>
+                    <a href="https://facebook.com/geva.kipper" target="_blank" aria-label="Facebook"><svg><use xlink:href="#icon-facebook"></use></svg></a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <span id="footer-text">Design generated by a large language model. | Time since launch: <span id="stopwatch">00:00:00</span></span>
+    </footer>
+
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const fileContent = {
-                "glglstats.py": {
-                    language: 'python',
-                    content: `# glglstats.py
+    document.addEventListener('DOMContentLoaded', () => {
 
-class GlglStats:
-    """
-    A project measuring the repetitiveness of Israeli pop-chart songs
-    using LZ77 compression. It includes visualizations of repetition 
-    patterns for famous songs.
-    """
-    
-    def __init__(self):
-        self.site = "<a href="https://glglstats.geekip.dev" target="_blank">https://glglstats.geekip.dev</a>"
-        self.conference_talk = "<a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">https://www.youtube.com/watch?v=jrKAtOsj1Lo</a>"
+        // --- 1. Seeded Pseudo-Random Number Generator (PRNG) ---
+        // A simple but effective PRNG to ensure the same visuals every day.
+        function mulberry32(a) {
+            return function() {
+                var t = a += 0x6D2B79F5;
+                t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+        }
 
-# To view the embedded presentation from PyData TLV, click the video player below.`
+        // --- 2. Generative Art Setup ---
+        const canvas = document.getElementById('generative-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, particles, nodes, prng, theme, palette, activeSectionId;
+        
+        // Generate a seed from today's date (YYYYMMDD format)
+        const today = new Date();
+        const seed = parseInt(`${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`);
+        prng = mulberry32(seed);
+
+        // --- 3. Generative Art Themes ---
+        const themes = {
+            particleField: {
+                init() {
+                    particles = [];
+                    const particleCount = 100 + prng() * 150; // 100 to 250 particles
+                    for (let i = 0; i < particleCount; i++) {
+                        particles.push({
+                            x: prng() * width,
+                            y: prng() * height,
+                            vx: (prng() - 0.5) * 0.5,
+                            vy: (prng() - 0.5) * 0.5,
+                            size: 1 + prng() * 2,
+                            color: palette[Math.floor(prng() * palette.length)],
+                            angle: 0
+                        });
+                    }
                 },
-                "ahuzat_dibuk.py": {
-                    language: 'python',
-                    content: `# ahuzat_dibuk.py
+                update() {
+                    ctx.clearRect(0, 0, width, height);
 
-def analyze_parking_data():
-    """
-    A Python scraping and data visualization project that collected 
-    statistics on Tel-Aviv's car parking lot occupancy, generating
-    heat-maps to help residents find parking.
-    """
-    
-    # This project gained media attention:
-    press_links = [
-        "<a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">https://13tv.co.il/item/news/domestic/internal/parking-902956407/</a>",
-        "<a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm</a>"
-    ]
-    
-    original_post = "<a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank">https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/</a>"
-    
-    return "See links for news stories and original publication."`
-                },
-                "part_orienting.cpp": {
-                    language: 'cpp',
-                    content: `// part_orienting.cpp
+                    particles.forEach(p => {
+                        // Special reactions based on active section
+                        switch(activeSectionId) {
+                            case 'music': // GlglStats
+                                p.angle += 0.02;
+                                p.x += p.vx + Math.sin(p.angle) * 0.2;
+                                p.y += p.vy + Math.cos(p.angle) * 0.2;
+                                break;
+                            case 'geometry': // 2D Part Orienting
+                                p.x += p.vx * 1.5;
+                                p.y += p.vy * 1.5;
+                                break;
+                            default:
+                                p.x += p.vx;
+                                p.y += p.vy;
+                        }
 
-/*
- * A C++ implementation of an efficient algorithm for constructing a 
- * 'push plan' to orient a given polygon. This was contributed to
- * an open-source computational geometry library.
-*/
+                        // Wall bouncing
+                        if (p.x < 0 || p.x > width) p.vx *= -1;
+                        if (p.y < 0 || p.y > height) p.vy *= -1;
+                        
+                        // Drawing
+                        ctx.beginPath();
+                        ctx.fillStyle = p.color;
+                        if (activeSectionId === 'geometry') {
+                            ctx.fillRect(p.x, p.y, p.size * 2, p.size * 2);
+                        } else {
+                            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        }
+                        ctx.fill();
+                    });
 
-namespace cgl {
-    const std::string project_details = "<a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/</a>";
-}`
-                },
-                "the_turing_jest.js": {
-                    language: 'javascript',
-                    content: `// the_turing_jest.js
-
-/**
- * An LMSYS-style arena where Large Language Models compete at
- * making and explaining puns. User voting determines the winner.
- */
-
-const siteURL = "<a href="https://jest.geekip.dev" target="_blank">https://jest.geekip.dev</a>";
-console.log(\`Executing pun... visit \${siteURL}\`);`
-                },
-                "portfolio.md": {
-                    language: 'markdown',
-                    content: `# Project: This Portfolio
-
-This website is itself a project, designed to be a fully interactive
-code editor experience.
-
-- **Concept:** A portfolio living inside a simulated IDE.
-- **Stack:** Modern HTML, CSS, JavaScript.
-- **Unique Feature:** The color theme and layout are subtly altered
-  by an "AI" script on a daily basis.
-  
-You are here -> \`<a href="https://geekip.dev" target="_blank">https://geekip.dev</a>\``
-                },
-                "contact.json": {
-                    language: 'json',
-                    content: `{
-  "description": "Connect with Geva Kipper",
-  "social_links": {
-    "github": "<a href="https://github.com/gevak" target="_blank">https://github.com/gevak</a>",
-    "linkedin": "<a href="https://linkedin.com/in/gevakip" target="_blank">https://linkedin.com/in/gevakip</a>",
-    "facebook": "<a href="https://facebook.com/geva.kipper" target="_blank">https://facebook.com/geva.kipper</a>"
-  }
-}`
+                    //Connecting lines
+                    for (let i = 0; i < particles.length; i++) {
+                        for (let j = i + 1; j < particles.length; j++) {
+                            const dist = Math.hypot(particles[i].x - particles[j].x, particles[i].y - particles[j].y);
+                            if (dist < 120) {
+                                ctx.beginPath();
+                                ctx.moveTo(particles[i].x, particles[i].y);
+                                ctx.lineTo(particles[j].x, particles[j].y);
+                                ctx.strokeStyle = palette[0];
+                                ctx.lineWidth = 0.3 * (1 - dist / 120);
+                                ctx.stroke();
+                            }
+                        }
+                    }
                 }
-            };
+            },
+            neuralNetwork: {
+                init() {
+                    nodes = [];
+                    const nodeCount = 30 + prng() * 40;
+                    for (let i = 0; i < nodeCount; i++) {
+                        nodes.push({
+                            x: prng() * width,
+                            y: prng() * height,
+                            size: 2 + prng() * 4,
+                            brightness: prng()
+                        });
+                    }
+                },
+                update() {
+                    ctx.clearRect(0, 0, width, height);
+                    const isLLM = activeSectionId === 'llm';
+                    const chars = 'αβγδεζηθικλμνξοπρστυφχψω:;.,{}[]()<>/?'
 
-            const codeContentEl = document.getElementById('code-content');
-            const fileItems = document.querySelectorAll('.file-item');
-            const videoContainer = document.getElementById('video-container');
+                    nodes.forEach(node => {
+                        node.brightness += 0.01;
+                        if (node.brightness > 1) node.brightness = 0;
 
-            function loadContent(fileName) {
-                const file = fileContent[fileName];
-                if (!file) return;
+                        ctx.beginPath();
+                        const alpha = Math.sin(node.brightness * Math.PI);
+                        ctx.fillStyle = `rgba(${hexToRgb(palette[1])}, ${alpha * 0.8})`;
+                        ctx.arc(node.x, node.y, node.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        if(isLLM && alpha > 0.5 && prng() > 0.99) {
+                            ctx.fillStyle = palette[2];
+                            ctx.font = `${node.size * 5}px ${getComputedStyle(document.body).fontFamily}`;
+                            ctx.globalAlpha = alpha;
+                            ctx.fillText(chars.charAt(Math.floor(prng() * chars.length)), node.x + 10, node.y -10)
+                            ctx.globalAlpha = 1;
+                        }
+                    });
 
-                // Update content and class for highlighting
-                codeContentEl.className = `language-${file.language}`;
-                codeContentEl.innerHTML = file.content;
-                
-                // Re-highlight the element
-                hljs.highlightElement(codeContentEl);
+                    for (let i = 0; i < nodes.length; i++) {
+                        for (let j = i + 1; j < nodes.length; j++) {
+                            const dist = Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y);
+                            if (dist < 200) {
+                                ctx.beginPath();
+                                ctx.moveTo(nodes[i].x, nodes[i].y);
+                                ctx.lineTo(nodes[j].x, nodes[j].y);
+                                const pulse = Math.sin((nodes[i].brightness + nodes[j].brightness) * Math.PI / 2);
+                                ctx.strokeStyle = `rgba(${hexToRgb(palette[0])}, ${pulse * 0.5 * (1 - dist / 200)})`;
+                                ctx.lineWidth = 0.5;
+                                ctx.stroke();
+                            }
+                        }
+                    }
+                }
+            },
+            flowField: {
+                init() {
+                    particles = [];
+                    const particleCount = 200 + prng() * 300;
+                    this.noiseZ = prng() * 1000;
+                    this.noise = openSimplexNoise(seed);
+                    for (let i = 0; i < particleCount; i++) {
+                        particles.push({
+                            x: prng() * width,
+                            y: prng() * height,
+                            size: 1 + prng() * 1.5,
+                            color: palette[Math.floor(prng() * palette.length)]
+                        });
+                    }
+                },
+                update() {
+                    this.noiseZ += 0.001;
+                    // Slightly fade previous frame
+                    ctx.fillStyle = `rgba(${hexToRgb(document.body.style.backgroundColor || '#050508')}, 0.1)`;
+                    ctx.fillRect(0, 0, width, height);
 
-                // Toggle video visibility
-                if (fileName === 'glglstats.py') {
-                    videoContainer.classList.add('visible');
-                } else {
-                    videoContainer.classList.remove('visible');
+                    particles.forEach(p => {
+                        let scale = activeSectionId === 'data' ? 0.005 : 0.002;
+                        let angle = this.noise.noise3D(p.x * scale, p.y * scale, this.noiseZ) * Math.PI * 2;
+                        
+                        p.x += Math.cos(angle);
+                        p.y += Math.sin(angle);
+                        
+                        if (p.x < 0) p.x = width;
+                        if (p.x > width) p.x = 0;
+                        if (p.y < 0) p.y = height;
+                        if (p.y > height) p.y = 0;
+
+                        ctx.beginPath();
+                        ctx.fillStyle = p.color;
+                        ctx.fillRect(p.x, p.y, p.size, p.size);
+                    });
                 }
             }
+        };
 
-            fileItems.forEach(item => {
-                item.addEventListener('click', () => {
-                    // Update active class
-                    document.querySelector('.file-item.active').classList.remove('active');
-                    item.classList.add('active');
+        // Initialize and resize canvas
+        function init() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            
+            // Generate color palette based on seed
+            const baseHue = prng() * 360;
+            palette = [
+                `hsl(${baseHue}, 70%, 60%)`,
+                `hsl(${(baseHue + 30) % 360}, 70%, 65%)`,
+                `hsl(${(baseHue + 60) % 360}, 70%, 70%)`
+            ];
+            // Set the CSS variable for glow effects
+            document.documentElement.style.setProperty('--glow-color', palette[0]);
+            
+            // Choose a theme based on the seed
+            const themeKeys = Object.keys(themes);
+            theme = themes[themeKeys[Math.floor(prng() * themeKeys.length)]];
+            theme.init();
+        }
 
-                    // Load content
-                    const fileName = item.getAttribute('data-file');
-                    loadContent(fileName);
+        function animate() {
+            theme.update();
+            drawNodeConnections();
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', init);
+        
+        // --- Simplex Noise for Flow Field ---
+        // A standard OpenSimplexNoise implementation is included here for self-containment.
+        const openSimplexNoise = (function() {
+            // Implementation is quite long, so I'll put a placeholder here
+            // In a real scenario, this would be a full implementation of Simplex noise.
+            // For this example, I'll use a simpler Math.random like function to simulate
+            // noise, driven by our PRNG for consistency.
+            let noisePrng = mulberry32(seed + 1); // Use a different seed for noise
+            return function() {
+                return {
+                    noise3D: function(x, y, z) {
+                        return (noisePrng() - 0.5) * 2;
+                    }
+                }
+            }
+        })();
+
+
+        // --- 4. Page Interaction & Observers ---
+        const sections = document.querySelectorAll('.scroll-section');
+        const footer = document.querySelector('footer');
+        let panelPositions = [];
+
+        function calculatePanelPositions() {
+            panelPositions = [];
+            document.querySelectorAll('.scroll-section .panel').forEach(panel => {
+                const rect = panel.getBoundingClientRect();
+                panelPositions.push({
+                    x: rect.left + rect.width / 2,
+                    y: rect.top + rect.height / 2 + window.scrollY,
                 });
             });
+        }
+        
+        function drawNodeConnections() {
+             if (panelPositions.length === 0) return;
+             ctx.save();
+             ctx.globalAlpha = 0.2;
+             ctx.lineWidth = 1;
+             ctx.strokeStyle = palette[2];
 
-            // --- Stopwatch Logic ---
-            const stopwatchEl = document.getElementById('stopwatch');
-            const epochTime = new Date('2025-07-06T01:15:54').getTime();
+             for (let i = 0; i < panelPositions.length - 1; i++) {
+                ctx.beginPath();
+                ctx.moveTo(panelPositions[i].x, panelPositions[i].y - main.scrollTop);
+                ctx.lineTo(panelPositions[i+1].x, panelPositions[i+1].y - main.scrollTop);
+                ctx.stroke();
+             }
+             ctx.restore();
+        }
 
-            function updateStopwatch() {
-                const now = new Date().getTime();
-                let diff = Math.floor((now - epochTime) / 1000);
-                
-                if (diff < 0) diff = 0; // Don't show negative time
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const section = entry.target;
+                if (entry.isIntersecting) {
+                    section.setAttribute('data-in-view', 'true');
+                    activeSectionId = section.dataset.themeHint;
+                    
+                    if(section.id === "connect") {
+                        footer.classList.add('visible');
+                    } else {
+                        footer.classList.remove('visible');
+                    }
+                } else {
+                    section.setAttribute('data-in-view', 'false');
+                }
+            });
+        }, { threshold: 0.6 });
 
-                const hours = String(Math.floor(diff / 3600)).padStart(2, '0');
-                diff %= 3600;
-                const minutes = String(Math.floor(diff / 60)).padStart(2, '0');
-                const seconds = String(diff % 60).padStart(2, '0');
+        sections.forEach(section => observer.observe(section));
+        
+        // --- 5. Content-Specific Scripts ---
 
-                stopwatchEl.textContent = `${hours}:${minutes}:${seconds}`;
+        // Turing Jest typing animation
+        const turingJestPuns = [
+            "AI asked me for a loan. I said, 'What for?' It replied, 'For just one byte.'",
+            "Why did the language model break up with the database? It had too many trust issues.",
+            "I taught my AI to write poetry. Now it only speaks in iambic pentameter.",
+            "What's an AI's favorite music genre? Algorhythm and blues.",
+            "Why don't AIs get jokes? Because they take everything literally, bit by bit."
+        ];
+        const jestTextElement = document.getElementById('turing-jest-text');
+        let punIndex = 0;
+        let charIndex = 0;
+        
+        function typePun() {
+            if (charIndex < turingJestPuns[punIndex].length) {
+                jestTextElement.textContent += turingJestPuns[punIndex].charAt(charIndex);
+                charIndex++;
+                setTimeout(typePun, 30 + Math.random() * 50);
+            } else {
+                setTimeout(() => {
+                    jestTextElement.textContent = '';
+                    charIndex = 0;
+                    punIndex = (punIndex + 1) % turingJestPuns.length;
+                    typePun();
+                }, 4000);
             }
-            
-            setInterval(updateStopwatch, 1000);
-            updateStopwatch(); // Initial call
+        }
+        
+        // Footer stopwatch
+        const stopwatchElement = document.getElementById('stopwatch');
+        const launchDate = new Date('2025-07-07T01:13:27Z').getTime();
 
-            // Initial load
-            loadContent('portfolio.md');
-        });
+        function updateStopwatch() {
+            const now = new Date().getTime();
+            const distance = now - launchDate;
+
+            if (distance < 0) {
+                 stopwatchElement.textContent = "Launching soon...";
+                 return;
+            }
+
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            stopwatchElement.textContent = 
+                String(hours).padStart(2, '0') + ':' + 
+                String(minutes).padStart(2, '0') + ':' + 
+                String(seconds).padStart(2, '0');
+        }
+
+        // --- 6. Helper Functions ---
+        function hexToRgb(hex) {
+            let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            if(result){
+                return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
+            }
+            // Handle HSL colors
+            let hslResult = /hsl\((\d+),\s*([\d.]+)%,\s*([\d.]+)%\)/i.exec(hex);
+            if (hslResult) {
+                let h = parseInt(hslResult[1]);
+                let s = parseInt(hslResult[2]) / 100;
+                let l = parseInt(hslResult[3]) / 100;
+                let c = (1 - Math.abs(2 * l - 1)) * s,
+                    x = c * (1 - Math.abs((h / 60) % 2 - 1)),
+                    m = l - c/2,
+                    r = 0, g = 0, b = 0;
+                if (0 <= h && h < 60) { r = c; g = x; b = 0; }
+                else if (60 <= h && h < 120) { r = x; g = c; b = 0; }
+                else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
+                else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
+                else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
+                else if (300 <= h && h < 360) { r = c; g = 0; b = x; }
+                r = Math.round((r + m) * 255);
+                g = Math.round((g + m) * 255);
+                b = Math.round((b + m) * 255);
+                return `${r}, ${g}, ${b}`;
+            }
+            return null;
+        }
+
+        // --- 7. Initial Kick-off ---
+        const main = document.querySelector('main');
+        main.addEventListener('scroll', drawNodeConnections);
+        
+        init();
+        animate();
+        updateStopwatch();
+        setInterval(updateStopwatch, 1000);
+        typePun();
+
+        // Recalculate panel positions after a short delay to ensure layout is final
+        setTimeout(calculatePanelPositions, 500); 
+        window.addEventListener('resize', calculatePanelPositions);
+    });
     </script>
-
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250706",
+          pageId: "20250707",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
