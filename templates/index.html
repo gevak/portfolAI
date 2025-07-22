@@ -2,20 +2,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Dungeon of Geva Kipper</title>
+    <title>Geva Kipper - Debugging Portfolio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* --- BASE & SETUP --- */
+        /* --- CSS Variables and Global Resets --- */
         :root {
-            --font-title: 'Press Start 2P', cursive;
-            --font-body: 'VT323', monospace;
-            --color-text: #E0E0E0;
-            --color-bg: #0D0D1A;
-            --color-primary: #FFD700;
-            --color-secondary: #00FFFF;
-            --pixel-size: 4px; /* Master control for pixel art scaling */
+            --bg-color: #1a1a1a;
+            --bg-light: #2a2a2a;
+            --text-color: #f0f0f0;
+            --grey-text-color: #999;
+            --accent-color: #00bfff; /* Deep sky blue */
+            --green-color: #39ff14; /* Neon green */
+            --warn-color: #ffd700; /* Gold */
+            --success-color: #39ff14;
+            --font-mono: 'Fira Code', monospace;
+            --font-sans: 'Inter', sans-serif;
+            --grid-color: rgba(60, 60, 60, 0.4);
+            --transition-speed: 0.5s;
+            --long-transition-speed: 1.5s;
         }
 
         * {
@@ -24,850 +30,698 @@
             padding: 0;
         }
 
-        html {
-            scroll-behavior: smooth;
-        }
-
+        /* --- Initial "Broken" State --- */
         body {
-            background-color: var(--color-bg);
-            color: var(--color-text);
-            font-family: var(--font-body);
-            font-size: 20px;
-            overflow-x: hidden;
-        }
-
-        /* --- PIXEL ART & ANIMATION HELPERS --- */
-        .pixelated {
-            image-rendering: pixelated;
-            image-rendering: -moz-crisp-edges;
-            image-rendering: crisp-edges;
-        }
-
-        @keyframes flicker {
-            0%, 18%, 22%, 25%, 53%, 57%, 100% {
-                box-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px #fff, 0 0 40px #ff4500, 0 0 80px #ff4500, 0 0 90px #ff4500, 0 0 100px #ff4500, 0 0 150px #ff4500;
-                opacity: 1;
-            }
-            20%, 24%, 55% {
-                box-shadow: none;
-                opacity: 0.8;
-            }
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.7; }
-            50% { transform: scale(1.05); opacity: 1; }
-            100% { transform: scale(1); opacity: 0.7; }
-        }
-
-        @keyframes blink-cursor {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
-        }
-
-        /* --- FIXED ELEMENTS (AVATAR & STAIRS) --- */
-        #fixed-elements {
-            position: fixed;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 200px;
-            height: 100vh;
-            z-index: 10;
-            pointer-events: none;
-        }
-        
-        #geva-avatar {
-            position: absolute;
-            top: 70vh;
-            left: 50%;
-            width: 32px;
-            height: 48px;
-            transform: translateX(-50%);
-            background-repeat: no-repeat;
-            background-position: center;
-            transition: top 0.3s ease-out, left 0.5s ease-in-out;
-        }
-
-        #geva-avatar.stand {
-            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAwCAYAAABaeVhNAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAHySURBVFhH7ZfRSoNREEXnBikJLiBduQZfwBWE7qA76A56A9EFbtyAuzcDd6ErhWAlxRShZbAZs5lkJ5kQ9oMh+SSfNH3VqaqJNM1MvV/+sTCYf1Tq/a84f3TqPzVw/uP/o7o/VWgG4A+HwL0Jk+5bDAy4bDAy4LKBSIJUAqkEUgmkEkglaA2UfP986/4PXt8A758k+E0A9+/h8gLg9gfwzRbg9wOA7gCglQBMAPAEwEgB8KkAXEIAhNQDMBxADwBIAzAPAAkAEgBkALAEwOgQwI0w4EMe8FkI/BwCPw3BlwPgsxC4GQSAkN/9i9wDkAZgHgASACQASACYyCDARwordlQI/BQCXwmCl0PgsxC4GQSACPybZcAcgDQAcwCQACASASQCSCSgUgJMKRBnoSCAAPiVB1wGAlw2mBhw2WBkwGUDkQQpBVQJpBJQJZBKIKUQpPT+B1i/AV4/i+0XwPtLhN8E4C793L4AuAHA+w3wetY1s0EAjgAMAGAEgAHAyAjgQwNwKQR+D4EfQ+DTEPhZCNwUAkCEvwfAOQBpAOYBIAFAIoBIAJAIYCKDQCDAwgjMSoGfQ+DXEPApCL4cAJ+FwM0gAEQArEwA5ACkAZgHANkAIgEgEkAkgEgElEpASoEyCwkFBAHwJwtwGQlwmWBkwGWDiQGXDSQSJBVIJZBKIJVAKkGKgef/i3o/An8B1syrLhU/+RsAAAAASUVORK5CYII=');
-        }
-
-        .walk {
-            animation: walk-cycle 0.5s steps(2) infinite;
-        }
-
-        @keyframes walk-cycle {
-            0% { 
-                background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAwCAYAAABaeVhNAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAHVSURBVFhH7ZexTsNAEIYnCSoBDSQ0JDS0JGhExcSt4BO48AP4Cty5cUd0oQkJ7gQJbkRkYBHsHbt2bNbsJLNp+5NNkhi/9+fNzLgGTCbTfFQD88+U+l9+/uip/8X/P6o+q9YcQOc/HAKXJu0yGAlw2WBkwGWDiQTJBFINpBFINZBGINVAqcEMgZ/f/r4Dfr6LbReAhy/ifS3Aoxd+vQDcPgDcHgDuDgCjAJABIAkARgYARgJACgHvQ+D3EPg+BL4Igc9B4OYQAHLB3/8PcwaAGQCIAJAIIBJAJAIYCaDRAHBGCEwrgR9C4I8Q+CIEPgeDm0MAiMA/TwY5A2AGABIBJBJAJALIBDAhgUoJNKdAEAAP/IcFcBgIcNhgZMBhgzEDhw1iEkg0kGog1UCqgVQDiQZSCoQZ+Pnr3/938+4D8PEl4X1dwKM7f64Bbi8Abg8AdweAUQCIAJAEYGQE8BQCvwsB70Lg+xD4IgQ+B4ObQwCI8PfgMAdADIBAAJgIMBKAIwGcUQBnJPCzEPgzBH4RAl+EwM8hcHMIAFH4N8uBBQBkAIgEgEgAkQggksBMBJQJoDEgFgAA+A8L4DAKcNlgZMBhg5EBlw0iEkg0kGog1UCqgVQDiQaaDPz8H+p9AXa7Z8WJ3FvCAAAAAElFTkSuQmCC'); 
-            }
-            50% { 
-                background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAwCAYAAABaeVhNAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAHySURBVFhH7ZfRSoNREEXnBikJLiBduQZfwBWE7qA76A56A9EFbtyAuzcDd6ErhWAlxRShZbAZs5lkJ5kQ9oMh+SSfNH3VqaqJNM1MvV/+sTCYf1Tq/a84f3TqPzVw/uP/o7o/VWgG4A+HwL0Jk+5bDAy4bDAy4LKBSIJUAqkEUgmkEkglaA2UfP986/4PXt8A758k+E0A9+/h8gLg9gfwzRbg9wOA7gCglQBMAPAEwEgB8KkAXEIAhNQDMBxADwBIAzAPAAkAEgBkALAEwOgQwI0w4EMe8FkI/BwCPw3BlwPgsxC4GQSAkN/9i9wDkAZgHgASACQASACYyCDARwordlQI/BQCXwmCl0PgsxC4GQSACPybZcAcgDQAcwCQACASASQCSCSgUgJMKRBnoSCAAPiVB1wGAlw2mBhw2WBkwGUDkQQpBVQJpBJQJZBKIKUQpPT+B1i/AV4/i+0XwPtLhN8E4C793L4AuAHA+w3wetY1s0EAjgAMAGAEgAHAyAjgQwNwKQR+D4EfQ+DTEPhZCNwUAkCEvwfAOQBpAOYBIAFAIoBIAJAIYCKDQCDAwgjMSoGfQ+DXEPApCL4cAJ+FwM0gAEQArEwA5ACkAZgHANkAIgEgEkAkgEgElEpASoEyCwkFBAHwJwtwGQlwmWBkwGWDiQGXDSQSJBVIJZBKIJVAKkGKgef/i3o/An8B1syrLhU/+RsAAAAASUVORK5CYII='); 
-            }
-        }
-        
-        .staircase {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            width: calc(var(--pixel-size) * 15);
-            height: 200vh; /* Long enough to scroll along */
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, #333 25%, transparent 25%) -30px 0,
-                        linear-gradient(225deg, #444 25%, transparent 25%) -30px 0,
-                        linear-gradient(315deg, #333 25%, #222 25%),
-                        linear-gradient(45deg, #444 25%, #222 25%);
-            background-size: 60px 60px;
-            background-repeat: repeat-y;
-        }
-
-        /* --- DUNGEON & SECTIONS --- */
-        #dungeon {
-            position: relative;
-            z-index: 1;
-        }
-
-        .chamber, #entrance, #treasure, #credits {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-mono);
+            overflow: hidden; /* Prevent scrollbars during initial chaos */
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image:
+                linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            opacity: 0.2;
+            animation: pulseGrid 8s ease-in-out infinite alternate;
+        }
+        
+        main {
+            flex-grow: 1;
+            width: 100%;
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        #main-header {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: 0.2em; /* Erratic kerning */
+            font-kerning: none;
+        }
+
+        #main-header span {
+            display: inline-block;
+        }
+        
+        #sub-header {
+            color: var(--grey-text-color);
+            font-weight: 400;
+            margin-top: -5px;
+            margin-left: 20px; /* Overlap effect */
+            filter: blur(0.5px);
+            max-width: 40ch;
+            margin-inline: auto;
+        }
+
+        #ai-disclaimer {
+            margin-top: 15px;
+            color: var(--grey-text-color);
+            opacity: 0.5;
+            transition: opacity var(--transition-speed) ease;
+        }
+
+        .ai-icon-container { display: none; }
+
+        #prompt-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+            color: var(--green-color);
+            z-index: 20;
+            white-space: nowrap;
+        }
+
+        #prompt-container span::after {
+            content: '_';
+            animation: blink 1s step-end infinite;
+        }
+        
+        #project-grid {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+
+        .project-box {
+            position: absolute;
+            width: 280px;
+            height: 200px;
+            background-color: var(--bg-light);
+            border: 1px solid var(--grid-color);
+            overflow: hidden;
+            transition: transform var(--long-transition-speed) cubic-bezier(0.165, 0.84, 0.44, 1),
+                        opacity var(--long-transition-speed) ease;
+        }
+
+        .broken-content {
+            height: 100%;
+            overflow: hidden;
+            opacity: 1;
+            transition: opacity var(--transition-speed) ease;
+        }
+
+        .broken-content pre {
+            font-size: 0.75rem;
+            line-height: 1.4;
+            color: var(--grey-text-color);
+            animation: scroll-code 20s linear infinite;
+        }
+        .broken-content pre .c1 { color: #808080; }
+        .broken-content pre .c2 { color: #6a9955; }
+        .broken-content pre .c3 { color: #569cd6; }
+        .broken-content pre .c4 { color: #c586c0; }
+        .broken-content pre .c5 { color: #4ec9b0; }
+
+        .rendered-content {
+            position: absolute;
+            inset: 0;
+            padding: 20px;
+            opacity: 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            position: relative;
-            padding: 40px;
-            overflow: hidden;
-            border-bottom: calc(var(--pixel-size) * 3) solid #111;
+            text-align: center;
+            transition: opacity var(--transition-speed) ease;
         }
 
-        .chamber::before { /* Dungeon Walls */
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
-                repeating-linear-gradient(0deg, #4a4a4a, #4a4a4a 2px, #3a3a3a 2px, #3a3a3a 50px),
-                repeating-linear-gradient(90deg, #4a4a4a, #4a4a4a 2px, #3a3a3a 2px, #3a3a3a 50px);
-            z-index: -1;
+        .default-view h3, .default-view .project-icon {
+            transition: opacity var(--transition-speed) ease, transform var(--transition-speed) ease;
         }
         
-        /* --- MODAL FOR PROJECT INFO --- */
-        .project-modal {
-            background: rgba(0, 0, 0, 0.85);
-            border: calc(var(--pixel-size) / 2) solid var(--color-primary);
-            box-shadow: 0 0 calc(var(--pixel-size) * 5) rgba(0,0,0,0.7);
-            padding: 2rem;
-            max-width: 600px;
-            width: 90%;
-            text-align: center;
+        .project-box:hover .default-view h3 {
+             transform: translateY(-10px);
+             opacity: 0;
+        }
+        .project-box:hover .default-view .project-icon {
+             transform: translateY(-10px);
+             opacity: 0;
+        }
+        
+        .hover-view {
+            position: absolute;
+            inset: 0;
+            padding: 20px;
             opacity: 0;
-            visibility: hidden;
-            transform: translateY(20px);
-            transition: opacity 0.5s ease, transform 0.5s ease, visibility 0s 0.5s;
-            position: absolute; /* positioned relative to chamber */
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) translateY(20px);
-            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            transform: translateY(10px);
+            transition: opacity var(--transition-speed) ease, transform var(--transition-speed) ease;
         }
-
-        .chamber.active .project-modal {
+        .project-box:hover .hover-view {
             opacity: 1;
-            visibility: visible;
-            transform: translate(-50%, -50%) translateY(0);
-            transition-delay: 0s, 0.5s, 0s;
+            transform: translateY(0);
         }
 
-        .project-modal h3 {
-            font-family: var(--font-title);
-            color: var(--color-primary);
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .project-modal p {
-            font-size: 1.2rem;
+        .hover-view p {
+            font-size: 0.9rem;
+            color: var(--grey-text-color);
             line-height: 1.5;
-            margin-bottom: 1.5rem;
         }
 
         .project-links {
             display: flex;
-            justify-content: center;
-            gap: 1rem;
-            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
         }
 
         .project-links a {
-            color: var(--color-secondary);
+            color: var(--accent-color);
             text-decoration: none;
-            font-size: 1rem;
-            padding: 0.5rem 1rem;
-            border: 2px solid var(--color-secondary);
-            transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: color var(--transition-speed), transform var(--transition-speed);
         }
-
         .project-links a:hover {
-            background: var(--color-secondary);
-            color: var(--color-bg);
-            box-shadow: 0 0 15px var(--color-secondary);
+            color: var(--text-color);
+            transform: translateY(-2px);
         }
+        .project-links a svg { width: 18px; height: 18px; }
 
-        /* --- 1. GRAND ENTRANCE --- */
-        #entrance {
-            background-color: #000;
-            background-image: linear-gradient(to bottom, #020107 0%, #0d0d1a 60%),
-                radial-gradient(ellipse at 50% 10%, #444 0%, #111 60%);
-            background-size: 100% 100%, 12px 12px;
-            justify-content: center;
-        }
-
-        .entrance-content {
+        footer {
+            width: 100%;
             text-align: center;
-            z-index: 2;
+            padding: 20px;
+            font-size: 0.8rem;
+            color: var(--grey-text-color);
+            opacity: 0; /* Hidden initially */
+            transition: opacity var(--transition-speed) ease;
         }
+        #stopwatch { font-family: var(--font-mono); }
 
-        h1 {
-            font-family: var(--font-title);
-            font-size: clamp(2rem, 8vw, 4rem);
-            color: var(--color-primary);
-            text-shadow: 0 0 10px var(--color-primary), 0 0 20px #000;
-        }
-
-        #entrance p {
-            font-size: clamp(1rem, 3vw, 1.3rem);
-            margin-top: 1rem;
-            max-width: 600px;
-        }
-        
-        .torch {
-            position: absolute;
-            top: 40%;
-            width: calc(var(--pixel-size) * 4);
-            height: calc(var(--pixel-size) * 6);
-            background: #654321;
-        }
-        .torch::before { /* flame */
-            content: '';
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(var(--pixel-size) * 3);
-            height: calc(var(--pixel-size) * 4);
-            background: #ffae42;
-            border-radius: 50% 50% 20% 20%;
-            animation: flicker 1.5s infinite linear;
-        }
-        .torch.left { left: 20%; }
-        .torch.right { right: 20%; }
-
-        .system-message {
-            background: rgba(0,0,0,0.5);
-            border: 1px solid #555;
-            padding: 1rem;
-            margin: 2rem auto;
-            max-width: 500px;
-        }
-
-        .system-message::after {
-            content: '■';
-            animation: blink-cursor 1s steps(1) infinite;
-            margin-left: 5px;
-            color: var(--color-text);
-        }
-
-        .descend-prompt {
-            position: absolute;
-            bottom: 5vh;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-            color: var(--color-primary);
-            font-size: 1.2rem;
-        }
-
-        .descend-prompt span {
-            display: block;
-            font-size: 2rem;
-            animation: pulse 1.5s infinite;
-        }
-        
-        /* --- 2. PROJECT CHAMBERS --- */
-
-        /* 2.1 Chamber of Echoes */
-        .crystal {
-            position: absolute;
-            width: 0;
-            height: 0;
-            border-left: 50px solid transparent;
-            border-right: 50px solid transparent;
-            border-bottom: 100px solid var(--crystal-glow-color, var(--color-secondary));
-            opacity: 0.8;
-            filter: drop-shadow(0 0 15px var(--crystal-glow-color, var(--color-secondary)));
-        }
-        #crystal-main {
-            width: 0; height: 0;
-            border-left: 75px solid transparent;
-            border-right: 75px solid transparent;
-            border-bottom: 150px solid var(--crystal-glow-color, var(--color-secondary));
-            bottom: 10vh;
-            left: 50%;
-            transform: translateX(-50%);
-            animation: pulse 3s infinite ease-in-out;
-        }
-        .note {
-            position: absolute;
-            font-size: 2rem;
-            color: var(--crystal-glow-color, var(--color-secondary));
+        /* --- Console Overlay --- */
+        #console-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(5px);
+            z-index: 999;
             opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease;
         }
-        @keyframes fly-note {
-            0% { transform: translate(0, 0) scale(0.5); opacity: 1; }
-            100% { transform: translate(var(--x-end), var(--y-end)) scale(1); opacity: 0; }
+        #console-overlay.visible {
+            opacity: 1;
         }
-
-        /* 2.2 Overlook of Ahuzat Dibuk */
-        #project-ahuzat { background: #0c1445; }
-        #project-ahuzat::before { display: none; }
-        .tel-aviv-skyline {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 60%;
-            background: linear-gradient(to top, #111, transparent);
-            z-index: 1;
+        #console-text {
+            font-family: var(--font-mono);
+            padding: 20px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            height: 100%;
+            overflow-y: hidden;
         }
-        .building {
-            position: absolute;
-            bottom: 0;
-            background-color: #1a237e;
-            box-shadow: inset 0 0 0 2px #000;
-        }
-        .glowing-building { background-color: #e53935; box-shadow: 0 0 20px #f44336; }
-
-        /* 2.3 The Forge of Geometry */
-        .anvil {
-            position: absolute;
-            bottom: 25vh;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 120px;
-            height: 60px;
-            background: #555;
-            border-radius: 5px;
-            border-top: 10px solid #777;
-            border-bottom: 20px solid #444;
-        }
-        .hammer {
-            position: absolute;
-            bottom: 35vh;
-            left: 52%;
-            width: 20px;
-            height: 60px;
-            background: #8B4513;
-            transform-origin: bottom center;
-            animation: strike 2s infinite ease-in-out;
-        }
-        .hammer::before { /* Head */
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -20px;
-            width: 60px;
-            height: 25px;
-            background: #777;
-        }
-        @keyframes strike {
-            0%, 50%, 100% { transform: rotate(20deg); }
-            25% { transform: rotate(-45deg); }
+        #console-text span { display: block; }
+        .log-info { color: #ccc; }
+        .log-warn { color: var(--warn-color); }
+        .log-success { color: var(--success-color); }
+        .log-cmd { color: var(--green-color); font-weight: bold; }
+        
+        /* --- "Rendered" State --- */
+        body.rendered {
+            overflow: auto;
+            font-family: var(--font-sans);
         }
 
-        /* 2.4 The Jester's Arena */
-        .throne {
-            width: 100px;
-            height: 150px;
-            background: #4a0e0e;
-            border: 5px solid #ffd700;
-            position: absolute;
-            bottom: 15vh;
-            left: 50%;
-            transform: translateX(-50%);
+        body.rendered #prompt-container {
+            opacity: 0;
+            pointer-events: none;
         }
-        .robot-head {
-            width: 50px;
-            height: 50px;
-            background: #bdbdbd;
-            border: 3px solid #616161;
-            position: absolute;
-            bottom: 20vh;
-        }
-        .robot-head::before { /* eye */
-            content: '';
-            position: absolute;
-            top: 15px; left: 10px;
-            width: 10px; height: 10px;
-            background: #f44336;
-            border-radius: 50%;
-            box-shadow: 0 0 5px #f44336;
-        }
-        #robot1 { left: 30%; }
-        #robot2 { right: 30%; }
-
-        /* 2.5 The Scribe's Library */
-        #project-rhymes::before {
-            background-image: repeating-linear-gradient(#654321 0 20px, #321a0a 20px 22px);
-            background-size: 100% 22px;
-        }
-        .lectern {
-            width: 120px;
-            height: 50px;
-            background: #8B4513;
-            position: absolute;
-            bottom: 20vh;
-            left: 50%;
-            transform: translateX(-50%);
-            perspective: 200px;
-        }
-        .open-book {
-            width: 100%;
-            height: 80px;
-            background: #fdf5e6;
-            position: absolute;
-            bottom: 100%;
-            transform: rotateX(50deg);
-            border: 3px solid #333;
-        }
-        .animated-quill {
-            position: absolute;
-            bottom: 28vh;
-            left: 51%;
-            font-size: 3rem;
-            transform-origin: bottom right;
-            animation: write-text 5s infinite ease-in-out;
-            color: #333;
-        }
-        @keyframes write-text {
-            0% { transform: translate(0, 0) rotate(20deg); }
-            20% { transform: translate(-20px, -5px) rotate(10deg); }
-            40% { transform: translate(10px, -10px) rotate(25deg); }
-            60% { transform: translate(-15px, 0) rotate(15deg); }
-            80% { transform: translate(5px, -5px) rotate(22deg); }
-            100% { transform: translate(0, 0) rotate(20deg); }
+        
+        body.rendered header {
+            transition: all var(--transition-speed) ease;
         }
 
-        /* 2.6 The Hall of Mirrors */
-        .mirror {
-            width: 150px;
-            height: 220px;
-            border: 10px solid #C0C0C0;
-            box-shadow: 0 0 5px #fff, inset 0 0 5px #fff;
-            background: #000;
-            position: relative;
-            overflow: hidden;
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-        .mirror-link:hover .mirror { border-color: var(--color-primary); box-shadow: 0 0 20px var(--color-primary), inset 0 0 10px var(--color-primary); }
-        .mirror-surface {
-            width: 100%; height: 100%;
-            background: linear-gradient(45deg, #111, #333, #111);
-            animation: ripple 5s infinite ease-in-out;
-        }
-        @keyframes ripple {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        body.rendered #main-header {
+            letter-spacing: -0.02em;
+            font-kerning: auto;
+            transition: letter-spacing var(--long-transition-speed) ease;
         }
 
-        /* --- 3. TREASURE TROVE & CREDITS --- */
-        #treasure {
-            background: #2c2216;
+        body.rendered #sub-header {
+            margin-top: 10px;
+            margin-left: 0;
+            filter: none;
+            transition: all var(--long-transition-speed) ease;
         }
-        .treasure-chest {
-            width: 250px;
-            height: 150px;
-            background: #8B4513;
-            border: 5px solid #5a2d0c;
-            position: relative;
-            border-radius: 10px 10px 0 0;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-        }
-        .treasure-chest::before { /* Lid */
-            content: '';
-            position: absolute;
-            bottom: 100%;
-            left: -5px;
-            width: 250px;
-            height: 50px;
-            background: #cd853f;
-            border: 5px solid #5a2d0c;
-            border-radius: 20px 20px 0 0;
-            transform: rotate(-5deg);
-            transform-origin: bottom left;
-        }
-        .loot {
-            position: absolute;
-            top: -50px;
-            left: 20px;
+
+        body.rendered #ai-disclaimer {
+            opacity: 1;
             display: flex;
-            gap: 15px;
             align-items: center;
-        }
-        .social-link {
-            width: 50px;
-            height: 50px;
-            display: flex;
             justify-content: center;
-            align-items: center;
-            transition: transform 0.3s, filter 0.3s;
+            gap: 10px;
         }
-        .social-link:hover {
-            transform: scale(1.1);
-            filter: drop-shadow(0 0 10px var(--color-primary));
-        }
-
-        /* CSS-drawn icons */
-        .icon { width: 32px; height: 32px; background: #fff;}
-        #icon-github {
-            background-color: #e0e0e0;
-            border-radius: 50%;
-            box-shadow: 
-                -12px 0 0 -3px #e0e0e0, -15px 5px 0 -3px #e0e0e0,
-                -3px 9px 0 -1px #111, 6px 9px 0 -1px #111,
-                0 3px 0 3px #111,
-                -11px -11px 0 -9px #111, 11px -11px 0 -9px #111,
-                -15px -1px 0 -4px #111, 15px -1px 0 -4px #111;
-        }
-        #icon-linkedin { background-color: #0077b5; font-family: var(--font-title); font-size: 1.5rem; color: #fff; text-align: center; line-height: 32px; }
-        #icon-facebook { background-color: #3b5998; font-family: sans-serif; font-weight: bold; font-size: 2rem; color: #fff; text-align: center; line-height: 32px;}
-
-        #credits {
-            background: #000;
-            text-align: center;
-            line-height: 1.8;
-            font-size: 1.2rem;
-            min-height: auto;
-            padding: 50px 20px;
-        }
-        #cataclysm-timer {
-            color: var(--color-primary);
-            min-width: 150px;
+        
+        body.rendered .ai-icon-container {
             display: inline-block;
+            position: relative;
+            width: 20px;
+            height: 20px;
+        }
+        .ai-icon-container svg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            transition: opacity 0.5s ease;
+        }
+        .ai-icon-container .cog-icon {
+            animation: spin 8s linear infinite;
+        }
+        .ai-icon-container .brain-icon { opacity: 0; }
+        body.rendered .ai-icon-container:hover .cog-icon { opacity: 0; }
+        body.rendered .ai-icon-container:hover .brain-icon { opacity: 1; }
+        
+        body.rendered #project-grid {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 40px 5%;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
-        /* --- RESPONSIVENESS --- */
-        @media (max-width: 768px) {
-            :root {
-                --pixel-size: 3px;
-            }
-            #fixed-elements {
-                width: 100px;
-            }
-            .staircase {
-                width: calc(var(--pixel-size) * 12);
-            }
-            .torch.left { left: 5%; }
-            .torch.right { right: 5%; }
-            .project-modal {
-                padding: 1.5rem;
-            }
-            .project-modal h3 { font-size: 1.2rem; }
-            .project-modal p { font-size: 1rem; }
-            .project-links a { font-size: 0.9rem; }
+        body.rendered .project-box {
+            position: static;
+            width: auto;
+            height: auto;
+            aspect-ratio: 1.5 / 1;
+            transform: none !important; /* Override inline styles */
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 0 rgba(0, 191, 255, 0.7);
+            transition: transform var(--transition-speed) ease,
+                        box-shadow var(--transition-speed) ease,
+                        border-color var(--transition-speed) ease;
+        }
+        body.rendered .project-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 25px 5px rgba(0, 191, 255, 0.3);
+        }
+        body.rendered .project-box a {
+            font-family: var(--font-sans);
+        }
+
+        body.rendered .project-box.shake-animation {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        
+        body.rendered .broken-content { opacity: 0; }
+        body.rendered .rendered-content { opacity: 1; }
+
+        .project-icon {
+            width: 48px;
+            height: 48px;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+        }
+        
+        body.rendered footer {
+            opacity: 1;
+        }
+
+        /* --- Animations --- */
+        @keyframes pulseGrid {
+            from { opacity: 0.1; }
+            to { opacity: 0.3; }
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        @keyframes scroll-code {
+            from { transform: translateY(0); }
+            to { transform: translateY(-80%); }
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes shake {
+          10%, 90% { transform: translate3d(-1px, 0, 0) translateY(-5px); }
+          20%, 80% { transform: translate3d(2px, 0, 0) translateY(-5px); }
+          30%, 50%, 70% { transform: translate3d(-4px, 0, 0) translateY(-5px); }
+          40%, 60% { transform: translate3d(4px, 0, 0) translateY(-5px); }
         }
 
     </style>
 </head>
 <body>
-
-    <!-- Fixed elements that stay on screen -->
-    <div id="fixed-elements">
-        <div class="staircase"></div>
-        <div id="geva-avatar" class="pixelated stand"></div>
+    <div id="console-overlay">
+        <pre id="console-text"></pre>
     </div>
 
-    <!-- Main scrollable content -->
-    <main id="dungeon">
-
-        <!-- 1. The Grand Entrance -->
-        <section id="entrance">
-            <div class="torch left"></div>
-            <div class="torch right"></div>
-            <div class="entrance-content">
-                <h1>Geva Kipper</h1>
-                <p>A Software Engineer at Google, crafting worlds both real and virtual.</p>
-                <div class="system-message">
-                    > System Message: This dungeon is procedurally redesigned by a rogue AI each day. Layout and aesthetics may vary.
-                </div>
-            </div>
-            <div class="descend-prompt">
-                Descend
-                <span>&darr;</span>
-            </div>
-        </section>
-
-        <!-- 2. Chamber of Echoes (GlglStats) -->
-        <section id="project-glglstats" class="chamber">
-            <div id="crystal-main" class="crystal"></div>
-            <div class="note" style="top: 30%; left: 40%;">♪</div>
-            <div class="note" style="top: 45%; left: 60%;">♫</div>
-            <div class="note" style="top: 25%; left: 55%;">♬</div>
-
-            <div class="project-modal">
-                <h3>The Chamber of Echoes</h3>
-                <p>GlglStats is a tool for visualizing the activity of Israeli army radio stations ("Galgalatz" and "Galei Tzahal"). It scrapes real-time broadcast data and presents it as interactive statistics and dashboards. I presented this project at the "August Penguin" conference.</p>
-                <div class="project-links">
-                    <a href="https://glglstats.geekip.dev" target="_blank" rel="noopener noreferrer">Visit Website</a>
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" rel="noopener noreferrer">Watch Presentation</a>
-                </div>
-            </div>
-        </section>
-
-        <!-- 3. The Overlook of Ahuzat Dibuk -->
-        <section id="project-ahuzat" class="chamber">
-            <div class="tel-aviv-skyline">
-                <!-- Programmatically generated buildings will go here -->
-            </div>
-            <div class="project-modal">
-                <h3>The Overlook of Ahuzat Dibuk</h3>
-                <p>"Ahuzat Dibuk" is a data project that created a parking availability heat-map for Tel Aviv. By analyzing parking payment data for 250,000 parking spots, it provided drivers with a predictive model of where they are most likely to find a spot, which was featured in major Israeli news outlets.</p>
-                <div class="project-links">
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" rel="noopener noreferrer">Original Post</a>
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" rel="noopener noreferrer">Channel 13 News</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" rel="noopener noreferrer">Mako News</a>
-                </div>
-            </div>
-        </section>
-
-        <!-- 4. The Forge of Geometry -->
-        <section id="project-orienting" class="chamber">
-            <div class="anvil"></div>
-            <div class="hammer"></div>
-            <div class="project-modal">
-                <h3>The Forge of Geometry</h3>
-                <p>As part of my M.Sc. at Tel-Aviv University, I co-developed a C++ algorithm for 2D Part Orienting. The goal is to find the optimal orientation for a polygonal part to minimize the support structure needed for 3D printing, a crucial step in efficient additive manufacturing. The code and paper are available through the university.</p>
-                <div class="project-links">
-                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" rel="noopener noreferrer">View Project & Code</a>
-                </div>
-            </div>
-        </section>
+    <main id="portfolio-container">
+        <header>
+            <h1 id="main-header">Geva Kipper</h1>
+            <p id="sub-header">Software Engineer at Google, working on conversational AI.</p>
+            <p id="ai-disclaimer">
+                <span class="ai-icon-container">
+                    <!-- SVGs for cog and brain -->
+                     <svg class="cog-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v2m0 18v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M1 12h2m18 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12z"/></svg>
+                     <svg class="brain-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v0A2.5 2.5 0 0 1 9.5 7h-3A2.5 2.5 0 0 1 4 4.5v0A2.5 2.5 0 0 1 6.5 2m8 0A2.5 2.5 0 0 1 18 4.5v0A2.5 2.5 0 0 1 15.5 7h-3A2.5 2.5 0 0 1 10 4.5v0A2.5 2.5 0 0 1 12.5 2M4.5 9.5A2.5 2.5 0 0 1 7 12v0a2.5 2.5 0 0 1-2.5 2.5h-2A2.5 2.5 0 0 1 0 12v0A2.5 2.5 0 0 1 2.5 9.5m15 0A2.5 2.5 0 0 1 22 12v0a2.5 2.5 0 0 1-2.5 2.5h-2a2.5 2.5 0 0 1-2.5-2.5v0A2.5 2.5 0 0 1 17.5 9.5M6 16.5A2.5 2.5 0 0 1 8.5 19v0a2.5 2.5 0 0 1-2.5 2.5h-3A2.5 2.5 0 0 1 0.5 19v0A2.5 2.5 0 0 1 3 16.5m12 0A2.5 2.5 0 0 1 17.5 19v0a2.5 2.5 0 0 1-2.5 2.5h-3a2.5 2.5 0 0 1-2.5-2.5v0A2.5 2.5 0 0 1 12.5 16.5"/></svg>
+                </span>
+                // This website is re-designed each day by AI and is thus ever-changing
+            </p>
+        </header>
         
-        <!-- 5. The Jester's Arena -->
-        <section id="project-jest" class="chamber">
-            <div id="robot1" class="robot-head"></div>
-            <div id="robot2" class="robot-head"></div>
-            <div class="throne"></div>
-             <div class="project-modal">
-                <h3>The Jester's Arena</h3>
-                <p>The Turing Jest was a competition where participants submitted bots (LLMs) to engage in humorous conversations. We developed a platform with an Elo rating system to pit the bots against each other. The goal was to create the funniest chatbot, judged by human voters in head-to-head "roast battles".</p>
-                <div class="project-links">
-                    <a href="https://jest.geekip.dev" target="_blank" rel="noopener noreferrer">Visit The Arena</a>
-                </div>
-            </div>
-        </section>
-
-        <!-- 6. The Scribe's Library -->
-        <section id="project-rhymes" class="chamber">
-            <div class="lectern">
-                <div class="open-book"></div>
-            </div>
-            <div class="animated-quill">✒️</div>
-            <div class="project-modal">
-                <h3>The Scribe's Library</h3>
-                <p>"Rhymes of Israel" is a whimsical Chrome extension that automatically finds and replaces headlines on major Israeli news sites with rhyming, often humorous, alternatives. It's a small project to bring a bit of levity to the news-reading experience.</p>
-                <div class="project-links">
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" rel="noopener noreferrer">Get Extension</a>
-                </div>
-            </div>
-        </section>
-
-        <!-- 7. The Hall of Mirrors -->
-        <section id="project-portfolio" class="chamber">
-             <a href="https://geekip.dev" target="_blank" rel="noopener noreferrer" class="mirror-link">
-                <div class="mirror">
-                    <div class="mirror-surface"></div>
-                </div>
-            </a>
-            <div class="project-modal">
-                <h3>The Hall of Mirrors</h3>
-                <p>You are here. This portfolio is a single-page, vertical-scrolling RPG dungeon. The user's scroll action is their method of "exploring" downwards, with each project representing a new room. The aesthetic is inspired by 16-bit RPGs, built with modern HTML, CSS, and vanilla JavaScript.</p>
-                <div class="project-links">
-                    <a href="https://geekip.dev" target="_blank" rel="noopener noreferrer">View Source (of this reality)</a>
-                </div>
-            </div>
-        </section>
+        <div id="prompt-container">
+            <span>> </span>
+        </div>
         
-        <!-- 8. The Treasure Trove -->
-        <section id="treasure">
-            <div class="treasure-chest">
-                <div class="loot">
-                    <a href="https://github.com/gevak" target="_blank" rel="noopener noreferrer" class="social-link" title="GitHub">
-                        <div id="icon-github" class="icon"></div>
-                    </a>
-                    <a href="https://linkedin.com/in/gevakip" target="_blank" rel="noopener noreferrer" class="social-link" title="LinkedIn">
-                         <div id="icon-linkedin" class="icon">in</div>
-                    </a>
-                    <a href="https://facebook.com/geva.kipper" target="_blank" rel="noopener noreferrer" class="social-link" title="Facebook">
-                        <div id="icon-facebook" class="icon">f</div>
-                    </a>
-                </div>
-            </div>
-        </section>
-
-        <!-- 9. Footer / Credits -->
-        <footer id="credits">
-            <p>This ever-changing dungeon was designed and built by a Generative AI.</p>
-            <p>Time Since Last Cataclysm: <span id="cataclysm-timer">0h 0m 0s</span></p>
-        </footer>
-
+        <div id="project-grid">
+            <!-- Project boxes will be dynamically generated by JS -->
+        </div>
     </main>
+    
+    <footer>
+        Design generated by an AI assistant. Time since this design was rendered: <span id="stopwatch">00:00:00</span>
+    </footer>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    <script defer>
+        document.addEventListener('DOMContentLoaded', () => {
 
-        const avatar = document.getElementById('geva-avatar');
-        const chambers = document.querySelectorAll('.chamber');
-        let activeChamber = null;
-        let isScrolling;
+            const ELS = {
+                body: document.body,
+                mainHeader: document.getElementById('main-header'),
+                promptContainer: document.getElementById('prompt-container'),
+                promptCursor: document.querySelector('#prompt-container span'),
+                projectGrid: document.getElementById('project-grid'),
+                consoleOverlay: document.getElementById('console-overlay'),
+                consoleText: document.getElementById('console-text'),
+                stopwatch: document.getElementById('stopwatch'),
+                portfolioBox: null // will be set later
+            };
 
-        // --- 1. PROCEDURAL GENERATION ---
-        // On each load, randomize the crystal glow color.
-        const crystalColors = ['#00FFFF', '#FF00FF', '#00FF00', '#FFFF00', '#FF69B4'];
-        const randomColor = crystalColors[Math.floor(Math.random() * crystalColors.length)];
-        document.documentElement.style.setProperty('--crystal-glow-color', randomColor);
-        
-        // Randomize musical note animations
-        document.querySelectorAll('.note').forEach(note => {
-            note.style.animation = `fly-note ${Math.random() * 3 + 3}s infinite linear`;
-            note.style.setProperty('--x-end', `${(Math.random() - 0.5) * 200}px`);
-            note.style.setProperty('--y-end', `${(Math.random() - 0.5) * -200}px`);
+            const STATE = {
+                glitchInterval: null,
+                interactionDone: false,
+                renderStartTime: new Date('2024-05-21T10:00:00') // Fixed date for consistent stopwatch
+            };
+            
+            const ICONS = {
+                globe: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`,
+                play: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`,
+                article: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20v-10H6.5A2.5 2.5 0 0 1 4 4.5v15zM4 2v2M4 7v2M4 12v2M4 17v2"></path><path d="M20 7H8.5"></path><path d="M20 12H8.5"></path></svg>`,
+                github: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>`,
+                linkedin: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>`,
+                facebook: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>`
+            };
+            
+            const PROJECTS = [
+                {
+                    title: 'GlglStats',
+                    icon: `<svg class="project-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2l2-10 4 20 4-10 4 10 2-20h2"/></svg>`,
+                    description: "An analytics dashboard for Galgalatz, Israel's most popular radio station, tracking music trends in real-time.",
+                    links: [
+                        { text: 'Website', url: 'https://glglstats.geekip.dev', icon: ICONS.globe },
+                        { text: 'Talk', url: 'https://www.youtube.com/watch?v=jrKAtOsj1Lo', icon: ICONS.play }
+                    ]
+                },
+                {
+                    title: 'Ahuzat Dibuk',
+                    icon: `<svg class="project-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`,
+                    description: "A viral data analysis project that exposed parking patterns, leading to policy changes in Tel-Aviv.",
+                    links: [
+                        { text: 'Post', url: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943', icon: ICONS.facebook },
+                        { text: 'News 1', url: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/', icon: ICONS.article },
+                        { text: 'News 2', url: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm', icon: ICONS.article }
+                    ]
+                },
+                {
+                    title: '2D Part Orienting',
+                    icon: `<svg class="project-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><polygon points="50,5 95,25 95,75 50,95 5,75 5,25" fill="none" stroke="currentColor" stroke-width="5" /></svg>`,
+                    description: "Academic research on a mechanical algorithm to orient any 2D part with a high probability.",
+                    links: [ { text: 'TAU Page', url: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/', icon: ICONS.globe } ]
+                },
+                {
+                    title: 'The Turing Jest',
+                    icon: `<svg class="project-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2"><path d="M12,2A10,10,0,0,0,2,12a1,1,0,0,0,1,1H15a1,1,0,0,0,1-1,8,8,0,0,1,0-16,1,1,0,0,0-1-1H4a1,1,0,0,0-1,1A10,10,0,0,0,12,22a10.12,10.12,0,0,0,9-12.28A.79.79,0,0,0,21,9"/><path d="M7 15.5c.67.67 1.33 1 2 1s1.33-.33 2-1M6 9h.01M10 9h.01"/></svg>`,
+                    description: "A web-based game challenging you to distinguish between human and AI-generated jokes.",
+                    links: [ { text: 'Play Game', url: 'https://jest.geekip.dev', icon: ICONS.globe } ]
+                },
+                {
+                    title: 'Rhymes of Israel',
+                    icon: `<svg class="project-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 2v6h6v14H18v-6h3.5v-6H18V2z"></path><path d="M11 11.5v-1a2.5 2.5 0 0 0-5 0v1a2.5 2.5 0 0 0 5 0z"></path></svg>`,
+                    description: "A Chrome extension that finds Hebrew rhymes, using NLP to analyze vowel patterns.",
+                    links: [ { text: 'Chrome Store', url: 'https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb', icon: ICONS.globe } ]
+                },
+                {
+                    title: 'This Portfolio',
+                    id: 'portfolio-box',
+                    icon: `<svg class="project-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="96" height="96" fill="none" stroke="currentColor" stroke-width="4"/><rect x="18" y="18" width="64" height="64" fill="none" stroke="currentColor" stroke-width="4"/><rect x="34" y="34" width="32" height="32" fill="none" stroke="currentColor" stroke-width="4"/></svg>`,
+                    description: "A meta-project: this very website, built with a 'debugging' theme and generative design concepts.",
+                    links: [ { text: 'You Are Here', url: 'https://geekip.dev', icon: ICONS.globe } ]
+                },
+                {
+                    title: 'Connect',
+                    icon: `<svg class="project-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></svg>`,
+                    description: "Find me on the web. Let's build something great together.",
+                    links: [
+                        { text: 'GitHub', url: 'https://github.com/gevak', icon: ICONS.github },
+                        { text: 'LinkedIn', url: 'https://linkedin.com/in/gevakip', icon: ICONS.linkedin },
+                        { text: 'Facebook', url: 'https://facebook.com/geva.kipper', icon: ICONS.facebook }
+                    ]
+                }
+            ];
+            
+            // --- INITIALIZATION ---
+            
+            function setupBrokenState() {
+                // 1. Jumble the header
+                const originalHeaderText = ELS.mainHeader.textContent;
+                ELS.mainHeader.innerHTML = originalHeaderText.split('').map(char => `<span>${char}</span>`).join('');
+                const headerSpans = ELS.mainHeader.querySelectorAll('span');
+                const chars = "!@#$%^&*(){}|[]";
 
-        });
+                STATE.glitchInterval = setInterval(() => {
+                    headerSpans.forEach(span => {
+                        if (Math.random() > 0.85 && span.textContent !== ' ') {
+                            span.textContent = chars[Math.floor(Math.random() * chars.length)];
+                        } else {
+                            span.textContent = span.dataset.originalChar || span.textContent;
+                        }
+                    });
+                }, 100);
+                headerSpans.forEach(span => span.dataset.originalChar = span.textContent);
 
-        // Procedurally generate the Tel Aviv skyline
-        const skylineContainer = document.querySelector('.tel-aviv-skyline');
-        const screenWidth = window.innerWidth;
-        let currentPos = 0;
-        while(currentPos < screenWidth) {
-            const width = Math.random() * 80 + 20;
-            const height = Math.random() * (skylineContainer.offsetHeight * 0.8) + (skylineContainer.offsetHeight * 0.2);
-            const isGlowing = Math.random() > 0.85;
+                // 2. Populate and scatter project boxes
+                const viewportW = window.innerWidth;
+                const viewportH = window.innerHeight;
+                ELS.projectGrid.innerHTML = PROJECTS.map(p => createProjectBox(p)).join('');
+                document.querySelectorAll('.project-box').forEach((box) => {
+                    const top = Math.random() * (viewportH - 250) + 50;
+                    const left = Math.random() * (viewportW - 320) + 20;
+                    const rot = Math.random() * 20 - 10;
+                    box.style.top = `${top}px`;
+                    box.style.left = `${left}px`;
+                    box.style.transform = `rotate(${rot}deg)`;
+                });
+                
+                // Set special element for portfolio box
+                ELS.portfolioBox = document.getElementById('portfolio-box');
+            }
 
-            const building = document.createElement('div');
-            building.className = `building ${isGlowing ? 'glowing-building' : ''}`;
-            building.style.left = `${currentPos}px`;
-            building.style.width = `${width}px`;
-            building.style.height = `${height}px`;
-            skylineContainer.appendChild(building);
+            function createProjectBox(project) {
+                const linksHTML = project.links.map(link => 
+                    `<a href="${link.url}" target="_blank" rel="noopener noreferrer">
+                        ${link.icon}<span>${link.text}</span>
+                    </a>`
+                ).join('');
 
-            currentPos += width;
-        }
+                const gibberish = generateGibberishHTML();
+
+                return `
+                    <div class="project-box" ${project.id ? `id="${project.id}"` : ''}>
+                        <div class="broken-content">
+                            <pre><code>${gibberish}</code></pre>
+                        </div>
+                        <div class="rendered-content">
+                           <div class="default-view">
+                                ${project.icon}
+                                <h3>${project.title}</h3>
+                           </div>
+                           <div class="hover-view">
+                                <p>${project.description}</p>
+                                <div class="project-links">${linksHTML}</div>
+                           </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function generateGibberishHTML() {
+                const lines = [
+                    '<span class="c1">// Initializing buffer overflow...</span>',
+                    '<span class="c3">const</span> <span class="c5">entropy</span> = <span class="c4">Math</span>.sqrt(-1);',
+                    '<span class="c3">for</span> (<span class="c3">let</span> i=0; i&lt;999; i*=-1) {',
+                    '  <span class="c4">document</span>.setStyle(<span class="c2">`z-index: <span class="c3">${Math.floor(Math.random() * 1000)}</span>`</span>);',
+                    '  <span class="c4">console</span>.log(<span class="c2">"SYNTAX_ERR"</span>);',
+                    '}',
+                    '[<span class="c5"> CSS_MATRIX_FAILURE </span>]',
+                    '<span class="c1">/* Re-routing neural network... */</span>',
+                    'ptr :: <span class="c3">void*</span> = <span class="c4">malloc</span>(<span class="c5">0xDEADBEEF</span>);',
+                    '<span class="c4">release</span>(ptr);',
+                    '<span class="c3">transform-origin</span>: 50% 150.22%;',
+                    'ASCII art data corrupt...',
+                    '[[<span class="c4">λ.x</span>(<span class="c5">λ.y</span>(<span class="c4">x</span>))]]',
+                    '<span class="c1">#include</span> <span class="c2">&lt;chaos&gt;</span>',
+                    '<span class="c3">function</span> <span class="c5">unrender</span>() { <span class="c4">return</span> <span class="c5">unrender</span>(); }'
+                ];
+                let output = '';
+                for (let i=0; i<30; i++){
+                    output += lines[Math.floor(Math.random() * lines.length)] + '\n';
+                }
+                return output;
+            }
 
 
-        // --- 2. SCROLLING & ANIMATION LOGIC ---
+            // --- "DEBUG" SEQUENCE ---
 
-        // IntersectionObserver to detect which chamber is in view
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                const chamberId = entry.target.id;
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('active');
-                    activeChamber = entry.target;
-                    updateAvatarPosition(entry.target);
-                    avatar.classList.remove('walk');
-                    avatar.classList.add('stand');
-                } else {
-                    entry.target.classList.remove('active');
-                    if (activeChamber && activeChamber.id === chamberId) {
-                        activeChamber = null;
+            function triggerRender(event) {
+                if (STATE.interactionDone) return;
+                STATE.interactionDone = true;
+                window.removeEventListener('click', triggerRender);
+                window.removeEventListener('keydown', triggerRender);
+
+                sequenceStep1_TypeCommand();
+            }
+            
+            async function sequenceStep1_TypeCommand(){
+                const command = "system.render(true)";
+                ELS.promptCursor.textContent = "> ";
+                ELS.promptCursor.style.animation = 'none'; // Stop blinking
+                
+                for(let i=0; i<command.length; i++){
+                    await new Promise(r => setTimeout(r, 50));
+                    ELS.promptCursor.textContent += command[i];
+                }
+                ELS.promptCursor.innerHTML += '<span style="animation: blink 0.5s step-end infinite;">_</span>';
+                
+                await new Promise(r => setTimeout(r, 400));
+                sequenceStep2_RunConsole();
+            }
+
+            async function sequenceStep2_RunConsole() {
+                ELS.consoleOverlay.classList.add('visible');
+                const logLines = [
+                    {text: "EXECUTING..."},
+                    {text: "[INFO] Initializing DOM...", class: "log-info"},
+                    {text: "[INFO] Parsing assets...", class: "log-info"},
+                    {text: "[WARN] Layout conflicts detected: 7 elements.", class: "log-warn"},
+                    {text: "[INFO] Applying AI visual patch v.2024.05.21...", class: "log-info"},
+                    {text: "[INFO] Recompiling CSS matrix...", class: "log-info"},
+                    {text: "[SUCCESS] Render complete.", class: "log-success"},
+                ];
+
+                for(const line of logLines) {
+                    await new Promise(r => setTimeout(r, 200 + Math.random() * 150));
+                    const span = document.createElement('span');
+                    span.textContent = line.text;
+                    if (line.class) span.className = line.class;
+                    ELS.consoleText.appendChild(span);
+                }
+                
+                await new Promise(r => setTimeout(r, 1000));
+                sequenceStep3_FixLayout();
+            }
+            
+            function sequenceStep3_FixLayout() {
+                // Fade out console
+                ELS.consoleOverlay.style.opacity = '0';
+                
+                // Add rendered class to body to trigger CSS transitions
+                ELS.body.classList.add('rendered');
+                
+                // Add staggered delay to project boxes for the "wave" effect
+                document.querySelectorAll('.project-box').forEach((box, index) => {
+                    box.style.transitionDelay = `${index * 100}ms`;
+                });
+                
+                // Clean up the header glitch
+                clearInterval(STATE.glitchInterval);
+                const headerSpans = ELS.mainHeader.querySelectorAll('span');
+                headerSpans.forEach(span => {
+                    span.textContent = span.dataset.originalChar;
+                });
+                
+                // Start the footer stopwatch
+                startStopwatch();
+            }
+
+
+            // --- FINAL STATE LOGIC ---
+            function startStopwatch() {
+                setInterval(() => {
+                    const now = new Date();
+                    const diff = now - STATE.renderStartTime;
+
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                    
+                    const format = (n) => n.toString().padStart(2, '0');
+                    ELS.stopwatch.textContent = `${format(hours)}:${format(minutes)}:${format(seconds)}`;
+                }, 1000);
+            }
+            
+            function handleSelfClick(e) {
+                // Only trigger if in rendered state
+                if(!ELS.body.classList.contains('rendered')) return;
+                
+                const selfLink = ELS.portfolioBox.querySelector('a');
+                if (e.target === selfLink || selfLink.contains(e.target)) {
+                    e.preventDefault();
+                    if (!ELS.portfolioBox.classList.contains('shake-animation')) {
+                        ELS.portfolioBox.classList.add('shake-animation');
+                        setTimeout(() => ELS.portfolioBox.classList.remove('shake-animation'), 500);
                     }
                 }
-            });
-        }, { 
-            rootMargin: '-50% 0px -50% 0px',
-            threshold: 0 
+            }
+            
+            // --- EVENT LISTENERS ---
+            window.addEventListener('click', triggerRender, { once: true });
+            window.addEventListener('keydown', triggerRender, { once: true });
+            // The self-click listener is attached to the grid because the box itself doesn't exist on load
+            ELS.projectGrid.addEventListener('click', handleSelfClick);
+
+            // --- LET'S GO ---
+            setupBrokenState();
         });
-
-        chambers.forEach(chamber => observer.observe(chamber));
-
-        // Handle avatar movement and walking animation
-        window.addEventListener('scroll', () => {
-            // Set a timer to detect when scrolling stops
-            window.clearTimeout(isScrolling);
-            avatar.classList.add('walk');
-            avatar.classList.remove('stand');
-
-            isScrolling = setTimeout(() => {
-                // If stopped inside a chamber, stand still. Otherwise, stand on the stairs.
-                if (activeChamber) {
-                    updateAvatarPosition(activeChamber);
-                    avatar.classList.remove('walk');
-                    avatar.classList.add('stand');
-                } else {
-                    avatar.classList.remove('walk');
-                    avatar.classList.add('stand');
-                    // Reset position to default staircase if not in a chamber
-                    avatar.style.left = '50%';
-                }
-            }, 150);
-
-            // Make avatar walk down the stairs based on scroll position
-            const scrollPercent = window.scrollY / (document.body.scrollHeight - window.innerHeight);
-            let topPosition = 70 - (scrollPercent * 60);
-            avatar.style.top = `${Math.max(15, topPosition)}vh`;
-
-        }, false);
-        
-        function updateAvatarPosition(chamber) {
-            let left = '50%';
-            switch(chamber.id) {
-                case 'project-glglstats': left = '50%'; break;
-                case 'project-ahuzat': left = '20%'; break;
-                case 'project-orienting': left = '40%'; break;
-                case 'project-jest': left = '65%'; break;
-                case 'project-rhymes': left = '45%'; break;
-                case 'project-portfolio': left = '35%'; break;
-            }
-            avatar.style.left = left;
-        }
-
-        // --- 3. FOOTER TIMER ---
-        // As per prompt, count time relative to a future date.
-        const cataclysmTime = new Date('2025-07-21T01:17:28Z').getTime(); 
-        const timerElement = document.getElementById('cataclysm-timer');
-
-        setInterval(() => {
-            const now = Date.now();
-            let difference = now - cataclysmTime;
-            
-            const isNegative = difference < 0;
-            if (isNegative) {
-                difference = -difference;
-            }
-
-            const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-            
-            let timeString = '';
-            if (days > 0) timeString += `${days}d `;
-            timeString += `${hours}h ${minutes}m ${seconds}s`;
-
-            timerElement.textContent = (isNegative ? '-' : '') + timeString;
-
-        }, 1000);
-    });
     </script>
-
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250721",
+          pageId: "20250722",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
