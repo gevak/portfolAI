@@ -2,559 +2,633 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper // Portfolio</title>
+    <title>Geva Kipper Transit Authority</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
-        /* CSS RESET */
-        *, *::before, *::after {
+        :root {
+            --navy-blue: #0A192F;
+            --light-navy: #112240;
+            --lightest-navy: #233554;
+            --slate: #8892b0;
+            --light-slate: #a8b2d1;
+            --lightest-slate: #ccd6f6;
+            --white: #e6f1ff;
+            --cyan-glow: #64FFDA;
+
+            --python-blue: #3498DB;
+            --ai-magenta: #E040FB;
+            --cpp-orange: #F39C12;
+
+            --font-sans: 'Roboto', -apple-system, system-ui, sans-serif;
+            --panel-width: 450px;
+        }
+
+        * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
-        /* VS CODE THEME & FONT */
-        :root {
-            --font-family: 'Fira Code', monospace;
-            --bg-color: #1e1e1e;
-            --sidebar-bg: #252526;
-            --activity-bar-bg: #333333;
-            --editor-bg: #1e1e1e;
-            --status-bar-bg: #007acc;
-            --text-color: #d4d4d4;
-            --inactive-text: #8a8a8a;
-            --active-item-bg: #2a2d2e;
-            --border-color: #3c3c3c;
-            
-            /* Syntax Highlighting Colors */
-            --comment: #6A9955;
-            --keyword: #569CD6;
-            --string: #CE9178;
-            --type: #4EC9B0;
-            --function: #DCDCAA;
-            --variable: #9CDCFE;
-            --tag: #569CD6;
-            --attr: #9CDCFE;
-            --punc: #d4d4d4;
-            --json-key: #9CDCFE;
-        }
-
         html, body {
+            width: 100%;
             height: 100%;
             overflow: hidden;
-            font-family: var(--font-family);
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-size: 14px;
-            line-height: 1.5;
+            background-color: var(--navy-blue);
+            font-family: var(--font-sans);
+            color: var(--white);
         }
 
-        /* Enable Font Ligatures */
-        body, code, pre {
-            font-feature-settings: "liga" 1, "calt" 1;
-            -webkit-font-smoothing: antialiased;
+        #app-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
         }
 
-        a {
-            color: inherit;
-            text-decoration: none;
+        #main-svg {
+            width: 100%;
+            height: 100%;
+            transition: opacity 0.5s ease-in-out;
         }
 
-        /* ICONS */
-        .icon {
-            width: 1em;
-            height: 1em;
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 8px;
+        #main-svg.dimmed {
+            opacity: 0.5;
         }
 
-        /* MAIN LAYOUT */
-        .vscode-container {
-            display: flex;
+        /* --- Header & Footer --- */
+        .header {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            z-index: 10;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            color: var(--white);
+            font-weight: 700;
+        }
+        .header p {
+            font-size: 1rem;
+            color: var(--slate);
+            max-width: 400px;
+            margin-top: 8px;
+        }
+        .header .ai-subtitle {
+            margin-top: 16px;
+            font-size: 1rem;
+            color: var(--cyan-glow);
+            text-shadow: 0 0 5px var(--cyan-glow), 0 0 10px var(--cyan-glow);
+            font-weight: 400;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            text-align: right;
+            font-size: 0.8rem;
+            color: var(--slate);
+            z-index: 10;
+        }
+        #timer-label {
+            display: block;
+            margin-top: 5px;
+        }
+
+        /* --- SVG Map Styles --- */
+        .line {
+            fill: none;
+            stroke-width: 6px;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: stroke-dashoffset 2s cubic-bezier(0.45, 0, 0.55, 1);
+        }
+        .line-python { stroke: var(--python-blue); }
+        .line-ai { stroke: var(--ai-magenta); }
+        .line-cpp { stroke: var(--cpp-orange); }
+
+        .station {
+            fill: var(--navy-blue);
+            stroke: var(--white);
+            stroke-width: 4px;
+            cursor: pointer;
+            transition: transform 0.2s ease, filter 0.2s ease;
+            filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.7));
+        }
+        .station:hover {
+            transform: scale(1.2);
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 1));
+        }
+        .station.interchange {
+            stroke-width: 6px;
+        }
+        .station.terminus {
+            stroke-width: 8px;
+        }
+        .station.pulsing {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.7)); }
+            50% { filter: drop-shadow(0 0 10px rgba(255, 255, 255, 1)); }
+            100% { filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.7)); }
+        }
+
+        /* --- Tooltip --- */
+        #tooltip {
+            position: absolute;
+            background-color: var(--lightest-navy);
+            color: var(--white);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            pointer-events: none;
+            opacity: 0;
+            transform: translate(-50%, -150%);
+            transition: opacity 0.2s ease;
+            z-index: 100;
+            white-space: nowrap;
+        }
+
+        /* --- Content Panel --- */
+        #content-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: var(--panel-width);
             height: 100vh;
-        }
-
-        /* ACTIVITY BAR (FAR LEFT) */
-        .activity-bar {
-            background-color: var(--activity-bar-bg);
-            width: 50px;
-            padding-top: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex-shrink: 0;
-        }
-        .activity-bar .icon {
-            font-size: 28px;
-            color: var(--text-color);
-            opacity: 0.8;
-            padding: 8px;
-            border-left: 2px solid transparent;
-        }
-        .activity-bar .icon.active {
-            color: white;
-            opacity: 1;
-            border-left-color: white;
-        }
-
-        /* SIDE BAR (FILE EXPLORER) */
-        .sidebar {
-            width: 280px;
-            background-color: var(--sidebar-bg);
-            padding: 10px 0;
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-        }
-        .sidebar-header {
-            padding: 0 15px;
-            margin-bottom: 10px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--inactive-text);
-        }
-        .file-explorer ul {
-            list-style: none;
-        }
-        .file-explorer li {
-            padding: 4px 15px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            user-select: none;
-        }
-        .file-explorer li:hover {
-            background-color: var(--active-item-bg);
-        }
-        .file-explorer li.active {
-            background-color: var(--status-bar-bg);
-            color: white;
-        }
-
-        /* MAIN PANE (EDITOR) */
-        .main-pane {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            background-color: var(--editor-bg);
-        }
-        .tabs {
-            display: flex;
-            background-color: #2D2D2D;
-            flex-shrink: 0;
-        }
-        .tab {
-            padding: 8px 15px;
-            background-color: var(--sidebar-bg);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            color: var(--inactive-text);
-        }
-        .tab.active {
-            background-color: var(--editor-bg);
-            color: var(--text-color);
-        }
-        .editor {
-            flex-grow: 1;
-            padding: 10px;
+            background-color: rgba(17, 34, 64, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transform: translateX(100%);
+            transition: transform 0.5s cubic-bezier(0.45, 0, 0.55, 1);
+            z-index: 50;
+            padding: 60px 40px 40px 40px;
             overflow-y: auto;
         }
-        .editor pre {
-            white-space: pre-wrap;
-            word-wrap: break-word;
+
+        #content-panel.visible {
+            transform: translateX(0);
         }
 
-        /* MARKDOWN STYLES */
-        .markdown-preview {
-            padding: 20px 40px;
-        }
-        .markdown-preview h1 {
-            font-size: 2.5em;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 0.3em;
-            margin-bottom: 0.5em;
-        }
-        .markdown-preview p {
-            font-size: 1.2em;
-            margin-bottom: 1em;
-        }
-        .markdown-preview blockquote {
-            border-left: 4px solid var(--status-bar-bg);
-            padding-left: 1em;
-            margin-left: 0;
-            color: var(--inactive-text);
-            font-style: italic;
-        }
-        .markdown-preview code {
-             background-color: #333;
-             padding: 0.2em 0.4em;
-             border-radius: 3px;
+        .panel-content h2 {
+            color: var(--white);
+            font-size: 2rem;
+            margin-bottom: 15px;
         }
 
+        .panel-content p {
+            color: var(--light-slate);
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
 
-        /* SYNTAX HIGHLIGHTING */
-        .code-content .comment { color: var(--comment); }
-        .code-content .keyword { color: var(--keyword); }
-        .code-content .string { color: var(--string); }
-        .code-content .type { color: var(--type); }
-        .code-content .function { color: var(--function); }
-        .code-content .variable { color: var(--variable); }
-        .code-content .tag { color: var(--tag); }
-        .code-content .attr { color: var(--attr); }
-        .code-content .punc { color: var(--punc); }
-        .code-content .json-key { color: var(--json-key); }
-        .code-content .clickable { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-decoration-color: var(--string); }
-        .code-content .clickable-block { cursor: pointer; }
-        .code-content .clickable-block:hover { background-color: rgba(255, 255, 255, 0.05); }
-
-        /* STATUS BAR (BOTTOM) */
-        .status-bar {
-            height: 25px;
-            background-color: var(--status-bar-bg);
-            color: white;
+        .panel-content .links-container {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 15px;
-            flex-shrink: 0;
-        }
-        .status-bar-left, .status-bar-right {
-            display: flex;
-            align-items: center;
+            flex-direction: column;
             gap: 15px;
         }
-        .status-item {
-            display: flex;
-            align-items: center;
-        }
-        .status-item .icon { margin-right: 5px; }
         
-        /* RESPONSIVENESS */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 220px;
-            }
-            .sidebar-header {
-                font-size: 0.9em;
-            }
-            .file-explorer li {
-                font-size: 0.9em;
-            }
-            .markdown-preview {
-                padding: 15px;
-            }
-             .markdown-preview h1 {
-                font-size: 2em;
-            }
-            .status-bar-right {
-                gap: 5px;
-            }
-            .status-item span {
-                display: none; /* Hide text on small screens, icons remain */
-            }
-            .status-item#credits span, .status-item#uptime-container span {
-                 display: inline; /* Keep these visible */
-            }
-        }
-         @media (max-width: 600px) {
-            .sidebar {
-                display: none; /* Hide sidebar completely */
-            }
-             .activity-bar {
-                 display: none; /* Hide activity bar too */
-             }
-             .status-item#credits span {
-                display: none;
-             }
+        .panel-content .socials-container {
+            display: flex;
+            justify-content: space-around;
+            gap: 15px;
+            margin-top: 30px;
         }
 
+        .panel-content a.button-link, .panel-content a.social-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 18px;
+            background-color: var(--lightest-navy);
+            color: var(--lightest-slate);
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            font-weight: 400;
+        }
+        
+        .panel-content a.button-link:hover, .panel-content a.social-link:hover {
+            background-color: var(--cyan-glow);
+            color: var(--navy-blue);
+        }
+        
+        .panel-content a.button-link:hover .icon-path, 
+        .panel-content a.social-link:hover .icon-path {
+            fill: var(--navy-blue);
+        }
+
+        .panel-content .button-link .icon, .social-link .icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 15px;
+        }
+
+        .panel-content .icon-path {
+            fill: var(--lightest-slate);
+            transition: fill 0.2s ease;
+        }
+        
+        .panel-content .social-link {
+            flex-direction: column;
+            padding: 20px;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .panel-content .social-link .icon {
+            width: 32px;
+            height: 32px;
+            margin-right: 0;
+        }
+
+        #close-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 2rem;
+            color: var(--slate);
+            cursor: pointer;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+        #close-panel:hover {
+            color: var(--cyan-glow);
+            transform: rotate(90deg);
+        }
+
+        .embedded-video {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            border: none;
+            border-radius: 4px;
+            margin-bottom: 25px;
+        }
+
+        /* --- Media Queries for smaller screens --- */
+        @media (max-width: 768px) {
+            :root {
+                --panel-width: 100%;
+            }
+            .header {
+                top: 20px;
+                left: 20px;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+             .header p, .header .ai-subtitle {
+                font-size: 0.9rem;
+            }
+             #content-panel {
+                padding: 50px 20px 20px 20px;
+             }
+        }
     </style>
 </head>
 <body>
-    <!-- SVG ICONS DEFINITIONS -->
-    <svg style="display:none;">
-        <defs>
-            <symbol id="icon-gk" viewBox="0 0 24 24"><text x="2" y="19" font-family="'Fira Code', monospace" font-size="20" font-weight="bold" fill="currentColor">GK</text></symbol>
-            <symbol id="icon-md" viewBox="0 0 16 16"><path fill="currentColor" d="M14.12 1.5H1.88A1.38 1.38 0 0 0 .5 2.88v10.24c0 .76.62 1.38 1.38 1.38h12.24c.76 0 1.38-.62 1.38-1.38V2.88A1.38 1.38 0 0 0 14.12 1.5zM9.62 11h-1.5V7.69L6.31 9.5l-1.12-1.12L7.5 6h2.12v5zM3.5 11V6h1.5v5H3.5zm9 0h-1.5V6H12v5z"/></symbol>
-            <symbol id="icon-py" viewBox="0 0 24 24"><path fill="currentColor" d="M12.89,2.1L10.89,4.1H7.89V7.1H4.89V10.1H2.89V14.1H4.89V17.1H7.89V20.1H10.89L12.89,22.1H16.89L19.89,19.1V16.1H21.89V8.1H19.89V5.1H16.89L12.89,2.1M13,5L15.3,7.3H18.89V10.1H15.89V13.1H12.89V16.1H9.89V12.9L7.1,10.1H9.89V7.1H13V5M11.39,8.6V10.1H12.89V11.6H11.39V13.1H9.89V8.6H11.39M14.39,11.6V13.1H15.89V14.6H14.39V16.1H12.89V11.6H14.39Z" /></symbol>
-            <symbol id="icon-cpp" viewBox="0 0 24 24"><path fill="currentColor" d="M3,3A2,2 0 0,0 1,5V19A2,2 0 0,0 3,21H21A2,2 0 0,0 23,19V5A2,2 0 0,0 21,3H3M7.5,15.5L4,12L7.5,8.5L8.5,9.5L6,12L8.5,14.5L7.5,15.5M13,9.75H14.5V11.25H16V9.75H17.5V8.25H16V6.75H14.5V8.25H13V9.75M19.5,15.5L18.5,14.5L21,12L18.5,9.5L19.5,8.5L23,12L19.5,15.5M13,15.75H14.5V17.25H16V15.75H17.5V14.25H16V12.75H14.5V14.25H13V15.75Z" /></symbol>
-            <symbol id="icon-js" viewBox="0 0 24 24"><path fill="currentColor" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H9.5V11H7.5V17H6V9H11V17M16.5,17H15L12.5,12.5V17H11V9H12.5V14.5L15,9H16.5L13.5,13L16.5,17Z" /></symbol>
-            <symbol id="icon-jsx" viewBox="0 0 24 24"><path fill="currentColor" d="M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M11.65,6.2L9.95,7.7L12.05,9.85L14.2,7.7L12.5,6.2L12.05,6.6L11.65,6.2M17.8,9.95L16.3,10.4L14.15,8.2L16,9.55L17.8,9.95M6.25,9.9L7.75,10.35L9.9,8.2L8.05,9.5L6.25,9.9M17.75,14.2L16.05,12.7L13.95,14.85L12.1,12.7L10.25,14.85L8,12.7L6.25,14.2L7.75,15.7L9.9,13.55L12.1,15.7L14.25,13.55L16.35,15.7L17.75,14.2Z" /></symbol>
-            <symbol id="icon-html" viewBox="0 0 24 24"><path fill="currentColor" d="M13.5,6L14,4H4V20H20V4H14.5L14,6H13.5M6,8H13L12.5,13H8L7.5,18L4.5,17.25L4.75,15.75L6,16.25L6.5,11H11.5L12,6H7L7.5,8H6M14,8V10H16.5L16,15.5L13,16.25V14.75L14.5,14.25L15,10H12V8H14Z" /></symbol>
 
-            <symbol id="icon-json" viewBox="0 0 24 24"><path fill="currentColor" d="M6,2H18A2,2 0 0,1 20,4V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2M8,4V6H6V4H8M8,8V10H6V8H8M8,12V14H6V12H8M18,16V17C18,17.6 17.6,18 17,18H14V20H12V18H7C6.4,18 6,17.6 6,17V16H18M18,7V8C18,8.6 17.6,9 17,9H12V7H18M17,11C17.6,11 18,11.4 18,12V13H12V11H17Z" /></symbol>
-            <symbol id="icon-git-branch" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M9.5 3.25a2.25 2.25 0 1 1-4.5 0a2.25 2.25 0 0 1 4.5 0Zm-2.25.75a.75.75 0 1 0 0-1.5a.75.75 0 0 0 0 1.5Z M7.25 6v1.09c-.3.069-.58.185-.823.352l-.4-.692a.75.75 0 0 0-1.298.75l.4.693A2.25 2.25 0 0 0 5 10.25a2.24 2.24 0 0 0 .528.23l-1.002.445a.75.75 0 1 0 .648 1.362L6.5 11.5v-1.25a2.232 2.232 0 0 0 .75-.2v1.94a2.25 2.25 0 1 0 1.5 0V7.971a.755.755 0 0 0-.25-.571V6Z"></path></symbol>
-            <symbol id="icon-robot" viewBox="0 0 16 16"><path fill="currentColor" d="M4 5.999h.01v.002H4V5.999Zm8 0h-.01v.002H12V5.999ZM5 1a1 1 0 0 0-1 1v1h8V2a1 1 0 0 0-1-1H5Zm1.84 9.175a.75.75 0 0 0-1.047 1.074l.651.642a.84.84 0 0 0 1.189 0l.651-.642a.75.75 0 0 0-1.047-1.074L7.5 10.84l-.66- S.65ZM13 2H3a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2.5a.75.75 0 0 0 .75-.75V9.5h3v2.75a.75.75 0 0 0 .75.75H13a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Zm-1 7.25a.75.75 0 0 0-1.5 0v1a.75.75 0 0 0 1.5 0v-1Z"></path></symbol>
-            <symbol id="icon-clock" viewBox="0 0 16 16"><path fill="currentColor" d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"></path><path fill="currentColor" d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"></path></symbol>
-        </defs>
-    </svg>
+    <div id="app-container">
+        <header class="header">
+            <h1>Geva Kipper</h1>
+            <p>Currently a Software Engineer at Google, focusing on large-scale systems and machine learning applications.</p>
+            <p class="ai-subtitle">This portfolio is procedurally generated daily by an AI. The layout you see today may be gone tomorrow.</p>
+        </header>
 
-    <div class="vscode-container">
-        <!-- ACTIVITY BAR -->
-        <div class="activity-bar">
-            <svg class="icon active"><use href="#icon-gk"></use></svg>
+        <svg id="main-svg" arian-hidden="true"></svg>
+
+        <div id="tooltip"></div>
+
+        <div id="content-panel">
+            <div id="close-panel">&times;</div>
+            <div id="panel-content-target" class="panel-content"></div>
         </div>
 
-        <!-- SIDEBAR -->
-        <div class="sidebar">
-            <div class="sidebar-header">&gt; geva-kipper-portfolio</div>
-            <nav class="file-explorer">
-                <ul id="file-list">
-                    <!-- File items will be injected by JavaScript -->
-                </ul>
-            </nav>
-        </div>
-
-        <!-- MAIN PANE -->
-        <main class="main-pane">
-            <div class="tabs" id="tabs-container">
-                <!-- Tab items will be injected by JavaScript -->
-            </div>
-            <div class="editor" id="editor-content">
-                <!-- File content will be injected by JavaScript -->
-            </div>
-        </main>
+        <footer class="footer">
+            <span id="credit">This daily design was generated by Claude 3 Opus.</span>
+            <span id="timer-label">Time since last redesign: <span id="timer"></span></span>
+        </footer>
     </div>
 
-    <!-- STATUS BAR -->
-    <footer class="status-bar">
-        <div class="status-bar-left">
-            <div class="status-item">
-                <svg class="icon"><use href="#icon-git-branch"></use></svg>
-                <span>main</span>
-            </div>
-        </div>
-        <div class="status-bar-right">
-            <div class="status-item" id="credits">
-                <svg class="icon"><use href="#icon-robot"></use></svg>
-                <span>AI Credits: Designed by Claude</span>
-            </div>
-            <div class="status-item" id="uptime-container">
-                <svg class="icon"><use href="#icon-clock"></use></svg>
-                <span>Session Uptime:</span>
-                <span id="uptime-timer">00:00:00</span>
-            </div>
-        </div>
-    </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
+            // --- DATA --- //
 
-    const fileData = {
-        'README.md': {
-            icon: '#icon-md',
-            content: `
-            <div class="markdown-preview">
-                <h1>Geva Kipper</h1>
-                <p>Software Engineer at Google, crafting intelligent systems and user-centric solutions.</p>
-                <blockquote>This portfolio is an ever-changing experiment, re-designed in its entirety each day by a generative AI.</blockquote>
-            </div>`
-        },
-        'glglstats.py': {
-            icon: '#icon-py',
-            content: `
-            <pre class="code-content"><span class="comment"># PROJECT: GlglStats</span>
-<span class="string">"""
-Measures the repetitiveness of Israeli pop-chart songs based on
-LZ77 compression and visualizes repetition patterns.
-"""</span>
+            const ICONS = {
+                github: `<svg class="icon" viewBox="0 0 24 24"><path class="icon-path" d="M12,2A10,10,0,0,0,2,12C2,16.42,4.87,20.17,8.84,21.5C9.34,21.58,9.5,21.27,9.5,21C9.5,20.77,9.5,20.14,9.5,19.31C6.73,19.91,6.14,17.97,6.14,17.97C5.68,16.81,5.03,16.5,5.03,16.5C4.12,15.88,5.1,15.9,5.1,15.9C6.1,15.97,6.63,16.93,6.63,16.93C7.5,18.45,8.97,18,9.54,17.76C9.63,17.11,9.89,16.67,10.17,16.42C7.95,16.17,5.62,15.31,5.62,11.5C5.62,10.39,6,9.5,6.65,8.79C6.55,8.54,6.2,7.5,6.75,6.15C6.75,6.15,7.59,5.88,9.5,7.17C10.29,6.95,11.15,6.84,12,6.84C12.85,6.84,13.71,6.95,14.5,7.17C16.41,5.88,17.25,6.15,17.25,6.15C17.8,7.5,17.45,8.54,17.35,8.79C18,9.5,18.38,10.39,18.38,11.5C18.38,15.32,16.04,16.16,13.83,16.41C14.16,16.7,14.5,17.3,14.5,18.26C14.5,19.6,14.5,20.68,14.5,21C14.5,21.27,14.66,21.59,15.17,21.5C19.14,20.16,22,16.42,22,12A10,10,0,0,0,12,2Z"/></svg>`,
+                linkedin: `<svg class="icon" viewBox="0 0 24 24"><path class="icon-path" d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4s1.39.63 1.39 1.4v4.93h2.8zM6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69.75 1.68 1.68 0 0 0 0 1.87A1.68 1.68 0 0 0 6.88 8.56zM8.27 18.5H5.5V10.13h2.77v8.37z"/></svg>`,
+                facebook: `<svg class="icon" viewBox="0 0 24 24"><path class="icon-path" d="M12 2.04C6.5 2.04 2 6.53 2 12.06C2 17.06 5.66 21.21 10.44 21.96V14.96H7.9V12.06H10.44V9.85C10.44 7.32 11.93 5.96 14.22 5.96C15.31 5.96 16.45 6.15 16.45 6.15V8.62H15.19C13.95 8.62 13.56 9.39 13.56 10.18V12.06H16.34L15.89 14.96H13.56V21.96A10.01 10.01 0 0 0 22 12.06C22 6.53 17.5 2.04 12 2.04Z"/></svg>`,
+                video: `<svg class="icon" viewBox="0 0 24 24"><path class="icon-path" d="M10,16.5V7.5L16,12M12,2A10,10,0,0,0,2,12A10,10,0,0,0,12,22A10,10,0,0,0,22,12A10,10,0,0,0,12,2Z" /></svg>`,
+                news: `<svg class="icon" viewBox="0 0 24 24"><path class="icon-path" d="M20,22H4a2,2,0,0,1-2-2V4A2,2,0,0,1,4,2H20a2,2,0,0,1,2,2V20A2,2,0,0,1,20,22ZM4,4V20H20V4ZM6,6H18V8H6ZM6,10H18V12H6ZM6,14H14V16H6Z" /></svg>`,
+                website: `<svg class="icon" viewBox="0 0 24 24"><path class="icon-path" d="M10.59,13.41C11,13.8 11,14.44 10.59,14.83C10.2,15.22 9.56,15.22 9.17,14.83L7.17,12.83C6.78,12.44 6.78,11.81 7.17,11.42L9.17,9.41C9.56,9.02 10.2,9.02 10.59,9.41C11,9.8 11,10.44 10.59,10.83L9.67,11.75L14.33,11.75C14.88,11.75 15.33,12.19 15.33,12.75C15.33,13.31 14.88,13.75 14.33,13.75L9.67,13.75L10.59,14.59C10.59,13.41 10.59,13.41 10.59,13.41M12,2A10,10,0,0,0,2,12A10,10,0,0,0,12,22A10,10,0,0,0,22,12A10,10,0,0,0,12,2Z" /></svg>`,
+                extension: `<svg class="icon" viewBox="0 0 24 24"><path class="icon-path" d="M20.5,11H19V7c0-1.1-0.9-2-2-2h-4L9,1L4.5,5.5L1,10h2.5c0,0,0,0,0,0c1.2,0,2,0.8,2,2c0,1.2-0.8,2-2,2H1l3.5,4.5L9,23l4-4h4c1.1,0,2-0.9,2-2v-4h1.5c1.4,0,2.5-1.1,2.5-2.5C23,12.1,21.9,11,20.5,11z" /></svg>`,
+            };
+            
+            const STATIONS_DATA = {
+                glglstats: {
+                    name: "GlglStats",
+                    line: "python",
+                    cx: 250, cy: 250,
+                    description: "An open-source data analysis project that scrapes and visualizes 30 years of Israeli radio charts. It gained media attention and was presented at a data science conference.",
+                    content: [
+                        { type: 'embed', url: 'https://www.youtube.com/embed/jrKAtOsj1Lo' },
+                        { type: 'link', text: 'Visit GlglStats Website', url: 'https://glglstats.geekip.dev', icon: 'website' },
+                        { type: 'link', text: 'Watch Conference Talk', url: 'https://www.youtube.com/watch?v=jrKAtOsj1Lo', icon: 'video' }
+                    ]
+                },
+                ahuzatdibuk: {
+                    name: "Ahuzat Dibuk",
+                    line: "python",
+                    cx: 450, cy: 250,
+                    description: "A humorous data project mapping the most ticketed streets in Tel Aviv, nicknamed 'Ahuzat Dibuk' (Possession Estate), a pun on the city's parking company. It went viral and was featured in major news outlets.",
+                    content: [
+                        { type: 'link', text: 'News Story (Channel 13)', url: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/', icon: 'news' },
+                        { type: 'link', text: 'News Story (Mako)', url: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm', icon: 'news' },
+                        { type: 'link', text: 'Original Facebook Post', url: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943', icon: 'facebook' }
+                    ]
+                },
+                partorienting: {
+                    name: "2D Part Orienting",
+                    line: "cpp",
+                    cx: 650, cy: 200,
+                    description: "Academic research in computational geometry. This work presents an algorithm for finding the minimal-area bounding-box of a 2D shape, crucial for efficient packing and manufacturing.",
+                    content: [
+                        { type: 'link', text: 'Project Page & Code', url: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/', icon: 'website' }
+                    ]
+                },
+                turingjest: {
+                    name: "The Turing Jest",
+                    line: "ai",
+                    cx: 450, cy: 550,
+                    description: "An AI-powered web experiment where users try to distinguish between human-written jokes and those generated by an LLM. It's a playful exploration of creativity and the Turing Test.",
+                    content: [
+                        { type: 'link', text: 'Try The Turing Jest', url: 'https://jest.geekip.dev', icon: 'website' }
+                    ]
+                },
+                rhymesisrael: {
+                    name: "Rhymes of Israel",
+                    line: "ai",
+                    cx: 850, cy: 550,
+                    description: "A Chrome extension that uses a fine-tuned language model to find Hebrew rhymes for any word. A practical tool for poets, songwriters, and writers.",
+                    content: [
+                        { type: 'link', text: 'Get on Chrome Web Store', url: 'https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb', icon: 'extension' }
+                    ]
+                },
+                portfolio: {
+                    name: "Portfolio Project",
+                    line: "interchange",
+                    cx: 650, cy: 400,
+                    description: "This portfolio itself is a project, designed to be a clean, interactive, and single-file web application. It uses SVG and JavaScript for all animations and interactions, with a theme inspired by minimalist transit maps.",
+                    content: [
+                        { type: 'link', text: 'View Source on GitHub', url: 'https://github.com/gevak/geekip.dev', icon: 'github' }
+                    ]
+                },
+                socials: {
+                    name: "Contact & Socials",
+                    line: "terminus",
+                    cx: 850, cy: 400,
+                    description: "Let's connect. You can find me on these platforms.",
+                    content: [
+                        { type: 'social', name: 'GitHub', url: 'https://github.com/gevak', icon: 'github' },
+                        { type: 'social', name: 'LinkedIn', url: 'https://linkedin.com/in/gevakip', icon: 'linkedin' },
+                        { type: 'social', name: 'Facebook', url: 'https://facebook.com/geva.kipper', icon: 'facebook' }
+                    ]
+                }
+            };
+            
+            const PATHS_DATA = [
+                { id: 'python-line', class: 'line-python', d: 'M 250 250 H 450 L 650 400 H 850' },
+                { id: 'ai-line', class: 'line-ai', d: 'M 450 550 L 650 400 L 850 550' },
+                { id: 'cpp-line', class: 'line-cpp', d: 'M 650 200 V 400' }
+            ];
 
-<span class="keyword">class</span> <span class="type">Links</span><span class="punc">:</span>
-    <span class="variable">live_site</span> <span class="punc">=</span> <span class="string clickable" data-link="https://glglstats.geekip.dev">"https://glglstats.geekip.dev"</span>  <span class="comment"># Click to view</span>
-    <span class="variable">pydata_talk</span> <span class="punc">=</span> <span class="string clickable" data-link="https://www.youtube.com/watch?v=jrKAtOsj1Lo">"https://www.youtube.com/watch?v=jrKAtOsj1Lo"</span> <span class="comment"># Click to watch</span>
-</pre>`
-        },
-        'ahuzat_dibuk.py': {
-            icon: '#icon-py',
-            content: `
-            <pre class="code-content"><span class="comment"># PROJECT: Ahuzat Dibuk</span>
-<span class="string">"""
-A Python scraping and data visualization project that collects
-statistics on Tel-Aviv car parking lot occupancy, generating
-heat-maps for residents.
-"""</span>
+            // --- APP STATE & ELEMENTS --- //
 
-<span class="keyword">def</span> <span class="function">view_press_coverage</span><span class="punc">():</span>
-    <span class="comment"># News Stories (Clickable)</span>
-    <span class="variable">channel_13_news</span> <span class="punc">=</span> <span class="string clickable" data-link="https://13tv.co.il/item/news/domestic/internal/parking-902956407/">"https://13tv.co.il/item/news/domestic/internal/parking-902956407/"</span>
-    <span class="variable">mako_nexter</span> <span class="punc">=</span> <span class="string clickable" data-link="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm">"https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm"</span>
-    
-    <span class="comment"># Original Viral Post</span>
-    <span class="variable">secret_tel_aviv</span> <span class="punc">=</span> <span class="string clickable" data-link="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/">"https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/"</span>
-</pre>`
-        },
-        'part_orienting.cpp': {
-            icon: '#icon-cpp',
-            content: `
-            <pre class="code-content"><span class="comment">// PROJECT: 2D Part Orienting</span>
-<span class="comment">/*
- * C++ implementation of an efficient algorithm for constructing
- * a 'push plan' to orient a given polygon, contributed to an
- * open-source computational geometry library.
-*/</span>
+            const svg = document.getElementById('main-svg');
+            const tooltip = document.getElementById('tooltip');
+            const panel = document.getElementById('content-panel');
+            const panelContent = document.getElementById('panel-content-target');
+            const closeButton = document.getElementById('close-panel');
+            const timerEl = document.getElementById('timer');
 
-<span class="keyword">#include</span> <span class="string">&lt;string&gt;</span>
+            const svgNS = "http://www.w3.org/2000/svg";
+            const initialViewBox = { x: 0, y: 0, width: 1200, height: 800 };
+            let animationFrameId = null;
 
-<span class="type">std::string</span> <span class="variable">project_details_and_code</span> <span class="punc">=</span> <span class="string clickable" data-link="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/">"https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/"</span><span class="punc">;</span> <span class="comment">// View on CGL</span>
-</pre>`
-        },
-        'the_turing_jest.js': {
-            icon: '#icon-js',
-            content: `
-            <pre class="code-content"><span class="comment">// PROJECT: The Turing Jest</span>
-<span class="comment">/**
- * An LMSYS-like arena where LLMs compete at making and
- * explaining puns. User ratings determine the funniest model.
- */</span>
+            // --- INITIALIZATION --- //
 
-<span class="keyword">const</span> <span class="variable">siteUrl</span> <span class="punc">=</span> <span class="string clickable" data-link="https://jest.geekip.dev">"https://jest.geekip.dev"</span><span class="punc">;</span> <span class="comment">// Try it out</span>
-</pre>`
-        },
-        'rhymes_of_israel.jsx': {
-            icon: '#icon-jsx',
-            content: `
-            <pre class="code-content"><span class="comment">// PROJECT: Rhymes of Israel (Chrome Extension)</span>
-<span class="comment">/**
- * This extension uses an LLM to rewrite Israeli news site
- * headlines into comedic rhymes, yearbook-style.
- */</span>
+            function setupSVG() {
+                svg.setAttribute('viewBox', `${initialViewBox.x} ${initialViewBox.y} ${initialViewBox.width} ${initialViewBox.height}`);
+                
+                // Create paths
+                const pathGroup = document.createElementNS(svgNS, 'g');
+                PATHS_DATA.forEach(pathData => {
+                    const path = document.createElementNS(svgNS, 'path');
+                    path.setAttribute('id', pathData.id);
+                    path.setAttribute('class', `line ${pathData.class}`);
+                    path.setAttribute('d', pathData.d);
+                    pathGroup.appendChild(path);
+                });
+                svg.appendChild(pathGroup);
+                
+                // Create stations
+                const stationGroup = document.createElementNS(svgNS, 'g');
+                Object.entries(STATIONS_DATA).forEach(([id, stationData]) => {
+                    const circle = document.createElementNS(svgNS, 'circle');
+                    circle.setAttribute('id', `station-${id}`);
+                    circle.dataset.stationId = id;
+                    circle.setAttribute('cx', stationData.cx);
+                    circle.setAttribute('cy', stationData.cy);
+                    circle.setAttribute('r', stationData.line === 'interchange' ? 14 : 10);
+                    
+                    let stationClass = 'station';
+                    if (stationData.line === 'interchange') stationClass += ' interchange';
+                    if (stationData.line === 'terminus') stationClass += ' terminus';
+                    circle.setAttribute('class', stationClass);
+                    
+                    addStationEventListeners(circle, stationData);
+                    stationGroup.appendChild(circle);
+                });
+                svg.appendChild(stationGroup);
 
-<span class="keyword clickable-block" data-link="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb">function</span> <span class="function clickable-block" data-link="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb">installExtension</span><span class="punc clickable-block" data-link="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb">() {</span>
-  <span class="comment clickable-block" data-link="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb">// Add to Chrome
-  window.open("https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb");
-}</span>
-</pre>`
-        },
-        'portfolio.meta.html': {
-            icon: '#icon-html',
-            content: `
-            <pre class="code-content"><span class="comment">&lt;!-- PROJECT: This Website --&gt;</span>
-<span class="comment">&lt;!--
-  You are looking at it! A portfolio built as a VS Code extension.
-  It's a single-page app designed to be as meta as possible.
---&gt;</span>
-
-&lt;<span class="tag">a</span> <span class="attr">href</span>=<span class="string clickable" data-link="https://geekip.dev">"https://geekip.dev"</span>&gt;Link to Itself (for maximum recursion)&lt;/<span class="tag">a</span>&gt;
-</pre>`
-        },
-        'connect.json': {
-            icon: '#icon-json',
-            content: `
-            <pre class="code-content"><span class="punc">{</span>
-  <span class="json-key">"github"</span><span class="punc">:</span> <span class="string clickable" data-link="https://github.com/gevak">"github.com/gevak"</span><span class="punc">,</span>
-  <span class="json-key">"linkedin"</span><span class="punc">:</span> <span class="string clickable" data-link="https://linkedin.com/in/gevakip">"linkedin.com/in/gevakip"</span><span class="punc">,</span>
-  <span class="json-key">"facebook"</span><span class="punc">:</span> <span class="string clickable" data-link="https://facebook.com/geva.kipper">"facebook.com/geva.kipper"</span>
-<span class="punc">}</span>
-</pre>`
-        },
-    };
-
-    const fileListEl = document.getElementById('file-list');
-    const tabsContainerEl = document.getElementById('tabs-container');
-    const editorContentEl = document.getElementById('editor-content');
-
-    const openFiles = new Set();
-    let activeFile = null;
-
-    function openFile(filename) {
-        if (!fileData[filename]) return;
-
-        activeFile = filename;
-        if (!openFiles.has(filename)) {
-            openFiles.add(filename);
-        }
-        
-        render();
-    }
-
-    function render() {
-        // Render file list
-        fileListEl.innerHTML = '';
-        for (const filename in fileData) {
-            const li = document.createElement('li');
-            li.dataset.filename = filename;
-            if (filename === activeFile) {
-                li.classList.add('active');
+                // Start line drawing animation
+                animateLines();
             }
-            li.innerHTML = `<svg class="icon"><use href="${fileData[filename].icon}"></use></svg> ${filename}`;
-            fileListEl.appendChild(li);
-        }
 
-        // Render tabs
-        tabsContainerEl.innerHTML = '';
-        openFiles.forEach(filename => {
-            const tab = document.createElement('div');
-            tab.className = 'tab';
-            tab.dataset.filename = filename;
-            if (filename === activeFile) {
-                tab.classList.add('active');
+            function addStationEventListeners(element, data) {
+                 element.addEventListener('mouseenter', () => {
+                    element.classList.add('pulsing');
+                    tooltip.textContent = data.name;
+                    tooltip.style.opacity = '1';
+                });
+                element.addEventListener('mousemove', (e) => {
+                    const rect = svg.getBoundingClientRect();
+                    const scaleX = rect.width / svg.viewBox.baseVal.width;
+                    const scaleY = rect.height / svg.viewBox.baseVal.height;
+                    
+                    const tooltipX = e.clientX - rect.left;
+                    const tooltipY = e.clientY - rect.top;
+
+                    tooltip.style.left = `${tooltipX}px`;
+                    tooltip.style.top = `${tooltipY}px`;
+                });
+                element.addEventListener('mouseleave', () => {
+                    element.classList.remove('pulsing');
+                    tooltip.style.opacity = '0';
+                });
+                element.addEventListener('click', () => {
+                    handleStationClick(data);
+                });
             }
-            tab.innerHTML = `<svg class="icon"><use href="${fileData[filename].icon}"></use></svg> ${filename}`;
-            tabsContainerEl.appendChild(tab);
+
+            function animateLines() {
+                const paths = svg.querySelectorAll('.line');
+                paths.forEach((path, index) => {
+                    const length = path.getTotalLength();
+                    path.style.strokeDasharray = length;
+                    path.style.strokeDashoffset = length;
+                    setTimeout(() => {
+                        path.style.strokeDashoffset = '0';
+                    }, 200 * (index + 1));
+                });
+            }
+            
+            function startTimer() {
+                const redesignDate = new Date('2025-07-24T01:13:02Z').getTime();
+                
+                setInterval(() => {
+                    const now = Date.now();
+                    const diff = Math.max(0, now - redesignDate);
+                    
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                    
+                    const format = (n) => n.toString().padStart(2, '0');
+                    timerEl.textContent = `${format(hours)}:${format(minutes)}:${format(seconds)}`;
+                }, 1000);
+            }
+
+            // --- INTERACTIVITY & PANEL --- //
+
+            function handleStationClick(stationData) {
+                const zoomLevel = 4;
+                const targetWidth = initialViewBox.width / zoomLevel;
+                const targetHeight = initialViewBox.height / zoomLevel;
+                
+                const targetViewBox = {
+                    x: stationData.cx - targetWidth / 2,
+                    y: stationData.cy - targetHeight / 2,
+                    width: targetWidth,
+                    height: targetHeight
+                };
+
+                animateViewBox(targetViewBox, 600);
+                svg.classList.add('dimmed');
+                
+                populateAndShowPanel(stationData);
+            }
+            
+            function closePanel() {
+                animateViewBox(initialViewBox, 600);
+                svg.classList.remove('dimmed');
+                panel.classList.remove('visible');
+            }
+
+            function populateAndShowPanel(data) {
+                let contentHTML = `<h2>${data.name}</h2><p>${data.description}</p>`;
+                
+                if (data.line === 'terminus') {
+                     contentHTML += '<div class="socials-container">';
+                     data.content.forEach(item => {
+                         contentHTML += `
+                            <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="social-link" >
+                                ${ICONS[item.icon]}
+                                <span>${item.name}</span>
+                            </a>`;
+                     });
+                     contentHTML += '</div>';
+                } else {
+                    const embed = data.content.find(item => item.type === 'embed');
+                    if (embed) {
+                        contentHTML += `<iframe class="embedded-video" src="${embed.url}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+                    }
+                    
+                    contentHTML += '<div class="links-container">';
+                    data.content.filter(item => item.type === 'link').forEach(item => {
+                         contentHTML += `
+                            <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="button-link">
+                                ${ICONS[item.icon]}
+                                <span>${item.text}</span>
+                            </a>`;
+                    });
+                     contentHTML += '</div>';
+                }
+
+                panelContent.innerHTML = contentHTML;
+                panel.classList.add('visible');
+            }
+
+            // --- ANIMATION UTILITY --- //
+            
+            function animateViewBox(target, duration) {
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+                const startViewBoxStr = svg.getAttribute('viewBox').split(' ');
+                const start = {
+                    x: parseFloat(startViewBoxStr[0]),
+                    y: parseFloat(startViewBoxStr[1]),
+                    width: parseFloat(startViewBoxStr[2]),
+                    height: parseFloat(startViewBoxStr[3])
+                };
+
+                let startTime = null;
+
+                function animationStep(timestamp) {
+                    if (startTime === null) startTime = timestamp;
+                    const elapsed = timestamp - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const easedProgress = 0.5 - 0.5 * Math.cos(progress * Math.PI); // Ease in-out
+
+                    const currentX = start.x + (target.x - start.x) * easedProgress;
+                    const currentY = start.y + (target.y - start.y) * easedProgress;
+                    const currentWidth = start.width + (target.width - start.width) * easedProgress;
+                    const currentHeight = start.height + (target.height - start.height) * easedProgress;
+
+                    svg.setAttribute('viewBox', `${currentX} ${currentY} ${currentWidth} ${currentHeight}`);
+
+                    if (progress < 1) {
+                        animationFrameId = requestAnimationFrame(animationStep);
+                    } else {
+                        animationFrameId = null;
+                    }
+                }
+                animationFrameId = requestAnimationFrame(animationStep);
+            }
+
+            // --- EVENT LISTENERS --- //
+            closeButton.addEventListener('click', closePanel);
+            
+            svg.addEventListener('click', (e) => {
+                // If panel is open and click is on SVG background
+                if (panel.classList.contains('visible') && e.target.tagName.toLowerCase() === 'svg') {
+                    closePanel();
+                }
+            });
+
+
+            // --- RUN --- //
+            setupSVG();
+            startTimer();
         });
-
-        // Render editor content
-        if (activeFile) {
-            editorContentEl.innerHTML = fileData[activeFile].content;
-        } else {
-            editorContentEl.innerHTML = '';
-        }
-    }
-
-    // Event Listeners
-    fileListEl.addEventListener('click', (e) => {
-        const li = e.target.closest('li');
-        if (li && li.dataset.filename) {
-            openFile(li.dataset.filename);
-        }
-    });
-
-    tabsContainerEl.addEventListener('click', (e) => {
-        const tab = e.target.closest('.tab');
-        if (tab && tab.dataset.filename) {
-            openFile(tab.dataset.filename);
-        }
-    });
-
-    editorContentEl.addEventListener('click', (e) => {
-        const target = e.target.closest('[data-link]');
-        if (target && target.dataset.link) {
-            window.open(target.dataset.link, '_blank');
-        }
-    });
-
-    // Uptime Timer
-    const uptimeTimerEl = document.getElementById('uptime-timer');
-    const startTime = Date.now();
-
-    function updateUptime() {
-        const now = Date.now();
-        const diff = Math.floor((now - startTime) / 1000);
-        
-        const hours = String(Math.floor(diff / 3600)).padStart(2, '0');
-        const minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-        const seconds = String(diff % 60).padStart(2, '0');
-        
-        uptimeTimerEl.textContent = `${hours}:${minutes}:${seconds}`;
-    }
-
-    setInterval(updateUptime, 1000);
-    updateUptime();
-
-    // Initial load
-    openFile('README.md');
-});
-</script>
+    </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250723",
+          pageId: "20250724",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
