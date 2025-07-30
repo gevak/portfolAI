@@ -2,410 +2,774 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper // Software Engineer</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-
+    <title>ACCESSING PAYLOAD: KIPPER_GEVA.PKG</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
     <style>
-        /* --- Reset & Base Styles --- */
         :root {
-            --bg-color: #1e1e1e;
-            --font-color: #d4d4d4;
-            --gutter-bg: #1e1e1e;
-            --gutter-fg: #858585;
-            --comment-color: #6a9955;
-            --keyword-color: #569cd6;
-            --string-color: #ce9178;
-            --variable-color: #9cdcfe;
-            --property-color: #4fc1ff;
-            --function-color: #dcdcaa;
-            --punctuation-color: #d4d4d4;
-            --number-color: #b5cea8;
-            --link-hover-color: #e6b49e;
-            --stopwatch-color: #c586c0;
-            --icon-color: #b0b0b0;
-            --separator-color: #333333;
+            --black: #0d1117;
+            --green: #29f899;
+            --light-green: #97ffcf;
+            --grey: #21262d;
+            --dark-grey: #161b22;
+            --light-grey: #8b949e;
+            --font-mono: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace;
+            --transition-speed: 0.3s;
         }
 
         * {
             box-sizing: border-box;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
 
         html, body {
+            background-color: var(--black);
+            color: var(--green);
+            font-family: var(--font-mono);
+            font-size: 16px;
             margin: 0;
             padding: 0;
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        a {
+            color: var(--light-green);
+            text-decoration: none;
+            transition: color var(--transition-speed), text-shadow var(--transition-speed);
+        }
+
+        a:hover {
+            color: white;
+            text-shadow: 0 0 8px var(--light-green);
+        }
+
+        #app-container {
+            padding: 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+            opacity: 0;
+            animation: fadeIn 1s forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        /* Initial View & Header */
+        .intro-sequence > p {
+            margin: 0 0 0.5rem 0;
+        }
+        .intro-sequence .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background-color: var(--green);
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        .progress-container {
+            display: none;
+            margin: 1.5rem 0;
+        }
+        .progress-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            animation: flash 0.5s infinite;
+        }
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .progress-bar {
+            width: 100%;
+            height: 3px;
+            background-color: var(--grey);
+            border: 1px solid var(--grey);
+        }
+        .progress-bar-inner {
+            width: 0%;
             height: 100%;
-            background-color: var(--bg-color);
-            color: var(--font-color);
-            font-family: 'JetBrains Mono', monospace;
-            font-variant-ligatures: common-ligatures;
-            font-size: 16px;
+            background-color: var(--green);
+            transition: width 1.5s ease-out;
         }
 
-        /* --- Editor Layout & Atmosphere --- */
-        #editor-container {
-            display: flex;
-            min-height: 100vh;
+        .main-header {
+            opacity: 0;
+            transition: opacity 1s;
+        }
+        .main-header h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            color: white;
+            font-weight: 500;
+        }
+        .main-header .subtitle {
+            font-size: 1rem;
+            margin: 0.5rem 0 0 0;
+            color: var(--light-grey);
+        }
+        .main-header .system-alert {
+            margin-top: 1.5rem;
+            font-style: italic;
+            color: #8b949e80;
+        }
+
+        /* Project File System */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .project-module {
+            background-color: var(--dark-grey);
+            border: 1px solid var(--grey);
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: transform var(--transition-speed), box-shadow var(--transition-speed), border-color var(--transition-speed);
             position: relative;
+            overflow: hidden;
+            max-height: 130px; /* Initial locked height */
+            will-change: max-height;
+        }
+        
+        .project-module.contact-module {
+            grid-column: 1 / -1; /* Span full width on smaller grids */
+        }
+        @media (min-width: 984px) { /* 300*3 + 24*2 + padding */
+            .project-module.contact-module {
+                grid-column: 2 / 3;
+            }
+        }
+        
+        .project-module:hover {
+            transform: translateY(-5px);
+            border-color: var(--green);
+            box-shadow: 0 0 15px 0 #29f89940;
         }
 
-        #editor-container::before {
+        .project-module .locked-content {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100px;
+        }
+        
+        .project-module .filename {
+            font-size: 1.2rem;
+            color: white;
+            font-weight: 500;
+        }
+
+        .project-module .file-meta {
+            font-size: 0.9rem;
+            color: var(--light-grey);
+            margin-top: 0.5rem;
+        }
+        .project-module .status {
+            color: var(--green);
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+        
+        .project-module:hover .status-text {
+            display: none;
+        }
+        .project-module:hover .status-decrypting {
+            display: inline;
+        }
+        .status-decrypting {
+            display: none;
+        }
+
+        /* Glitch Effect on Hover */
+        .project-module::after {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(255, 255, 255, 0.02) 1px, rgba(255, 255, 255, 0.02) 2px);
-            z-index: 1;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg, #00000030, #00000030 1px, transparent 1px, transparent 3px);
+            opacity: 0;
+            animation: glitch 0.3s steps(2, end) infinite;
             pointer-events: none;
         }
-
-        .line-numbers {
-            flex-shrink: 0;
-            padding: 20px 15px 20px 20px;
-            text-align: right;
-            user-select: none;
-            color: var(--gutter-fg);
-            background-color: var(--gutter-bg);
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            z-index: 10;
-            font-size: 1em;
-            line-height: 1.5;
-            border-right: 1px solid var(--separator-color);
+        .project-module:hover::after {
+             opacity: 1;
         }
 
-        .code-wrapper {
-            flex-grow: 1;
-            padding: 20px;
-            z-index: 5;
-            opacity: 0;
-            transition: opacity 0.8s ease-in-out;
+        @keyframes glitch {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-10px); }
+        }
+        
+        /* Expanded Module State */
+        .project-module.expanded {
+            max-height: 1000px; /* Large enough value */
+            cursor: default;
+            padding-bottom: 2rem;
+            transition: max-height 0.7s ease-in-out, padding-bottom 0.7s ease-in-out;
+        }
+        .project-module.expanded:hover {
+            transform: none;
+            box-shadow: 0 0 25px 3px #29f89940;
         }
 
-        .code-wrapper.visible {
-            opacity: 1;
-        }
-
-        .code-content {
-            margin: 0;
-            padding: 0;
-            white-space: pre;
-            font-family: 'JetBrains Mono', monospace;
-            font-variant-ligatures: common-ligatures;
-            font-size: 1em;
-            line-height: 1.5;
-        }
-
-        /* --- Syntax Highlighting --- */
-        .comment { color: var(--comment-color); }
-        .keyword { color: var(--keyword-color); }
-        .variable { color: var(--variable-color); }
-        .string { color: var(--string-color); }
-        .property { color: var(--property-color); }
-        .function { color: var(--function-color); }
-        .punctuation { color: var(--punctuation-color); }
-        .operator { color: var(--keyword-color); }
-        .stopwatch { color: var(--stopwatch-color); font-weight: bold; }
-
-        /* --- Interactive Elements --- */
-        .collapsible .toggle-icon {
-            cursor: pointer;
-            display: inline-block;
-            transition: transform 0.2s ease-in-out;
-            user-select: none;
-            width: 20px;
-            text-align: left;
-        }
-
-        .collapsible.expanded .toggle-icon {
-            transform: rotate(90deg);
-        }
-
-        .collapsible-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
-        }
-
-        a.link {
-            color: var(--string-color);
-            text-decoration: none;
-            position: relative;
-            transition: color 0.2s ease;
-        }
-
-        a.link:hover {
-            color: var(--link-hover-color);
-            text-decoration: underline;
-            text-decoration-thickness: 1px;
-            text-underline-offset: 3px;
-        }
-
-        a.link .icon-new-tab {
-            display: inline-block;
-            width: 1em;
-            height: 1em;
-            vertical-align: -0.15em;
-            margin-left: 0.3em;
-            stroke-width: 2.5;
-            opacity: 0;
-            transform: translateY(2px);
-            transition: opacity 0.2s ease, transform 0.2s ease;
-        }
-
-        a.link:hover .icon-new-tab {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* --- Page-specific Elements --- */
-        #blinking-cursor {
-            font-weight: bold;
-            color: var(--font-color);
-            animation: blink 1s step-end infinite;
+        .decryption-overlay {
             position: absolute;
-            top: 20px;
-            left: 77px; /* Adjusted to be after line number gutter */
-            z-index: 6;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--dark-grey);
+            color: var(--green);
+            font-size: 0.8rem;
+            line-height: 1.1;
+            z-index: 10;
+            overflow: hidden;
+            white-space: pre-wrap;
+            word-break: break-all;
+            display: none;
         }
 
-        @keyframes blink {
-            from, to { opacity: 1; }
-            50% { opacity: 0; }
+        .decrypted-content {
+            display: none;
         }
-
-        .footer-separator {
+        .project-module.expanded .decrypted-content {
             display: block;
-            border: 0;
-            border-top: 1px solid var(--separator-color);
-            margin: 1em 0;
+        }
+        .project-module.expanded .locked-content {
+            display: none;
+        }
+
+        .project-title {
+            font-size: 1.5rem;
+            color: white;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        .project-description {
+            color: var(--light-grey);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        .project-visual {
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100px;
+        }
+        .project-links a, .contact-content .value a {
+            display: block;
+            margin-bottom: 0.5rem;
+            width: fit-content;
+        }
+        .project-links a::before {
+            content: '>> ';
+            color: var(--green);
+            opacity: 0.5;
+        }
+
+        /* Contact Module Specifics */
+        .contact-content .kv-pair {
+            margin-bottom: 0.5rem;
+        }
+        .contact-content .key {
+            color: var(--light-grey);
+        }
+        .contact-content .value {
+            color: var(--light-green);
+        }
+        
+        /* Visuals & Animations */
+
+        /* glglstats.py */
+        #visual-glglstats svg { width: 220px; height: 80px; }
+        #visual-glglstats .waveform {
+            fill: none;
+            stroke: var(--green);
+            stroke-width: 2;
+            animation: wave 2s ease-in-out infinite alternate;
+        }
+        @keyframes wave {
+            0% { d: path("M0,40 C40,0 60,80 100,40 S140,0 180,40 S220,80 220,40"); }
+            100% { d: path("M0,40 C40,80 60,0 100,40 S140,80 180,40 S220,0 220,40"); }
+        }
+        #visual-glglstats .bars {
+            animation: bars-fade 4s ease-in-out infinite;
+        }
+        @keyframes bars-fade {
+            0%, 100% { opacity: 0; } 50% { opacity: 1; }
+        }
+        #visual-glglstats .waveform { animation-delay: -2s; animation-duration: 4s; }
+
+
+        /* ahuzat_dibuk.scrape */
+        #visual-ahuzat_dibuk svg { width: 120px; height: 120px; }
+        #visual-ahuzat_dibuk rect {
+            animation: heatmap-flicker 5s infinite;
+        }
+        @keyframes heatmap-flicker {
+            0%, 100% { fill: #2c7bb6; }
+            25% { fill: #abd9e9; }
+            50% { fill: #ffffbf; }
+            75% { fill: #fdae61; }
+        }
+        #visual-ahuzat_dibuk rect:nth-child(2n) { animation-delay: -1s; }
+        #visual-ahuzat_dibuk rect:nth-child(3n) { animation-delay: -2s; }
+        #visual-ahuzat_dibuk rect:nth-child(4n) { animation-delay: -3s; }
+        #visual-ahuzat_dibuk rect:nth-child(5n) { animation-delay: -4s; }
+
+        /* part_orienting.cpp */
+        #visual-part_orienting svg { width: 140px; height: 100px; }
+        #visual-part_orienting .bounding-box { fill: none; stroke: var(--grey); stroke-width: 1; }
+        #visual-part_orienting .polygon {
+            fill: none;
+            stroke: var(--green);
+            stroke-width: 1.5;
+            transform-origin: 70px 50px;
+            animation: orient 8s ease-in-out infinite;
+        }
+        @keyframes orient {
+            0% { transform: rotate(0deg) translateX(0px) scale(0.8); }
+            50% { transform: rotate(180deg) translateX(20px) scale(1); }
+            100% { transform: rotate(360deg) translateX(0px) scale(0.8); }
+        }
+
+        /* turing_jest.llm */
+        #visual-turing_jest { width: 280px; font-size: 0.9em; }
+        #visual-turing_jest .typed-text span { border-right: .1em solid var(--green); animation: blink 1s steps(1) infinite; }
+        #visual-turing_jest .rating-bar-bg { background-color: var(--grey); height: 8px; margin-top: 10px; }
+        #visual-turing_jest .rating-bar-fg { background-color: var(--green); height: 100%; width: 0%; animation: fill-bar 5s 2s forwards; }
+        @keyframes fill-bar {
+             to { width: 91%; }
+        }
+
+        /* israeli_rhymes.ext */
+        #visual-israeli_rhymes { position: relative; width: 250px; height: 80px; overflow: hidden; }
+        #visual-israeli_rhymes .text-block { color: var(--light-grey); line-height: 1.6; }
+        #visual-israeli_rhymes .text-block .highlight { color: var(--light-green); font-weight: bold; }
+        #visual-israeli_rhymes .scan-bar {
+            position: absolute;
+            top: 0; left: -10%; width: 20px; height: 100%;
+            background: linear-gradient(90deg, transparent, #29f89980, transparent);
+            animation: scan 4s linear infinite;
+        }
+        @keyframes scan {
+            to { left: 110%; }
+        }
+
+        /* meta_portfolio.js */
+        #visual-meta_portfolio { width: 100px; height: 100px; perspective: 400px; }
+        .cube {
+            width: 100%; height: 100%; position: relative;
+            transform-style: preserve-3d;
+            animation: spin-cube 12s infinite linear;
+        }
+        @keyframes spin-cube {
+            from { transform: rotateX(-20deg) rotateY(0deg); }
+            to { transform: rotateX(-20deg) rotateY(360deg); }
+        }
+        .cube-face {
+            position: absolute;
+            width: 100px; height: 100px;
+            border: 1px solid var(--green);
+            background: #29f89910;
+            opacity: 0.8;
+        }
+        .front  { transform: rotateY(  0deg) translateZ(50px); }
+        .back   { transform: rotateY(180deg) translateZ(50px); }
+        .right  { transform: rotateY( 90deg) translateZ(50px); }
+        .left   { transform: rotateY(-90deg) translateZ(50px); }
+        .top    { transform: rotateX( 90deg) translateZ(50px); }
+        .bottom { transform: rotateX(-90deg) translateZ(50px); }
+
+        /* Footer */
+        .footer {
+            margin-top: 4rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--grey);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: var(--light-grey);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        #uptime-timer {
+            font-weight: bold;
+            color: var(--light-green);
         }
 
     </style>
 </head>
 <body>
-
-    <div id="editor-container">
-        <div class="line-numbers" id="lineNumbers"></div>
-        <div id="blinking-cursor">|</div>
-        <div class="code-wrapper" id="codeWrapper">
-            <pre class="code-content" id="codeContent"><code><span class="comment">/*
- *  Author: Geva Kipper
- *  Role:   Software Engineer @ Google, building next-generation conversational AI.
- *
- *  --------------------------------------------------------------------------
- *
- *  This site's design is regenerated daily by a generative AI.
- *  Last build: <span id="buildDate" class="string"></span> - <span class="string">v2.1.3</span>
- *
- */</span>
-
-<span class="collapsible">
-  <div class="toggle-line"><span class="toggle-icon">▶</span> <span class="comment">// A Python project which measures the repetitiveness of Israeli pop-chart songs
-</span>  <div class="toggle-line"><span class="toggle-icon"> </span> <span class="comment">// based on LZ77 compression and visualizes repetition patterns.</span></div>
-  <div class="toggle-line"><span class="toggle-icon"> </span> <span class="keyword">const</span> <span class="function">glglStats</span> <span class="operator">=</span> <span class="punctuation">{</span> <span class="comment">...</span> <span class="punctuation">};</span></div>
-  <div class="collapsible-content">
-  <span class="keyword">const</span> <span class="function">glglStats</span> <span class="operator">=</span> <span class="punctuation">{</span>
-    <span class="property">stack</span><span class="operator">:</span> <span class="punctuation">[</span><span class="string">"Python"</span><span class="punctuation">,</span> <span class="string">"Data Visualization"</span><span class="punctuation">,</span> <span class="string">"LZ77"</span><span class="punctuation">,</span> <span class="string">"Web Scraping"</span><span class="punctuation">],</span>
-    <span class="property">links</span><span class="operator">:</span> <span class="punctuation">{</span>
-      <span class="property">live_site</span><span class="operator">:</span> <span class="string">"</span><a href="https://glglstats.geekip.dev" target="_blank" class="link">https://glglstats.geekip.dev<svg class="icon-new-tab" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a><span class="string">"</span><span class="punctuation">,</span>
-      <span class="property">conference_talk</span><span class="operator">:</span> <span class="string">"</span><a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="link">https://youtube.com/watch?v=jrKAtOsj1Lo<svg class="icon-new-tab" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a><span class="string">"</span>
-    <span class="punctuation">}</span>
-  <span class="punctuation">};</span>
-  </div>
-</span>
-
-<span class="collapsible">
-  <div class="toggle-line"><span class="toggle-icon">▶</span> <span class="comment">// A data-journalism project that scrapes and analyzes public parking data
-</span>  <div class="toggle-line"><span class="toggle-icon"> </span> <span class="comment">// to expose inefficiencies in Tel Aviv's 'Ahuzat HaHof' parking system.</span></div>
-  <div class="toggle-line"><span class="toggle-icon"> </span> <span class="keyword">const</span> <span class="function">ahuzatDibuk</span> <span class="operator">=</span> <span class="punctuation">{</span> <span class="comment">...</span> <span class="punctuation">};</span></div>
-  <div class="collapsible-content">
-  <span class="keyword">const</span> <span class="function">ahuzatDibuk</span> <span class="operator">=</span> <span class="punctuation">{</span>
-    <span class="property">stack</span><span class="operator">:</span> <span class="punctuation">[</span><span class="string">"Python"</span><span class="punctuation">,</span> <span class="string">"Scraping"</span><span class="punctuation">,</span> <span class="string">"Data Analysis"</span><span class="punctuation">,</span> <span class="string">"Geo-Data"</span><span class="punctuation">],</span>
-    <span class="property">links</span><span class="operator">:</span> <span class="punctuation">{</span>
-      <span class="property">publication</span><span class="operator">:</span> <span class="string">"</span><a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="link">https://facebook.com/groups/secrettelaviv...<svg class="icon-new-tab" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a><span class="string">"</span><span class="punctuation">,</span>
-      <span class="property">media_mention_1</span><span class="operator">:</span> <span class="string">"</span><a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="link">https://13tv.co.il/news/parking-investigation<svg class="icon-new-tab" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a><span class="string">"</span><span class="punctuation">,</span>
-      <span class="property">media_mention_2</span><span class="operator">:</span> <span class="string">"</span><a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="link">https://mako.co.il/nexter/parking-app<svg class="icon-new-tab" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a><span class="string">"</span>
-    <span class="punctuation">}</span>
-  <span class="punctuation">};</span>
-  </div>
-</span>
-
-<span class="collapsible">
-  <div class="toggle-line"><span class="toggle-icon">▶</span> <span class="comment">// An academic research project from Tel Aviv University focused on developing
-</span>  <div class="toggle-line"><span class="toggle-icon"> </span> <span class="comment">// an algorithm for optimally orienting 2D parts for fabrication.</span></div>
-  <div class="toggle-line"><span class="toggle-icon"> </span> <span class="keyword">const</span> <span class="function">partOrienting2D</span> <span class="operator">=</span> <span class="punctuation">{</span> <span class="comment">...</span> <span class="punctuation">};</span></div>
-  <div class="collapsible-content">
-  <span class="keyword">const</span> <span class="function">partOrienting2D</span> <span class="operator">=</span> <span class="punctuation">{</span>
-    <span class="property">stack</span><span class="operator">:</span> <span class="punctuation">[</span><span class="string">"C++"</span><span class="punctuation">,</span> <span class="string">"Computational Geometry"</span><span class="punctuation">,</span> <span class="string">"Algorithms"</span><span class="punctuation">],</span>
-    <span class="property">links</span><span class="operator">:</span> <span class="punctuation">{</span>
-      <span class="property">project_page</span><span class="operator">:</span> <span class="string">"</span><a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="link">https://cgl.cs.tau.ac.il/projects/2d-part-orienting<svg class="icon-new-tab" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a><span class="string">"</span>
-    <span class="punctuation">}</span>
-  <span class="punctuation">};</span>
-  </div>
-</span>
-
-<span class="collapsible">
-  <div class="toggle-line"><span class="toggle-icon">▶</span> <span class="comment">// A web-based AI experiment where users try to distinguish between jokes
-</span>  <div class="toggle-line"><span class="toggle-icon"> </span> <span class="comment">// written by a human and those generated by GPT-3.</span></div>
-  <div class="toggle-line"><span class="toggle-icon"> </span> <span class="keyword">const</span> <span class="function">theTuringJest</span> <span class="operator">=</span> <span class="punctuation">{</span> <span class="comment">...</span> <span class="punctuation">};</span></div>
-  <div class="collapsible-content">
-  <span class="keyword">const</span> <span class="function">theTuringJest</span> <span class="operator">=</span> <span class="punctuation">{</span>
-    <span class="property">stack</span><span class="operator">:</span> <span class="punctuation">[</span><span class="string">"JavaScript"</span><span class="punctuation">,</span> <span class="string">"React"</span><span class="punctuation">,</span> <span class="string">"Firebase"</span><span class="punctuation">,</span> <span class="string">"OpenAI API"</span><span class="punctuation">],</span>
-    <span class="property">links</span><span class="operator">:</span> <span class="punctuation">{</span>
-      <span class="property">live_site</span><span class="operator">:</span> <span class="string">"</span><a href="https://jest.geekip.dev" target="_blank" class="link">https://jest.geekip.dev<svg class="icon-new-tab" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a><span class="string">"</span>
-    <span class="punctuation">}</span>
-  <span class="punctuation">};</span>
-  </div>
-</span>
-
-<span class="collapsible">
-  <div class="toggle-line"><span class="toggle-icon">▶</span> <span class="comment">// A Chrome extension that finds rhyming words in Hebrew, helping poets
-</span>  <div class="toggle-line"><span class="toggle-icon"> </span> <span class="comment">// and songwriters. It's the most popular Hebrew rhyming tool online.</span></div>
-  <div class="toggle-line"><span class="toggle-icon"> </span> <span class="keyword">const</span> <span class="function">rhymesOfIsrael</span> <span class="operator">=</span> <span class="punctuation">{</span> <span class="comment">...</span> <span class="punctuation">};</span></div>
-  <div class="collapsible-content">
-  <span class="keyword">const</span> <span class="function">rhymesOfIsrael</span> <span class="operator">=</span> <span class="punctuation">{</span>
-    <span class="property">stack</span><span class="operator">:</span> <span class="punctuation">[</span><span class="string">"JavaScript"</span><span class="punctuation">,</span> <span class="string">"Browser Extension"</span><span class="punctuation">,</span> <span class="string">"NLP"</span><span class="punctuation">],</span>
-    <span class="property">links</span><span class="operator">:</span> <span class="punctuation">{</span>
-      <span class="property">chrome_store</span><span class="operator">:</span> <span class="string">"</span><a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="link">https://chromewebstore.google.com/...<svg class="icon-new-tab" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a><span class="string">"</span>
-    <span class="punctuation">}</span>
-  <span class="punctuation">};</span>
-  </div>
-</span>
-
-<span class="collapsible">
-  <div class="toggle-line"><span class="toggle-icon">▶</span> <span class="comment">// This very website. A portfolio designed to look and feel like a single
-</span>  <div class="toggle-line"><span class="toggle-icon"> </span> <span class="comment">// piece of source code. Wait, is this recursion?</span></div>
-  <div class="toggle-line"><span class="toggle-icon"> </span> <span class="keyword">const</span> <span class="function">thisPortfolio</span> <span class="operator">=</span> <span class="punctuation">{</span> <span class="comment">...</span> <span class="punctuation">};</span></div>
-  <div class="collapsible-content">
-  <span class="keyword">const</span> <span class="function">thisPortfolio</span> <span class="operator">=</span> <span class="punctuation">{</span>
-    <span class="property">stack</span><span class="operator">:</span> <span class="punctuation">[</span><span class="string">"HTML5"</span><span class="punctuation">,</span> <span class="string">"CSS3"</span><span class="punctuation">,</span> <span class="string">"JavaScript"</span><span class="punctuation">,</span> <span class="string">"Generative AI"</span><span class="punctuation">],</span>
-    <span class="property">links</span><span class="operator">:</span> <span class="punctuation">{</span>
-      <span class="property">source_of_truth</span><span class="operator">:</span> <span class="string">"</span><a href="https://geekip.dev" target="_blank" class="link">https://geekip.dev<svg class="icon-new-tab" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a><span class="string">"</span>
-    <span class="punctuation">}</span>
-  <span class="punctuation">};</span>
-  </div>
-</span>
-
-<span class="comment">// --- Connect ---</span>
-
-<span class="keyword">const</span> <span class="variable">socialLinks</span> <span class="operator">=</span> <span class="punctuation">{</span>
-  <span class="property">github</span><span class="operator">:</span>   <span class="string">"</span><a href="https://github.com/gevak" target="_blank" class="link">github.com/gevak<svg class="icon-new-tab" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a><span class="string">"</span><span class="punctuation">,</span>
-  <span class="property">linkedin</span><span class="operator">:</span> <span class="string">"</span><a href="https://linkedin.com/in/gevakip" target="_blank" class="link">linkedin.com/in/gevakip<svg class="icon-new-tab" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a><span class="string">"</span><span class="punctuation">,</span>
-  <span class="property">facebook</span><span class="operator">:</span> <span class="string">"</span><a href="https://facebook.com/geva.kipper" target="_blank" class="link">facebook.com/geva.kipper<svg class="icon-new-tab" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a><span class="string">"</span>
-<span class="punctuation">};</span>
-
-<hr class="footer-separator" />
-
-<span class="comment">/*
- *  This portfolio's design was generated by a large language model.
- *
- *  Time since this version went live: [ <span id="stopwatch" class="stopwatch"></span> ]
- *
- */</span>
-</code></pre>
-        </div>
-    </div>
-
+    <div id="app-container"></div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- Elements ---
-            const codeContentEl = document.getElementById('codeContent');
-            const lineNumbersEl = document.getElementById('lineNumbers');
-            const codeWrapperEl = document.getElementById('codeWrapper');
-            const blinkingCursorEl = document.getElementById('blinking-cursor');
-            const buildDateEl = document.getElementById('buildDate');
-            const stopwatchEl = document.getElementById('stopwatch');
+        const projectData = [
+            {
+                id: 'glglstats',
+                filename: 'glglstats.py',
+                size: '4.2 MB',
+                title: 'GlglStats: LZ77 Music Repetitiveness Analysis',
+                description: 'A Python project that measures the repetitiveness of Israeli pop-chart songs using LZ77 compression and visualizes lyrical patterns.',
+                visual: `
+                    <svg id="visual-glglstats" viewBox="0 0 220 80">
+                        <path class="waveform" d="M0,40 C40,0 60,80 100,40 S140,0 180,40 S220,80 220,40" />
+                        <g class="bars">
+                            <rect x="10" y="30" width="15" height="20" fill="#fdae61"></rect>
+                            <rect x="35" y="10" width="15" height="60" fill="#d7191c"></rect>
+                            <rect x="60" y="25" width="15" height="30" fill="#ffffbf"></rect>
+                            <rect x="85" y="10" width="15" height="60" fill="#d7191c"></rect>
+                            <rect x="110" y="35" width="15" height="10" fill="#abd9e9"></rect>
+                            <rect x="135" y="20" width="15" height="40" fill="#ffffbf"></rect>
+                            <rect x="160" y="10" width="15" height="60" fill="#d7191c"></rect>
+                            <rect x="185" y="30" width="15" height="20" fill="#fdae61"></rect>
+                        </g>
+                    </svg>`,
+                links: [
+                    { text: '--view-site', url: 'https://glglstats.geekip.dev' },
+                    { text: '--watch-presentation: [PyData TLV]', url: 'https://www.youtube.com/watch?v=jrKAtOsj1Lo' },
+                ],
+            },
+            {
+                id: 'ahuzat_dibuk',
+                filename: 'ahuzat_dibuk.scrape',
+                size: '1.8 MB',
+                title: 'Ahuzat Dibuk: Tel-Aviv Parking Data',
+                description: 'Python scraping and data visualization project that generates heat-maps of parking lot occupancy to aid residents.',
+                visual: `
+                    <svg id="visual-ahuzat_dibuk" viewBox="0 0 120 120">
+                        ${Array.from({length: 36}).map((_, i) => `<rect x="${(i % 6) * 20}" y="${Math.floor(i / 6) * 20}" width="18" height="18" />`).join('')}
+                    </svg>`,
+                links: [
+                    { text: '--read-log: [Channel 13 News]', url: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/' },
+                    { text: '--read-log: [Mako]', url: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm' },
+                    { text: '--view-origin: [Facebook Publication]', url: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943' }
+                ],
+            },
+            {
+                id: 'part_orienting',
+                filename: 'part_orienting.cpp',
+                size: '980 KB',
+                title: '2D Part Orienting',
+                description: 'A C++ implementation of an efficient algorithm for constructing a \'push plan\' to orient a polygon, contributed to an open-source computational geometry library.',
+                visual: `
+                    <svg id="visual-part_orienting" viewBox="0 0 140 100">
+                        <rect class="bounding-box" x="1" y="1" width="138" height="98" />
+                        <polygon class="polygon" points="60,20 110,30 100,80 50,90 30,50" />
+                    </svg>`,
+                links: [
+                    { text: '--review-code: [TAU CGL Project Page]', url: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/' },
+                ],
+            },
+            {
+                id: 'turing_jest',
+                filename: 'turing_jest.llm',
+                size: '8.5 MB',
+                title: 'The Turing Jest',
+                description: 'An LMSYS-style arena where Large Language Models compete at generating and explaining puns, with user-based rating and leaderboards.',
+                visual: `
+                    <div id="visual-turing_jest">
+                        <div class="typed-text-container">
+                            <p class="typed-text"></p>
+                        </div>
+                        <div class="rating-bar-bg">
+                            <div class="rating-bar-fg"></div>
+                        </div>
+                    </div>`,
+                links: [
+                    { text: '--launch-arena', url: 'https://jest.geekip.dev' },
+                ],
+            },
+            {
+                id: 'israeli_rhymes',
+                filename: 'israeli_rhymes.ext',
+                size: '750 KB',
+                title: 'Rhymes of Israel',
+                description: 'A Chrome extension utilizing an LLM to rewrite Israeli news headlines into comedic, high-school-yearbook-style rhymes.',
+                visual: `
+                    <div id="visual-israeli_rhymes">
+                        <div class="scan-bar"></div>
+                        <div class="text-block">
+                            Local team wins championship, <span class="highlight">the crowd was quite impressed</span>. <br>
+                            New policy announced today, <span class="highlight">putting theories to the test</span>.
+                        </div>
+                    </div>`,
+                links: [
+                    { text: '--install-extension: [Chrome Web Store]', url: 'https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb' },
+                ],
+            },
+            {
+                id: 'meta_portfolio',
+                filename: 'meta_portfolio.js',
+                size: '256 KB',
+                title: 'Project: Portfolio Source',
+                description: 'The interactive, single-page application you are currently infiltrating. A self-referential experiment in portfolio design.',
+                visual: `
+                    <div id="visual-meta_portfolio">
+                        <div class="cube">
+                            <div class="cube-face front"></div><div class="cube-face back"></div>
+                            <div class="cube-face right"></div><div class="cube-face left"></div>
+                            <div class="cube-face top"></div><div class="cube-face bottom"></div>
+                        </div>
+                    </div>`,
+                links: [
+                    { text: '--execute-self_reference', url: 'https://geekip.dev' },
+                ],
+            },
+            {
+                id: 'contact_methods',
+                filename: 'contact_methods.cfg',
+                size: '1 KB',
+                title: 'Outbound Connections',
+                description: 'Secure channels for professional and social networking.',
+                content: `
+                    <div class="contact-content">
+                        <div class="kv-pair">
+                            <span class="key">github_repo = </span>
+                            <span class="value"><a href="https://github.com/gevak" target="_blank" rel="noopener noreferrer">"github.com/gevak"</a></span>
+                        </div>
+                        <div class="kv-pair">
+                            <span class="key">linkedin_profile = </span>
+                            <span class="value"><a href="https://linkedin.com/in/gevakip" target="_blank" rel="noopener noreferrer">"linkedin.com/in/gevakip"</a></span>
+                        </div>
+                        <div class="kv-pair">
+                            <span class="key">facebook_node = </span>
+                            <span class="value"><a href="https://facebook.com/geva.kipper" target="_blank" rel="noopener noreferrer">"facebook.com/geva.kipper"</a></span>
+                        </div>
+                    </div>`
+            },
+        ];
 
-            // --- Initial Animation ---
+        const appContainer = document.getElementById('app-container');
+        const startupTargetDate = new Date('2025-07-30T01:15:21');
+
+        function typeEffect(element, text, speed, callback) {
+            let i = 0;
+            element.innerHTML = '>&nbsp;';
+            const cursor = document.createElement('span');
+            cursor.className = 'cursor';
+            element.appendChild(cursor);
+
+            function type() {
+                if (i < text.length) {
+                    element.insertBefore(document.createTextNode(text.charAt(i)), cursor);
+                    i++;
+                    setTimeout(type, speed);
+                } else {
+                    if (callback) callback();
+                }
+            }
+            type();
+        }
+
+        function runIntroSequence() {
+            const introDiv = document.createElement('div');
+            introDiv.className = 'intro-sequence';
+            appContainer.appendChild(introDiv);
+            
+            const line1 = document.createElement('p');
+            const line2 = document.createElement('p');
+            const line3 = document.createElement('p');
+            introDiv.append(line1, line2, line3);
+
             setTimeout(() => {
-                blinkingCursorEl.style.display = 'none';
-                codeWrapperEl.classList.add('visible');
-            }, 2000);
+                typeEffect(line1, 'INITIATING_CONNECTION...', 50, () => {
+                   typeEffect(line2, 'AUTHENTICATION_BYPASSED.', 50, () => {
+                       typeEffect(line3, 'ACCESSING SECURE PAYLOAD: KIPPER_GEVA.PKG', 50, () => {
+                          introDiv.querySelector('.cursor').style.display = 'none';
+                          showProgressBar();
+                       });
+                   });
+                });
+            }, 1000); // 1-second delay
+        }
 
-            // --- Line Numbers ---
-            const generateLineNumbers = () => {
-                const lineCount = codeContentEl.innerText.split('\n').length;
-                lineNumbersEl.innerHTML = Array.from({ length: lineCount }, (_, i) => `<span>${i + 1}</span>`).join('');
-            };
+        function showProgressBar() {
+            const progressContainer = document.createElement('div');
+            progressContainer.className = 'progress-container';
+            progressContainer.innerHTML = `
+                <span class="progress-label">[DECRYPTING CORE_IDENTITY...]</span>
+                <div class="progress-bar">
+                    <div class="progress-bar-inner"></div>
+                </div>
+            `;
+            appContainer.appendChild(progressContainer);
+            progressContainer.style.display = 'block';
 
-            // --- Dynamic Content ---
-            const setBuildDate = () => {
-                buildDateEl.textContent = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
-            };
+            const progressBarInner = progressContainer.querySelector('.progress-bar-inner');
+            setTimeout(() => {
+                progressBarInner.style.width = '100%';
+            }, 100);
 
-            const startStopwatch = () => {
-                const startTime = new Date('2025-07-29T01:21:29').getTime();
+            setTimeout(() => {
+                progressContainer.remove();
+                buildMainLayout();
+            }, 2000); // Wait for progress bar animation to finish
+        }
 
-                const update = () => {
-                    const now = new Date().getTime();
-                    const diff = now - startTime;
+        function buildMainLayout() {
+            const headerHTML = `
+                <header class="main-header">
+                    <h1>Geva Kipper</h1>
+                    <p class="subtitle">// Systems Engineer @ Google, focusing on large-scale infrastructure and machine learning models.</p>
+                    <p class="system-alert">// ALERT: This system's front-end is procedurally regenerated by an AI model daily. Visual and logical structure may vary.</p>
+                </header>
+            `;
+            
+            const projectsHTML = `
+                <main class="projects-grid">
+                    ${projectData.map(p => `
+                        <div class="project-module ${p.id === 'contact_methods' ? 'contact-module' : ''}" id="module-${p.id}" data-id="${p.id}">
+                            <div class="decryption-overlay"></div>
+                            <div class="locked-content">
+                                <div class="filename">${p.filename}</div>
+                                <div class="file-meta">
+                                    ${p.size}
+                                    <span class="status">
+                                        <span class="status-text">[ENCRYPTED]</span>
+                                        <span class="status-decrypting">[DECRYPTING...]</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="decrypted-content">
+                                <h2 class="project-title">${p.title}</h2>
+                                <p class="project-description">${p.description}</p>
+                                ${p.visual ? `<div class="project-visual">${p.visual}</div>` : ''}
+                                ${p.content ? p.content : ''}
+                                ${p.links ? `
+                                    <div class="project-links">
+                                        ${p.links.map(link => `<a href="${link.url}" target="_blank" rel="noopener noreferrer">${link.text}</a>`).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </main>
+            `;
 
-                    if (diff < 0) {
-                        stopwatchEl.textContent = "00d : 00h : 00m : 00s";
-                        return;
-                    }
+            const footerHTML = `
+                <footer class="footer">
+                    <span>> [SHELL_LOG]: This interface was designed and rendered by OpenAI's GPT-4 model.</span>
+                    <span id="uptime-timer"></span>
+                </footer>
+            `;
 
-                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            appContainer.innerHTML = headerHTML + projectsHTML + footerHTML;
+            const mainHeader = appContainer.querySelector('.main-header');
+            setTimeout(() => {
+                mainHeader.style.opacity = 1;
+            }, 100);
 
-                    const pad = (num) => String(num).padStart(2, '0');
+            addEventListeners();
+            startUptimeTimer();
+        }
 
-                    stopwatchEl.textContent = `${pad(days)}d : ${pad(hours)}h : ${pad(minutes)}m : ${pad(seconds)}s`;
-                };
+        function runDecryptionAnimation(module, callback) {
+            const overlay = module.querySelector('.decryption-overlay');
+            overlay.style.display = 'block';
 
-                update();
-                setInterval(update, 1000);
-            };
+            let count = 0;
+            const interval = setInterval(() => {
+                let content = '';
+                for (let i = 0; i < 50; i++) {
+                    content += Math.random().toString(16).substring(2, 10) + ' ';
+                }
+                overlay.textContent = content;
+                count++;
+                if (count > 10) { // Run for ~0.5s
+                    clearInterval(interval);
+                    overlay.style.display = 'none';
+                    if (callback) callback();
+                }
+            }, 50);
+        }
+        
+        function handleJestAnimation(module) {
+             const textEl = module.querySelector('.typed-text');
+             if(!textEl || textEl.textContent.length > 0) return; // Already animated
+             
+             const text = "Why did the scarecrow win an award? ...Because he was outstanding in his field.";
+             let i = 0;
+             textEl.innerHTML = '<span></span>';
+             const cursorSpan = textEl.querySelector('span');
 
-            // --- Collapsible Sections ---
-            const setupCollapsibles = () => {
-                const collapsibles = document.querySelectorAll('.collapsible');
-                collapsibles.forEach(collapsible => {
-                    const toggleLine = collapsible.querySelector('.toggle-line');
-                    const content = collapsible.querySelector('.collapsible-content');
-                    const icon = collapsible.querySelector('.toggle-icon');
+             function typeJest() {
+                 if (i < text.length) {
+                     cursorSpan.insertAdjacentText('beforebegin', text.charAt(i));
+                     i++;
+                     setTimeout(typeJest, 40 + Math.random() * 30);
+                 } else {
+                     cursorSpan.style.animation = 'blink 1s step-end infinite';
+                 }
+             }
+             typeJest();
+        }
 
-                    // Set initial state based on class and calculate maxHeight
-                    if (collapsible.classList.contains('expanded')) {
-                        content.style.maxHeight = content.scrollHeight + 'px';
-                    }
 
-                    toggleLine.addEventListener('click', () => {
-                        collapsible.classList.toggle('expanded');
-                        if (collapsible.classList.contains('expanded')) {
-                            icon.innerHTML = '▼';
-                            content.style.maxHeight = content.scrollHeight + 'px';
-                        } else {
-                            icon.innerHTML = '▶';
-                            content.style.maxHeight = '0px';
+        function addEventListeners() {
+            document.querySelectorAll('.project-module').forEach(module => {
+                module.addEventListener('click', (e) => {
+                    if (module.classList.contains('expanded')) return;
+
+                    // Don't expand if a link inside was clicked
+                    if (e.target.closest('a')) return;
+
+                    runDecryptionAnimation(module, () => {
+                        module.classList.add('expanded');
+                        if (module.dataset.id === 'turing_jest') {
+                            handleJestAnimation(module);
                         }
                     });
-                });
-            };
+                }, { once: true }); // Make the primary click expansion a one-time event
+            });
+        }
+        
+        function updateUptimeTimer() {
+            const timerEl = document.getElementById('uptime-timer');
+            if (!timerEl) return;
 
-            // --- Initialization ---
-            generateLineNumbers();
-            setBuildDate();
-            startStopwatch();
-            setupCollapsibles();
+            const now = new Date();
+            const diff = now - startupTargetDate;
 
-        });
+            const isFuture = diff < 0;
+            const ms = Math.abs(diff);
+
+            const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+
+            const label = isFuture ? 'SYSTEM_ONLINE_IN' : 'SYSTEM_UPTIME';
+            timerEl.textContent = `${label}: ${days}d ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
+        }
+
+        function startUptimeTimer() {
+            updateUptimeTimer();
+            setInterval(updateUptimeTimer, 1000);
+        }
+
+        document.addEventListener('DOMContentLoaded', runIntroSequence);
+
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250729",
+          pageId: "20250730",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
