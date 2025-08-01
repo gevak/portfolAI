@@ -2,625 +2,892 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - The Geva Kipper Metro</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Fira+Code&display=swap" rel="stylesheet">
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-
+    <title>Geva Kipper - The Celestial Code</title>
     <style>
         :root {
-            --bg-color: #1A1A1A;
-            --text-color: #FFFFFF;
-            --header-font: 'Montserrat', sans-serif;
-            --monospace-font: 'Fira Code', monospace;
-            --panel-bg: rgba(20, 20, 20, 0.85);
-
-            --line-python: #FF8C00; /* Vibrant Orange */
-            --line-ai: #00FFFF; /* Electric Blue / Cyan */
-            --line-cpp: #32CD32; /* Emerald Green */
-            --line-webdev: #FF00FF; /* Magenta */
-            --line-connect: #808080; /* Cool Grey */
+            --cyan-glow: #00ffff;
+            --deep-indigo: #0a0a23;
+            --text-color: #e0e0e0;
+            --panel-bg: rgba(10, 10, 25, 0.75);
+            --border-glow: rgba(0, 255, 255, 0.5);
         }
 
-        /* --- Base & Layout --- */
+        * {
+            box-sizing: border-box;
+        }
+
         html, body {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden;
-            background-color: var(--bg-color);
+            overflow: hidden; /* Hide main scrollbar, GSAP will create a virtual one */
+            background-color: var(--deep-indigo);
             color: var(--text-color);
-            font-family: var(--header-font);
+            font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
         }
 
-        body {
-            background-image:
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 50px 50px;
-            position: relative;
-        }
-
-        .map-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            cursor: grab;
-        }
-        .map-container.zooming {
-             cursor: default;
-        }
-
-        .map-dimmer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: black;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
-            pointer-events: none;
-        }
-        .map-dimmer.is-active {
-            opacity: 0.6;
-            pointer-events: auto;
-        }
-
-        /* --- Header --- */
-        .site-header {
+        canvas {
             position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 0;
+            left: 0;
+            outline: none;
+        }
+
+        #scroll-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            /* Give it a very large height to create a scrollbar */
+            height: 1000vh;
+            z-index: 10;
+        }
+
+        .overlay-ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Let clicks pass through to the canvas */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             text-align: center;
-            z-index: 100;
-            pointer-events: none;
+            z-index: 2;
         }
 
-        .site-header h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin: 0;
-            color: var(--text-color);
-        }
-
-        .site-header .role {
-            font-size: 1.2rem;
-            font-weight: 400;
-            margin: 5px 0 10px;
-        }
-
-        .site-header .ai-subtitle {
-            font-family: var(--monospace-font);
-            font-size: 0.9rem;
-            color: var(--line-ai);
-            animation: pulse-glow 2s infinite ease-in-out;
-        }
-
-        .ai-subtitle .cursor {
-            display: inline-block;
-            width: 10px;
-            height: 1em;
-            background-color: var(--line-ai);
-            margin-left: 5px;
-            animation: blink 1s steps(1) infinite;
-            vertical-align: text-bottom;
-        }
-
-        @keyframes pulse-glow {
-            0%, 100% { text-shadow: 0 0 5px var(--line-ai), 0 0 10px var(--line-ai); }
-            50% { text-shadow: 0 0 10px var(--line-ai), 0 0 20px var(--line-ai); }
-        }
-
-        @keyframes blink {
-            50% { opacity: 0; }
+        .header-content {
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
         }
         
-        /* --- Footer --- */
-        .site-footer {
+        .header-content h1 {
+            font-size: 3rem;
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: #ffffff;
+            /* This will be replaced by the 3D text, but acts as a fallback */
+            display: none; 
+        }
+
+        .header-content .subtitle {
+            font-size: 1.1rem;
+            font-weight: 300;
+            max-width: 600px;
+            margin: 20px auto 0 auto;
+            line-height: 1.6;
+        }
+
+        .header-content .ai-subtitle {
+            margin-top: 25px;
+            font-size: 0.9rem;
+            font-style: italic;
+            color: var(--cyan-glow);
+            text-shadow: 0 0 8px var(--cyan-glow);
+            animation: pulse 3s infinite ease-in-out;
+        }
+
+        #scroll-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            z-index: 5;
+            font-size: 0.8rem;
+            opacity: 0.7;
+            animation: bounce 2s infinite;
+        }
+        
+        #project-panel {
+            position: fixed;
+            top: 50%;
+            left: 5vw;
+            transform: translateY(-50%) translateX(-150%); /* Start off-screen */
+            width: 350px;
+            max-width: 90vw;
+            padding: 25px 30px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2), inset 0 0 15px rgba(0, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: auto; /* Enable interaction only for the panel */
+            z-index: 3;
+            transition: backdrop-filter 0.5s, -webkit-backdrop-filter 0.5s;
+        }
+
+        #project-panel.right {
+            left: auto;
+            right: 5vw;
+        }
+
+        #project-panel h2 {
+            font-size: 1.8rem;
+            margin: 0 0 15px 0;
+            color: #fff;
+            text-shadow: 0 0 5px var(--cyan-glow);
+        }
+
+        #project-panel p {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin: 0 0 25px 0;
+        }
+        
+        .project-links {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .project-links a {
+            display: inline-block;
+            padding: 12px 20px;
+            text-decoration: none;
+            color: var(--cyan-glow);
+            border: 1px solid var(--cyan-glow);
+            border-radius: 5px;
+            background: rgba(0, 255, 255, 0.1);
+            text-align: center;
+            font-weight: 500;
+            transition: background-color 0.3s, color 0.3s, box-shadow 0.3s, transform 0.2s;
+        }
+
+        .project-links a:hover {
+            background-color: var(--cyan-glow);
+            color: var(--deep-indigo);
+            box-shadow: 0 0 15px var(--cyan-glow);
+            transform: translateY(-2px);
+        }
+        
+        .footer {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
+            padding: 10px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 20px;
-            background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+            font-family: 'Courier New', Courier, monospace;
             font-size: 0.8rem;
-            color: #aaa;
-            z-index: 100;
-            pointer-events: none;
-        }
-
-        .site-footer .stopwatch {
-            font-family: var(--monospace-font);
-        }
-
-        /* --- Interactive Map SVG --- */
-        .metro-line {
-            fill: none;
-            stroke-width: 6px;
-            stroke-linejoin: round;
-            stroke-linecap: round;
-        }
-        
-        .station-group {
-            cursor: pointer;
-            transition: transform 0.2s ease-out;
-        }
-
-        .station-circle {
-           stroke: var(--bg-color);
-           stroke-width: 4px;
-           transition: r 0.2s ease-out;
-        }
-        
-        .station-group:hover .station-circle {
-            r: 15;
-            animation: pulse-station 1.5s infinite;
-        }
-        
-        @keyframes pulse-station {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-
-
-        .station-interchange {
-            r: 14;
-            stroke-width: 5px;
-            stroke: white;
-        }
-
-        .station-terminus {
-            stroke: white;
-            stroke-width: 4px;
-        }
-
-        .tooltip {
-            position: absolute;
-            background-color: rgba(0, 0, 0, 0.8);
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            padding: 5px 10px;
-            color: white;
-            font-size: 0.9rem;
-            pointer-events: none;
+            color: rgba(255, 255, 255, 0.5);
+            z-index: 4;
             opacity: 0;
-            transition: opacity 0.2s;
-            z-index: 200;
         }
 
-        /* --- Details Panel --- */
-        .details-panel {
-            position: fixed;
-            top: 0;
-            right: 0;
-            width: 40%;
-            height: 100vh;
-            background-color: var(--panel-bg);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            transform: translateX(100%);
-            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
-            z-index: 150;
-            padding: 40px;
-            box-sizing: border-box;
-            overflow-y: auto;
-            color: var(--text-color);
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .details-panel.is-open {
-            transform: translateX(0);
-        }
-
-        .panel-close-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 2rem;
-            color: #aaa;
-            cursor: pointer;
-            transition: color 0.2s, transform 0.2s;
-            line-height: 1;
-        }
-        .panel-close-btn:hover {
-            color: white;
-            transform: rotate(90deg);
-        }
-
-        .panel-content {
-            flex-grow: 1;
-        }
-
-        .panel-content h2 {
-            font-size: 2.2rem;
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
-
-        .panel-content p {
-            font-size: 1.1rem;
-            line-height: 1.6;
-            color: #ddd;
-        }
-        
-        .panel-content .media-embed {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            border: none;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-
-        .panel-links {
-            margin-top: 30px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        
-        .panel-links a.button, .panel-links a.icon-button {
-            display: block;
-            padding: 15px 20px;
-            background-color: rgba(255, 255, 255, 0.1);
-            text-align: center;
-            text-decoration: none;
-            color: var(--text-color);
-            border-radius: 5px;
-            transition: background-color 0.3s, transform 0.2s;
-            font-weight: 700;
-        }
-
-        .panel-links a.button:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-        }
-        
-        .panel-links .icon-button-group {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-
-        .panel-links a.icon-button {
-            background-color: transparent;
-            padding: 10px;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-         .panel-links a.icon-button:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            transform: scale(1.05);
-        }
-
-        .panel-links a.icon-button svg {
-            width: 40px;
-            height: 40px;
-            fill: white;
-        }
-        
-        /* Media Queries for smaller screens */
-        @media (max-width: 1024px) {
-            .details-panel {
-                width: 60%;
+        @keyframes pulse {
+            0%, 100% {
+                text-shadow: 0 0 8px var(--cyan-glow);
+                opacity: 1;
             }
-             .site-header h1 { font-size: 2rem; }
-             .site-header .role { font-size: 1rem; }
+            50% {
+                text-shadow: 0 0 15px var(--cyan-glow);
+                opacity: 0.8;
+            }
         }
-
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateX(-50%) translateY(0);
+            }
+            40% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+            60% {
+                transform: translateX(-50%) translateY(-5px);
+            }
+        }
+        
         @media (max-width: 768px) {
-            .details-panel {
-                width: 95%;
+            .header-content .subtitle {
+                font-size: 1rem;
             }
-            .site-header {
-                padding: 0 10px;
+            #project-panel {
+                width: 90vw;
+                left: 5vw;
+                right: 5vw;
+                transform: translateY(-50%) translateX(0) scale(0.8); /* Center and scale down */
             }
-            .site-header h1 { font-size: 1.5rem; }
-            .site-header .role { font-size: 0.9rem; }
-            .ai-subtitle { font-size: 0.8rem; }
-            .site-footer { flex-direction: column; text-align: center; gap: 5px; padding: 5px; }
-
+            #project-panel.right {
+                left: 5vw;
+                right: 5vw;
+            }
         }
-
     </style>
 </head>
 <body>
 
-    <header class="site-header">
-        <h1>Geva Kipper</h1>
-        <p class="role">Solving complex problems with code at Google.</p>
-        <p class="ai-subtitle">This site is programmatically re-designed each day by AI. Layout is ever-changing.<span class="cursor"></span></p>
-    </header>
-
-    <main class="map-container" id="map-container">
-        <div class="map-dimmer" id="map-dimmer"></div>
-        <svg id="metro-map-svg" width="100%" height="100%"></svg>
-    </main>
+    <div id="scroll-container"></div>
     
-    <div class="tooltip" id="tooltip"></div>
-
-    <aside class="details-panel" id="details-panel">
-        <div class="panel-close-btn" id="panel-close-btn">&times;</div>
-        <div class="panel-content" id="panel-content">
-            <!-- Content will be injected here by JavaScript -->
+    <div class="overlay-ui">
+        <div class="header-content">
+            <!-- 3D text will appear here -->
+            <p class="subtitle">A software engineer at Google developing next-generation infrastructure for large-scale systems.</p>
+            <p class="ai-subtitle">This portfolio is procedurally generated and redesigned by an AI each day. The journey is always new.</p>
         </div>
-    </aside>
+    </div>
+    
+    <div id="scroll-indicator">Scroll to Explore</div>
 
-    <footer class="site-footer">
-        <div class="llm-credit">Site design generated by a large language model.</div>
-        <div class="stopwatch">Time since last manual update: <span id="stopwatch-timer"></span></div>
-    </footer>
+    <div id="project-panel">
+        <h2 id="project-title"></h2>
+        <p id="project-description"></p>
+        <div class="project-links" id="project-links"></div>
+    </div>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    <div class="footer">
+        <div id="footer-design">Design by Gemini, an AI by Google.</div>
+        <div id="footer-stopwatch"></div>
+    </div>
+    
+    <audio id="ambient-sound" loop>
+        <source src="data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjQ1LjEwMAAAAAAAAAAAAAAA//tQwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//tQwUAALHYgGAAAJhSgRgAIAYFkYAB1AFABAAADGZnb3mAAAACE8ADSAAAIEAAAQAAAAAAD1mZnb3mAAAACE8ADSAAAMIAAQAAAAAA//tQwUoAAFy9gHAAABiSiDAAIAQFY4ADqAIAAAAADERZnb3mAAAACE8ADSAAACgAAAQAAAAAAAAAAOVZnb3mAAAACE8ADSAAAMQAAQAAAAAARVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//tQwVoAAFyRgDAAABiChTAAIAQFYRADqAIAAAAADFpZnb3mAAAACE8ADSAAALgAAAQAAAAAAADtVZnb3mAAAACE8ADSAAAMQAQAAAAAAZVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//tQwVoAAFyRgDAAABiChTAAIAQFYRADqAIAAAAAA9pZnb3mAAAACE8ADSAAALgAAAQAAAAAAADH1Znb3mAAAACE8ADSAAAMoAQAAAAAAXVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV" type="audio/mpeg">
+    </audio>
 
-        // --- DATA ---
-        const metroData = {
-            stations: [
-                { id: 'glglstats', name: 'GlglStats', lines: ['python', 'ai'], content: {
-                    title: 'GlglStats',
-                    description: 'A Python project that measures the repetitiveness of Israeli pop-chart songs using LZ77 compression, featuring interactive visualizations of lyrical patterns.',
-                    media: '<iframe class="media-embed" src="https://www.youtube.com/embed/jrKAtOsj1Lo" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>',
-                    links: [
-                        { label: 'Explore the Data', url: 'https://glglstats.geekip.dev' }
-                    ]
-                }},
-                { id: 'ahuzat', name: 'Ahuzat Dibuk', lines: ['python'], content: {
-                    title: 'Ahuzat Dibuk',
-                    description: 'A data scraping and visualization project that collects real-time occupancy statistics for Tel-Aviv parking lots, generating predictive heat-maps for residents.',
-                    links: [
-                        { label: 'Channel 13 News Story', url: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/' },
-                        { label: 'Mako News Coverage', url: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm' },
-                        { label: 'Original Facebook Publication', url: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943' }
-                    ]
-                }},
-                { id: 'orienting', name: '2D Part Orienting', lines: ['cpp'], content: {
-                    title: '2D Part Orienting',
-                    description: 'An efficient C++ algorithm implementation for constructing a \'push plan\' to orient any given polygon, contributed to an open-source computational geometry library.',
-                    links: [
-                        { label: 'View Code & Research', url: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/' }
-                    ]
-                }},
-                { id: 'jest', name: 'The Turing Jest', lines: ['ai'], content: {
-                    title: 'The Turing Jest',
-                    description: 'An LMSYS-style arena where large language models compete to generate and explain puns. User votes determine the wittiest AI.',
-                    links: [
-                        { label: 'Visit the Arena', url: 'https://jest.geekip.dev' }
-                    ]
-                }},
-                { id: 'rhymes', name: 'Rhymes of Israel', lines: ['ai'], content: {
-                    title: 'Rhymes of Israel',
-                    description: 'A Chrome extension that uses an LLM to humorously rewrite Israeli news headlines into rhyming couplets, in the style of a high-school yearbook.',
-                    links: [
-                        { label: 'Install The Extension', url: 'https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb' }
-                    ]
-                }},
-                { id: 'portfolio', name: 'geekip.dev (This Site)', lines: ['webdev'], content: {
-                    title: 'The Ever-Changing Portfolio',
-                    description: 'You\'re looking at it. This interactive portfolio is a single-page application built with modern web technologies and designed around the concept of a subway map.',
-                    links: [
-                        { label: 'Reload a New Layout', url: 'https://geekip.dev' }
-                    ]
-                }},
-                { id: 'connect', name: 'Connect', lines: ['connect'], content: {
-                    title: 'Get In Touch',
-                    description: 'Connect with me on the following platforms.',
-                    links: [
-                        { type: 'icon', label: 'GitHub', url: 'https://github.com/gevak', icon: '<svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>' },
-                        { type: 'icon', label: 'LinkedIn', url: 'https://linkedin.com/in/gevakip', icon: '<svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"></path></svg>' },
-                        { type: 'icon', label: 'Facebook', url: 'https://facebook.com/geva.kipper', icon: '<svg viewBox="0 0 24 24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"></path></svg>' }
-                    ]
-                }},
-            ],
-            lines: {
-                python: { name: 'Python Line', color: 'var(--line-python)', stationIds: ['ahuzat', 'glglstats'] },
-                ai: { name: 'AI/LLM Line', color: 'var(--line-ai)', stationIds: ['rhymes', 'glglstats', 'jest'] },
-                cpp: { name: 'C++ Systems Line', color: 'var(--line-cpp)', stationIds: ['orienting'] },
-                webdev: { name: 'WebDev Line', color: 'var(--line-webdev)', stationIds: ['portfolio', 'portfolio'] }, // Loop
-                connect: { name: 'Connect Line', color: 'var(--line-connect)', stationIds: ['connect'] },
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.164.1/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.164.1/three.module.min.js",
+                "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/"
             }
-        };
-
-        // --- ELEMENTS ---
-        const mapContainer = d3.select("#map-container");
-        const svg = d3.select("#metro-map-svg");
-        const tooltip = d3.select("#tooltip");
-        const detailsPanel = d3.select("#details-panel");
-        const panelContent = d3.select("#panel-content");
-        const panelCloseBtn = d3.select("#panel-close-btn");
-        const mapDimmer = d3.select("#map-dimmer");
-        const g = svg.append("g");
-        
-        // --- LAYOUT GENERATION (seeded by date) ---
-        function seededRandom(seed) {
-            let state = seed % 2147483647;
-            if (state <= 0) state += 2147483646;
-            return () => {
-                state = state * 16807 % 2147483647;
-                return (state - 1) / 2147483646;
-            };
         }
-
-        const date = new Date();
-        const dateSeedString = `${date.getFullYear()}${date.getMonth()}${date.getDate()}`;
-        const seed = parseInt(dateSeedString.split('').reduce((acc, char) => acc + char.charCodeAt(0), ''));
-        const random = seededRandom(seed);
-        
-        const { width, height } = mapContainer.node().getBoundingClientRect();
-        const padding = 150; // Padding from screen edges
-        
-        metroData.stations.forEach(station => {
-            station.x = padding + random() * (width - 2 * padding);
-            station.y = padding + random() * (height - 2 * padding);
-        });
-
-        // --- MAP DRAWING ---
-        const stationMap = new Map(metroData.stations.map(s => [s.id, s]));
-
-        const lineGenerator = d3.line()
-            .x(d => d.x)
-            .y(d => d.y)
-            .curve(d3.curveCatmullRom.alpha(0.5));
-
-        // Draw Lines
-        g.selectAll('.metro-line')
-            .data(Object.values(metroData.lines))
-            .enter()
-            .append('path')
-            .attr('class', 'metro-line')
-            .attr('d', d => lineGenerator(d.stationIds.map(id => stationMap.get(id))))
-            .style('stroke', d => d.color)
-            .style('filter', d => `drop-shadow(0 0 8px ${d.color})`);
-            
-        // Draw Stations
-        const stationGroups = g.selectAll('.station-group')
-            .data(metroData.stations)
-            .enter()
-            .append('g')
-            .attr('class', 'station-group')
-            .attr('transform', d => `translate(${d.x}, ${d.y})`)
-            .on('click', (event, d) => handleStationClick(event, d))
-            .on('mouseover', (event, d) => handleStationMouseover(event, d))
-            .on('mouseout', handleStationMouseout);
-            
-        stationGroups.append('circle')
-            .attr('class', 'station-circle')
-            .attr('r', 10)
-            .style('fill', d => {
-                const firstLine = metroData.lines[d.lines[0]];
-                return firstLine ? firstLine.color : 'white';
-            })
-            .each(function(d) {
-                // Add specific classes for styling
-                if (d.lines.length > 1) d3.select(this).classed('station-interchange', true);
-                if (d.id === 'connect') d3.select(this).classed('station-terminus', true);
-            });
-            
-        // --- INTERACTIVITY & PANEL LOGIC ---
-        const zoom = d3.zoom()
-            .scaleExtent([0.5, 8])
-            .on('zoom', (event) => {
-                g.attr('transform', event.transform);
-            });
-            
-        svg.call(zoom);
-        
-        // Center the initial view
-        const initialTransform = d3.zoomIdentity
-            .translate(width / 2, height / 2)
-            .scale(0.8)
-            .translate(-width / 2, -height / 2);
-        svg.call(zoom.transform, initialTransform);
-        
-        function handleStationClick(event, d) {
-            event.stopPropagation();
-            if (detailsPanel.classed('is-open')) {
-                closePanel();
-            }
-            
-            const scale = 2;
-            const x = width / 2 - d.x * scale;
-            const y = height / 2 - d.y * scale;
-            const transform = d3.zoomIdentity.translate(x, y).scale(scale);
-
-            svg.transition()
-                .duration(750)
-                .call(zoom.transform, transform);
-            
-            openPanel(d);
-        }
-
-        function handleStationMouseover(event, d) {
-            tooltip.style('opacity', 1)
-                   .html(d.name)
-                   .style('left', (event.pageX + 15) + 'px')
-                   .style('top', (event.pageY - 15) + 'px');
-        }
-
-        function handleStationMouseout() {
-            tooltip.style('opacity', 0);
-        }
-
-        function openPanel(stationData) {
-            mapDimmer.classed('is-active', true);
-            detailsPanel.classed('is-open', true);
-            mapContainer.classed('zooming', true);
-
-            const { title, description, media, links } = stationData.content;
-            let linksHtml = '';
-            
-            const iconLinks = links.filter(l => l.type === 'icon');
-            const buttonLinks = links.filter(l => l.type !== 'icon');
-            
-            if (buttonLinks.length > 0) {
-                 linksHtml += buttonLinks.map(link => 
-                    `<a href="${link.url}" target="_blank" class="button">${link.label}</a>`
-                ).join('');
-            }
-            
-            if (iconLinks.length > 0) {
-                 linksHtml += `<div class="icon-button-group">` + iconLinks.map(link => 
-                    `<a href="${link.url}" target="_blank" class="icon-button" aria-label="${link.label}">${link.icon}</a>`
-                ).join('') + `</div>`;
-            }
-
-            panelContent.html(`
-                <h2>${title}</h2>
-                <p>${description}</p>
-                ${media ? media : ''}
-                <div class="panel-links">${linksHtml}</div>
-            `);
-        }
-
-        function closePanel() {
-            detailsPanel.classed('is-open', false);
-            mapDimmer.classed('is-active', false);
-            mapContainer.classed('zooming', false);
-
-            svg.transition()
-                .duration(750)
-                .call(zoom.transform, initialTransform);
-        }
-
-        panelCloseBtn.on('click', closePanel);
-        mapDimmer.on('click', closePanel);
-        
-        // --- FOOTER STOPWATCH ---
-        const stopwatchTimer = document.getElementById('stopwatch-timer');
-        const startTime = new Date('2025-07-31T01:14:39Z').getTime();
-
-        function updateStopwatch() {
-            const now = new Date().getTime();
-            const diff = now - startTime;
-
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-            stopwatchTimer.textContent = 
-                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        }
-
-        setInterval(updateStopwatch, 1000);
-        updateStopwatch();
-    });
     </script>
 
+    <script type="module">
+        import * as THREE from 'three';
+        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+        import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+
+        // --- Asset Data (Base64 Encoded) ---
+        const helvetiker_regular_font = {"glyphs":{" ":{"ha":25,"x_min":0,"x_max":0,"o":""},"​":{"ha":0,"x_min":0,"x_max":0,"o":""},"!":{"ha":30,"x_min":1,"x_max":21,"o":"         A EC FC JC LA NA PA QA RA SA TA UA VA WA XA YB ZB aB bB cB dB eB fC gD hE iF jG lH mI oJ pK qL rM sN uO vP xQ yR zS BT CU DV EW FX GY HZ Ia Jb Kc Ld Me Nf O"},"\"":{"ha":45,"x_min":7,"x_max":37,"o":"   A EC FC OC PC QC RC SC TC UC VC WC XC YC ZD aE bF cG dH eI fJ gK hL iM jN lO mP nQ oR pS rT tU uV wX xY yZ z`"},"#":{"ha":83,"x_min":-1,"x_max":83,"o":"      B FE GE IE JE KE LE ME NE OE PE QE RE SE TE UE VE WE XE YE ZE aE bD cC dB eB fA g@ hC iG jK kO lS mU nW oY p` r` t` u` v` w` x` y` z` z@@@@@@@@DA FA HA JA LA NA PA RA TA VA XA ZA bA dC fH hL jP lT nX p\\ r_ t_ v_ x_ y_ z_ z@@@@@@C EA GA IA KA MA OA QA SA UA WA YA aA cA eA gC iH kL mP oT qX s\\ u_ w_ y@@@@@CA EA GA IA KA MA OA QA SA UA WA YA aA cA eA gC iG kK mO oS qU sW uY w_ y@@cC dD eE fF gG hH iI jJ kK lK mK nL oM pN qO rP sQ tR uS vT wU xW yX zZ"},"$":{"ha":83,"x_min":12,"x_max":70,"o":"         A DA FA HAJA LA NA PA RA TA UA VC XC ZC aD cD eE gF iG kH mI oJ qK sL uM wN yO {P BQ DR FS GU IV KWEW FV GU HT IS KR LQ MP NQ OR PSUQVRWSYTYVXXZY[bZbZ[YXVUTSRQPOONMLKJIHGFEDC@B@B@B@B@B@F@I@L@O@R@U@X@Z@[A]A_ACAEAGAIALAOAQASAUAWAYAaAcAeAgAjAlAnAqAtAvAxAzB`Bd Gf Ii Ll Oo Rr Uu Xx `z cz fz hAi@kClDmFoGpIrJsKtLuMwNyOzQ{S|U~V~V~V~V~U~S{QzNyMwJuIrGoFlDkCiAiCfEiGjIlKnNqPrRtUvWxYz_z`zazcxfvgtfremclbj`h^f]dZ`X]U\\S[QYOWNULSJOHMGKDJCJAJ@IAF@C@A A G J M P S V Y \\ _ c f i l n q t w zB CF"},"%":{"ha":100,"x_min":-1,"x_max":100,"o":" A GB IB KB LB MB NB OB PB QB RB SB TB UBUCVDWEWFXGYHZIZJ[K\\L]M^N_O`PaQbRcSeTfUgVhWiXjYk[l\\m]n^o_p`qarkslsksirhpgofmekdjcibhah_f^d]b[`Y]V\\T[RYPWNULSJPHNGLEKDJCHCGAEACA A DBFBHBJBLBNBPBRBTBVBYB`BcCgClDqDvD{E@FDIDLDODREUGXG_HcHlHpIuIzJCLDLFLHLJLNLPLRLTLVLXLYMZN`OaOcOdPeQgQiQjRlRnRoRqSsSuSvSxT{U@V@W@X@Y@Z@[A\\A]@^A_A`B@C@D@DAFDIDLDPDUHSHUIVKXMZN`PbReSgThVjWlXnZp[r\\t]wbxbvbt`r_p^mZkWgVcU`Q]N[KWHUFPBN@J@F@C A AG@J@N@RAVA_@d@i@n@u@{A"},"&":{"ha":91,"x_min":-2,"x_max":91,"o":"               A EB ED GD ID KD MD OD QD SD TD VD WD XD YD aC bB cA e@ hA jC lF oI rL uO xR {U BYFZH`LdOgUnWs[vc{gBkDgGjJlOpSsWz_D`E`F_G]HZIYJXKWLVMUNSOQORNTMULQJPHMFKDHCG@EA@A B F J N R V Z _ d i n t yC GHLO FUJTMWO`RaUcWeYg[k]m`pbrdsfuhwjxlyo{p}q|s~u~w~y~|~ ~@CAEAHAKAOARAVAZA^A`AcAfAiAlAoArAuAxA|BCBEDFGHHOHUGYH_HeHnHyIELILKMLOMQMSMUMXMZM\\M^NCOFPGQHRISJTLUNWNYO`PaQcReSgThUjVlWmYpZq[r]t_vbxay`{c|f~h C E H K N Q T W Z ] ` c f d f g h i j j k i h f e d c b a ` _ ^ ] \\ [ Z Y W U S QMOKMIMFMCM@@@@BAEAHAKAOARAVA[A_AcAfAiAmApAsAvAzBCBEBGBIBLBOB"},"'":{"ha":25,"x_min":11,"x_max":14,"o":"               A BC CC DC EC FB GA HA I@ J@ K@ L@ MA NA OA P@ Q@ R@ S@ T@ U@ V@ W@ X@ Y@ Z@ [@ \\@ ]@ ^@ __ `_ a_ b_ c_ d` e` f` g` h` i` j` k` l` m_ o_ p^ q^ r^ s^ t^ u] w] x\\ y[ zZ {Y |X }W ~V ~U @T AS"},"(":{"ha":37,"x_min":13,"x_max":23,"o":"         A JC KC LC MC NC OC PC QC RC SC TC UC VC WC XC YD ZD aD bD cE dE eE fF gF hG iH jH kI lJ mJ nK oL pM qM sN tO uP vQ wR xS yT zT {U |V }W ~X _Y BZ C[ D\\ E] F^ G_ H` Ia Jb Kc Ld Me Nf"},")":{"ha":37,"x_min":13,"x_max":23,"o":"         A EB FB GB HB IB JB KB LB MB NB OB PB QB RB SB TB UC VC WC XDXDZD[D\\E]E^E_F`GaHbIcKdLeMfNgOhPiQkQlRmSoTpUqVrWsXtYu[v\\x]z^|`"},"*":{"ha":49,"x_min":1,"x_max":48,"o":"                     A EA FA HA IA JA KA LA MA NA OA PA QA RA SA TA ZA aAZAXAWAUASAQAOAKAEAB A@A@A@A@AAA@B@D@F@H@J@M@P@S@V@Y@[@^A@ACBCECHCJCMCQCU"},"+":{"ha":75,"x_min":-2,"x_max":76,"o":"   A EC FC GE HE IE JE KE ME NE OE QE SE UE WE YE aE cE eD gC iB j@l@nCqGtJuMwO{R@TAUAWAZAaAdAfAhAkAmApAsAvAzBCBEBGBIBLBOBRBUBYB`BcCgCkCoA BEBEGEIEKE"},",":{"ha":25,"x_min":-1,"x_max":11,"o":"                               A BC CC DD ED FC GC HC IC JB KC LB MC NC OD PD QE RE SF TG"},"-":{"ha":41,"x_min":0,"x_max":41,"o":"                        A DB EB FB GB HB IB JB KB LB MB NB OB PB QB RB SB TB UB VB"},".":{"ha":25,"x_min":1,"x_max":8,"o":"_ FE GE HE IE JE KE LE ME NE OE PE QE RE SE TE UE VE WE XE YE"},"/":{"ha":41,"x_min":-1,"x_max":41,"o":"     M DA EA FA GA HA IA JA KA LA NA OA PA QA RA SA TA UA VA WA X@ Y@ Z@ [@ \\B ]C ^D _E `F aG bI cJ dK eL fM hN iO jP kQ lR mS pT qU rV sX tY vZ w[ x\\ y] z^ {` |a ~b"},"0":{"ha":83,"x_min":-2,"x_max":84,"o":" A GB IB KB LB MB NB OB PB QB RB SB TB UBUCVDWEWFXGYHZIZJ[K\\L]M^N_O`PaQbRcSeTfUgVhWiXjYk[l\\m]n^o_p`qarkslsksirhpgofmekdjcibhah_f^d]b[`Y]V\\T[RYPWNULSJPHNGLEKDJCHCGAEACA A DBFBHBJBLBNBPBRBTBVBYB`BcCgClDqDvD{E@FDIDLDODREUGXG_HcHlHpIuIzJCLDLFLHLJLNLPLRLTLVLXLYMZN`OaOcOdPeQgQiQjRlRnRoRqSsSuSvSxT{U@W@Y@[A\\A_AcAeAgAjAlAnAqAtAvAxAzB`Bd Gf Ii Ll Oo Rr Uu Xx `z cz fz h@i@k@m@n@o@q@r@s@t@v@x@z@{@|A~A~A~A~A~A{A|BzDyFwHuJtLrNoPmRkSiUhWgXfYd[b\\`_]}A|@xA@C@E@G@I@K@M@O@Q@S@U@W@Y@[A\\A^A`AbAdAfAhAjAlAnAqAtAwAyAzB`Bd Gf Hh Jj Ll Nn Pp Rr Tt Vv Xy Z{ _} `} a~ c~ e~ g~ j~ l"},"1":ha83,x_min:-2,x_max:58,o:"      _@`CcEeGgIiKkMmOoQqSsUuWwYy[{A]C_E`G`H`I`J`K_L_M_O_Q_S_U_W_Y_Z_\\_]_^__A`B`EaFcHdJeKfLgMhNiO"},"2":ha83,x_min:-2,x_max:84,o:" A FA HAJA LA NA PA RA TA UA VC XC ZC aD cE eF gG iH kI mJ oK qL sM uN wO yP {Q BQ DR FS GU IV KWEVFU HT IS KR LQ MP NQ OR PSUQVRWSYTYVXXZY[bZbZ[YXVUTSRQPOONMLKJIHGFEDCBA@B@B@B@B@@@@CAJAPAXA`AhApAwA{B@BAD@GAJA"},"3":ha83,x_min:-1,x_max:79,o:"         A EC FC HC JC LC NC PC RC TC VB XC ZC aD bE dF fG hH jI lJ nK pL rM tN vO xP zQ BRETFVHXJZN`PcReSgTiUlVnWpXrZu[x^z`|c~g j l o r v zCFFH HJ HL HN HP HR HT HV HX HZ H\\ H^ H_HcHfHiHlHoHrHuHyICIEIGIKIMIPISIWIZI\\I^JaJdJgJkJnJqJuJyKCKGKKKOKSKWKaKcKjKqKvKzLDLHL PLX LmMmMmMmMlMjLgLdL_LWLOJIFCB@A@A@A"},"4":ha83,x_min:-1,x_max:84,o:"   zDAFAHAJALAOARAUA\\A`AcAgAjAmApAtAwAzBCBGBJBNBRBVBZB`BeBkLdLfLhLjLlNoPpRrTtVvYxZz[{A]C_E` G`H`I`J`K`L`M`N`PAOAOAPAOAOAOAOAOAOAPAOAOAOAOAOA"},"5":ha83,x_min:-1,x_max:85,o:"A EAHAKANARAUA[A_AcAfAjAnAsAwA|BCBIBNBTB\\B`BfBjBpBuB{CACHCOFUGXH_HgHpIxJ@JDJHJMJSJYJ]K`KeKiKoKtKyLALGLUL]M`MeMjMrMyNALILOLOULaMhMnMsMxN@NDNGNKNPNUNaNeNlNsNyO@OCOIOMOROWO`OgOnOuO{PAPYP_PdPhPoPuQGQKQOQTQYQ`QfQjQpQtyQzRARE RHR"},"6":ha83,x_min:-1,x_max:84,o:"A ECFC HB JB LB NB PB RB TB UBVCWCYCZC[C\\C]D^E_F`GaHbIcKdMeNgOhPiQkRlSnToVqXsZu[w^y`zazczeygwirjplnmojpkqlrmsnupwqxrzuzwzxz{y|x{y}z} |~~@~A@A@@C@FAIAKALANAPACAREUHWHZK\\N`PcSfUjWn[s`{cAiCoAqQzT}X_\\b]e`hah_g^e]c[`Z]X[VYTWRVPUOTMSLRIOFMEDICIAEACAAA B F H J L N P S"},"7":ha83,x_min:-1,x_max:85,o:"A DAFAHAJALANAPARATAVAZA_AcAfAiAmApAsAvAzBCBEBGBIBLBOBRBUBYB`BcBfChCjClCnCpCqCtDqDqDpDpDoDoCoCjCiChCfCdC`C[CWCRCMCHFCA"},"8":ha83,x_min:-1,x_max:84,o:"      A EC FC HC KC MC OC QC TC VB XC ZCaDbEeGgIiKlMnPqSsUvXz\\B_E`H`K`NaPdSgUjWn[q`uc}fAiClEpHrJvLzNBOFPHRJU MVOXOZObPhSlVpYt`wc~g j m q u yBABDBFBHBJBLBNBPBRBTBVBYB`BcCgClDqDvD{EAFEHEJELEOEPEUFYH_HgHpHuIyJ@JDLHLJLNLQLULXLZN`OaOcOdPeQgQiQjRlRnRpRrStSuSvSwTzUAVBYA^A_AcAeAgAjAlAnAqAuAxA|BCBEBGBJB"},"9":ha83,x_min:-1,x_max:85,o:"               A FB GB IB JB KB LB NB OB PB QB RB SB TB UCVCWCXCZC[C\\C]C^E_F`GaHbIcKdMeNfOhPiQkRlS T V W Y Z \\ ^ ` a c e g h j l n p r t v x zBDFHH I J K M O Q S UUUUUUUUUUUUUUSQUOUKSGRDMCHA@A@A@A C F I L O S V Z _ d i n t yCGFJHQJVLZN`PcReSgThUjVl WpYq[s\\t]v^x_z`{aygxfulrkpiogmekdjcicg`e^c[`Y]W[UZSWPUNSMQJPHNGLEKDJCHCGAEACA"},":":{"ha":25,"x_min":1,"x_max":8,"o":"_ FE GE HE IE JE KE LE ME NE OE PE QE RE SE TE UE VE WE XE YE_ FE GE HE IE JE KE LE ME NE OE PE QE RE SE TE UE VE WE XE YE"},";":{"ha":25,"x_min":-1,"x_max":11,"o":"                               A BC CC DD ED FC GC HC IC JB KC LB MC NC OD PD QE RE SF TGNF MG LH KI JH IG HF GE FD EC DB C@ BA AA@@@? A@BA CBE DHB"},"<":{"ha":75,"x_min":4,"x_max":70,"o":"   yA_A`B`D`E`F`G`H`J`K`L`M`N`O`P`Q`R`S`V`W`Y`Z`[`\\`]`_`a`b`d`e`f`g`i`j`l`m`o`p`q`r`r`q`p`o`m`l`k`j`h`g`f`e`c`b`a``_^_]ZXVTRPNLJGD@B@D@F@H@J@L@N@P@R@T@V@X@Z@[A\\A^A`AbAdAfAhAjAlAnApArAtAvAxAzB`Bd Gf Ii Ll Oo Rr Uu Xx `z cz fz hAi@kClDmFoGpIrJsKtM"},"=":ha75,x_min:-3,x_max:77,o:"                        A DB EB FB GB HB IB JB KB LB MB NB OB PB QB RB SB TB UB VBWBWBWBTBRBPBNBLBJBIBGBEBDWA VA TA RA PA NA LA JA HA FA DA                                           A DB EB FB GB HB IB JB KB LB MB NB OB PB QB RB SB TB UB VBWBWBWBTBRBPBNBLBJBIBGBEBDWA VA TA RA PA NA LA JA HA FA DA"},">":{"ha":75,x_min":4,"x_max":70,"o":"   A BG BIGKIMIOIPIQISITIVIXIZI\\I^I`IbIdIfIhIjIlInIpIrItIvIxIzI`IcIfIiIlIoIrIuIyJ@JCJFJIJNKDLDLDMDNDPDQDRDS DTDUDWDYDaD`D_DYDXDWDUDRDODLDI"},"?":{"ha":58,"x_min":0,"x_max":58,"o":" A DA FA HAJA LA NA PA RA TA UA VC XC ZC aD cD eE gF iG kH mI oJ qK sL uM wN yO {P BQ DR FS GU IV KWEVFU HT IS KR LQ MP NQ OR PRORNRMQ LQKPHMFKDHCG@EA@A B E I M Q U Y ] a e i m q u yBDFHKO@pAsAtAuAvAxAzB`Bd Gf Ii Ll Oo Rr"},"@":{"ha":125,"x_min":-2,"x_max":125,o":"                           A ED FD HD JD LD ND PD RBTBVDXDZD\\D^F`HbJdMgPiUlWpZs_vbygzjAmDoFqItLwO{RA VC XD ZC bC dE fF hG jH lI nJ pK rL tM vN xO zP BQ DR FS GU IV KWEW FV GU HT IS KR LQ MP NQ OR PSUQVRWSYTYVXXZY[bZbZ[YXVUTSRQPOONMLKJIHGFEDCBA@B@B@B@B@B@B@B@B@B@D@F@H@J@M@P@S@V@Y@[A^A`AcAfAiAlApAsAvAzBCBEBGBIBLBOBRBUBYB`BcBfBjBnBqBtBwB{C@CDCGDJDNFRFUFYF\\F_FcFiFlFoFrFuFxGDGHGLGPV`X`Y_Za[b\\c^d`eafbgchdjekflgmhniojplpnpopnqoro touovowpyqzr{t|v~yDFFFH HL HM HN HO HP HR HT HV HX HZ H\\ H^ H_HcHfHiHlHoHrHuHyICIEIGIKIMIPISIWIZI\\I^JaJdJgJjJnJqJuJyKCKGKKKOKSKWKaKeKkKnKrKuKyLALFLJLPLULXLZN`OcOhOlOqOuOzPAPGPLPQPVPZP^PaPfPjPpPsPxQCQFQLQQQVQZQcQgQkQpRtRySCSE"},"A":{"ha":82,"x_min":0,"x_max":82,"o":"               A EB FB GB HB IB JB KB LB MB NB OB PB QB RB SB TB UB VBWBYBZC[C\\C\\C]D^E_F`GaH`H`H_G_F`E^D]C\\B[AZEUCPCB"},"B":{"ha":83,"x_min":-2,"x_max":76,o":"A EB FB GB HB IB KB LB MB OB QB SB UB WB YB aB cB eB gC iD kE mF oG qH sI uJ wK yL {MBNCOEQGSJULVOXQZS_UaWcYf[iai`n^r^u]x]{A|C|F{I{L{O{R{U{Y{[y]w_u`s^q[oXiUeQ`L[IUFPCNAK@FA@A B D F H J L O Q T W Z \\ _ b e h k n q t w zB CF"},"C":{"ha":84,"x_min":-1,"x_max":85,o":"A EAFAHAJALANAPARATAUAVAXA[A]A`AcAeAgAiAkAmAoAqAsAuAwAyAzB`Bd Gf Ii Ll Oo Rr Uu Xz _} d~ hAnCpFrJtLwN{QCSDTFUGVHWIXJYKZ L"},"D":{"ha":91,"x_min":-2,"x_max":80,o":"A EB FB GB HB IB KB LB OB QB SB UB WB YB aB cB eBgCjCgCfCeCcCaC_B\\BZCWCQDIBE ACA A B E I N S X a g l q wB CHFMJVOYU]a`dae g"},"E":{"ha":77,"x_min":-2,"x_max":70,o":"A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJ mK oL qM sN uO wP yQ zS BT CV DX EZ F[ H\\ J] L^ N_ P` Ra Sc Ue Wg Yj [l \\n _p ar ct ev ex fz      A EC FC GE HE IE JE KE ME NE OE QE SE UE WE"},"F":{"ha":72,"x_min":-2,"x_max":68,o":"A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJ mK oL qM sN uO wP yQ zS BT CV DX EZ F[ H\\ J] L^ N_ P` Ra Sc Ue Wg Yj [l \\n _p ar ct ev ex fz   A DC FC GE HE IE JE KE ME NE"},"G":{"ha":90,"x_min":-2,"x_max":90,o":"  A FAHAJALANAPARATAVAXA[A]A`AcAeAgAiAkAmAoAqAsAuAwAyAzB`Bd Gf Ii Ll Oo Rr Uu Xz _} d~ hAnCpFrJtLwN{QCSDTFUGVHWIXJYKZ L^O`PaQaRaSaT`VbXbYcZc[d\\c]c^c_c`caccde fgg hih jh kh lh mh nh oh ph qg rf qf pf of nf mf lf kf jf if hf gf ff ef df cf"},"H":{"ha":88,"x_min":-2,"x_max":88,o":"A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJmK oL qM sN uO wP yQ zS BT CV DX EZ F[ H[ I[ J[ K[ L[ M[ M[ M[ M[ M[ LZ KY JX HW GU FT ES DR CQ BO AM@IAFA CA@A@B@DAFAHAKAMAPASAWAYAcAgAlApAuAzBD      A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJmK oL qM sN uO wP yQ zS BT CV DX EZ F[ H[ I[ J[ K[ L[ M[ M"},"I":ha30,x_min:1,x_max:21,o:"         A EC FC JC LA NA PA QA RA SA TA UA VA WA XA YB ZB aB bB cB dB eB fC gD hE iF jG lH mI oJ pK qL rM sN uO vP xQ yR zS BT CU DV EW FX GY HZ Ia Jb Kc Ld Me Nf O"},"J":{"ha":50,"x_min":-2,"x_max":50,o:"           A EC FC GC IC KC MC OC PC QC RD SE TF UG VH WI XJ YL ZN [O \\Q ]R _S `T aV bW dX fY hZ ja lc ne pg rh sj ul wm xo"},"K":{"ha":84,"x_min":-2,"x_max":82,o":"A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJmK oL qM sN uO wP yQ zS BT CV DX EZ F[ H[ I[ J[ K[ L[ M[ M_@bAeAiAnAsAyBDBHBMBSBYB`BfBlBqBvB{CACHCOCTCYC`ChDrGvK{[DFIKOU\\adgkotyBH"},"L":{"ha":70,"x_min":-2,"x_max":60,o":"A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJmK oL qM sN uO wP yQ zS BT CV DX EZ F[ H[ I[ J[ K[ L[ M`KbJ`I`G`E`C`A@B@D@F@H"},"M":ha99,x_min:0,x_max:99,o:"      A EC FC JC LA NA PAQA RA SA TA UA VA WA XA YB ZB aB bB cB dB eB fC gD hE iF jG lH mI oJ pK qL rM sN uO vP xQ yR zS BT CU DV EW FX GY HZ IaJ`JaIaHZGXFVETDRBPAKAFA@A@B@C@E@G@I@K@N@P@S@V@Y@[A^A`BcFhJlOpSsWy\\A_C_F_H_K_O_Q_T_XBZA]B^C`D`E`F_G_G_F`E`D`C_B`AZAXAUASAPAKAFA@A@B@D@F@I@L@O@S@V@Y@\\@_A`AcAfAhAjAmApAsBvAWAUAQAOAKAGACAAA       A EC FC JC LA NA PAQA RA SA TA UA VA WA XA YB ZB aB bB cB dB eB fC gD hE iF jG lH mI oJ pK qL rM sN uO vP xQ yR zS BT CU DV EW FX GY HZ Ia"},"N":ha88,x_min:-1,x_max:88,o:"A FBGBIBJBKB LB MB NBOBQBSBUBWB YBZC[C\\D]E^FaGbHcIdJeKfLgMhN`O`P_Q_S_U_W_Y`Z`\\`^``AaBcBeBgBiBkBnBqBtBwBzBCB      A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJ mK oL qM sN uO wP yQ zS BT CV DX EZ F[ H\\ J] L^ N_ P` Ra Sc Ue Wg Yj [l \\n _p ar ct ev ex fz"},"O":ha92,x_min:-2,x_max:93,o":"  A FAHAJALANAPARATAUAVAXA[A]A`AcAeAgAiAkAmAoAqAsAuAwAyAzB`Bd Gf Ii Ll Oo Rr Uu Xz _} d~ hAnCpFrJtLwN{QCSDTFUGVHWIXJYKZ L^MaNbNcNdNeNfNgNhNiNjNkNmNoNpNrNsNuNwNyO@OBOCOFOHOKONOMOPOQOSOUOWOYO[O]O^N`NcNfNiNlNoNrNuNyO@OC OFOILPROUOXO`OgOmOsOyPAPF PKPPPUQ"},"P":{"ha":83,"x_min":-2,"x_max":75,o":"A EB FB GB HB IB KB LB MB OB QB SB UB WB YB aB cB eB gC iD kE mF oG qH sI uJ wK yL {MBNCOEQGSJULVOXQZS_UaWcYf[iai`n^r^u]x]{A|C|F{I{L{O{R{U{Y{[y]w_u`s^q[oXiUeQ`L[IUFPCNAK@F"},"Q":ha92,x_min:-2,x_max:93,o":"  A FAHAJALANAPARATAUAVAXA[A]A`AcAeAgAiAkAmAoAqAsAuAwAyAzB`Bd Gf Ii Ll Oo Rr Uu Xz _} d~ hAnCpFrJtLwN{QCSDTFUGVHWIXJYKZ L^MaNbNcNdNeNfNgNhNiNjNkNmNoNpNrNsNuNwNyO@OBOCOFOHOKONOMOPOQOSOUOWOYO[O]O^N`NcNfNiNlNoNrNuNyO@OC OFOILPROUOXO`OgOmOsOyPAPF PKPPPUQ_`Zb[dZgYiVkWmUoSpRqQrQsRuSvTxU{VqXoYlZiWfVdVbU[T_R]O`M]K[IVIWHQEODL@IAF@C@A"},"R":ha84,x_min:-2,x_max:82,o":"A EB FB GB HB IB KB LB MB OB QB SB UB WB YB aB cB eB gC iD kE mF oG qH sI uJ wK yL {MBNCOEQGSJULVOXQZS_UaWcYf[iai`n^r^u]x]{A|C|F{I{L{O{R{U{Y{[y]w_u`s^q[oXiUeQ`L[IUFPCNAK@FpCtEvG{JBMGOJUOZT][b_e_g_iaham`qaK"},"S":ha83,x_min:-2,x_max:85,o":"   A FA HAJA LA NA PA RA TA UA VC XC ZC aD cD eE gF iG kH mI oJ qK sL uM wN yO {P BQ DR FS GU IV KWEVFU HT IS KR LQ MP NQ OR PRORNRMQ LQKPHMFKDHCG@EA@A B F J N R V Z _ d h l p t xBQEUHZL`PcVgZk_ncvgAlEnHqKxNAOFQJTMXPZT][b_f`iajeofrgtjwmzn{p}q}s~v"},"T":{"ha":81,"x_min":-2,"x_max":82,o":" A FB GB IB KB LB MB NB OB PB QB RB SB TB UCVCVDVEVFVGVHVIVJVKVMVOVQVSVU      A EA GA IA KA MA OA QA SA UA WA XA ZA bA dA fA hA jC lE oG rI uK xM {N ZO[P\\Q]R_S`TcUeW"},"U":ha88,x_min:-1,x_max:88,o":"A EB FB GC HD IE JF KG LH MI NJ OK PL QM RN SO TP UQV RW SY T[ U\\ V] W^ X_ Y` Za [b \\c ]d ^e _g`hbicjdlfmengoiqjskvmwmyo{p|r~t@uAxA{A|A~B`BcBeCgCiCkBmBoBrB"},"V":ha82,x_min:0,x_max:82,o":"A CB EC GD HE IF JG KH LI MJ NK OL PM QN RO SP TQ UR VS WT XU YV ZW [X \\Y ]Z ^[ _\\ `] a^ b_ c` da fb gc hd ie jf kg lh ni oj pk ql rm sn to up vq wr xs yt {u"},"W":ha115,x_min:0,x_max:115,o":"                           A CB EB FD GE HF IG JH KI LJ MK NL OM PN QO RP SQ TR US VT WU XV YW ZX [Y \\Z ]Y \\Y [Z ZX YW XV WU VT US TR SQ RP QO PN OM NL MK LJ KI JH IG HF GE FD EB CB A@A@A@A@A@A@A@A@A`BbCdDeEfFhGiHjIkJlKmLoMpNqOrPsQtRuSvTwUxVyWzX{Y|Z}Z|Z{Y{XzWyVxUtSsRqQpPoNnMnLkKiJhIgGfFeEcDaB` A_B^C]D\\E[FZHXGWEVDUCSBQAOAJAGADAB@A A_B^C]D\\E[FZHXGWEVDUCSBQAOAJAGADAB@A CB EB FD GE HF IG JH KI LJ MK NL OM PN QO RP SQ TR US VT WU XV YW ZX [Y \\Z ]Y \\Y [Z ZX YW XV WU VT US TR SQ RP QO PN OM NL MK LJ KI JH IG HF GE FD EB CB"},"X":ha82,x_min:0,x_max:82,o":"I FB GC HD IE JF KG LH MI NJ OK PL QM RN SO TP UQ VR WS XT YU ZU ZU ZT YS XR WQ VP UO TN SM RL QK PJ OI NH MG LF KE JD IC HB GA F_F[FWHUFRFMFIFDFAFBHDJFNFSFXF]FcFjFpFuF{GBGGGMGSL[ahekoqtwA]AgAmArAwA{"},"Y":{"ha":82,"x_min":-2,x_max":84,o":"A CB EC GD HE IF JG KH LI MJ NK OL PM QN RO SP TQ UR VS WT XU YV ZW [X \\Y ]Z ^[ _\\ `] a^ b_ c` da fb gc hd ie jf k g h i j k l m n o p q r s t u v w x w vxutsqponmlkjihgfedcb`_^^]"},"Z":{"ha":78,x_min":-2,"x_max":80,o":"A FAHAJALANAPARATAUAVAXA[A]A`AcAeAgAiAkAmAoAqAsAuAwAyAzB`Bd Gf Ii Ll Oo Rr Uu Xx `z cz fz hAi@kClDmFoGpIrJsKtLuMwNyOzQA R@ R@ R@ Q@ P@ O@ N@ M@ L@ K@ I@ G@ E@ D@ C@ B@A A@C@F@I@L@O@R@U@X@[A"},"a":{"ha":68,"x_min":-1,"x_max":68,"o":"              d@iCjDlEmFnGoHpIqJrKsLtMuNwOxPyQ{R@S@T@UBVCWCXCZC[C\\C]D^E_F`GaHbIcKdMeNgOhPiQkRlSnToVqXsZu[w^y`zazczeygwirjplnmojpkqlrmsnupwqxrzuzwzxz{y|x{y}z} |~~@~A@A@@C@FAIAKALANAPACARASATAVAZA_AcAfAiAmApAsAvAzBCBEBGBIBLBOBfDjFnIqJtK"},"b":{"ha":70,"x_min":-2,"x_max":60,o":"A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJmK oL qM sN uO wP yQ zS BT CV DX EZ F[ H[ I[ J[ K[ L[ M[                A dB fC gD iE jF lG mH oI pJ rK sL tM vN wO yP zQ BR CS EU FW HY J[ L\\ N] P^ R_ T` Ub Wd YfZh[j\\l]n_q`sbtcvdwexfyh|k~oAqCsFuIxKzMB ODPEQFRGSHTIUKVMWNXOZPbReSgTiUlVnWpXrZu[x^z`|c~g"},"c":{"ha":66,"x_min":-1,"x_max":67,o":"A ECFC HB JB LB NB PB RB TB UBVCWCYCZC[C\\C]D^E_F`GaHbIcKdMeNgOhPiQkRlSnToVqXsZu[w^y`zazczeygwirjplnmojpkqlrmsnupwqxrzuzwzxz{y|x{y}z} |~~@~A@A@@C@FAIAKALANAPACARASATAVAZA_AcAfAiAmApAsAvAzBC"},"d":{"ha":70,"x_min":7,"x_max":79,o":"A FB GB IB JB KB LB NB OB PB QB RB SB TB UCVCWCXCZC[C\\C]C^E_F`GaHbIcKdMeNfOhPiQkRlSnToVqXsZu[w^y`zazczeygwirjplnmojpkqlrmsnupwqxrzuzwzxz{y|x{y}z} |~~@~A@A@@C@FAIAKALANAPACARASATAVAZA_AcAfAiAmApAsAvAzBCB                A EC FC JC LA NA PA QA RA SA TA UA VA WA XA YB ZB aB bB cB dB eB fC gD hE iF jG lH mI oJ pK qL rM sN uO vP xQ yR zS BT CU DV EW FX GY HZ Ia"},"e":{"ha":68,"x_min":-1,"x_max":68,o":"A ECFC HB JB LB NB PB RB TB UBVCWCYCZC[C\\C]D^E_F`GaHbIcKdMeNgOhPiQkRlSnToVqXsZu[w^y`zazczeygwirjplnmojpkqlrmsnupwqxrzuzwzxz{y|x{y}z} |~~@~A@A@@C@FAIAKALANAPACARASATAVAZA_AcAfAiAmApAsAvAzBCBHBLBMBQBWB\\B`BdChClCpCtCxC|D@DDDHDDLDPDTDYD\\D_DcDhD"},"f":{"ha":39,"x_min":7,"x_max":39,o":"        _f`hagcicjdlfmfngoirjskurwsxt{v|x@y@{@|A~@~@~@~@~@~@~@}B|C{EwGvIuKsMqOpQnSjVhXgZeVcT[Q[O[M[K[IZEWEUCQCMAIAgAhAhAgAg`f`e`c``]]X"},"g":{"ha":68,"x_min":-1,"x_max":68,o":"              d@iCjDlEmFnGoHpIqJrKsLtMuNwOxPyQ{R@S@T@UBVCWCXCZC[C\\C]D^E_F`GaHbIcKdMeNgOhPiQkRlSnToVqXsZu[w^y`zazczeygwirjplnmojpkqlrmsnupwqxrzuzwzxz{y|x{y}z} |~~@~A@A@@C@FAIAKALANAPACARASATAVAZA_AcAfAiAmApAsAvAzBCBEBGBIBLBOBfDjFnIqJtK          _c`bab`_]ZWYTUPNKIFCA@A@B@C@E@G@I@K@M@N@O@P@Q@R@SA TA UA VA WA XA YB ZC[C\\D]E^F`GbHcIdJdKdMdOdQdReTeVeXf[g]h_i`jcldmgohqisjulwmyo{q|s~u"},"h":{"ha":70,"x_min":-2,"x_max":60,o":"A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJmK oL qM sN uO wP yQ zS BT CV DX EZ F[ H[ I[ J[ K[ L[ M[d@eCfDgEiFjGkHlImJnKoLpMqNrOsPtQuRvSwTxUyV{W|X|Y}Z}[~\\ [ \\[ ['[([&ZFZEZDYCXBWAVAUBT@S>Q=O;M9K7I5G2E0C."},"i":{"ha":28,"x_min":-1,"x_max":19,o":"         A BC CC DC EC FB GA HA I@ J@ K@ L@ MA NA OA P@ Q@ R@ S@ T@ U@ V@ W@ X@ Y@ Z@ [@ \\@ ]@ ^@ __ `_ a_ b_ c_ d` e` f` g` h` i` j` k` l` m_ o_ p^ q^ r^ s^ t^ u] w] x\\ y[ zZ {Y |X }W ~V ~U @T AS"},"j":{"ha":28,"x_min":-1,"x_max":26,o":"         A BC CC DC EC FB GA HA I@ J@ K@ L@ MA NA OA P@ Q@ R@ S@ T@ U@ V@ W@ X@ Y@ Z@ [@ \\@ ]@ ^@ __ `_ a_ b_ c_ d` e` f` g` h` i` j` k` l` m_ o_ p^ q^ r^ s^ t^ u] w] x\\ y[ zZ {Y |X }W ~V ~U @T AS_c`bab`_]ZWYTUPNKIFCA@A@B@C@E@G@I@K@M@N@O@P@Q@R@SA TA U"},"k":{"ha":65,"x_min":-2,"x_max":63,o":"A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJmK oL qM sN uO wP yQ zS BT CV DX EZ F[ H[ I[ J[ K[ L[ M[c@dBgCjDmFqGtJxKBMDNFPIRTKVNYP[S_UcXfYi`lbmdoeqgshpitzv{x@{A_CgElIpLwM"},"l":{"ha":28,"x_min":-1,"x_max":19,o":"         A EC FC JC LA NA PA QA RA SA TA UA VA WA XA YB ZB aB bB cB dB eB fC gD hE iF jG lH mI oJ pK qL rM sN uO vP xQ yR zS BT CU DV EW FX GY HZ Ia Jb Kc Ld Me Nf O"},"m":{"ha":104,"x_min":-2,"x_max":104,o":"aBeBgBiBkBnBqBtBwBzBCBEBGBIBLBOBRBUBYB`BcBfBjBnBqBtBwBzBCBEBGBIBLBOBRBUBYB`BcBfBjBnBqBtBwBzBCd@eCfDgEiFjGkHlImJnKoLpMqNrOsPtQuRvSwTxUyV{W|X|Y}Z}[~\\ [ \\[ ['[([&ZFZEZDYCXBWAVAUBT@S>Q=O;M9K7I5G2E0C.a@cCeDgFiHkIlJmK oL pM rN tO vP xQ zR BS DU FX HZ J\\ M^ P_ R` Ta Vc Xd Zf \\h ^j `l bn cp er et fwa@cCeDgFiHkIlJmK oL pM rN tO vP xQ zR BS DU FX HZ J\\ M^ P_ R` Ta Vc Xd Zf \\h ^j `l bn cp er et fv"},"n":{"ha":70,"x_min":-2,"x_max":60,o":"d@eCfDgEiFjGkHlImJnKoLpMqNrOsPtQuRvSwTxUyV{W|X|Y}Z}[~\\ [ \\[ ['[([&ZFZEZDYCXBWAVAUBT@S>Q=O;M9K7I5G2E0C.a@cCeDgFiHkIlJmK oL pM rN tO vP xQ zR BS DU FX HZ J\\ M^ P_ R` Ta Vc Xd Zf \\h ^j `l bn cp er et fv"},"o":{"ha":68,"x_min":-1,"x_max":68,o":"A ECFC HB JB LB NB PB RB TB UBVCWCYCZC[C\\C]D^E_F`GaHbIcKdMeNgOhPiQkRlSnToVqXsZu[w^y`zazczeygwirjplnmojpkqlrmsnupwqxrzuzwzxz{y|x{y}z} |~~@~A@A@@C@FAIAKALANAPACARASATAVAZA_AcAfAiAmApAsAvAzBCBEBGBIBLBOBfDjFnIqJtK"},"p":{"ha":70,"x_min":-2,"x_max":60,o":"                               A dB fC gD iE jF lG mH oI pJ rK sL tM vN wO yP zQ BR CS EU FW HY J[ L\\ N] P^ R_ T` Ub Wd YfZh[j\\l]n_q`sbtcvdwexfyh|k~oAqCsFuIxKzMB ODPEQFRGSHTIUKVMWNXOZPbReSgTiUlVnWpXrZu[x^z`|c~g_e`g_i_k_n_p_s_u_x_z_ A B C E G I L N P R T V X Z \\ ^ ` b d f h j l n p r t"},"q":{"ha":70,"x_min":7,"x_max":79,o":"A FB GB IB JB KB LB NB OB PB QB RB SB TB UCVCWCXCZC[C\\C]C^E_F`GaHbIcKdMeNfOhPiQkRlSnToVqXsZu[w^y`zazczeygwirjplnmojpkqlrmsnupwqxrzuzwzxz{y|x{y}z} |~~@~A@A@@C@FAIAKALANAPACARASATAVAZA_AcAfAiAmApAsAvAzBCB                               a@b@c@d@e_f_g_h_i_j_k_m_n_o_q_r_s_t_v_w_y_{_|_~`@b@e@h@k@n@q@t@w@z@B@E@H@K@N@Q@T@W@ZA^A`AcAfAhAjAlAoArAuAxA"},"r":{"ha":42,"x_min":-1,"x_max":36,o":"d@eCfDgEiFjGkHlImJnKoLpMqNrOsPtQuRvSwTxUyV{W|X|Y}Z_Y]W[UZRWOTMQKPHLFJCIAEAB@ A C F I L O R U Y \\ _ c f g h j l m o q s u w y z"},"s":{"ha":60,"x_min":-1,"x_max":61,o":"   A FA HAJA LA NA PA RA TA UA VC XC ZC aD cD eE gF iG kH mI oJ qK sL uM wN yO {P BQ DR FS GU IV KWEVFU HT IS KR LQ MP NQ OR PRORNRMQ LQKPHMFKDHCG@EA@A B F J N R V Z _ d h lp t"},"t":{"ha":39,"x_min":-2,"x_max":39,o":"        g@hAiajakbmcndofpgqirjskurwsxt{u|w@x@y@{@|A~@~@~@~@~@~@}B|C{EwGvIuKsMqOpQnSjVhXgZeVcT[Q[O[M[K[IZEWEUCQCMAIAEADAD@D@D@D D D D D D C C C C C B"},"u":{"ha":70,"x_min":-2,"x_max":60,o":"a@cCeDgFiHkIlJmK oL pM rN tO vP xQ zR BS DU FX HZ J\\ M^ P_ R` Ta Vc Xd Zf \\h ^j `l bn cp er et fv              _b`c`e`f`g`i`j`l`m`o`q`r`t`u`v`x`y`{`|`}B}D|F{HyJvLuNsPoRjThVfWdYbZ`[`\\_]^]"},"v":{"ha":68,"x_min":0,"x_max":68,o":"aBeBgBiBkBnBqBtBwBzBCBEBGBIBLBOBRBUBYB`BcBfBjBnBqBtBwBzBC`AdAgAjAmApAsAvAyB{B}B@C@CACDCECFCHCICJCKCMCNCOCRCQC A?A?B@C@D@F@H@J@L@N@P@R@T@U@V@W@X@Y@Z@[@\\A]@^A_AaAbAcAdAfAgAiAkAmAoAqAsAtav"},"w":{"ha":95,"x_min":0,"x_max":95,o":"aBcBeBgBiBkBnBqBtBwBzBCBEBGBIBLBOBRBUBYB`BcBfBjBnBqBtBwBzBCB}B}B}B|B{B{ByAzAxAvAtArAqAoAnAmAkAiAgAfAeAcAbAZAYAXAVAQANAKAHADAA@A}B}B}B|B{B{ByAzAxAvAtArAqAoAnAmAkAiAgAfAeAcAbAZAYAXAVAQANAKAHADAB@BfAgBhAiAjAlAmAnAoApAqAsAtAuAwAyA{A|A~@~@~@~B~D~F}HxJuLsNqPpRkThVfXcY`[`]"},"x":{"ha":68,"x_min":-2,"x_max":70,o":"HGBIDKHNKRKWK_KhKoKvK{L@LGLMLR]abfgkmpuvzBFHLOV\\adgkntyBHLOV\\adgknsuAWCQGNZcehlorwtz"},"y":{"ha":68,"x_min":0,"x_max":68,o":"a@cCeDgFiHkIlJmK oL pM rN tO vP xQ zR BS DU FX HZ J\\ M^ P_ R` Ta Vc Xd Zf \\h ^j `l bn cp er et fv_c`bab`_]ZWYTUPNKIFCA@A@B@C@E@G@I@K@M@N@O@P@Q@R@SA TA U"},"z":{"ha":60,"x_min":0,"x_max":60,"o":"A DAFAHAJALANAPARATAVAZA_AcAfAiAmApAsAvAzBCBEBGBIBLBOBRBTBVBZB]A`A`A_A]AZAVATAPAMAIADAB@A@B@DAF@H@J@L@N@P@R@T@V@X@Z@[A^A`AbAdAfAhAjAlAnApArAtAvAxAzB`Bd Gf Ii Ll Oo Rr Uu Xx `z cz fz hAi@kClDmFoGpIrJsKtLuM"},"{":{"ha":49,"x_min":19,"x_max":30,"o":" A JC KC LC MC NC OC PC QC RC SC TC UC VC WC XC YD ZD aD bD cE dE eE fF gF hG iH jH kI lJ mJ nK oL pM qM sN tO uP vQ wR xS yT zT {U |V }W ~X _Y BZ C[ D\\ E] F^ G_ H` Ia Jb Kc Ld Me Nf O`LaK`I`G`F`E`D`C@C@D@F@H@K@N@Q@U@Y@[A^A`BcF"},"|":{"ha":20,"x_min":9,"x_max":11,"o":"A FC GC HC IC JC KC LC MC NC OC PC QC RC SC TC UC VC WC XC YC ZC aD bD cD dD eE fE gF hG iH jH kI lJ mK nL oM pN qO rP sQ tR uS vT wU xV yW zW {X |Y }Y ~Z _[ A\\ B] B] B^ B^B B^B]B\\A_@Y>W>U>S>Q>O>L>J>G>E>D>B>@>@>B>D>G>J>M>P>S>V>Y>[>_>b>e>h>l>p>t>x>zA>A>B>C>D>D>E>F>F>G>G>G>G>F>F>F>F>F>E>E>D>C>C>B@A@ @"},"}":{"ha":49,"x_min":19,"x_max":30,"o":"     M J I H G F E D C B A @ A A B C D E F G H I H H I H G F E D B @@B@D@F@I@L@O@R@U@X@[A]A_AcAfAiAlAnApAsAuAxA|BCBFCGCICHHDJDLFNGPHQISJULVNWOXPYQ[R]S_T`UbVdWeXgYh[j\\l]n_p`qarkslsksirhpgofmekdjcibhah_f^d]b[`Y]V\\T[RYPWNULSJPHNGLEK"},"~":{"ha":75,"x_min":1,"x_max":72,"o":"      C F I L O S V Z _ d i l o r u x { ~@ BAEAHAKAOARAVAZA^A`AcAfAiAmApAsA{BBEBGBIBLBOBRBUBYB`BdBgBkBoBsBwB{C@CDCGCKCOCSCWCaCeCiCmCqCuFxFvFuFtFsFpFoFnFmFkFjFhFfFedcbab`_^_]ZWYTUPNKIFCA@A@B@C@E@G@I@K@M@O@Q@S@U@V@W@X@Y@Y@XAWATAPAMAIADAB@A A@C@FAIAKALANAPACAREUHWHZJ\\M_PbReSgTiUlVmXoZp[r\\t]u^w_y`{a|c~f"},"face":"helvetiker","resolution":100,"size":100,"style":"normal","underline_thickness":5,"weight":"normal","boundingBox":{"xMin":-17,"yMin":-15,"xMax":125,"yMax":96},"cssFontStyle":"normal","cssFontWeight":"normal"},"familyName":"helvetiker","styleName":"normal"};
+        const socialIcons = {
+            github: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAEz0lEQVR4nO2dW67jMAxFg///6OwM56iT4tggKAmS2o2fG2c/kU47oRqtVqsv/3+9V/P8t6/L3k+5yH3266qT08aX9TfXXNffpT2fsujDByhAEAKAQAgQACEECAQAgRACIETAIQQQhgQACEECAQAgRACIETAIQQQhgQACEECAQAgRACIETAIQQQhgSg+x+fXtd183h0eQYkAHn+R0mCgY6eO0C2q+/bKkPzAEQA+r7tkgyDAEAegAlAp6t0JbUAIACd7khBkgFAIABdpa5kCwAEoNMdKUkSAAgE0FXqSrYAAAJaT0fH+z8mX/3y91Xv019XnZ42vqz/p9+Vw/un6S4OEAQghABCECAIQAghgCEECEIQAghgCEEIQghgCMAIQAghBCEAIQQghgCEEIQQQBiCEIEQghBCBDCEIAQghBCBDAEIQQghhBACIQQghhCBEEIAYQghhAhgCMAIQQghhACEIAQwhCBEEIQAghBCBDCEIAQwhACEIAQwhCBDAEIgRAgEEIIEIAQAhECIEQghAACEUIgQAghhBBACCEAIQQQghACIQQIAhBCCCAIQAghhACEQAgQCMAIQAghgCEAIQQQAghCCCAIQAghBCBDAQIghACEIAYAhECIQQghACEAIQQghACCAIQQghACEEAIQAIghACCAEQghACIQAIQAihAAIQAgQACEAIQAIhBACAUIgQAihABACBDACEAEIYAgACEAEIYAgAACEUIgQAihABACEAIQAIhBACAUIgQAihABACEAEIYAgACEAEIYAgAACEUIgQAihABACEAEIABACCEAIAAQghgCMAIQAghgCEAIQQQACEEAgBAiCEYAghEEIIEIQQIAghBCGEEIQQAgRCCCAIAYQgBCCEAIYAhBBCEEIEMIQgBCGEAEMgQhBCiEAIEMIYghBCCAEMIQghhACEQAgQACEAIYAhgCEEIQQghACCUIgQAhgCMAQghBCiEAIUIgQAghACEAYAhEAIQQghAhACEIQAgQAIhACEAIQAgAhECIEIIEIQQIAhBCEAYAhACEIQYAhACCAIQAghBACEQAgQACEAEIABACEAIQAIQAihAAIQAgQACEAEIABACEAIhBACAUIgQAihABACEAIYAgACEAEIYAgAACEUIgQAihABACEAEIABACCEAIAAQghgCMAIQAgBBCCEIAQQgBACAEEAIhBCGEIAQghACiEAIQAghgCEQghACCEAIQAghgCEEIYAYAhCCEEIMIQgBCCEEAIAQAghBCCEAIgQAhACIQQAhACEAIAQAgQACEAIYAYAhBCGEIIQAIhBCiEAIghgCMEIIQAgBCKERAghBCGCEIQghhCACEUIghACEQAgQACEAIYAYghBCGEIQAghAiBEIAYghBCGEIIYAhACMUIQAiEAEIQgBACEAIYAhBCCGEIEBCGEIIYAgBCMAIQAiEAAghACEEIQghAACEAIQQQgghACEAIQQghBACEAYAghBCCAIIQAghgCAEIIYAhAACEQAgQAiEAYAghBCGEIIQAgBACAEEAIQAgQCACEIIQAjACEAIQAghgCEEIIQAhgCBCEIAYghAiBEIIQBACBMIYghBCCMAQQhCCGEIEIQYghBCCAEMgQhBCiEAIEMIYghBCiAEIIQQghACEQAgQACEAIQAhgCEEIQQghAAEEIIEIYAYghBCGEIMIQgBCIEQIhBCGEIAYghgCMEIAQAghACGEIACQAIgghACEAIQAgBACEQIQBACEEAIQAIQAQAghBCBAEIQAghACGEIEBCGEIIEIQQIAhghABCEUIgQAhACCAIAQghgCEAIQBACCEIAT+13b/Bzx80B84D+xUAAAAAElFTkSuQmCC";
+            const linkedin = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAACoUlEQVR4nO3dy27bQBSA4f9/dnoFSRrUqUkKpPYSxICjNijHh9b+UeR2tNn9F/V6fa+W/w+M28s+hLhcHsf90eQyfrq4f9q8w8f3B80+tFk/1R5z/Q7+7vU7a/P0e0u/9kEGEIAYAgBCCEAYAhACCAEQghACGIEhACEAYQhACGAAhBCEAYYgBGEIQACEMAQhACEAQAghAGEMQAghACEAIQDBEGEMhACEQAgBCGAAAAAhAEMIhAAMIRBCAMIAhBCEYAgBEIJAggAMYQCBDAEIQAhACEAxhAGEIAyBECIIQBiCIAQgBGEIAhACEAIQAghAEMAACCEAYQhAAMIQAhAGEMQAjCEAAhDCEMhACEIAQgBCAIQCGIYQZACIQYQhACEAIQAggAMIQAhgAIYACEMAQhAGEAhgCEIAyBEIIQAggDBAGEIAwACGEAYQyEGEMgRAAIYQACCAAQAggAIEQghAGEAYhAGEIQACEMAQhAGEAhAGEIAwACEMgRAGEIAQgCAAYQCGAAghACEIQACEMAQhAGEAhgCEIAwACEIYAgQgjIEYAhBCAEIQAjCEMAYACEAEIIQAhAGEIQDBEIIZACEQghACEAIQAggAMIQAhgAIgRAAMIQAhAGEAhgCECIIQAghgDBAGEIAwACEMghAGEghhDIARACEAIQAjAEAAACEEIYAgBEIAhAAMYAiAEIAQghCAIQAghAAMYQhACIQQAhAGEMgRACMIAhAAEIQQghCAIQAggAIQQAhAAMIAhAGEIQAhAGEIQBAGEAYAGEMACGEAYQCGEMgACEIIQAggAEEAwgCEIAxACEIQACEMIQAggAEAIQACEMAQhAGEIQDBEIIAQghgDBAGEIIIQyAEAYAyCEMIQABCCAEAIQAghAAMIQAghAIEQAjAEIQQgDCEMghBCAIAQghAGEIQDBGEIQyGEIAAaAgRAEACAEAAAAhACCAIQABAGEIQhACEAYghAMEQAhgAIQRgCAAYBCAEQghAGzX/34O1a6K+wAAAABJRU5ErkJggg==';
+            const facebook = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAADM0lEQVR4nO3dwU3DQBSGYfc/fXQT6CSwA3SAjsIudBO6AV1gB9gBHYF+yZKEI7Bvsvk/yX/yl5Gzfn++t1/5vwvG7eH7EOJwORy/t0wuY6eL+8PNWzzcH7Q/aLP+qT3m+h383et31ubp95a+7SMPQghACCAIQAghDCEMQAggAEIIYAgQBCAGEIYghGEAIQQgDCEMQAiBEEIAQgCGIIQhAGEIQAgDCEMQAhCAGEMQAggACUEIwBCCIQQyBCAIQAiBGEMgBCCEMAYgBEIAhBCGAAwhCIEQAiAEMIRgDEAYAhCEMARgCMAQAiAEYQggDCEIIYCBEIIQAghgCMAQAiAEYQggDCEIQAgBCCEMIRgDEIIQAjAEYAhACIQQAgCGAAhDCIEQAhDCMIQghAGEYAiAEMIYBCDCEAIghAGEIAQAhAGEIQgBCCEMgRAIIRgDEIIwBCAMIQhACMIAAghAGAIwhCCEMARgCIAQAiEMIQghgCEYAhgCIIQAghCAIQABgCEEQxjCEYAjCEAIIQRAEMAQgAGEIQAgCCEMgRCAIQwgDCEYAhACKEMAQhCAIIQAGEIQAgCCEAYQCCAAYwhCAMIQhCMIQhAGEIQgCGAAxBCAIQggAMIQhAIYQhAGEIQAgBGEMghCAIQghgCAAYAhgCMAQghAGEIQgBCAIQABGEMQAjCEAARCCMIQBCEMgRACEIYABgCMAQggAGEIQwhCAMYAgBEIIwBCAIQAjAEAAhCCEAIABDCEMIQhAGEIIQAgACEAIQAjCEAARACMIQABCMIYAiAEMAAhACIQAjCEAARACIYQBAGEAYQiAEMIYAhBCIQBgCMIQAjCEMIQABGMIYAgQghCAIQAgDCCIYRACEAIQBGMIQAgAGEIQAgDCEMgRAAIQyBGEIgBEIIwgCAMIQhAEAYwhCAIAwgDAEIQAgQgjAEMARgCMAQhCAEQghgCAAYAhAAIYQBAGEIQhACEAIYwhACEIAQAiAEYAjCEMIQhAEAYAghACMIYACGMIQBDCMIQgBCEAAghgCAEQghAAEAAghCMIQwhCAIQABGMIgRCAIQCBEEIgBAGEAAQgBCCMIYAiAEMgRCAIAwhCAMIAAghgCEAIQAjAEMIYDB1G3D675r8bVAAAAAElFTkSuQmCC';
+        }
+
+        // --- Core Scene Setup ---
+        let scene, camera, renderer, clock;
+        let stardust, nebula;
+        let ambientSound;
+        
+        let mouse = new THREE.Vector2();
+        let raycaster = new THREE.Raycaster();
+        let interactiveObjects = [];
+
+        // --- GSAP Timeline ---
+        let masterTimeline = gsap.timeline({
+            scrollTrigger: {
+                trigger: "#scroll-container",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1.5,
+            }
+        });
+
+        const projects = [
+            {
+                name: "GlglStats",
+                description: "A dynamic data visualization platform revealing hidden trends and statistics from Israel's most popular radio station playlist (Galgalatz).",
+                links: [
+                    { label: "Visit GlglStats", url: "https://glglstats.geekip.dev" },
+                    { label: "Watch PyData Talk", url: "https://www.youtube.com/watch?v=jrKAtOsj1Lo" }
+                ],
+                position: new THREE.Vector3(0, 0, -150),
+                panelSide: 'left'
+            },
+            {
+                name: "Ahuzat Dibuk",
+                description: "An investigative project that used data analysis to expose a predatory private parking enforcement scheme in Tel Aviv, leading to mainstream news coverage and public awareness.",
+                links: [
+                    { label: "13tv News Story", url: "https://13tv.co.il/item/news/domestic/internal/parking-902956407/" },
+                    { label: "Mako News Story", url: "https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" },
+                    { label: "Original Facebook Post", url: "https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" }
+                ],
+                position: new THREE.Vector3(80, -20, -300),
+                panelSide: 'right'
+            },
+            {
+                name: "2D Part Orienting",
+                description: "My master's thesis in Computer Science at Tel Aviv University. This research explores efficient algorithms for orienting 2D parts using parallel grippers, a fundamental problem in robotics.",
+                links: [
+                    { label: "View Code & Details", url: "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" }
+                ],
+                position: new THREE.Vector3(-100, 30, -450),
+                panelSide: 'left'
+            },
+            {
+                name: "The Turing Jest",
+                description: "A competitive arena where Large Language Models (LLMs) battle in a game of wits. Users submit prompts and vote for the funniest, most creative AI-generated response.",
+                links: [
+                    { label: "Try The Turing Jest", url: "https://jest.geekip.dev" }
+                ],
+                position: new THREE.Vector3(0, -40, -600),
+                panelSide: 'right'
+            },
+            {
+                name: "Rhymes of Israel",
+                description: "A Chrome extension that finds Hebrew rhymes. It uses a sophisticated NLP model and a vast corpus of Israeli poetry and songs to provide rhyming suggestions for any given word.",
+                links: [
+                    { label: "Install the Chrome Extension", url: "https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" }
+                ],
+                position: new THREE.Vector3(120, 0, -750),
+                panelSide: 'left'
+            },
+            {
+                name: "The Celestial Code",
+                description: "You're looking at it. This portfolio is a procedurally generated 3D space, built in a single file with Three.js and GSAP. The design and concept were generated by Gemini.",
+                links: [
+                    { label: "Return to Start", url: "https://geekip.dev" }
+                ],
+                position: new THREE.Vector3(-50, 50, -900),
+                panelSide: 'right'
+            }
+        ];
+
+        function init() {
+            // --- Basic Setup ---
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a23);
+            scene.fog = new THREE.Fog(0x0a0a23, 200, 1200);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.z = 50;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.insertBefore(renderer.domElement, document.getElementById('scroll-container'));
+
+            clock = new THREE.Clock();
+
+            // --- Lighting ---
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 10, 7.5);
+            scene.add(directionalLight);
+            
+            // --- Audio ---
+            ambientSound = document.getElementById('ambient-sound');
+            ambientSound.volume = 0.3; // Start with a subtle volume
+            
+            // --- Initial UI setup ---
+            document.querySelector('.header-content').style.opacity = '1';
+            document.querySelector('#scroll-indicator').style.opacity = '0.7';
+
+            // --- Create Scene Objects ---
+            createBackgroundEffects();
+            createHeader();
+            createProjectNodes();
+            createFinalHub();
+
+            // --- Animation & Interaction ---
+            setupScrollAnimation();
+            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('click', onMouseClick);
+            
+            // Start audio on first scroll
+            let audioPlayed = false;
+            window.addEventListener('scroll', () => {
+                if (!audioPlayed) {
+                    ambientSound.play().catch(e => console.log("Audio autoplay was blocked."));
+                    audioPlayed = true;
+                }
+            }, { once: true });
+
+
+            // --- Start Rendering ---
+            animate();
+        }
+
+        function createBackgroundEffects() {
+            // Stardust
+            const starGeometry = new THREE.BufferGeometry();
+            const starVertices = [];
+            for (let i = 0; i < 15000; i++) {
+                const x = THREE.MathUtils.randFloatSpread(2000);
+                const y = THREE.MathUtils.randFloatSpread(2000);
+                const z = THREE.MathUtils.randFloatSpread(2000);
+                starVertices.push(x, y, z);
+            }
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2, transparent: true, opacity: 0.7 });
+            stardust = new THREE.Points(starGeometry, starMaterial);
+            scene.add(stardust);
+            
+            // Faint Nebulae
+            const nebulaGeometry = new THREE.BufferGeometry();
+            const nebulaVertices = [];
+            for (let i = 0; i < 200; i++) {
+                const x = THREE.MathUtils.randFloatSpread(1500);
+                const y = THREE.MathUtils.randFloatSpread(1500);
+                const z = THREE.MathUtils.randFloat(-1000, -200);
+                nebulaVertices.push(x, y, z);
+            }
+            nebulaGeometry.setAttribute('position', new THREE.Float32BufferAttribute(nebulaVertices, 3));
+            const nebulaMaterial = new THREE.PointsMaterial({ color: 0x00ffff, size: 100, transparent: true, opacity: 0.05, blending: THREE.AdditiveBlending, depthWrite: false });
+            nebula = new THREE.Points(nebulaGeometry, nebulaMaterial);
+            scene.add(nebula);
+        }
+
+        function createHeader() {
+            const fontLoader = new FontLoader();
+            const font = fontLoader.parse(helvetiker_regular_font);
+
+            const textGeometry = new TextGeometry('Geva Kipper', {
+                font: font,
+                size: 8,
+                height: 0.5,
+                curveSegments: 12,
+                bevelEnabled: true,
+                bevelThickness: 0.2,
+                bevelSize: 0.1,
+                bevelOffset: 0,
+                bevelSegments: 5
+            });
+            textGeometry.center();
+
+            const textMaterial = new THREE.MeshStandardMaterial({
+                color: 0xc0c0c0,
+                metalness: 0.9,
+                roughness: 0.4
+            });
+
+            const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+            textMesh.position.set(0, 5, 0);
+            scene.add(textMesh);
+            
+            // Use GSAP to animate it in
+            gsap.from(textMesh.scale, { duration: 1.5, x: 0, y: 0, z: 0, ease: 'power2.out' });
+        }
+
+        function createProjectNodes() {
+            projects.forEach(p => {
+                let node;
+                switch(p.name) {
+                    case "GlglStats": node = createGlglStatsNode(); break;
+                    case "Ahuzat Dibuk": node = createAhuzatDibukNode(); break;
+                    case "2D Part Orienting": node = createPartOrientingNode(); break;
+                    case "The Turing Jest": node = createTuringJestNode(); break;
+                    case "Rhymes of Israel": node = createRhymesNode(); break;
+                    case "The Celestial Code": node = createMetaNode(); break;
+                }
+                if (node) {
+                    node.position.copy(p.position);
+                    p.object3D = node;
+                    scene.add(node);
+                }
+            });
+        }
+        
+        function createGlglStatsNode() {
+            const group = new THREE.Group();
+            const points = [];
+            const segments = 128;
+            for (let i = 0; i <= segments; i++) {
+                points.push(new THREE.Vector3());
+            }
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true });
+            const line = new THREE.Line(geometry, material);
+            
+            line.userData.update = (time) => {
+                const positions = line.geometry.attributes.position.array;
+                const radius = 10;
+                for (let i = 0; i <= segments; i++) {
+                    const t = i / segments;
+                    const angle = t * Math.PI * 2;
+                    const wave = Math.sin(angle * 5 + time * 3) * 2;
+                    positions[i * 3] = Math.cos(angle) * (radius + wave);
+                    positions[i * 3 + 1] = Math.sin(angle) * (radius + wave);
+                    positions[i * 3 + 2] = 0;
+                }
+                line.geometry.attributes.position.needsUpdate = true;
+                material.opacity = Math.max(0.2, (Math.sin(time * 1.5) + 1.2) / 2.2);
+            };
+            group.add(line);
+            return group;
+        }
+
+        function createAhuzatDibukNode() {
+            const group = new THREE.Group();
+            const grid = new THREE.GridHelper(30, 10, 0x555555, 0x333333);
+            grid.rotation.x = Math.PI / 2;
+            group.add(grid);
+
+            for (let i = 0; i < 15; i++) {
+                const geometry = new THREE.PlaneGeometry(2.5, 2.5);
+                const material = new THREE.MeshBasicMaterial({
+                    color: 0xff4500,
+                    transparent: true,
+                    opacity: Math.random() * 0.4 + 0.1,
+                    blending: THREE.AdditiveBlending
+                });
+                const plane = new THREE.Mesh(geometry, material);
+                plane.position.set(
+                    THREE.MathUtils.randFloatSpread(28),
+                    THREE.MathUtils.randFloatSpread(28),
+                    THREE.MathUtils.randFloat(0.1, 0.5)
+                );
+                gsap.to(material, {
+                    opacity: '+=0.3', 
+                    repeat: -1, 
+                    yoyo: true, 
+                    duration: Math.random() * 2 + 1,
+                    ease: 'sine.inOut',
+                    delay: Math.random()
+                });
+                group.add(plane);
+            }
+            return group;
+        }
+
+        function createPartOrientingNode() {
+             const geometry = new THREE.IcosahedronGeometry(12, 1);
+             const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.8 });
+             return new THREE.Mesh(geometry, material);
+        }
+
+        function createTuringJestNode() {
+            const group = new THREE.Group();
+            const geometry = new THREE.TorusKnotGeometry(8, 1, 100, 8, 2, 3);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x00ff00,
+                wireframe: true,
+                wireframeLinewidth: 2,
+                transparent: true,
+                opacity: 0.7
+            });
+            const mask = new THREE.Mesh(geometry, material);
+            mask.scale.y = 0.5;
+            mask.scale.z = 0.2;
+            group.add(mask);
+
+            // Subtle wink
+            mask.userData.update = (time) => {
+                 if (Math.sin(time) > 0.99) {
+                    gsap.to(mask.rotation, { y: mask.rotation.y + 0.1, duration: 0.1, yoyo: true, repeat: 1 });
+                 }
+            };
+            return group;
+        }
+
+        function createRhymesNode() {
+            const group = new THREE.Group();
+            // Simplified icon box
+            const boxGeo = new THREE.BoxGeometry(20, 20, 5);
+            const boxMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.5, roughness: 0.6});
+            const box = new THREE.Mesh(boxGeo, boxMat);
+            group.add(box);
+            const centerGeo = new THREE.CylinderGeometry(5, 5, 5.2, 32);
+            const centerMat = new THREE.MeshBasicMaterial({ color: 0x4285F4 });
+            const centerCircle = new THREE.Mesh(centerGeo, centerMat);
+            centerCircle.rotation.x = Math.PI / 2;
+            group.add(centerCircle);
+
+            // Quill
+            const quillGeo = new THREE.ConeGeometry(1, 8, 8);
+            const quillMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+            const quill = new THREE.Mesh(quillGeo, quillMat);
+            quill.position.z = 5;
+            group.add(quill);
+            quill.rotation.x = -Math.PI / 4;
+
+            // Particle trail for writing
+            const trailGeo = new THREE.BufferGeometry();
+            const trailMat = new THREE.PointsMaterial({ color: 0x00ffff, size: 0.5, transparent: true, blending: THREE.AdditiveBlending });
+            const trailPoints = new THREE.Points(trailGeo, trailMat);
+            group.add(trailPoints);
+            trailPoints.userData.particles = [];
+            trailPoints.userData.maxParticles = 50;
+
+            group.userData.update = (time, delta) => {
+                const t = (time * 0.5) % (Math.PI * 2);
+                quill.position.x = Math.sin(t) * 8;
+                quill.position.y = Math.cos(t * 2) * 4;
+                quill.position.z = 5 + Math.sin(t*3) * 2;
+                
+                let particles = trailPoints.userData.particles;
+                let positions = [];
+
+                if (particles.length < trailPoints.userData.maxParticles) {
+                     particles.push({
+                        pos: quill.position.clone(),
+                        life: 1.0
+                    });
+                }
+                
+                for(let i = particles.length - 1; i >= 0; i--) {
+                    let p = particles[i];
+                    p.life -= delta * 1.5;
+                    if (p.life <= 0) {
+                        particles.splice(i, 1);
+                    } else {
+                        positions.push(p.pos.x, p.pos.y, p.pos.z);
+                    }
+                }
+                trailGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            }
+
+            return group;
+        }
+
+        function createMetaNode() {
+            const group = new THREE.Group();
+            const boxHelper = new THREE.BoxHelper(new THREE.Mesh(new THREE.BoxGeometry(25, 25, 25)), 0x00ffff);
+            group.add(boxHelper);
+
+            // Ghostly scene inside
+            const innerStardustGeo = new THREE.BufferGeometry();
+            const vertices = [];
+            for (let i = 0; i < 100; i++) {
+                vertices.push(THREE.MathUtils.randFloatSpread(20), THREE.MathUtils.randFloatSpread(20), THREE.MathUtils.randFloatSpread(20));
+            }
+            innerStardustGeo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            const innerStardustMat = new THREE.PointsMaterial({color: 0xffffff, size: 0.1, transparent: true, opacity: 0.5});
+            const innerStardust = new THREE.Points(innerStardustGeo, innerStardustMat);
+            group.add(innerStardust);
+            
+            // Tiny camera path
+            const curve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(0, 5, 8),
+                new THREE.Vector3(-8, 2, 0),
+                new THREE.Vector3(5, -5, -8),
+                new THREE.Vector3(0, 5, 8)
+            ]);
+            const pathGeo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(50));
+            const pathMat = new THREE.LineBasicMaterial({color: 0x00ffff, transparent: true, opacity: 0.3});
+            const pathLine = new THREE.Line(pathGeo, pathMat);
+            group.add(pathLine);
+            
+            return group;
+        }
+        
+        function createFinalHub() {
+            const finalPosition = new THREE.Vector3(0, 0, -1100);
+            const textureLoader = new THREE.TextureLoader();
+            const socials = [
+                { name: 'github', pos: new THREE.Vector3(-20, 10, 0), url: 'https://github.com/gevak' },
+                { name: 'linkedin', pos: new THREE.Vector3(20, 10, 0), url: 'https://linkedin.com/in/gevakip' },
+                { name: 'facebook', pos: new THREE.Vector3(0, -15, 0), url: 'https://facebook.com/geva.kipper' }
+            ];
+
+            socials.forEach(social => {
+                const map = textureLoader.load(socialIcons[social.name]);
+                const material = new THREE.SpriteMaterial({ map: map, color: 0xffffff, fog: false, transparent: true });
+                material.color.setHSL(0.5, 1, 0.7); // cyan tint
+                
+                const sprite = new THREE.Sprite(material);
+                sprite.position.copy(social.pos).add(finalPosition);
+                sprite.scale.set(12, 12, 1);
+                sprite.userData.url = social.url;
+                
+                gsap.to(material.color, {
+                    r:1, g:1, b:1,
+                    scrollTrigger: {
+                        trigger: '#scroll-container',
+                        start: '95% bottom',
+                        end: 'bottom bottom',
+                        scrub: true,
+                        onEnter: () => gsap.to(sprite.scale, {x:14, y:14, duration: 0.5}),
+                        onLeaveBack: () => gsap.to(sprite.scale, {x:12, y:12, duration: 0.5})
+                    }
+                });
+                
+                scene.add(sprite);
+                interactiveObjects.push(sprite);
+            });
+        }
+
+
+        function setupScrollAnimation() {
+            // Fade out initial text
+            masterTimeline.to(['.header-content', '#scroll-indicator'], {
+                opacity: 0,
+                duration: 0.5,
+            }, 0);
+
+            // Build camera path
+            const cameraPathPoints = [
+                new THREE.Vector3(0, 0, 50), // Start
+                ...projects.map(p => new THREE.Vector3(p.position.x, p.position.y, p.position.z + 40)),
+                new THREE.Vector3(0, 0, -1100) // End hub
+            ];
+            const cameraCurve = new THREE.CatmullRomCurve3(cameraPathPoints);
+            
+            const lookatPathPoints = [
+                new THREE.Vector3(0, 0, 0), // Look at header
+                ...projects.map(p => p.position),
+                new THREE.Vector3(0, 0, -1100) // Look at hub
+            ]
+            const lookatCurve = new THREE.CatmullRomCurve3(lookatPathPoints);
+
+            // Animate camera along the path
+            masterTimeline.to({}, {
+                duration: 100, // This duration is arbitrary, scroll determines progress
+                onUpdate: function() {
+                    const progress = this.progress();
+                    const camPos = cameraCurve.getPointAt(progress);
+                    const lookatPos = lookatCurve.getPointAt(progress);
+                    camera.position.copy(camPos);
+                    camera.lookAt(lookatPos);
+                }
+            }, 0);
+            
+            // Project UI Animations
+            const projectPanel = document.getElementById('project-panel');
+            const projectTitle = document.getElementById('project-title');
+            const projectDesc = document.getElementById('project-description');
+            const projectLinks = document.getElementById('project-links');
+            
+            projects.forEach((p, index) => {
+                const start = (index + 0.5) / (projects.length + 1);
+                const end = (index + 1.5) / (projects.length + 1);
+                
+                masterTimeline.add(() => {
+                    // Populate and show panel
+                    projectTitle.innerText = p.name;
+                    projectDesc.innerText = p.description;
+                    projectLinks.innerHTML = '';
+                    p.links.forEach(link => {
+                        const a = document.createElement('a');
+                        a.href = link.url;
+                        a.target = '_blank';
+                        a.innerText = link.label;
+                        projectLinks.appendChild(a);
+                    });
+                    
+                    projectPanel.classList.toggle('right', p.panelSide === 'right');
+                    
+                    gsap.to(projectPanel, {
+                        opacity: 1,
+                        visibility: 'visible',
+                        x: 0,
+                        scale: 1,
+                        duration: 0.5,
+                        ease: 'power2.out'
+                    });
+                    
+                    // Dim/blur background
+                    gsap.to(renderer.domElement, {
+                       'filter': 'blur(3px) brightness(0.6)',
+                       duration: 0.5
+                    });
+
+                }, start);
+                
+                masterTimeline.add(() => {
+                    // Hide panel
+                    gsap.to(projectPanel, {
+                        opacity: 0,
+                        visibility: 'hidden',
+                        x: p.panelSide === 'left' ? '-150%' : '150%',
+                        scale: 0.8,
+                        duration: 0.5,
+                        ease: 'power2.in'
+                    });
+
+                    // Restore background
+                    gsap.to(renderer.domElement, {
+                       'filter': 'blur(0px) brightness(1)',
+                       duration: 0.5
+                    });
+                }, end);
+            });
+            
+            // Footer animation
+            masterTimeline.to('.footer', { opacity: 1, duration: 1 }, `>${100 / (projects.length + 1) * 0.9}`);
+        }
+        
+        function setupStopwatch() {
+            const stopwatchEl = document.getElementById('footer-stopwatch');
+            const startDate = new Date('2025-08-01T01:22:22Z').getTime();
+
+            function updateStopwatch() {
+                const now = new Date().getTime();
+                const diff = now - startDate;
+
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                stopwatchEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+            updateStopwatch();
+            setInterval(updateStopwatch, 1000);
+        }
+        
+        setupStopwatch();
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onMouseClick(event) {
+            //Only check for clicks if at the end of the scroll
+            if (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight) < 0.95) return;
+            
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(interactiveObjects);
+            if (intersects.length > 0) {
+                const targetObject = intersects[0].object;
+                if (targetObject.userData.url) {
+                    window.open(targetObject.userData.url, '_blank');
+                }
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime();
+
+            // Animate particles
+            stardust.rotation.y += 0.0001;
+            nebula.rotation.y += 0.0002;
+            
+            // Update any objects with custom animations
+            scene.traverse(obj => {
+                if (obj.userData.update) {
+                    obj.userData.update(time, delta);
+                }
+                if (obj.isMesh || obj.isLine || obj.isPoints) {
+                    if (obj.parent && obj.parent.isGroup) {
+                         obj.parent.rotation.y += 0.0005;
+                         obj.parent.rotation.x += 0.0003;
+                    }
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        init();
+    </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250731",
+          pageId: "20250801",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
