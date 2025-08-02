@@ -2,892 +2,842 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - The Celestial Code</title>
+    <title>Geva Kipper // MOTHERSHIP.AI Portfolio</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡️</text></svg>">
     <style>
         :root {
-            --cyan-glow: #00ffff;
-            --deep-indigo: #0a0a23;
-            --text-color: #e0e0e0;
-            --panel-bg: rgba(10, 10, 25, 0.75);
-            --border-glow: rgba(0, 255, 255, 0.5);
+            --bg-color: #1e1e1e;
+            --main-pane-bg: rgba(30, 30, 30, 0.9);
+            --minimap-bg: #1a1a1a;
+            --footer-bg: #1a1a1a;
+            --viewport-handle-bg: rgba(255, 255, 255, 0.1);
+            --viewport-handle-hover-bg: rgba(255, 255, 255, 0.2);
+            --text-color: #d4d4d4;
+            --comment-color: #6a9955;
+            --keyword-color: #569cd6;
+            --class-name-color: #4ec9b0;
+            --property-name-color: #9cdcfe;
+            --string-color: #ce9178;
+            --punctuation-color: #d4d4d4;
+            --link-hover-border: #4ec9b0;
+            --modal-bg: #0d0d0d;
+            --minimap-highlight: rgba(255, 255, 255, 0.05);
+
+            --font-main: "Consolas", "Courier New", monospace;
         }
 
+        /* --- Base & Scrollbar --- */
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--viewport-handle-bg) var(--minimap-bg);
+        }
+
+        *::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: var(--minimap-bg);
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: var(--viewport-handle-bg);
+            border-radius: 4px;
         }
 
         html, body {
-            margin: 0;
-            padding: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden; /* Hide main scrollbar, GSAP will create a virtual one */
-            background-color: var(--deep-indigo);
+            overflow: hidden;
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
         }
 
-        canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            outline: none;
-        }
-
-        #scroll-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            /* Give it a very large height to create a scrollbar */
-            height: 1000vh;
-            z-index: 10;
-        }
-
-        .overlay-ui {
+        /* --- Loading Animation --- */
+        #loader {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            pointer-events: none; /* Let clicks pass through to the canvas */
+            background-color: var(--bg-color);
+            z-index: 10000;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            text-align: center;
-            z-index: 2;
+            font-size: 1.2rem;
+            transition: opacity 0.7s ease-in-out;
         }
-
-        .header-content {
-            opacity: 1;
-            transition: opacity 0.5s ease-out;
+        #loader-text::after {
+            content: '|';
+            animation: blink 1s step-end infinite;
         }
-        
-        .header-content h1 {
-            font-size: 3rem;
-            margin: 0;
-            font-weight: 600;
-            letter-spacing: 2px;
-            color: #ffffff;
-            /* This will be replaced by the 3D text, but acts as a fallback */
-            display: none; 
+        @keyframes blink {
+            50% { opacity: 0; }
         }
-
-        .header-content .subtitle {
-            font-size: 1.1rem;
-            font-weight: 300;
-            max-width: 600px;
-            margin: 20px auto 0 auto;
-            line-height: 1.6;
-        }
-
-        .header-content .ai-subtitle {
-            margin-top: 25px;
-            font-size: 0.9rem;
-            font-style: italic;
-            color: var(--cyan-glow);
-            text-shadow: 0 0 8px var(--cyan-glow);
-            animation: pulse 3s infinite ease-in-out;
-        }
-
-        #scroll-indicator {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: white;
-            z-index: 5;
-            font-size: 0.8rem;
-            opacity: 0.7;
-            animation: bounce 2s infinite;
-        }
-        
-        #project-panel {
-            position: fixed;
-            top: 50%;
-            left: 5vw;
-            transform: translateY(-50%) translateX(-150%); /* Start off-screen */
-            width: 350px;
-            max-width: 90vw;
-            padding: 25px 30px;
-            background: var(--panel-bg);
-            border: 1px solid var(--border-glow);
-            border-radius: 12px;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2), inset 0 0 15px rgba(0, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+        #loader-scroll {
+            position: absolute;
+            top: 0;
+            left: 5%;
+            width: 90%;
+            height: 100%;
+            overflow: hidden;
             opacity: 0;
-            visibility: hidden;
-            pointer-events: auto; /* Enable interaction only for the panel */
-            z-index: 3;
-            transition: backdrop-filter 0.5s, -webkit-backdrop-filter 0.5s;
+            transition: opacity 0.3s ease-in;
+            color: var(--comment-color);
+            font-size: 0.8rem;
+            white-space: pre;
+            line-height: 1;
+        }
+        #loader-scroll-content {
+            animation: scroll-up 2s linear forwards;
+        }
+        @keyframes scroll-up {
+            from { transform: translateY(0); }
+            to { transform: translateY(-100%); }
         }
 
-        #project-panel.right {
-            left: auto;
-            right: 5vw;
+        /* --- Main Layout --- */
+        .site-wrapper {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
         }
 
-        #project-panel h2 {
-            font-size: 1.8rem;
-            margin: 0 0 15px 0;
-            color: #fff;
-            text-shadow: 0 0 5px var(--cyan-glow);
-        }
-
-        #project-panel p {
+        #main-content {
+            flex-grow: 1;
+            height: 100vh;
+            overflow-y: scroll;
+            background-color: var(--main-pane-bg);
+            padding: 3rem 4rem 10rem 4rem; /* Extra padding at bottom */
             font-size: 1rem;
             line-height: 1.6;
-            margin: 0 0 25px 0;
-        }
-        
-        .project-links {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+            scroll-behavior: smooth;
         }
 
-        .project-links a {
-            display: inline-block;
-            padding: 12px 20px;
+        #minimap-container {
+            flex-basis: 18%;
+            flex-shrink: 0;
+            max-width: 250px;
+            height: 100vh;
+            position: relative;
+            background-color: var(--minimap-bg);
+            padding: 3rem 1.5rem;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        /* --- Header & Code Styling --- */
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .class-name { color: var(--class-name-color); font-weight: bold; }
+        .comment { color: var(--comment-color); font-style: italic; }
+        .keyword { color: var(--keyword-color); }
+        .property { color: var(--property-name-color); }
+        .string { color: var(--string-color); }
+        .punctuation { color: var(--punctuation-color); }
+        .project-title { color: var(--class-name-color); transition: text-shadow 0.3s ease; }
+        
+        .project-block {
+            position: relative;
+            margin-bottom: 2em;
+            padding:_ 1em; /* for targeting */
+        }
+
+        .background-viz {
+            position: absolute;
+            top: -2em;
+            left: -3em;
+            right: -3em;
+            bottom: -2em;
+            z-index: -1;
+            opacity: 0.1;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        .background-viz canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        a {
+            color: inherit;
             text-decoration: none;
-            color: var(--cyan-glow);
-            border: 1px solid var(--cyan-glow);
-            border-radius: 5px;
-            background: rgba(0, 255, 255, 0.1);
-            text-align: center;
-            font-weight: 500;
-            transition: background-color 0.3s, color 0.3s, box-shadow 0.3s, transform 0.2s;
+            position: relative;
+            transition: color 0.2s ease;
+        }
+        a::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            bottom: -2px;
+            left: 0;
+            background-color: var(--link-hover-border);
+            transform: scaleX(0);
+            transform-origin: bottom right;
+            transition: transform 0.25s ease-out;
+        }
+        a:hover::after {
+            transform: scaleX(1);
+            transform-origin: bottom left;
+        }
+        a:hover {
+            color: var(--class-name-color);
         }
 
-        .project-links a:hover {
-            background-color: var(--cyan-glow);
-            color: var(--deep-indigo);
-            box-shadow: 0 0 15px var(--cyan-glow);
-            transform: translateY(-2px);
+        /* --- Minimap --- */
+        #viewport-indicator {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            background-color: var(--viewport-handle-bg);
+            border: 1px solid var(--viewport-handle-hover-bg);
+            border-radius: 2px;
+            transition: background-color 0.2s ease;
+            cursor: grab;
         }
-        
-        .footer {
+        #viewport-indicator:hover {
+            background-color: var(--viewport-handle-hover-bg);
+        }
+        #viewport-indicator:active {
+            cursor: grabbing;
+        }
+
+        .minimap-section {
+            position: absolute;
+            width: calc(100% - 3rem); /* Match container padding */
+            transition: filter 0.3s ease, background-color 0.3s ease;
+        }
+        .minimap-section:hover {
+            filter: brightness(1.75);
+        }
+        .minimap-section canvas, .minimap-section .icon-container {
+            width: 100%;
+            height: 100%;
+        }
+        .icon-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        .icon-container svg {
+            width: 25%;
+            height: auto;
+            max-height: 80%;
+            fill: var(--text-color);
+        }
+
+        /* --- Footer --- */
+        footer {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            padding: 10px 20px;
+            height: 30px;
+            background-color: var(--footer-bg);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-family: 'Courier New', Courier, monospace;
+            padding: 0 1rem;
             font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.5);
-            z-index: 4;
-            opacity: 0;
+            z-index: 1000;
         }
 
-        @keyframes pulse {
-            0%, 100% {
-                text-shadow: 0 0 8px var(--cyan-glow);
-                opacity: 1;
-            }
-            50% {
-                text-shadow: 0 0 15px var(--cyan-glow);
-                opacity: 0.8;
-            }
+        /* --- Video Modal --- */
+        #video-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0s 0.3s linear;
         }
-        
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {
-                transform: translateX(-50%) translateY(0);
-            }
-            40% {
-                transform: translateX(-50%) translateY(-10px);
-            }
-            60% {
-                transform: translateX(-50%) translateY(-5px);
-            }
+        #video-modal.visible {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.3s ease;
         }
-        
-        @media (max-width: 768px) {
-            .header-content .subtitle {
-                font-size: 1rem;
-            }
-            #project-panel {
-                width: 90vw;
-                left: 5vw;
-                right: 5vw;
-                transform: translateY(-50%) translateX(0) scale(0.8); /* Center and scale down */
-            }
-            #project-panel.right {
-                left: 5vw;
-                right: 5vw;
-            }
+        .modal-content {
+            background-color: var(--modal-bg);
+            width: 80%;
+            max-width: 1120px;
+            height: auto;
+            aspect-ratio: 16/9;
+            border: 1px solid var(--viewport-handle-hover-bg);
+            border-radius: 5px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        #video-modal.visible .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            background-color: var(--footer-bg);
+            padding: 5px 10px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .modal-title {
+            margin-right: auto;
+            font-size: 0.8rem;
+            color: var(--comment-color);
+        }
+        .modal-close {
+            background: #ff5f56;
+            border: 1px solid #e0443e;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .modal-body {
+            flex-grow: 1;
+        }
+        .modal-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
     </style>
 </head>
 <body>
 
-    <div id="scroll-container"></div>
+    <!-- Loading Screen -->
+    <div id="loader">
+        <div id="loader-text">// Generating today's design...</div>
+        <div id="loader-scroll"><div id="loader-scroll-content"></div></div>
+    </div>
     
-    <div class="overlay-ui">
-        <div class="header-content">
-            <!-- 3D text will appear here -->
-            <p class="subtitle">A software engineer at Google developing next-generation infrastructure for large-scale systems.</p>
-            <p class="ai-subtitle">This portfolio is procedurally generated and redesigned by an AI each day. The journey is always new.</p>
+    <!-- Video Player Modal -->
+    <div id="video-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">root@mothership:~ C:\Player.exe</span>
+                <button class="modal-close" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <iframe id="video-iframe" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
         </div>
     </div>
-    
-    <div id="scroll-indicator">Scroll to Explore</div>
 
-    <div id="project-panel">
-        <h2 id="project-title"></h2>
-        <p id="project-description"></p>
-        <div class="project-links" id="project-links"></div>
+    <div class="site-wrapper">
+        <!-- Main Content Pane -->
+        <main id="main-content">
+            <header id="page-header">
+<pre><code><span class="keyword">class</span> <span class="class-name">GevaKipper</span> {
+  <span class="keyword">constructor</span>() {
+    <span class="keyword">this</span>.<span class="property">role</span> = <span class="string">"Software Engineer at Google, working on core infrastructure for AI products."</span>;
+  }
+}
+
+<span class="comment">// MOTHERSHIP.AI Daily Build: </span><span id="daily-build" class="comment"></span>
+<span class="comment">// This portfolio's theme is re-generated daily. What you see today is unique.</span>
+</code></pre>
+            </header>
+            
+            <section id="content-projects">
+<pre><code><span class="keyword">const</span> portfolio_projects = [
+    <div class="project-block" id="project-glglstats">
+        <div class="background-viz" id="viz-glglstats"><canvas></canvas></div>
+<span class="punctuation">{</span>
+    <span class="property">name</span>: <span class="string project-title">"GlglStats"</span>,
+    <span class="property">description</span>: <span class="comment">"/* A Python project measuring song repetitiveness in Israeli pop charts using LZ77 compression, with visualizations of repetition patterns. */"</span>,
+    <span class="property">site</span>: <span class="string">"<a href="https://glglstats.geekip.dev" target="_blank">https://glglstats.geekip.dev</a>"</span>,
+    <span class="property">video</span>: <span class="string">"<a href="#" data-video-id="jrKAtOsj1Lo">https://youtube.com/watch?v=jrKAtOsj1Lo</a>"</span> <span class="comment">// Presented at PyData TLV</span>
+<span class="punctuation">}</span>,
+    </div>
+    <div class="project-block" id="project-ahuzat-dibuk">
+        <div class="background-viz" id="viz-ahuzat-dibuk"><canvas></canvas></div>
+<span class="punctuation">{</span>
+    <span class="property">name</span>: <span class="string project-title">"Ahuzat Dibuk"</span>,
+    <span class="property">description</span>: <span class="comment">"/* Python scraping & data viz project tracking Tel-Aviv parking occupancy to generate predictive heatmaps for residents. Featured in major news outlets. */"</span>,
+    <span class="property">news_1</span>: <span class="string">"<a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">https://13tv.co.il/item/news/domestic/internal/parking-902956407/</a>"</span>,
+    <span class="property">news_2</span>: <span class="string">"<a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm</a>"</span>,
+    <span class="property">publication</span>: <span class="string">"<a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank">https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/</a>"</span>
+<span class="punctuation">}</span>,
+    </div>
+    <div class="project-block" id="project-2d-orienting">
+<span class="punctuation">{</span>
+    <span class="property">name</span>: <span class="string project-title">"2D Part Orienting"</span>,
+    <span class="property">description</span>: <span class="comment">"/* Research in computational geometry for my M.Sc. at Tel-Aviv University, focusing on algorithms to efficiently orient 2D parts using parallel grippers. */"</span>,
+    <span class="property">project_page</span>: <span class="string">"<a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/</a>"</span> <span class="comment">// Includes paper and code</span>
+<span class="punctuation">}</span>,
+    </div>
+    <div class="project-block" id="project-turing-jest">
+<span class="punctuation">{</span>
+    <span class="property">name</span>: <span class="string project-title">"The Turing Jest"</span>,
+    <span class="property">description</span>: <span class="comment">"/* Can you tell an AI-written joke from a human's? A web-based game exploring the nuances of humor and creativity in LLMs. */"</span>,
+    <span class="property">site</span>: <span class="string">"<a href="https://jest.geekip.dev" target="_blank">https://jest.geekip.dev</a>"</span>
+<span class="punctuation">}</span>,
+    </div>
+    <div class="project-block" id="project-rhymes">
+<span class="punctuation">{</span>
+    <span class="property">name</span>: <span class="string project-title">"Rhymes of Israel"</span>,
+    <span class="property">description</span>: <span class="comment">"/* A Chrome extension that analyzes Hebrew text on any webpage and highlights phonetic rhymes, built to aid poets and songwriters. */"</span>,
+    <span class="property">extension_store</span>: <span class="string">"<a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank">https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb</a>"</span>
+<span class="punctuation">}</span>,
+    </div>
+    <div class="project-block" id="project-portfolio">
+<span class="punctuation">{</span>
+    <span class="property">name</span>: <span class="string project-title">"This Portfolio"</span>,
+    <span class="property">description</span>: <span class="comment">"/* A self-referential project. This site's layout, color-scheme, and font are procedurally generated daily. It's built in a single file with vanilla JS. You are here. */"</span>,
+    <span class="property">repository</span>: <span class="string">"<a href="https://geekip.dev" target="_blank">https://geekip.dev</a>"</span>
+<span class="punctuation">}</span>
+    </div>
+];
+</code></pre>
+            </section>
+            
+            <section id="content-links">
+<pre><code><span class="keyword">const</span> social_links = {
+    <div class="project-block" id="project-links">
+    <span class="property">github</span>:   <span class="string">"<a href="https://github.com/gevak" target="_blank">github.com/gevak</a>"</span>,
+    <span class="property">linkedin</span>: <span class="string">"<a href="https://linkedin.com/in/gevakip" target="_blank">linkedin.com/in/gevakip</a>"</span>,
+    <span class="property">facebook</span>: <span class="string">"<a href="https://facebook.com/geva.kipper" target="_blank">facebook.com/geva.kipper</a>"</span>
+    </div>
+};
+</code></pre>
+            </section>
+        </main>
+
+        <!-- Minimap Pane -->
+        <aside id="minimap-container">
+            <div id="minimap-sections">
+                <!-- Sections will be injected by JS -->
+            </div>
+            <div id="viewport-indicator"></div>
+        </aside>
     </div>
 
-    <div class="footer">
-        <div id="footer-design">Design by Gemini, an AI by Google.</div>
-        <div id="footer-stopwatch"></div>
-    </div>
-    
-    <audio id="ambient-sound" loop>
-        <source src="data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjQ1LjEwMAAAAAAAAAAAAAAA//tQwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//tQwUAALHYgGAAAJhSgRgAIAYFkYAB1AFABAAADGZnb3mAAAACE8ADSAAAIEAAAQAAAAAAD1mZnb3mAAAACE8ADSAAAMIAAQAAAAAA//tQwUoAAFy9gHAAABiSiDAAIAQFY4ADqAIAAAAADERZnb3mAAAACE8ADSAAACgAAAQAAAAAAAAAAOVZnb3mAAAACE8ADSAAAMQAAQAAAAAARVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//tQwVoAAFyRgDAAABiChTAAIAQFYRADqAIAAAAADFpZnb3mAAAACE8ADSAAALgAAAQAAAAAAADtVZnb3mAAAACE8ADSAAAMQAQAAAAAAZVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//tQwVoAAFyRgDAAABiChTAAIAQFYRADqAIAAAAAA9pZnb3mAAAACE8ADSAAALgAAAQAAAAAAADH1Znb3mAAAACE8ADSAAAMoAQAAAAAAXVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV" type="audio/mpeg">
-    </audio>
+    <!-- Footer Status Bar -->
+    <footer>
+        <div id="footer-left">> Design compiled by Assistant. Status: OK.</div>
+        <div id="footer-right"></div>
+    </footer>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.164.1/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.164.1/three.module.min.js",
-                "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/"
-            }
-        }
-    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
-        import { FontLoader } from 'three/addons/loaders/FontLoader.js';
-
-        // --- Asset Data (Base64 Encoded) ---
-        const helvetiker_regular_font = {"glyphs":{" ":{"ha":25,"x_min":0,"x_max":0,"o":""},"​":{"ha":0,"x_min":0,"x_max":0,"o":""},"!":{"ha":30,"x_min":1,"x_max":21,"o":"         A EC FC JC LA NA PA QA RA SA TA UA VA WA XA YB ZB aB bB cB dB eB fC gD hE iF jG lH mI oJ pK qL rM sN uO vP xQ yR zS BT CU DV EW FX GY HZ Ia Jb Kc Ld Me Nf O"},"\"":{"ha":45,"x_min":7,"x_max":37,"o":"   A EC FC OC PC QC RC SC TC UC VC WC XC YC ZD aE bF cG dH eI fJ gK hL iM jN lO mP nQ oR pS rT tU uV wX xY yZ z`"},"#":{"ha":83,"x_min":-1,"x_max":83,"o":"      B FE GE IE JE KE LE ME NE OE PE QE RE SE TE UE VE WE XE YE ZE aE bD cC dB eB fA g@ hC iG jK kO lS mU nW oY p` r` t` u` v` w` x` y` z` z@@@@@@@@DA FA HA JA LA NA PA RA TA VA XA ZA bA dC fH hL jP lT nX p\\ r_ t_ v_ x_ y_ z_ z@@@@@@C EA GA IA KA MA OA QA SA UA WA YA aA cA eA gC iH kL mP oT qX s\\ u_ w_ y@@@@@CA EA GA IA KA MA OA QA SA UA WA YA aA cA eA gC iG kK mO oS qU sW uY w_ y@@cC dD eE fF gG hH iI jJ kK lK mK nL oM pN qO rP sQ tR uS vT wU xW yX zZ"},"$":{"ha":83,"x_min":12,"x_max":70,"o":"         A DA FA HAJA LA NA PA RA TA UA VC XC ZC aD cD eE gF iG kH mI oJ qK sL uM wN yO {P BQ DR FS GU IV KWEW FV GU HT IS KR LQ MP NQ OR PSUQVRWSYTYVXXZY[bZbZ[YXVUTSRQPOONMLKJIHGFEDC@B@B@B@B@B@F@I@L@O@R@U@X@Z@[A]A_ACAEAGAIALAOAQASAUAWAYAaAcAeAgAjAlAnAqAtAvAxAzB`Bd Gf Ii Ll Oo Rr Uu Xx `z cz fz hAi@kClDmFoGpIrJsKtLuMwNyOzQ{S|U~V~V~V~V~U~S{QzNyMwJuIrGoFlDkCiAiCfEiGjIlKnNqPrRtUvWxYz_z`zazcxfvgtfremclbj`h^f]dZ`X]U\\S[QYOWNULSJOHMGKDJCJAJ@IAF@C@A A G J M P S V Y \\ _ c f i l n q t w zB CF"},"%":{"ha":100,"x_min":-1,"x_max":100,"o":" A GB IB KB LB MB NB OB PB QB RB SB TB UBUCVDWEWFXGYHZIZJ[K\\L]M^N_O`PaQbRcSeTfUgVhWiXjYk[l\\m]n^o_p`qarkslsksirhpgofmekdjcibhah_f^d]b[`Y]V\\T[RYPWNULSJPHNGLEKDJCHCGAEACA A DBFBHBJBLBNBPBRBTBVBYB`BcCgClDqDvD{E@FDIDLDODREUGXG_HcHlHpIuIzJCLDLFLHLJLNLPLRLTLVLXLYMZN`OaOcOdPeQgQiQjRlRnRoRqSsSuSvSxT{U@V@W@X@Y@Z@[A\\A]@^A_A`B@C@D@DAFDIDLDPDUHSHUIVKXMZN`PbReSgThVjWlXnZp[r\\t]wbxbvbt`r_p^mZkWgVcU`Q]N[KWHUFPBN@J@F@C A AG@J@N@RAVA_@d@i@n@u@{A"},"&":{"ha":91,"x_min":-2,"x_max":91,"o":"               A EB ED GD ID KD MD OD QD SD TD VD WD XD YD aC bB cA e@ hA jC lF oI rL uO xR {U BYFZH`LdOgUnWs[vc{gBkDgGjJlOpSsWz_D`E`F_G]HZIYJXKWLVMUNSOQORNTMULQJPHMFKDHCG@EA@A B F J N R V Z _ d i n t yC GHLO FUJTMWO`RaUcWeYg[k]m`pbrdsfuhwjxlyo{p}q|s~u~w~y~|~ ~@CAEAHAKAOARAVAZA^A`AcAfAiAlAoArAuAxA|BCBEDFGHHOHUGYH_HeHnHyIELILKMLOMQMSMUMXMZM\\M^NCOFPGQHRISJTLUNWNYO`PaQcReSgThUjVlWmYpZq[r]t_vbxay`{c|f~h C E H K N Q T W Z ] ` c f d f g h i j j k i h f e d c b a ` _ ^ ] \\ [ Z Y W U S QMOKMIMFMCM@@@@BAEAHAKAOARAVA[A_AcAfAiAmApAsAvAzBCBEBGBIBLBOB"},"'":{"ha":25,"x_min":11,"x_max":14,"o":"               A BC CC DC EC FB GA HA I@ J@ K@ L@ MA NA OA P@ Q@ R@ S@ T@ U@ V@ W@ X@ Y@ Z@ [@ \\@ ]@ ^@ __ `_ a_ b_ c_ d` e` f` g` h` i` j` k` l` m_ o_ p^ q^ r^ s^ t^ u] w] x\\ y[ zZ {Y |X }W ~V ~U @T AS"},"(":{"ha":37,"x_min":13,"x_max":23,"o":"         A JC KC LC MC NC OC PC QC RC SC TC UC VC WC XC YD ZD aD bD cE dE eE fF gF hG iH jH kI lJ mJ nK oL pM qM sN tO uP vQ wR xS yT zT {U |V }W ~X _Y BZ C[ D\\ E] F^ G_ H` Ia Jb Kc Ld Me Nf"},")":{"ha":37,"x_min":13,"x_max":23,"o":"         A EB FB GB HB IB JB KB LB MB NB OB PB QB RB SB TB UC VC WC XDXDZD[D\\E]E^E_F`GaHbIcKdLeMfNgOhPiQkQlRmSoTpUqVrWsXtYu[v\\x]z^|`"},"*":{"ha":49,"x_min":1,"x_max":48,"o":"                     A EA FA HA IA JA KA LA MA NA OA PA QA RA SA TA ZA aAZAXAWAUASAQAOAKAEAB A@A@A@A@AAA@B@D@F@H@J@M@P@S@V@Y@[@^A@ACBCECHCJCMCQCU"},"+":{"ha":75,"x_min":-2,"x_max":76,"o":"   A EC FC GE HE IE JE KE ME NE OE QE SE UE WE YE aE cE eD gC iB j@l@nCqGtJuMwO{R@TAUAWAZAaAdAfAhAkAmApAsAvAzBCBEBGBIBLBOBRBUBYB`BcCgCkCoA BEBEGEIEKE"},",":{"ha":25,"x_min":-1,"x_max":11,"o":"                               A BC CC DD ED FC GC HC IC JB KC LB MC NC OD PD QE RE SF TG"},"-":{"ha":41,"x_min":0,"x_max":41,"o":"                        A DB EB FB GB HB IB JB KB LB MB NB OB PB QB RB SB TB UB VB"},".":{"ha":25,"x_min":1,"x_max":8,"o":"_ FE GE HE IE JE KE LE ME NE OE PE QE RE SE TE UE VE WE XE YE"},"/":{"ha":41,"x_min":-1,"x_max":41,"o":"     M DA EA FA GA HA IA JA KA LA NA OA PA QA RA SA TA UA VA WA X@ Y@ Z@ [@ \\B ]C ^D _E `F aG bI cJ dK eL fM hN iO jP kQ lR mS pT qU rV sX tY vZ w[ x\\ y] z^ {` |a ~b"},"0":{"ha":83,"x_min":-2,"x_max":84,"o":" A GB IB KB LB MB NB OB PB QB RB SB TB UBUCVDWEWFXGYHZIZJ[K\\L]M^N_O`PaQbRcSeTfUgVhWiXjYk[l\\m]n^o_p`qarkslsksirhpgofmekdjcibhah_f^d]b[`Y]V\\T[RYPWNULSJPHNGLEKDJCHCGAEACA A DBFBHBJBLBNBPBRBTBVBYB`BcCgClDqDvD{E@FDIDLDODREUGXG_HcHlHpIuIzJCLDLFLHLJLNLPLRLTLVLXLYMZN`OaOcOdPeQgQiQjRlRnRoRqSsSuSvSxT{U@W@Y@[A\\A_AcAeAgAjAlAnAqAtAvAxAzB`Bd Gf Ii Ll Oo Rr Uu Xx `z cz fz h@i@k@m@n@o@q@r@s@t@v@x@z@{@|A~A~A~A~A~A{A|BzDyFwHuJtLrNoPmRkSiUhWgXfYd[b\\`_]}A|@xA@C@E@G@I@K@M@O@Q@S@U@W@Y@[A\\A^A`AbAdAfAhAjAlAnAqAtAwAyAzB`Bd Gf Hh Jj Ll Nn Pp Rr Tt Vv Xy Z{ _} `} a~ c~ e~ g~ j~ l"},"1":ha83,x_min:-2,x_max:58,o:"      _@`CcEeGgIiKkMmOoQqSsUuWwYy[{A]C_E`G`H`I`J`K_L_M_O_Q_S_U_W_Y_Z_\\_]_^__A`B`EaFcHdJeKfLgMhNiO"},"2":ha83,x_min:-2,x_max:84,o:" A FA HAJA LA NA PA RA TA UA VC XC ZC aD cE eF gG iH kI mJ oK qL sM uN wO yP {Q BQ DR FS GU IV KWEVFU HT IS KR LQ MP NQ OR PSUQVRWSYTYVXXZY[bZbZ[YXVUTSRQPOONMLKJIHGFEDCBA@B@B@B@B@@@@CAJAPAXA`AhApAwA{B@BAD@GAJA"},"3":ha83,x_min:-1,x_max:79,o:"         A EC FC HC JC LC NC PC RC TC VB XC ZC aD bE dF fG hH jI lJ nK pL rM tN vO xP zQ BRETFVHXJZN`PcReSgTiUlVnWpXrZu[x^z`|c~g j l o r v zCFFH HJ HL HN HP HR HT HV HX HZ H\\ H^ H_HcHfHiHlHoHrHuHyICIEIGIKIMIPISIWIZI\\I^JaJdJgJkJnJqJuJyKCKGKKKOKSKWKaKcKjKqKvKzLDLHL PLX LmMmMmMmMlMjLgLdL_LWLOJIFCB@A@A@A"},"4":ha83,x_min:-1,x_max:84,o:"   zDAFAHAJALAOARAUA\\A`AcAgAjAmApAtAwAzBCBGBJBNBRBVBZB`BeBkLdLfLhLjLlNoPpRrTtVvYxZz[{A]C_E` G`H`I`J`K`L`M`N`PAOAOAPAOAOAOAOAOAOAPAOAOAOAOAOA"},"5":ha83,x_min:-1,x_max:85,o:"A EAHAKANARAUA[A_AcAfAjAnAsAwA|BCBIBNBTB\\B`BfBjBpBuB{CACHCOFUGXH_HgHpIxJ@JDJHJMJSJYJ]K`KeKiKoKtKyLALGLUL]M`MeMjMrMyNALILOLOULaMhMnMsMxN@NDNGNKNPNUNaNeNlNsNyO@OCOIOMOROWO`OgOnOuO{PAPYP_PdPhPoPuQGQKQOQTQYQ`QfQjQpQtyQzRARE RHR"},"6":ha83,x_min:-1,x_max:84,o:"A ECFC HB JB LB NB PB RB TB UBVCWCYCZC[C\\C]D^E_F`GaHbIcKdMeNgOhPiQkRlSnToVqXsZu[w^y`zazczeygwirjplnmojpkqlrmsnupwqxrzuzwzxz{y|x{y}z} |~~@~A@A@@C@FAIAKALANAPACAREUHWHZK\\N`PcSfUjWn[s`{cAiCoAqQzT}X_\\b]e`hah_g^e]c[`Z]X[VYTWRVPUOTMSLRIOFMEDICIAEACAAA B F H J L N P S"},"7":ha83,x_min:-1,x_max:85,o:"A DAFAHAJALANAPARATAVAZA_AcAfAiAmApAsAvAzBCBEBGBIBLBOBRBUBYB`BcBfChCjClCnCpCqCtDqDqDpDpDoDoCoCjCiChCfCdC`C[CWCRCMCHFCA"},"8":ha83,x_min:-1,x_max:84,o:"      A EC FC HC KC MC OC QC TC VB XC ZCaDbEeGgIiKlMnPqSsUvXz\\B_E`H`K`NaPdSgUjWn[q`uc}fAiClEpHrJvLzNBOFPHRJU MVOXOZObPhSlVpYt`wc~g j m q u yBABDBFBHBJBLBNBPBRBTBVBYB`BcCgClDqDvD{EAFEHEJELEOEPEUFYH_HgHpHuIyJ@JDLHLJLNLQLULXLZN`OaOcOdPeQgQiQjRlRnRpRrStSuSvSwTzUAVBYA^A_AcAeAgAjAlAnAqAuAxA|BCBEBGBJB"},"9":ha83,x_min:-1,x_max:85,o:"               A FB GB IB JB KB LB NB OB PB QB RB SB TB UCVCWCXCZC[C\\C]C^E_F`GaHbIcKdMeNfOhPiQkRlS T V W Y Z \\ ^ ` a c e g h j l n p r t v x zBDFHH I J K M O Q S UUUUUUUUUUUUUUSQUOUKSGRDMCHA@A@A@A C F I L O S V Z _ d i n t yCGFJHQJVLZN`PcReSgThUjVl WpYq[s\\t]v^x_z`{aygxfulrkpiogmekdjcicg`e^c[`Y]W[UZSWPUNSMQJPHNGLEKDJCHCGAEACA"},":":{"ha":25,"x_min":1,"x_max":8,"o":"_ FE GE HE IE JE KE LE ME NE OE PE QE RE SE TE UE VE WE XE YE_ FE GE HE IE JE KE LE ME NE OE PE QE RE SE TE UE VE WE XE YE"},";":{"ha":25,"x_min":-1,"x_max":11,"o":"                               A BC CC DD ED FC GC HC IC JB KC LB MC NC OD PD QE RE SF TGNF MG LH KI JH IG HF GE FD EC DB C@ BA AA@@@? A@BA CBE DHB"},"<":{"ha":75,"x_min":4,"x_max":70,"o":"   yA_A`B`D`E`F`G`H`J`K`L`M`N`O`P`Q`R`S`V`W`Y`Z`[`\\`]`_`a`b`d`e`f`g`i`j`l`m`o`p`q`r`r`q`p`o`m`l`k`j`h`g`f`e`c`b`a``_^_]ZXVTRPNLJGD@B@D@F@H@J@L@N@P@R@T@V@X@Z@[A\\A^A`AbAdAfAhAjAlAnApArAtAvAxAzB`Bd Gf Ii Ll Oo Rr Uu Xx `z cz fz hAi@kClDmFoGpIrJsKtM"},"=":ha75,x_min:-3,x_max:77,o:"                        A DB EB FB GB HB IB JB KB LB MB NB OB PB QB RB SB TB UB VBWBWBWBTBRBPBNBLBJBIBGBEBDWA VA TA RA PA NA LA JA HA FA DA                                           A DB EB FB GB HB IB JB KB LB MB NB OB PB QB RB SB TB UB VBWBWBWBTBRBPBNBLBJBIBGBEBDWA VA TA RA PA NA LA JA HA FA DA"},">":{"ha":75,x_min":4,"x_max":70,"o":"   A BG BIGKIMIOIPIQISITIVIXIZI\\I^I`IbIdIfIhIjIlInIpIrItIvIxIzI`IcIfIiIlIoIrIuIyJ@JCJFJIJNKDLDLDMDNDPDQDRDS DTDUDWDYDaD`D_DYDXDWDUDRDODLDI"},"?":{"ha":58,"x_min":0,"x_max":58,"o":" A DA FA HAJA LA NA PA RA TA UA VC XC ZC aD cD eE gF iG kH mI oJ qK sL uM wN yO {P BQ DR FS GU IV KWEVFU HT IS KR LQ MP NQ OR PRORNRMQ LQKPHMFKDHCG@EA@A B E I M Q U Y ] a e i m q u yBDFHKO@pAsAtAuAvAxAzB`Bd Gf Ii Ll Oo Rr"},"@":{"ha":125,"x_min":-2,"x_max":125,o":"                           A ED FD HD JD LD ND PD RBTBVDXDZD\\D^F`HbJdMgPiUlWpZs_vbygzjAmDoFqItLwO{RA VC XD ZC bC dE fF hG jH lI nJ pK rL tM vN xO zP BQ DR FS GU IV KWEW FV GU HT IS KR LQ MP NQ OR PSUQVRWSYTYVXXZY[bZbZ[YXVUTSRQPOONMLKJIHGFEDCBA@B@B@B@B@B@B@B@B@B@D@F@H@J@M@P@S@V@Y@[A^A`AcAfAiAlApAsAvAzBCBEBGBIBLBOBRBUBYB`BcBfBjBnBqBtBwB{C@CDCGDJDNFRFUFYF\\F_FcFiFlFoFrFuFxGDGHGLGPV`X`Y_Za[b\\c^d`eafbgchdjekflgmhniojplpnpopnqoro touovowpyqzr{t|v~yDFFFH HL HM HN HO HP HR HT HV HX HZ H\\ H^ H_HcHfHiHlHoHrHuHyICIEIGIKIMIPISIWIZI\\I^JaJdJgJjJnJqJuJyKCKGKKKOKSKWKaKeKkKnKrKuKyLALFLJLPLULXLZN`OcOhOlOqOuOzPAPGPLPQPVPZP^PaPfPjPpPsPxQCQFQLQQQVQZQcQgQkQpRtRySCSE"},"A":{"ha":82,"x_min":0,"x_max":82,"o":"               A EB FB GB HB IB JB KB LB MB NB OB PB QB RB SB TB UB VBWBYBZC[C\\C\\C]D^E_F`GaH`H`H_G_F`E^D]C\\B[AZEUCPCB"},"B":{"ha":83,"x_min":-2,"x_max":76,o":"A EB FB GB HB IB KB LB MB OB QB SB UB WB YB aB cB eB gC iD kE mF oG qH sI uJ wK yL {MBNCOEQGSJULVOXQZS_UaWcYf[iai`n^r^u]x]{A|C|F{I{L{O{R{U{Y{[y]w_u`s^q[oXiUeQ`L[IUFPCNAK@FA@A B D F H J L O Q T W Z \\ _ b e h k n q t w zB CF"},"C":{"ha":84,"x_min":-1,"x_max":85,o":"A EAFAHAJALANAPARATAUAVAXA[A]A`AcAeAgAiAkAmAoAqAsAuAwAyAzB`Bd Gf Ii Ll Oo Rr Uu Xz _} d~ hAnCpFrJtLwN{QCSDTFUGVHWIXJYKZ L"},"D":{"ha":91,"x_min":-2,"x_max":80,o":"A EB FB GB HB IB KB LB OB QB SB UB WB YB aB cB eBgCjCgCfCeCcCaC_B\\BZCWCQDIBE ACA A B E I N S X a g l q wB CHFMJVOYU]a`dae g"},"E":{"ha":77,"x_min":-2,"x_max":70,o":"A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJ mK oL qM sN uO wP yQ zS BT CV DX EZ F[ H\\ J] L^ N_ P` Ra Sc Ue Wg Yj [l \\n _p ar ct ev ex fz      A EC FC GE HE IE JE KE ME NE OE QE SE UE WE"},"F":{"ha":72,"x_min":-2,"x_max":68,o":"A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJ mK oL qM sN uO wP yQ zS BT CV DX EZ F[ H\\ J] L^ N_ P` Ra Sc Ue Wg Yj [l \\n _p ar ct ev ex fz   A DC FC GE HE IE JE KE ME NE"},"G":{"ha":90,"x_min":-2,"x_max":90,o":"  A FAHAJALANAPARATAVAXA[A]A`AcAeAgAiAkAmAoAqAsAuAwAyAzB`Bd Gf Ii Ll Oo Rr Uu Xz _} d~ hAnCpFrJtLwN{QCSDTFUGVHWIXJYKZ L^O`PaQaRaSaT`VbXbYcZc[d\\c]c^c_c`caccde fgg hih jh kh lh mh nh oh ph qg rf qf pf of nf mf lf kf jf if hf gf ff ef df cf"},"H":{"ha":88,"x_min":-2,"x_max":88,o":"A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJmK oL qM sN uO wP yQ zS BT CV DX EZ F[ H[ I[ J[ K[ L[ M[ M[ M[ M[ M[ LZ KY JX HW GU FT ES DR CQ BO AM@IAFA CA@A@B@DAFAHAKAMAPASAWAYAcAgAlApAuAzBD      A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJmK oL qM sN uO wP yQ zS BT CV DX EZ F[ H[ I[ J[ K[ L[ M[ M"},"I":ha30,x_min:1,x_max:21,o:"         A EC FC JC LA NA PA QA RA SA TA UA VA WA XA YB ZB aB bB cB dB eB fC gD hE iF jG lH mI oJ pK qL rM sN uO vP xQ yR zS BT CU DV EW FX GY HZ Ia Jb Kc Ld Me Nf O"},"J":{"ha":50,"x_min":-2,"x_max":50,o:"           A EC FC GC IC KC MC OC PC QC RD SE TF UG VH WI XJ YL ZN [O \\Q ]R _S `T aV bW dX fY hZ ja lc ne pg rh sj ul wm xo"},"K":{"ha":84,"x_min":-2,"x_max":82,o":"A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJmK oL qM sN uO wP yQ zS BT CV DX EZ F[ H[ I[ J[ K[ L[ M[ M_@bAeAiAnAsAyBDBHBMBSBYB`BfBlBqBvB{CACHCOCTCYC`ChDrGvK{[DFIKOU\\adgkotyBH"},"L":{"ha":70,"x_min":-2,"x_max":60,o":"A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJmK oL qM sN uO wP yQ zS BT CV DX EZ F[ H[ I[ J[ K[ L[ M`KbJ`I`G`E`C`A@B@D@F@H"},"M":ha99,x_min:0,x_max:99,o:"      A EC FC JC LA NA PAQA RA SA TA UA VA WA XA YB ZB aB bB cB dB eB fC gD hE iF jG lH mI oJ pK qL rM sN uO vP xQ yR zS BT CU DV EW FX GY HZ IaJ`JaIaHZGXFVETDRBPAKAFA@A@B@C@E@G@I@K@N@P@S@V@Y@[A^A`BcFhJlOpSsWy\\A_C_F_H_K_O_Q_T_XBZA]B^C`D`E`F_G_G_F`E`D`C_B`AZAXAUASAPAKAFA@A@B@D@F@I@L@O@S@V@Y@\\@_A`AcAfAhAjAmApAsBvAWAUAQAOAKAGACAAA       A EC FC JC LA NA PAQA RA SA TA UA VA WA XA YB ZB aB bB cB dB eB fC gD hE iF jG lH mI oJ pK qL rM sN uO vP xQ yR zS BT CU DV EW FX GY HZ Ia"},"N":ha88,x_min:-1,x_max:88,o:"A FBGBIBJBKB LB MB NBOBQBSBUBWB YBZC[C\\D]E^FaGbHcIdJeKfLgMhN`O`P_Q_S_U_W_Y`Z`\\`^``AaBcBeBgBiBkBnBqBtBwBzBCB      A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJ mK oL qM sN uO wP yQ zS BT CV DX EZ F[ H\\ J] L^ N_ P` Ra Sc Ue Wg Yj [l \\n _p ar ct ev ex fz"},"O":ha92,x_min:-2,x_max:93,o":"  A FAHAJALANAPARATAUAVAXA[A]A`AcAeAgAiAkAmAoAqAsAuAwAyAzB`Bd Gf Ii Ll Oo Rr Uu Xz _} d~ hAnCpFrJtLwN{QCSDTFUGVHWIXJYKZ L^MaNbNcNdNeNfNgNhNiNjNkNmNoNpNrNsNuNwNyO@OBOCOFOHOKONOMOPOQOSOUOWOYO[O]O^N`NcNfNiNlNoNrNuNyO@OC OFOILPROUOXO`OgOmOsOyPAPF PKPPPUQ"},"P":{"ha":83,"x_min":-2,"x_max":75,o":"A EB FB GB HB IB KB LB MB OB QB SB UB WB YB aB cB eB gC iD kE mF oG qH sI uJ wK yL {MBNCOEQGSJULVOXQZS_UaWcYf[iai`n^r^u]x]{A|C|F{I{L{O{R{U{Y{[y]w_u`s^q[oXiUeQ`L[IUFPCNAK@F"},"Q":ha92,x_min:-2,x_max:93,o":"  A FAHAJALANAPARATAUAVAXA[A]A`AcAeAgAiAkAmAoAqAsAuAwAyAzB`Bd Gf Ii Ll Oo Rr Uu Xz _} d~ hAnCpFrJtLwN{QCSDTFUGVHWIXJYKZ L^MaNbNcNdNeNfNgNhNiNjNkNmNoNpNrNsNuNwNyO@OBOCOFOHOKONOMOPOQOSOUOWOYO[O]O^N`NcNfNiNlNoNrNuNyO@OC OFOILPROUOXO`OgOmOsOyPAPF PKPPPUQ_`Zb[dZgYiVkWmUoSpRqQrQsRuSvTxU{VqXoYlZiWfVdVbU[T_R]O`M]K[IVIWHQEODL@IAF@C@A"},"R":ha84,x_min:-2,x_max:82,o":"A EB FB GB HB IB KB LB MB OB QB SB UB WB YB aB cB eB gC iD kE mF oG qH sI uJ wK yL {MBNCOEQGSJULVOXQZS_UaWcYf[iai`n^r^u]x]{A|C|F{I{L{O{R{U{Y{[y]w_u`s^q[oXiUeQ`L[IUFPCNAK@FpCtEvG{JBMGOJUOZT][b_e_g_iaham`qaK"},"S":ha83,x_min:-2,x_max:85,o":"   A FA HAJA LA NA PA RA TA UA VC XC ZC aD cD eE gF iG kH mI oJ qK sL uM wN yO {P BQ DR FS GU IV KWEVFU HT IS KR LQ MP NQ OR PRORNRMQ LQKPHMFKDHCG@EA@A B F J N R V Z _ d h l p t xBQEUHZL`PcVgZk_ncvgAlEnHqKxNAOFQJTMXPZT][b_f`iajeofrgtjwmzn{p}q}s~v"},"T":{"ha":81,"x_min":-2,"x_max":82,o":" A FB GB IB KB LB MB NB OB PB QB RB SB TB UCVCVDVEVFVGVHVIVJVKVMVOVQVSVU      A EA GA IA KA MA OA QA SA UA WA XA ZA bA dA fA hA jC lE oG rI uK xM {N ZO[P\\Q]R_S`TcUeW"},"U":ha88,x_min:-1,x_max:88,o":"A EB FB GC HD IE JF KG LH MI NJ OK PL QM RN SO TP UQV RW SY T[ U\\ V] W^ X_ Y` Za [b \\c ]d ^e _g`hbicjdlfmengoiqjskvmwmyo{p|r~t@uAxA{A|A~B`BcBeCgCiCkBmBoBrB"},"V":ha82,x_min:0,x_max:82,o":"A CB EC GD HE IF JG KH LI MJ NK OL PM QN RO SP TQ UR VS WT XU YV ZW [X \\Y ]Z ^[ _\\ `] a^ b_ c` da fb gc hd ie jf kg lh ni oj pk ql rm sn to up vq wr xs yt {u"},"W":ha115,x_min:0,x_max:115,o":"                           A CB EB FD GE HF IG JH KI LJ MK NL OM PN QO RP SQ TR US VT WU XV YW ZX [Y \\Z ]Y \\Y [Z ZX YW XV WU VT US TR SQ RP QO PN OM NL MK LJ KI JH IG HF GE FD EB CB A@A@A@A@A@A@A@A@A`BbCdDeEfFhGiHjIkJlKmLoMpNqOrPsQtRuSvTwUxVyWzX{Y|Z}Z|Z{Y{XzWyVxUtSsRqQpPoNnMnLkKiJhIgGfFeEcDaB` A_B^C]D\\E[FZHXGWEVDUCSBQAOAJAGADAB@A A_B^C]D\\E[FZHXGWEVDUCSBQAOAJAGADAB@A CB EB FD GE HF IG JH KI LJ MK NL OM PN QO RP SQ TR US VT WU XV YW ZX [Y \\Z ]Y \\Y [Z ZX YW XV WU VT US TR SQ RP QO PN OM NL MK LJ KI JH IG HF GE FD EB CB"},"X":ha82,x_min:0,x_max:82,o":"I FB GC HD IE JF KG LH MI NJ OK PL QM RN SO TP UQ VR WS XT YU ZU ZU ZT YS XR WQ VP UO TN SM RL QK PJ OI NH MG LF KE JD IC HB GA F_F[FWHUFRFMFIFDFAFBHDJFNFSFXF]FcFjFpFuF{GBGGGMGSL[ahekoqtwA]AgAmArAwA{"},"Y":{"ha":82,"x_min":-2,x_max":84,o":"A CB EC GD HE IF JG KH LI MJ NK OL PM QN RO SP TQ UR VS WT XU YV ZW [X \\Y ]Z ^[ _\\ `] a^ b_ c` da fb gc hd ie jf k g h i j k l m n o p q r s t u v w x w vxutsqponmlkjihgfedcb`_^^]"},"Z":{"ha":78,x_min":-2,"x_max":80,o":"A FAHAJALANAPARATAUAVAXA[A]A`AcAeAgAiAkAmAoAqAsAuAwAyAzB`Bd Gf Ii Ll Oo Rr Uu Xx `z cz fz hAi@kClDmFoGpIrJsKtLuMwNyOzQA R@ R@ R@ Q@ P@ O@ N@ M@ L@ K@ I@ G@ E@ D@ C@ B@A A@C@F@I@L@O@R@U@X@[A"},"a":{"ha":68,"x_min":-1,"x_max":68,"o":"              d@iCjDlEmFnGoHpIqJrKsLtMuNwOxPyQ{R@S@T@UBVCWCXCZC[C\\C]D^E_F`GaHbIcKdMeNgOhPiQkRlSnToVqXsZu[w^y`zazczeygwirjplnmojpkqlrmsnupwqxrzuzwzxz{y|x{y}z} |~~@~A@A@@C@FAIAKALANAPACARASATAVAZA_AcAfAiAmApAsAvAzBCBEBGBIBLBOBfDjFnIqJtK"},"b":{"ha":70,"x_min":-2,"x_max":60,o":"A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJmK oL qM sN uO wP yQ zS BT CV DX EZ F[ H[ I[ J[ K[ L[ M[                A dB fC gD iE jF lG mH oI pJ rK sL tM vN wO yP zQ BR CS EU FW HY J[ L\\ N] P^ R_ T` Ub Wd YfZh[j\\l]n_q`sbtcvdwexfyh|k~oAqCsFuIxKzMB ODPEQFRGSHTIUKVMWNXOZPbReSgTiUlVnWpXrZu[x^z`|c~g"},"c":{"ha":66,"x_min":-1,"x_max":67,o":"A ECFC HB JB LB NB PB RB TB UBVCWCYCZC[C\\C]D^E_F`GaHbIcKdMeNgOhPiQkRlSnToVqXsZu[w^y`zazczeygwirjplnmojpkqlrmsnupwqxrzuzwzxz{y|x{y}z} |~~@~A@A@@C@FAIAKALANAPACARASATAVAZA_AcAfAiAmApAsAvAzBC"},"d":{"ha":70,"x_min":7,"x_max":79,o":"A FB GB IB JB KB LB NB OB PB QB RB SB TB UCVCWCXCZC[C\\C]C^E_F`GaHbIcKdMeNfOhPiQkRlSnToVqXsZu[w^y`zazczeygwirjplnmojpkqlrmsnupwqxrzuzwzxz{y|x{y}z} |~~@~A@A@@C@FAIAKALANAPACARASATAVAZA_AcAfAiAmApAsAvAzBCB                A EC FC JC LA NA PA QA RA SA TA UA VA WA XA YB ZB aB bB cB dB eB fC gD hE iF jG lH mI oJ pK qL rM sN uO vP xQ yR zS BT CU DV EW FX GY HZ Ia"},"e":{"ha":68,"x_min":-1,"x_max":68,o":"A ECFC HB JB LB NB PB RB TB UBVCWCYCZC[C\\C]D^E_F`GaHbIcKdMeNgOhPiQkRlSnToVqXsZu[w^y`zazczeygwirjplnmojpkqlrmsnupwqxrzuzwzxz{y|x{y}z} |~~@~A@A@@C@FAIAKALANAPACARASATAVAZA_AcAfAiAmApAsAvAzBCBHBLBMBQBWB\\B`BdChClCpCtCxC|D@DDDHDDLDPDTDYD\\D_DcDhD"},"f":{"ha":39,"x_min":7,"x_max":39,o":"        _f`hagcicjdlfmfngoirjskurwsxt{v|x@y@{@|A~@~@~@~@~@~@~@}B|C{EwGvIuKsMqOpQnSjVhXgZeVcT[Q[O[M[K[IZEWEUCQCMAIAgAhAhAgAg`f`e`c``]]X"},"g":{"ha":68,"x_min":-1,"x_max":68,o":"              d@iCjDlEmFnGoHpIqJrKsLtMuNwOxPyQ{R@S@T@UBVCWCXCZC[C\\C]D^E_F`GaHbIcKdMeNgOhPiQkRlSnToVqXsZu[w^y`zazczeygwirjplnmojpkqlrmsnupwqxrzuzwzxz{y|x{y}z} |~~@~A@A@@C@FAIAKALANAPACARASATAVAZA_AcAfAiAmApAsAvAzBCBEBGBIBLBOBfDjFnIqJtK          _c`bab`_]ZWYTUPNKIFCA@A@B@C@E@G@I@K@M@N@O@P@Q@R@SA TA UA VA WA XA YB ZC[C\\D]E^F`GbHcIdJdKdMdOdQdReTeVeXf[g]h_i`jcldmgohqisjulwmyo{q|s~u"},"h":{"ha":70,"x_min":-2,"x_max":60,o":"A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJmK oL qM sN uO wP yQ zS BT CV DX EZ F[ H[ I[ J[ K[ L[ M[d@eCfDgEiFjGkHlImJnKoLpMqNrOsPtQuRvSwTxUyV{W|X|Y}Z}[~\\ [ \\[ ['[([&ZFZEZDYCXBWAVAUBT@S>Q=O;M9K7I5G2E0C."},"i":{"ha":28,"x_min":-1,"x_max":19,o":"         A BC CC DC EC FB GA HA I@ J@ K@ L@ MA NA OA P@ Q@ R@ S@ T@ U@ V@ W@ X@ Y@ Z@ [@ \\@ ]@ ^@ __ `_ a_ b_ c_ d` e` f` g` h` i` j` k` l` m_ o_ p^ q^ r^ s^ t^ u] w] x\\ y[ zZ {Y |X }W ~V ~U @T AS"},"j":{"ha":28,"x_min":-1,"x_max":26,o":"         A BC CC DC EC FB GA HA I@ J@ K@ L@ MA NA OA P@ Q@ R@ S@ T@ U@ V@ W@ X@ Y@ Z@ [@ \\@ ]@ ^@ __ `_ a_ b_ c_ d` e` f` g` h` i` j` k` l` m_ o_ p^ q^ r^ s^ t^ u] w] x\\ y[ zZ {Y |X }W ~V ~U @T AS_c`bab`_]ZWYTUPNKIFCA@A@B@C@E@G@I@K@M@N@O@P@Q@R@SA TA U"},"k":{"ha":65,"x_min":-2,"x_max":63,o":"A EC FC GC IC KC MC OC QC SC UC WC YC aC cCeDgFiHkIlJmK oL qM sN uO wP yQ zS BT CV DX EZ F[ H[ I[ J[ K[ L[ M[c@dBgCjDmFqGtJxKBMDNFPIRTKVNYP[S_UcXfYi`lbmdoeqgshpitzv{x@{A_CgElIpLwM"},"l":{"ha":28,"x_min":-1,"x_max":19,o":"         A EC FC JC LA NA PA QA RA SA TA UA VA WA XA YB ZB aB bB cB dB eB fC gD hE iF jG lH mI oJ pK qL rM sN uO vP xQ yR zS BT CU DV EW FX GY HZ Ia Jb Kc Ld Me Nf O"},"m":{"ha":104,"x_min":-2,"x_max":104,o":"aBeBgBiBkBnBqBtBwBzBCBEBGBIBLBOBRBUBYB`BcBfBjBnBqBtBwBzBCBEBGBIBLBOBRBUBYB`BcBfBjBnBqBtBwBzBCd@eCfDgEiFjGkHlImJnKoLpMqNrOsPtQuRvSwTxUyV{W|X|Y}Z}[~\\ [ \\[ ['[([&ZFZEZDYCXBWAVAUBT@S>Q=O;M9K7I5G2E0C.a@cCeDgFiHkIlJmK oL pM rN tO vP xQ zR BS DU FX HZ J\\ M^ P_ R` Ta Vc Xd Zf \\h ^j `l bn cp er et fwa@cCeDgFiHkIlJmK oL pM rN tO vP xQ zR BS DU FX HZ J\\ M^ P_ R` Ta Vc Xd Zf \\h ^j `l bn cp er et fv"},"n":{"ha":70,"x_min":-2,"x_max":60,o":"d@eCfDgEiFjGkHlImJnKoLpMqNrOsPtQuRvSwTxUyV{W|X|Y}Z}[~\\ [ \\[ ['[([&ZFZEZDYCXBWAVAUBT@S>Q=O;M9K7I5G2E0C.a@cCeDgFiHkIlJmK oL pM rN tO vP xQ zR BS DU FX HZ J\\ M^ P_ R` Ta Vc Xd Zf \\h ^j `l bn cp er et fv"},"o":{"ha":68,"x_min":-1,"x_max":68,o":"A ECFC HB JB LB NB PB RB TB UBVCWCYCZC[C\\C]D^E_F`GaHbIcKdMeNgOhPiQkRlSnToVqXsZu[w^y`zazczeygwirjplnmojpkqlrmsnupwqxrzuzwzxz{y|x{y}z} |~~@~A@A@@C@FAIAKALANAPACARASATAVAZA_AcAfAiAmApAsAvAzBCBEBGBIBLBOBfDjFnIqJtK"},"p":{"ha":70,"x_min":-2,"x_max":60,o":"                               A dB fC gD iE jF lG mH oI pJ rK sL tM vN wO yP zQ BR CS EU FW HY J[ L\\ N] P^ R_ T` Ub Wd YfZh[j\\l]n_q`sbtcvdwexfyh|k~oAqCsFuIxKzMB ODPEQFRGSHTIUKVMWNXOZPbReSgTiUlVnWpXrZu[x^z`|c~g_e`g_i_k_n_p_s_u_x_z_ A B C E G I L N P R T V X Z \\ ^ ` b d f h j l n p r t"},"q":{"ha":70,"x_min":7,"x_max":79,o":"A FB GB IB JB KB LB NB OB PB QB RB SB TB UCVCWCXCZC[C\\C]C^E_F`GaHbIcKdMeNfOhPiQkRlSnToVqXsZu[w^y`zazczeygwirjplnmojpkqlrmsnupwqxrzuzwzxz{y|x{y}z} |~~@~A@A@@C@FAIAKALANAPACARASATAVAZA_AcAfAiAmApAsAvAzBCB                               a@b@c@d@e_f_g_h_i_j_k_m_n_o_q_r_s_t_v_w_y_{_|_~`@b@e@h@k@n@q@t@w@z@B@E@H@K@N@Q@T@W@ZA^A`AcAfAhAjAlAoArAuAxA"},"r":{"ha":42,"x_min":-1,"x_max":36,o":"d@eCfDgEiFjGkHlImJnKoLpMqNrOsPtQuRvSwTxUyV{W|X|Y}Z_Y]W[UZRWOTMQKPHLFJCIAEAB@ A C F I L O R U Y \\ _ c f g h j l m o q s u w y z"},"s":{"ha":60,"x_min":-1,"x_max":61,o":"   A FA HAJA LA NA PA RA TA UA VC XC ZC aD cD eE gF iG kH mI oJ qK sL uM wN yO {P BQ DR FS GU IV KWEVFU HT IS KR LQ MP NQ OR PRORNRMQ LQKPHMFKDHCG@EA@A B F J N R V Z _ d h lp t"},"t":{"ha":39,"x_min":-2,"x_max":39,o":"        g@hAiajakbmcndofpgqirjskurwsxt{u|w@x@y@{@|A~@~@~@~@~@~@}B|C{EwGvIuKsMqOpQnSjVhXgZeVcT[Q[O[M[K[IZEWEUCQCMAIAEADAD@D@D@D D D D D D C C C C C B"},"u":{"ha":70,"x_min":-2,"x_max":60,o":"a@cCeDgFiHkIlJmK oL pM rN tO vP xQ zR BS DU FX HZ J\\ M^ P_ R` Ta Vc Xd Zf \\h ^j `l bn cp er et fv              _b`c`e`f`g`i`j`l`m`o`q`r`t`u`v`x`y`{`|`}B}D|F{HyJvLuNsPoRjThVfWdYbZ`[`\\_]^]"},"v":{"ha":68,"x_min":0,"x_max":68,o":"aBeBgBiBkBnBqBtBwBzBCBEBGBIBLBOBRBUBYB`BcBfBjBnBqBtBwBzBC`AdAgAjAmApAsAvAyB{B}B@C@CACDCECFCHCICJCKCMCNCOCRCQC A?A?B@C@D@F@H@J@L@N@P@R@T@U@V@W@X@Y@Z@[@\\A]@^A_AaAbAcAdAfAgAiAkAmAoAqAsAtav"},"w":{"ha":95,"x_min":0,"x_max":95,o":"aBcBeBgBiBkBnBqBtBwBzBCBEBGBIBLBOBRBUBYB`BcBfBjBnBqBtBwBzBCB}B}B}B|B{B{ByAzAxAvAtArAqAoAnAmAkAiAgAfAeAcAbAZAYAXAVAQANAKAHADAA@A}B}B}B|B{B{ByAzAxAvAtArAqAoAnAmAkAiAgAfAeAcAbAZAYAXAVAQANAKAHADAB@BfAgBhAiAjAlAmAnAoApAqAsAtAuAwAyA{A|A~@~@~@~B~D~F}HxJuLsNqPpRkThVfXcY`[`]"},"x":{"ha":68,"x_min":-2,"x_max":70,o":"HGBIDKHNKRKWK_KhKoKvK{L@LGLMLR]abfgkmpuvzBFHLOV\\adgkntyBHLOV\\adgknsuAWCQGNZcehlorwtz"},"y":{"ha":68,"x_min":0,"x_max":68,o":"a@cCeDgFiHkIlJmK oL pM rN tO vP xQ zR BS DU FX HZ J\\ M^ P_ R` Ta Vc Xd Zf \\h ^j `l bn cp er et fv_c`bab`_]ZWYTUPNKIFCA@A@B@C@E@G@I@K@M@N@O@P@Q@R@SA TA U"},"z":{"ha":60,"x_min":0,"x_max":60,"o":"A DAFAHAJALANAPARATAVAZA_AcAfAiAmApAsAvAzBCBEBGBIBLBOBRBTBVBZB]A`A`A_A]AZAVATAPAMAIADAB@A@B@DAF@H@J@L@N@P@R@T@V@X@Z@[A^A`AbAdAfAhAjAlAnApArAtAvAxAzB`Bd Gf Ii Ll Oo Rr Uu Xx `z cz fz hAi@kClDmFoGpIrJsKtLuM"},"{":{"ha":49,"x_min":19,"x_max":30,"o":" A JC KC LC MC NC OC PC QC RC SC TC UC VC WC XC YD ZD aD bD cE dE eE fF gF hG iH jH kI lJ mJ nK oL pM qM sN tO uP vQ wR xS yT zT {U |V }W ~X _Y BZ C[ D\\ E] F^ G_ H` Ia Jb Kc Ld Me Nf O`LaK`I`G`F`E`D`C@C@D@F@H@K@N@Q@U@Y@[A^A`BcF"},"|":{"ha":20,"x_min":9,"x_max":11,"o":"A FC GC HC IC JC KC LC MC NC OC PC QC RC SC TC UC VC WC XC YC ZC aD bD cD dD eE fE gF hG iH jH kI lJ mK nL oM pN qO rP sQ tR uS vT wU xV yW zW {X |Y }Y ~Z _[ A\\ B] B] B^ B^B B^B]B\\A_@Y>W>U>S>Q>O>L>J>G>E>D>B>@>@>B>D>G>J>M>P>S>V>Y>[>_>b>e>h>l>p>t>x>zA>A>B>C>D>D>E>F>F>G>G>G>G>F>F>F>F>F>E>E>D>C>C>B@A@ @"},"}":{"ha":49,"x_min":19,"x_max":30,"o":"     M J I H G F E D C B A @ A A B C D E F G H I H H I H G F E D B @@B@D@F@I@L@O@R@U@X@[A]A_AcAfAiAlAnApAsAuAxA|BCBFCGCICHHDJDLFNGPHQISJULVNWOXPYQ[R]S_T`UbVdWeXgYh[j\\l]n_p`qarkslsksirhpgofmekdjcibhah_f^d]b[`Y]V\\T[RYPWNULSJPHNGLEK"},"~":{"ha":75,"x_min":1,"x_max":72,"o":"      C F I L O S V Z _ d i l o r u x { ~@ BAEAHAKAOARAVAZA^A`AcAfAiAmApAsA{BBEBGBIBLBOBRBUBYB`BdBgBkBoBsBwB{C@CDCGCKCOCSCWCaCeCiCmCqCuFxFvFuFtFsFpFoFnFmFkFjFhFfFedcbab`_^_]ZWYTUPNKIFCA@A@B@C@E@G@I@K@M@O@Q@S@U@V@W@X@Y@Y@XAWATAPAMAIADAB@A A@C@FAIAKALANAPACAREUHWHZJ\\M_PbReSgTiUlVmXoZp[r\\t]u^w_y`{a|c~f"},"face":"helvetiker","resolution":100,"size":100,"style":"normal","underline_thickness":5,"weight":"normal","boundingBox":{"xMin":-17,"yMin":-15,"xMax":125,"yMax":96},"cssFontStyle":"normal","cssFontWeight":"normal"},"familyName":"helvetiker","styleName":"normal"};
-        const socialIcons = {
-            github: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAEz0lEQVR4nO2dW67jMAxFg///6OwM56iT4tggKAmS2o2fG2c/kU47oRqtVqsv/3+9V/P8t6/L3k+5yH3266qT08aX9TfXXNffpT2fsujDByhAEAKAQAgQACEECAQAgRACIETAIQQQhgQACEECAQAgRACIETAIQQQhgQACEECAQAgRACIETAIQQQhgSg+x+fXtd183h0eQYkAHn+R0mCgY6eO0C2q+/bKkPzAEQA+r7tkgyDAEAegAlAp6t0JbUAIACd7khBkgFAIABdpa5kCwAEoNMdKUkSAAgE0FXqSrYAAAJaT0fH+z8mX/3y91Xv019XnZ42vqz/p9+Vw/un6S4OEAQghABCECAIQAghgCEECEIQAghgCEEIQghgCMAIQAghBCEAIQQghgCEEIQQQBiCEIEQghBCBDCEIAQghBCBDAEIQQghhBACIQQghhCBEEIAYQghhAhgCMAIQQghhACEIAQwhCBEEIQAghBCBDCEIAQwhACEIAQwhCBDAEIgRAgEEIIEIAQAhECIEQghAACEUIgQAghhBBACCEAIQQQghACIQQIAhBCCCAIQAghhACEQAgQCMAIQAghgCEAIQQQAghCCCAIQAghBCBDAQIghACEIAYAhECIQQghACEAIQQghACCAIQQghACEEAIQAIghACCAEQghACIQAIQAihAAIQAgQACEAIQAIhBACAUIgQAihABACBDACEAEIYAgACEAEIYAgAACEUIgQAihABACEAIQAIhBACAUIgQAihABACEAEIYAgACEAEIYAgAACEUIgQAihABACEAEIABACCEAIAAQghgCMAIQAghgCEAIQQQACEEAgBAiCEYAghEEIIEIQQIAghBCGEEIQQAgRCCCAIAYQgBCCEAIYAhBBCEEIEMIQgBCGEAEMgQhBCiEAIEMIYghBCCAEMIQghhACEQAgQACEAIYAhgCEEIQQghACCUIgQAhgCMAQghBCiEAIUIgQAghACEAYAhEAIQQghAhACEIQAgQAIhACEAIQAgAhECIEIIEIQQIAhBCEAYAhACEIQYAhACCAIQAghBACEQAgQACEAEIABACEAIQAIQAihAAIQAgQACEAEIABACEAIhBACAUIgQAihABACEAIYAgACEAEIYAgAACEUIgQAihABACEAEIABACCEAIAAQghgCMAIQAgBBCCEIAQQgBACAEEAIhBCGEIAQghACiEAIQAghgCEQghACCEAIQAghgCEEIYAYAhCCEEIMIQgBCCEEAIAQAghBCCEAIgQAhACIQQAhACEAIAQAgQACEAIYAYAhBCGEIIQAIhBCiEAIghgCMEIIQAgBCKERAghBCGCEIQghhCACEUIghACEQAgQACEAIYAYghBCGEIQAghAiBEIAYghBCGEIIYAhACMUIQAiEAEIQgBACEAIYAhBCCGEIEBCGEIIYAgBCMAIQAiEAAghACEEIQghAACEAIQQQgghACEAIQQghBACEAYAghBCCAIIQAghgCAEIIYAhAACEQAgQAiEAYAghBCGEIIQAgBACAEEAIQAgQCACEIIQAjACEAIQAghgCEEIIQAhgCBCEIAYghAiBEIIQBACBMIYghBCCMAQQhCCGEIEIQYghBCCAEMgQhBCiEAIEMIYghBCiAEIIQQghACEQAgQACEAIQAhgCEEIQQghAAEEIIEIYAYghBCGEIMIQgBCIEQIhBCGEIAYghgCMEIAQAghACGEIACQAIgghACEAIQAgBACEQIQBACEEAIQAIQAQAghBCBAEIQAghACGEIEBCGEIIEIQQIAhghABCEUIgQAhACCAIAQghgCEAIQBACCEIAT+13b/Bzx80B84D+xUAAAAAElFTkSuQmCC";
-            const linkedin = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAACoUlEQVR4nO3dy27bQBSA4f9/dnoFSRrUqUkKpPYSxICjNijHh9b+UeR2tNn9F/V6fa+W/w+M28s+hLhcHsf90eQyfrq4f9q8w8f3B80+tFk/1R5z/Q7+7vU7a/P0e0u/9kEGEIAYAgBCCEAYAhACCAEQghACGIEhACEAYQhACGAAhBCEAYYgBGEIQACEMAQhACEAQAghAGEMQAghACEAIQDBEGEMhACEQAgBCGAAAAAhAEMIhAAMIRBCAMIAhBCEYAgBEIJAggAMYQCBDAEIQAhACEAxhAGEIAyBECIIQBiCIAQgBGEIAhACEAIQAghAEMAACCEAYQhAAMIQAhAGEMQAjCEAAhDCEMhACEIAQgBCAIQCGIYQZACIQYQhACEAIQAggAMIQAhgAIYACEMAQhAGEAhgCEIAyBEIIQAggDBAGEIAwACGEAYQyEGEMgRAAIYQACCAAQAggAIEQghAGEAYhAGEIQACEMAQhAGEAhAGEIAwACEMgRAGEIAQgCAAYQCGAAghACEIQACEMAQhAGEAhgCEIAwACEIYAgQgjIEYAhBCAEIQAjCEMAYACEAEIIQAhAGEIQDBEIIZACEQghACEAIQAggAMIQAhgAIgRAAMIQAhAGEAhgCECIIQAghgDBAGEIAwACEMghAGEghhDIARACEAIQAjAEAAACEEIYAgBEIAhAAMYAiAEIAQghCAIQAghAAMYQhACIQQAhAGEMgRACMIAhAAEIQQghCAIQAggAIQQAhAAMIAhAGEIQAhAGEIQBAGEAYAGEMACGEAYQCGEMgACEIIQAggAEEAwgCEIAxACEIQACEMIQAggAEAIQACEMAQhAGEIQDBEIIAQghgDBAGEIIIQyAEAYAyCEMIQABCCAEAIQAghAAMIQAghAIEQAjAEIQQgDCEMghBCAIAQghAGEIQDBGEIQyGEIAAaAgRAEACAEAAAAhACCAIQABAGEIQhACEAYghAMEQAhgAIQRgCAAYBCAEQghAGzX/34O1a6K+wAAAABJRU5ErkJggg==';
-            const facebook = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAADM0lEQVR4nO3dwU3DQBSGYfc/fXQT6CSwA3SAjsIudBO6AV1gB9gBHYF+yZKEI7Bvsvk/yX/yl5Gzfn++t1/5vwvG7eH7EOJwORy/t0wuY6eL+8PNWzzcH7Q/aLP+qT3m+h383et31ubp95a+7SMPQghACCAIQAghDCEMQAggAEIIYAgQBCAGEIYghGEAIQQgDCEMQAiBEEIAQgCGIIQhAGEIQAgDCEMQAhCAGEMQAggACUEIwBCCIQQyBCAIQAiBGEMgBCCEMAYgBEIAhBCGAAwhCIEQAiAEMIRgDEAYAhCEMARgCMAQAiAEYQggDCEIIYCBEIIQAghgCMAQAiAEYQggDCEIQAgBCCEMIRgDEIIQAjAEYAhACIQQAgCGAAhDCIEQAhDCMIQghAGEYAiAEMIYBCDCEAIghAGEIAQAhAGEIQgBCCEMgRAIIRgDEIIwBCAMIQhACMIAAghAGAIwhCCEMARgCIAQAiEMIQghgCEYAhgCIIQAghCAIQABgCEEQxjCEYAjCEAIIQRAEMAQgAGEIQAgCCEMgRCAIQwgDCEYAhACKEMAQhCAIIQAGEIQAgCCEAYQCCAAYwhCAMIQhCMIQhAGEIQgCGAAxBCAIQggAMIQhAIYQhAGEIQAgBGEMghCAIQghgCAAYAhgCMAQghAGEIQgBCAIQABGEMQAjCEAARCCMIQBCEMgRACEIYABgCMAQggAGEIQwhCAMYAgBEIIwBCAIQAjAEAAhCCEAIABDCEMIQhAGEIIQAgACEAIQAjCEAARACMIQABCMIYAiAEMAAhACIQAjCEAARACIYQBAGEAYQiAEMIYAhBCIQBgCMIQAjCEMIQABGMIYAgQghCAIQAgDCCIYRACEAIQBGMIQAgAGEIQAgDCEMgRAAIQyBGEIgBEIIwgCAMIQhAEAYwhCAIAwgDAEIQAgQgjAEMARgCMAQhCAEQghgCAAYAhAAIYQBAGEIQhACEAIYwhACEIAQAiAEYAjCEMIQhAEAYAghACMIYACGMIQBDCMIQgBCEAAghgCAEQghAAEAAghCMIQwhCAIQABGMIgRCAIQCBEEIgBAGEAAQgBCCMIYAiAEMgRCAIAwhCAMIAAghgCEAIQAjAEMIYDB1G3D675r8bVAAAAAElFTkSuQmCC';
-        }
-
-        // --- Core Scene Setup ---
-        let scene, camera, renderer, clock;
-        let stardust, nebula;
-        let ambientSound;
+        // --- 1. THEME GENERATION & SETUP ---
         
-        let mouse = new THREE.Vector2();
-        let raycaster = new THREE.Raycaster();
-        let interactiveObjects = [];
-
-        // --- GSAP Timeline ---
-        let masterTimeline = gsap.timeline({
-            scrollTrigger: {
-                trigger: "#scroll-container",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1.5,
-            }
-        });
-
-        const projects = [
-            {
-                name: "GlglStats",
-                description: "A dynamic data visualization platform revealing hidden trends and statistics from Israel's most popular radio station playlist (Galgalatz).",
-                links: [
-                    { label: "Visit GlglStats", url: "https://glglstats.geekip.dev" },
-                    { label: "Watch PyData Talk", url: "https://www.youtube.com/watch?v=jrKAtOsj1Lo" }
-                ],
-                position: new THREE.Vector3(0, 0, -150),
-                panelSide: 'left'
-            },
-            {
-                name: "Ahuzat Dibuk",
-                description: "An investigative project that used data analysis to expose a predatory private parking enforcement scheme in Tel Aviv, leading to mainstream news coverage and public awareness.",
-                links: [
-                    { label: "13tv News Story", url: "https://13tv.co.il/item/news/domestic/internal/parking-902956407/" },
-                    { label: "Mako News Story", url: "https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" },
-                    { label: "Original Facebook Post", url: "https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" }
-                ],
-                position: new THREE.Vector3(80, -20, -300),
-                panelSide: 'right'
-            },
-            {
-                name: "2D Part Orienting",
-                description: "My master's thesis in Computer Science at Tel Aviv University. This research explores efficient algorithms for orienting 2D parts using parallel grippers, a fundamental problem in robotics.",
-                links: [
-                    { label: "View Code & Details", url: "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" }
-                ],
-                position: new THREE.Vector3(-100, 30, -450),
-                panelSide: 'left'
-            },
-            {
-                name: "The Turing Jest",
-                description: "A competitive arena where Large Language Models (LLMs) battle in a game of wits. Users submit prompts and vote for the funniest, most creative AI-generated response.",
-                links: [
-                    { label: "Try The Turing Jest", url: "https://jest.geekip.dev" }
-                ],
-                position: new THREE.Vector3(0, -40, -600),
-                panelSide: 'right'
-            },
-            {
-                name: "Rhymes of Israel",
-                description: "A Chrome extension that finds Hebrew rhymes. It uses a sophisticated NLP model and a vast corpus of Israeli poetry and songs to provide rhyming suggestions for any given word.",
-                links: [
-                    { label: "Install the Chrome Extension", url: "https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" }
-                ],
-                position: new THREE.Vector3(120, 0, -750),
-                panelSide: 'left'
-            },
-            {
-                name: "The Celestial Code",
-                description: "You're looking at it. This portfolio is a procedurally generated 3D space, built in a single file with Three.js and GSAP. The design and concept were generated by Gemini.",
-                links: [
-                    { label: "Return to Start", url: "https://geekip.dev" }
-                ],
-                position: new THREE.Vector3(-50, 50, -900),
-                panelSide: 'right'
-            }
+        const MONOSPACE_FONTS = [
+            'Fira Code', 'JetBrains Mono', 'Source Code Pro', 'IBM Plex Mono', 
+            'Roboto Mono', 'Space Mono', 'Cousine', 'Anonymous Pro'
         ];
 
-        function init() {
-            // --- Basic Setup ---
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0a0a23);
-            scene.fog = new THREE.Fog(0x0a0a23, 200, 1200);
-
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-            camera.position.z = 50;
-
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            document.body.insertBefore(renderer.domElement, document.getElementById('scroll-container'));
-
-            clock = new THREE.Clock();
-
-            // --- Lighting ---
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-            directionalLight.position.set(5, 10, 7.5);
-            scene.add(directionalLight);
-            
-            // --- Audio ---
-            ambientSound = document.getElementById('ambient-sound');
-            ambientSound.volume = 0.3; // Start with a subtle volume
-            
-            // --- Initial UI setup ---
-            document.querySelector('.header-content').style.opacity = '1';
-            document.querySelector('#scroll-indicator').style.opacity = '0.7';
-
-            // --- Create Scene Objects ---
-            createBackgroundEffects();
-            createHeader();
-            createProjectNodes();
-            createFinalHub();
-
-            // --- Animation & Interaction ---
-            setupScrollAnimation();
-            window.addEventListener('resize', onWindowResize);
-            window.addEventListener('click', onMouseClick);
-            
-            // Start audio on first scroll
-            let audioPlayed = false;
-            window.addEventListener('scroll', () => {
-                if (!audioPlayed) {
-                    ambientSound.play().catch(e => console.log("Audio autoplay was blocked."));
-                    audioPlayed = true;
-                }
-            }, { once: true });
-
-
-            // --- Start Rendering ---
-            animate();
+        // Simple PRNG for deterministic generation based on a seed
+        function mulberry32(a) {
+            return function() {
+                var t = a += 0x6D2B79F5;
+                t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
         }
 
-        function createBackgroundEffects() {
-            // Stardust
-            const starGeometry = new THREE.BufferGeometry();
-            const starVertices = [];
-            for (let i = 0; i < 15000; i++) {
-                const x = THREE.MathUtils.randFloatSpread(2000);
-                const y = THREE.MathUtils.randFloatSpread(2000);
-                const z = THREE.MathUtils.randFloatSpread(2000);
-                starVertices.push(x, y, z);
-            }
-            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-            const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2, transparent: true, opacity: 0.7 });
-            stardust = new THREE.Points(starGeometry, starMaterial);
-            scene.add(stardust);
-            
-            // Faint Nebulae
-            const nebulaGeometry = new THREE.BufferGeometry();
-            const nebulaVertices = [];
+        const today = new Date();
+        const dayOfYear = (Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) - Date.UTC(today.getFullYear(), 0, 0)) / 24 / 60 / 60 / 1000;
+        const seed = dayOfYear + today.getFullYear();
+        const random = mulberry32(seed);
+
+        // Generate Theme
+        const baseHue = Math.floor(random() * 360);
+        const fontIndex = Math.floor(random() * MONOSPACE_FONTS.length);
+        const selectedFont = MONOSPACE_FONTS[fontIndex];
+        
+        const dailyBuildHash = `#${(seed * 0x4A72E4C9).toString(16).toUpperCase().slice(0,8)}`;
+        document.getElementById('daily-build').textContent = dailyBuildHash;
+
+        const root = document.documentElement;
+        const mainBgLightness = 12;
+        root.style.setProperty('--font-main', `"${selectedFont}", Consolas, "Courier New", monospace`);
+        root.style.setProperty('--bg-color', `hsl(${baseHue}, 15%, ${mainBgLightness - 2}%)`);
+        root.style.setProperty('--main-pane-bg', `hsla(${baseHue}, 15%, ${mainBgLightness}%, 0.9)`);
+        root.style.setProperty('--minimap-bg', `hsl(${baseHue}, 15%, ${mainBgLightness - 3}%)`);
+        root.style.setProperty('--footer-bg', `hsl(${baseHue}, 15%, ${mainBgLightness - 3}%)`);
+        root.style.setProperty('--text-color', `hsl(${baseHue}, 20%, 85%)`);
+        root.style.setProperty('--comment-color', `hsl(${(baseHue + 90) % 360}, 30%, 55%)`);
+        root.style.setProperty('--keyword-color', `hsl(${(baseHue + 180) % 360}, 50%, 65%)`);
+        root.style.setProperty('--class-name-color', `hsl(${(baseHue + 150) % 360}, 70%, 60%)`);
+        root.style.setProperty('--property-name-color', `hsl(${(baseHue + 210) % 360}, 70%, 75%)`);
+        root.style.setProperty('--string-color', `hsl(${(baseHue + 30) % 360}, 45%, 65%)`);
+        root.style.setProperty('--link-hover-border', `hsl(${(baseHue + 150) % 360}, 70%, 60%)`);
+        root.style.setProperty('--modal-bg', `hsl(${baseHue}, 15%, 5%)`);
+        
+        const minimapBaseHue = (baseHue + 60) % 360;
+
+
+        // --- 2. LOADER ANIMATION ---
+
+        const loader = document.getElementById('loader');
+        const loaderText = document.getElementById('loader-text');
+        const loaderScroll = document.getElementById('loader-scroll');
+        const loaderScrollContent = document.getElementById('loader-scroll-content');
+        const siteWrapper = document.querySelector('.site-wrapper');
+
+        function runLoader() {
+            // Fill scroll area with abstract text
+            let abstractCode = '';
             for (let i = 0; i < 200; i++) {
-                const x = THREE.MathUtils.randFloatSpread(1500);
-                const y = THREE.MathUtils.randFloatSpread(1500);
-                const z = THREE.MathUtils.randFloat(-1000, -200);
-                nebulaVertices.push(x, y, z);
+                abstractCode += (Math.random() + 1).toString(36).substring(2) + '\n';
             }
-            nebulaGeometry.setAttribute('position', new THREE.Float32BufferAttribute(nebulaVertices, 3));
-            const nebulaMaterial = new THREE.PointsMaterial({ color: 0x00ffff, size: 100, transparent: true, opacity: 0.05, blending: THREE.AdditiveBlending, depthWrite: false });
-            nebula = new THREE.Points(nebulaGeometry, nebulaMaterial);
-            scene.add(nebula);
+            loaderScrollContent.innerHTML = abstractCode;
+
+            setTimeout(() => {
+                loaderText.style.opacity = 0;
+                loaderScroll.style.opacity = 0.2;
+            }, 2000);
+
+            setTimeout(() => {
+                loader.style.opacity = 0;
+                siteWrapper.style.opacity = 1;
+                setTimeout(() => loader.style.display = 'none', 700);
+            }, 3000);
         }
+        runLoader();
 
-        function createHeader() {
-            const fontLoader = new FontLoader();
-            const font = fontLoader.parse(helvetiker_regular_font);
 
-            const textGeometry = new TextGeometry('Geva Kipper', {
-                font: font,
-                size: 8,
-                height: 0.5,
-                curveSegments: 12,
-                bevelEnabled: true,
-                bevelThickness: 0.2,
-                bevelSize: 0.1,
-                bevelOffset: 0,
-                bevelSegments: 5
-            });
-            textGeometry.center();
+        // --- 3. MINIMAP LOGIC ---
 
-            const textMaterial = new THREE.MeshStandardMaterial({
-                color: 0xc0c0c0,
-                metalness: 0.9,
-                roughness: 0.4
-            });
-
-            const textMesh = new THREE.Mesh(textGeometry, textMaterial);
-            textMesh.position.set(0, 5, 0);
-            scene.add(textMesh);
-            
-            // Use GSAP to animate it in
-            gsap.from(textMesh.scale, { duration: 1.5, x: 0, y: 0, z: 0, ease: 'power2.out' });
-        }
-
-        function createProjectNodes() {
-            projects.forEach(p => {
-                let node;
-                switch(p.name) {
-                    case "GlglStats": node = createGlglStatsNode(); break;
-                    case "Ahuzat Dibuk": node = createAhuzatDibukNode(); break;
-                    case "2D Part Orienting": node = createPartOrientingNode(); break;
-                    case "The Turing Jest": node = createTuringJestNode(); break;
-                    case "Rhymes of Israel": node = createRhymesNode(); break;
-                    case "The Celestial Code": node = createMetaNode(); break;
-                }
-                if (node) {
-                    node.position.copy(p.position);
-                    p.object3D = node;
-                    scene.add(node);
-                }
-            });
-        }
+        const mainContent = document.getElementById('main-content');
+        const minimapContainer = document.getElementById('minimap-container');
+        const minimapSectionsContainer = document.getElementById('minimap-sections');
+        const viewportIndicator = document.getElementById('viewport-indicator');
         
-        function createGlglStatsNode() {
-            const group = new THREE.Group();
-            const points = [];
-            const segments = 128;
-            for (let i = 0; i <= segments; i++) {
-                points.push(new THREE.Vector3());
-            }
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            const material = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true });
-            const line = new THREE.Line(geometry, material);
-            
-            line.userData.update = (time) => {
-                const positions = line.geometry.attributes.position.array;
-                const radius = 10;
-                for (let i = 0; i <= segments; i++) {
-                    const t = i / segments;
-                    const angle = t * Math.PI * 2;
-                    const wave = Math.sin(angle * 5 + time * 3) * 2;
-                    positions[i * 3] = Math.cos(angle) * (radius + wave);
-                    positions[i * 3 + 1] = Math.sin(angle) * (radius + wave);
-                    positions[i * 3 + 2] = 0;
-                }
-                line.geometry.attributes.position.needsUpdate = true;
-                material.opacity = Math.max(0.2, (Math.sin(time * 1.5) + 1.2) / 2.2);
-            };
-            group.add(line);
-            return group;
-        }
+        const contentSections = Array.from(document.querySelectorAll('.project-block, #page-header'));
+        const minimapSections = [];
 
-        function createAhuzatDibukNode() {
-            const group = new THREE.Group();
-            const grid = new THREE.GridHelper(30, 10, 0x555555, 0x333333);
-            grid.rotation.x = Math.PI / 2;
-            group.add(grid);
+        function drawMinimapPattern(canvas, type, color) {
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width = canvas.clientWidth;
+            const h = canvas.height = canvas.clientHeight;
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = color;
+            ctx.strokeStyle = color;
 
-            for (let i = 0; i < 15; i++) {
-                const geometry = new THREE.PlaneGeometry(2.5, 2.5);
-                const material = new THREE.MeshBasicMaterial({
-                    color: 0xff4500,
-                    transparent: true,
-                    opacity: Math.random() * 0.4 + 0.1,
-                    blending: THREE.AdditiveBlending
-                });
-                const plane = new THREE.Mesh(geometry, material);
-                plane.position.set(
-                    THREE.MathUtils.randFloatSpread(28),
-                    THREE.MathUtils.randFloatSpread(28),
-                    THREE.MathUtils.randFloat(0.1, 0.5)
-                );
-                gsap.to(material, {
-                    opacity: '+=0.3', 
-                    repeat: -1, 
-                    yoyo: true, 
-                    duration: Math.random() * 2 + 1,
-                    ease: 'sine.inOut',
-                    delay: Math.random()
-                });
-                group.add(plane);
-            }
-            return group;
-        }
-
-        function createPartOrientingNode() {
-             const geometry = new THREE.IcosahedronGeometry(12, 1);
-             const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.8 });
-             return new THREE.Mesh(geometry, material);
-        }
-
-        function createTuringJestNode() {
-            const group = new THREE.Group();
-            const geometry = new THREE.TorusKnotGeometry(8, 1, 100, 8, 2, 3);
-            const material = new THREE.MeshBasicMaterial({
-                color: 0x00ff00,
-                wireframe: true,
-                wireframeLinewidth: 2,
-                transparent: true,
-                opacity: 0.7
-            });
-            const mask = new THREE.Mesh(geometry, material);
-            mask.scale.y = 0.5;
-            mask.scale.z = 0.2;
-            group.add(mask);
-
-            // Subtle wink
-            mask.userData.update = (time) => {
-                 if (Math.sin(time) > 0.99) {
-                    gsap.to(mask.rotation, { y: mask.rotation.y + 0.1, duration: 0.1, yoyo: true, repeat: 1 });
-                 }
-            };
-            return group;
-        }
-
-        function createRhymesNode() {
-            const group = new THREE.Group();
-            // Simplified icon box
-            const boxGeo = new THREE.BoxGeometry(20, 20, 5);
-            const boxMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.5, roughness: 0.6});
-            const box = new THREE.Mesh(boxGeo, boxMat);
-            group.add(box);
-            const centerGeo = new THREE.CylinderGeometry(5, 5, 5.2, 32);
-            const centerMat = new THREE.MeshBasicMaterial({ color: 0x4285F4 });
-            const centerCircle = new THREE.Mesh(centerGeo, centerMat);
-            centerCircle.rotation.x = Math.PI / 2;
-            group.add(centerCircle);
-
-            // Quill
-            const quillGeo = new THREE.ConeGeometry(1, 8, 8);
-            const quillMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-            const quill = new THREE.Mesh(quillGeo, quillMat);
-            quill.position.z = 5;
-            group.add(quill);
-            quill.rotation.x = -Math.PI / 4;
-
-            // Particle trail for writing
-            const trailGeo = new THREE.BufferGeometry();
-            const trailMat = new THREE.PointsMaterial({ color: 0x00ffff, size: 0.5, transparent: true, blending: THREE.AdditiveBlending });
-            const trailPoints = new THREE.Points(trailGeo, trailMat);
-            group.add(trailPoints);
-            trailPoints.userData.particles = [];
-            trailPoints.userData.maxParticles = 50;
-
-            group.userData.update = (time, delta) => {
-                const t = (time * 0.5) % (Math.PI * 2);
-                quill.position.x = Math.sin(t) * 8;
-                quill.position.y = Math.cos(t * 2) * 4;
-                quill.position.z = 5 + Math.sin(t*3) * 2;
-                
-                let particles = trailPoints.userData.particles;
-                let positions = [];
-
-                if (particles.length < trailPoints.userData.maxParticles) {
-                     particles.push({
-                        pos: quill.position.clone(),
-                        life: 1.0
-                    });
-                }
-                
-                for(let i = particles.length - 1; i >= 0; i--) {
-                    let p = particles[i];
-                    p.life -= delta * 1.5;
-                    if (p.life <= 0) {
-                        particles.splice(i, 1);
-                    } else {
-                        positions.push(p.pos.x, p.pos.y, p.pos.z);
+            switch(type) {
+                case 'header':
+                    ctx.fillRect(0, 0, w, h);
+                    break;
+                case 'glglstats': // Sound wave
+                    ctx.beginPath();
+                    for(let x = 0; x < w; x++) {
+                        const y = h/2 + Math.sin(x * 0.1) * h * 0.3;
+                        ctx.lineTo(x, y);
                     }
-                }
-                trailGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    break;
+                case 'ahuzat-dibuk': // Heatmap
+                     for(let i=0; i<w; i+=10) {
+                        for(let j=0; j<h; j+=10) {
+                            ctx.globalAlpha = Math.random();
+                            ctx.fillRect(i, j, 10, 10);
+                        }
+                    }
+                    ctx.globalAlpha = 1;
+                    break;
+                case '2d-orienting': // Polygon
+                    ctx.beginPath();
+                    ctx.moveTo(w * 0.1, h * 0.8);
+                    ctx.lineTo(w * 0.3, h * 0.2);
+                    ctx.lineTo(w * 0.9, h * 0.4);
+                    ctx.lineTo(w * 0.7, h * 0.9);
+                    ctx.closePath();
+                    ctx.fill();
+                    break;
+                case 'turing-jest': // Quotes
+                    ctx.font = `${h/3}px '${selectedFont}'`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('?', w*0.25, h*0.4);
+                    ctx.fillText('"', w*0.75, h*0.7);
+                    break;
+                case 'rhymes': // Squiggly lines
+                    ctx.beginPath();
+                    for(let x=0; x<w; x++) ctx.lineTo(x, h*0.3 + Math.sin(x*0.2 + 2)*h*0.1);
+                    ctx.moveTo(0,0);
+                    for(let x=0; x<w; x++) ctx.lineTo(x, h*0.7 + Math.sin(x*0.2)*h*0.1);
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    break;
+                case 'portfolio': // Spiral
+                    ctx.beginPath();
+                    ctx.moveTo(w/2, h/2);
+                    for (let i = 0; i < 150; i++) {
+                        const angle = 0.1 * i;
+                        const x = w/2 + (1 + angle) * Math.cos(angle);
+                        const y = h/2 + (1 + angle) * Math.sin(angle);
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    break;
+                case 'links': // Simple block for icon container
+                     ctx.fillRect(0, 0, w, h);
+                     break;
+                default:
+                    ctx.fillRect(0, 0, w, h);
             }
-
-            return group;
-        }
-
-        function createMetaNode() {
-            const group = new THREE.Group();
-            const boxHelper = new THREE.BoxHelper(new THREE.Mesh(new THREE.BoxGeometry(25, 25, 25)), 0x00ffff);
-            group.add(boxHelper);
-
-            // Ghostly scene inside
-            const innerStardustGeo = new THREE.BufferGeometry();
-            const vertices = [];
-            for (let i = 0; i < 100; i++) {
-                vertices.push(THREE.MathUtils.randFloatSpread(20), THREE.MathUtils.randFloatSpread(20), THREE.MathUtils.randFloatSpread(20));
-            }
-            innerStardustGeo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-            const innerStardustMat = new THREE.PointsMaterial({color: 0xffffff, size: 0.1, transparent: true, opacity: 0.5});
-            const innerStardust = new THREE.Points(innerStardustGeo, innerStardustMat);
-            group.add(innerStardust);
-            
-            // Tiny camera path
-            const curve = new THREE.CatmullRomCurve3([
-                new THREE.Vector3(0, 5, 8),
-                new THREE.Vector3(-8, 2, 0),
-                new THREE.Vector3(5, -5, -8),
-                new THREE.Vector3(0, 5, 8)
-            ]);
-            const pathGeo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(50));
-            const pathMat = new THREE.LineBasicMaterial({color: 0x00ffff, transparent: true, opacity: 0.3});
-            const pathLine = new THREE.Line(pathGeo, pathMat);
-            group.add(pathLine);
-            
-            return group;
         }
         
-        function createFinalHub() {
-            const finalPosition = new THREE.Vector3(0, 0, -1100);
-            const textureLoader = new THREE.TextureLoader();
-            const socials = [
-                { name: 'github', pos: new THREE.Vector3(-20, 10, 0), url: 'https://github.com/gevak' },
-                { name: 'linkedin', pos: new THREE.Vector3(20, 10, 0), url: 'https://linkedin.com/in/gevakip' },
-                { name: 'facebook', pos: new THREE.Vector3(0, -15, 0), url: 'https://facebook.com/geva.kipper' }
-            ];
+        function setupMinimap() {
+            minimapSectionsContainer.innerHTML = '';
+            const totalHeight = mainContent.scrollHeight;
 
-            socials.forEach(social => {
-                const map = textureLoader.load(socialIcons[social.name]);
-                const material = new THREE.SpriteMaterial({ map: map, color: 0xffffff, fog: false, transparent: true });
-                material.color.setHSL(0.5, 1, 0.7); // cyan tint
+            contentSections.forEach((section, index) => {
+                const minimapSection = document.createElement('div');
+                minimapSection.className = 'minimap-section';
+                minimapSection.dataset.targetId = section.id;
                 
-                const sprite = new THREE.Sprite(material);
-                sprite.position.copy(social.pos).add(finalPosition);
-                sprite.scale.set(12, 12, 1);
-                sprite.userData.url = social.url;
+                const sectionId = section.id.replace('project-','').replace('page-','');
+                const hue = (minimapBaseHue + index * 45) % 360;
+                const color = `hsl(${hue}, 60%, 50%)`;
+                minimapSection.style.backgroundColor = `hsl(${hue}, 60%, 20%)`;
                 
-                gsap.to(material.color, {
-                    r:1, g:1, b:1,
-                    scrollTrigger: {
-                        trigger: '#scroll-container',
-                        start: '95% bottom',
-                        end: 'bottom bottom',
-                        scrub: true,
-                        onEnter: () => gsap.to(sprite.scale, {x:14, y:14, duration: 0.5}),
-                        onLeaveBack: () => gsap.to(sprite.scale, {x:12, y:12, duration: 0.5})
-                    }
+                if (sectionId === 'links') {
+                    minimapSection.innerHTML = `
+                        <div class="icon-container">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"></path></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"></path></svg>
+                        </div>
+                    `;
+                } else {
+                    const canvas = document.createElement('canvas');
+                    minimapSection.appendChild(canvas);
+                    // Defer drawing until it's in the DOM to get dimensions
+                    setTimeout(() => drawMinimapPattern(canvas, sectionId, color), 0);
+                }
+
+                const top = section.offsetTop / totalHeight * 100;
+                const height = section.offsetHeight / totalHeight * 100;
+                minimapSection.style.top = `${top}%`;
+                minimapSection.style.height = `${height}%`;
+
+                minimapSectionsContainer.appendChild(minimapSection);
+                minimapSections.push(minimapSection);
+                
+                // Add hover listeners
+                minimapSection.addEventListener('mouseenter', () => {
+                    const target = document.querySelector(`#${minimapSection.dataset.targetId} .project-title`);
+                    if (target) target.style.textShadow = `0 0 10px ${color}`;
                 });
-                
-                scene.add(sprite);
-                interactiveObjects.push(sprite);
+                minimapSection.addEventListener('mouseleave', () => {
+                    const target = document.querySelector(`#${minimapSection.dataset.targetId} .project-title`);
+                     if (target) target.style.textShadow = `none`;
+                });
             });
         }
 
-
-        function setupScrollAnimation() {
-            // Fade out initial text
-            masterTimeline.to(['.header-content', '#scroll-indicator'], {
-                opacity: 0,
-                duration: 0.5,
-            }, 0);
-
-            // Build camera path
-            const cameraPathPoints = [
-                new THREE.Vector3(0, 0, 50), // Start
-                ...projects.map(p => new THREE.Vector3(p.position.x, p.position.y, p.position.z + 40)),
-                new THREE.Vector3(0, 0, -1100) // End hub
-            ];
-            const cameraCurve = new THREE.CatmullRomCurve3(cameraPathPoints);
+        function updateMinimap() {
+            const { scrollHeight, clientHeight, scrollTop } = mainContent;
+            const scrollableHeight = scrollHeight - clientHeight;
             
-            const lookatPathPoints = [
-                new THREE.Vector3(0, 0, 0), // Look at header
-                ...projects.map(p => p.position),
-                new THREE.Vector3(0, 0, -1100) // Look at hub
-            ]
-            const lookatCurve = new THREE.CatmullRomCurve3(lookatPathPoints);
+            const indicatorHeight = (clientHeight / scrollHeight) * 100;
+            const indicatorTop = (scrollTop / scrollHeight) * 100;
+            
+            viewportIndicator.style.height = `${indicatorHeight}%`;
+            viewportIndicator.style.top = `${indicatorTop}%`;
 
-            // Animate camera along the path
-            masterTimeline.to({}, {
-                duration: 100, // This duration is arbitrary, scroll determines progress
-                onUpdate: function() {
-                    const progress = this.progress();
-                    const camPos = cameraCurve.getPointAt(progress);
-                    const lookatPos = lookatCurve.getPointAt(progress);
-                    camera.position.copy(camPos);
-                    camera.lookAt(lookatPos);
+            // Adjust section positions and sizes if needed on resize
+            const totalHeight = mainContent.scrollHeight;
+            contentSections.forEach((section, index) => {
+                const minimapSection = minimapSections[index];
+                if(minimapSection) {
+                    const top = section.offsetTop / totalHeight * 100;
+                    const height = section.offsetHeight / totalHeight * 100;
+                    minimapSection.style.top = `${top}%`;
+                    minimapSection.style.height = `${height}%`;
                 }
-            }, 0);
-            
-            // Project UI Animations
-            const projectPanel = document.getElementById('project-panel');
-            const projectTitle = document.getElementById('project-title');
-            const projectDesc = document.getElementById('project-description');
-            const projectLinks = document.getElementById('project-links');
-            
-            projects.forEach((p, index) => {
-                const start = (index + 0.5) / (projects.length + 1);
-                const end = (index + 1.5) / (projects.length + 1);
-                
-                masterTimeline.add(() => {
-                    // Populate and show panel
-                    projectTitle.innerText = p.name;
-                    projectDesc.innerText = p.description;
-                    projectLinks.innerHTML = '';
-                    p.links.forEach(link => {
-                        const a = document.createElement('a');
-                        a.href = link.url;
-                        a.target = '_blank';
-                        a.innerText = link.label;
-                        projectLinks.appendChild(a);
-                    });
-                    
-                    projectPanel.classList.toggle('right', p.panelSide === 'right');
-                    
-                    gsap.to(projectPanel, {
-                        opacity: 1,
-                        visibility: 'visible',
-                        x: 0,
-                        scale: 1,
-                        duration: 0.5,
-                        ease: 'power2.out'
-                    });
-                    
-                    // Dim/blur background
-                    gsap.to(renderer.domElement, {
-                       'filter': 'blur(3px) brightness(0.6)',
-                       duration: 0.5
-                    });
-
-                }, start);
-                
-                masterTimeline.add(() => {
-                    // Hide panel
-                    gsap.to(projectPanel, {
-                        opacity: 0,
-                        visibility: 'hidden',
-                        x: p.panelSide === 'left' ? '-150%' : '150%',
-                        scale: 0.8,
-                        duration: 0.5,
-                        ease: 'power2.in'
-                    });
-
-                    // Restore background
-                    gsap.to(renderer.domElement, {
-                       'filter': 'blur(0px) brightness(1)',
-                       duration: 0.5
-                    });
-                }, end);
             });
-            
-            // Footer animation
-            masterTimeline.to('.footer', { opacity: 1, duration: 1 }, `>${100 / (projects.length + 1) * 0.9}`);
         }
+
+        mainContent.addEventListener('scroll', updateMinimap);
+        window.addEventListener('resize', () => {
+             // Redraw everything on resize
+            setupMinimap();
+            updateMinimap();
+            // Re-init background anims if needed
+            initBackgroundAnims();
+        });
+
+        // Minimap click/drag scrolling
+        let isDragging = false;
+        minimapContainer.addEventListener('click', (e) => {
+            if (e.target === viewportIndicator) return;
+            const rect = minimapContainer.getBoundingClientRect();
+            const clickY = e.clientY - rect.top;
+            const ratio = clickY / rect.height;
+            mainContent.scrollTop = ratio * mainContent.scrollHeight - (mainContent.clientHeight / 2);
+        });
+
+        viewportIndicator.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            viewportIndicator.style.cursor = "grabbing";
+            document.body.style.userSelect = 'none'; // Prevent text selection
+        });
         
-        function setupStopwatch() {
-            const stopwatchEl = document.getElementById('footer-stopwatch');
-            const startDate = new Date('2025-08-01T01:22:22Z').getTime();
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+            viewportIndicator.style.cursor = "grab";
+            document.body.style.userSelect = 'auto';
+        });
 
-            function updateStopwatch() {
-                const now = new Date().getTime();
-                const diff = now - startDate;
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const rect = minimapContainer.getBoundingClientRect();
+            let clickY = e.clientY - rect.top;
+            // Clamp value
+            clickY = Math.max(0, Math.min(rect.height, clickY));
 
-                const hours = Math.floor(diff / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-                stopwatchEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            }
-            updateStopwatch();
-            setInterval(updateStopwatch, 1000);
-        }
+            const ratio = clickY / rect.height;
+            mainContent.scrollTop = ratio * mainContent.scrollHeight - (viewportIndicator.offsetHeight/2 / rect.height * mainContent.scrollHeight);
+        });
         
-        setupStopwatch();
-        
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+        setupMinimap();
+        updateMinimap();
+
+
+        // --- 4. CONTENT INTERACTIVITY ---
+
+        // Video Modal
+        const videoModal = document.getElementById('video-modal');
+        const videoIframe = document.getElementById('video-iframe');
+        document.querySelectorAll('a[data-video-id]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const videoId = e.currentTarget.dataset.videoId;
+                videoIframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+                videoModal.classList.add('visible');
+            });
+        });
+
+        function closeModal() {
+            videoIframe.src = "";
+            videoModal.classList.remove('visible');
         }
+        videoModal.querySelector('.modal-close').addEventListener('click', closeModal);
+        videoModal.addEventListener('click', (e) => {
+            if (e.target === videoModal) closeModal();
+        });
 
-        function onMouseClick(event) {
-            //Only check for clicks if at the end of the scroll
-            if (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight) < 0.95) return;
-            
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-
-            const intersects = raycaster.intersectObjects(interactiveObjects);
-            if (intersects.length > 0) {
-                const targetObject = intersects[0].object;
-                if (targetObject.userData.url) {
-                    window.open(targetObject.userData.url, '_blank');
-                }
-            }
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            const delta = clock.getDelta();
-            const time = clock.getElapsedTime();
-
-            // Animate particles
-            stardust.rotation.y += 0.0001;
-            nebula.rotation.y += 0.0002;
-            
-            // Update any objects with custom animations
-            scene.traverse(obj => {
-                if (obj.userData.update) {
-                    obj.userData.update(time, delta);
-                }
-                if (obj.isMesh || obj.isLine || obj.isPoints) {
-                    if (obj.parent && obj.parent.isGroup) {
-                         obj.parent.rotation.y += 0.0005;
-                         obj.parent.rotation.x += 0.0003;
+        // Background Visualizations
+        function initBackgroundAnims() {
+            // GlglStats: Sound wave
+            const glglCanvas = document.querySelector('#viz-glglstats canvas');
+            if(glglCanvas) {
+                const glglCtx = glglCanvas.getContext('2d');
+                let time = 0;
+                function animateGlgl() {
+                    const w = glglCanvas.width = glglCanvas.clientWidth;
+                    const h = glglCanvas.height = glglCanvas.clientHeight;
+                    glglCtx.clearRect(0,0,w,h);
+                    glglCtx.strokeStyle = getComputedStyle(root).getPropertyValue('--property-name-color');
+                    glglCtx.lineWidth = 2;
+                    glglCtx.beginPath();
+                    for(let x = 0; x < w; x++) {
+                        const y = h/2 + Math.sin(x * 0.05 + time) * h * 0.2 * Math.sin(time*0.5);
+                        glglCtx.lineTo(x, y);
                     }
+                    glglCtx.stroke();
+                    time += 0.02;
+                    requestAnimationFrame(animateGlgl);
                 }
-            });
+                animateGlgl();
+            }
 
-            renderer.render(scene, camera);
+            // Ahuzat Dibuk: Heatmap
+            const ahuzatCanvas = document.querySelector('#viz-ahuzat-dibuk canvas');
+            if (ahuzatCanvas) {
+                const ahuzatCtx = ahuzatCanvas.getContext('2d');
+                const gridSize = 20;
+                let grid = [];
+                function animateAhuzat() {
+                    const w = ahuzatCanvas.width = ahuzatCanvas.clientWidth;
+                    const h = ahuzatCanvas.height = ahuzatCanvas.clientHeight;
+                    const cols = Math.ceil(w/gridSize);
+                    const rows = Math.ceil(h/gridSize);
+                    
+                    if(grid.length === 0) { // init grid
+                        for(let i=0; i<cols*rows; i++) grid.push(random());
+                    }
+                    
+                    // slowly evolve grid
+                    const rIndex = Math.floor(random() * grid.length);
+                    grid[rIndex] = (grid[rIndex] + (random() - 0.5) * 0.2 + 1) % 1;
+
+                    ahuzatCtx.clearRect(0,0,w,h);
+                    const baseColor = getComputedStyle(root).getPropertyValue('--string-color');
+                    for(let r=0; r<rows; r++) {
+                        for(let c=0; c<cols; c++) {
+                            ahuzatCtx.globalAlpha = grid[r*cols + c] * 0.5 + 0.1;
+                            ahuzatCtx.fillStyle = baseColor;
+                            ahuzatCtx.fillRect(c*gridSize, r*gridSize, gridSize, gridSize);
+                        }
+                    }
+                    ahuzatCtx.globalAlpha = 1.0;
+                    requestAnimationFrame(animateAhuzat);
+                }
+                // Rate-limit this animation
+                setInterval(animateAhuzat, 100);
+            }
+        }
+        initBackgroundAnims();
+        
+
+        // --- 5. FOOTER UPTIME COUNTER ---
+
+        const uptimeEl = document.getElementById('footer-right');
+        const targetDate = new Date('2025-08-02T01:12:04Z').getTime();
+
+        function updateUptime() {
+            const now = new Date().getTime();
+            const diff = targetDate > now ? targetDate - now : now - targetDate;
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            const prefix = targetDate > now ? "> T-Minus: " : "> Uptime: ";
+            uptimeEl.textContent = `${prefix}${days}d ${String(hours).padStart(2,'0')}h ${String(minutes).padStart(2,'0')}m ${String(seconds).padStart(2,'0')}s`;
         }
 
-        init();
+        setInterval(updateUptime, 1000);
+        updateUptime();
+
+    });
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250801",
+          pageId: "20250802",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
