@@ -1,304 +1,214 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Geva Kipper Portfolio</title>
+<title>Geva Kipper - Portfolio</title>
 <style>
-  body {
-    margin:0;
-    padding:0;
-    background: black;
-    color: #00ff88;
-    font-family: "Courier New", monospace;
-    overflow-x:hidden;
-  }
-  /* Scanline overlay */
-  body::after{
-    content:"";
-    position:fixed;
-    left:0;top:0;width:100%;height:100%;
-    background: repeating-linear-gradient(
-      to bottom,
-      rgba(0,255,136,0.08) 0px,
-      rgba(0,255,136,0.03) 2px,
-      transparent 3px,
-      transparent 4px
-    );
-    pointer-events:none;
-    z-index:1000;
-  }
-  .hidden {opacity:0;transform:translateY(20px);transition: all 0.6s ease;}
-  .visible {opacity:1;transform:translateY(0);}
-  .typed {display:inline-block;white-space: pre;}
-  #terminal{
-    max-width:900px;
-    margin:40px auto;
-    padding:20px;
-  }
-  .prompt { color:#00ff88; }
-  .blink {
-      border-right: 2px solid #00ff88;
-      animation: blink 1s infinite;
-  }
-  @keyframes blink {50%{border-color: transparent;}}
-  .ascii-title {
-    font-size:2rem;
-    text-align:center;
-    margin:20px 0;
-    text-shadow:0 0 5px #0f0, 0 0 20px #0f0;
-    animation: glitch 3s infinite;
-  }
-  @keyframes glitch {
-    0%{text-shadow: 2px 0 red, -2px 0 blue;}
-    20%{text-shadow: -2px 0 lime, 2px 0 magenta;}
-    40%{text-shadow:0 0 5px #0f0, 0 0 20px #0f0;}
-    60%{text-shadow: 2px 0 blue, -2px 0 red;}
-    100%{text-shadow:0 0 5px #0f0,0 0 20px #0f0;}
-  }
-  .subtitle, .dynamic-subtitle {
-    text-align:center;
-    margin:10px 0;
-  }
-  .box {
-    border:1px solid #00ff88;
-    padding:10px;
-    margin:20px 0;
-    position:relative;
-  }
-  .box:hover{ box-shadow:0 0 15px #00ff88; }
-  .header {color:#0f0; font-weight:bold;}
-  a {
-    color:#00ff88;
-    text-decoration:none;
-  }
-  a:hover {text-shadow:0 0 5px #0f0;}
-  .symlink{color:#0f8;text-decoration:underline;}
-  /* The Turing Jest hover pun */
-  .pun{display:none;position:absolute;top:5px;right:5px;color:#0f0;font-size:0.9em;}
-  .box:hover .pun{display:block;animation:glitch 1s infinite;}
-  /* Rhymes side panel */
-  #rhyme-panel {
-    position:fixed;
-    top:20%;
-    right:-40%;
-    width:35%;
-    background:black;
-    border:1px solid #0f0;
-    padding:10px;
-    transition:right 0.8s;
-  }
-  .show-rhyme #rhyme-panel {right:0;}
-  button.install {
-    background:#00ff88;background:rgba(0,255,136,0.2);
-    border:1px solid #00ff88;
-    color:#00ff88;
-    padding:6px 12px;
-    cursor:pointer;
-  }
-  /* Footer */
-  footer{
-    border-top:1px solid #0f0;
-    margin-top:40px;
-    padding:10px;
-    font-size:0.8em;
-    display:flex;justify-content:space-between;align-items:center;
-  }
-  #stopwatch {
-    font-family:"Digital-7 Mono",monospace;
-    font-size:1.1em;
-    color:#00ff88;
-  }
-  @font-face {
-    font-family: "Digital-7 Mono";
-    src: local("Digital-7 Mono"), url('https://fonts.cdnfonts.com/s/13618/digital-7-mono.woff') format("woff");
-  }
-  /* ASCII canvas backgrounds inside modules */
-  canvas.bg {
-    position:absolute;
-    left:0;top:0;width:100%;height:100%;
-    z-index:0;opacity:0.2;
-    font-size:8px;
-    color:#0f0;
-  }
-  .box-content{position:relative;z-index:1;}
-  /* Socials box */
-  .socials {font-size:0.9em;white-space:pre; margin:30px 0;}
+    /* Base styling */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; font-family: "Fira Code", monospace; background: #1e1e1e; color: #ddd; }
+    body { display: flex; flex-direction: column; }
+
+    /* Faux titlebar */
+    .titlebar { height: 28px; background: #2d2d2d; display: flex; align-items: center; padding: 0 10px; }
+    .traffic-lights { display: flex; gap: 8px; }
+    .traffic-lights span {
+        display: inline-block;
+        width: 12px; height: 12px;
+        border-radius: 50%;
+    }
+    .traffic-lights .close { background: #ff5f57; }
+    .traffic-lights .min { background: #ffbd2e; }
+    .traffic-lights .max { background: #28c93f; }
+
+    /* Layout */
+    .container { flex: 1; display: flex; overflow: hidden; }
+    .sidebar {
+        width: 200px; background: #252526; color: #ccc; font-size: 14px;
+        padding: 10px; border-right: 1px solid #333; overflow-y: auto;
+    }
+    .sidebar h3 { font-size: 12px; text-transform: uppercase; margin-bottom: 6px; color: #888; }
+    .file { padding: 4px 6px; cursor: pointer; border-radius: 4px; }
+    .file:hover, .file.active { background: #373737; }
+
+    /* Editor */
+    .editor { flex: 1; padding: 20px; overflow: auto; }
+    pre { font-size: 14px; line-height: 1.5em; white-space: pre-wrap; word-break: break-word; }
+
+    /* Syntax highlighting */
+    .comment { color: #6a9955; font-style: italic; }
+    .keyword { color: #569cd6; }
+    .string { color: #d69d85; }
+    .number { color: #b5cea8; }
+    .func { color: #4ec9b0; }
+    .var { color: #9cdcfe; }
+    .json-key { color: #c586c0; }
+    .json-value { color: #4fc1ff; }
+
+    /* Footer console */
+    .footer { background: #1b1b1b; border-top: 1px solid #333; font-size: 12px; padding: 6px 10px; display: flex; justify-content: space-between; align-items: center; color: #888; }
+    .stopwatch { color: #00ff88; font-family: monospace; }
+
+    /* Animations and effects */
+    .output { margin-top: 10px; color: #9cdcfe; font-family: monospace; border-top: 1px solid #333; padding-top: 6px; }
+    .docstring { background: #2a2a2a; border-left: 3px solid #888; margin-top: 8px; padding: 6px; display: none; }
+    .visible { display: block !important; }
+    .typewriter { overflow: hidden; border-right: 2px solid #d69d85; white-space: nowrap; animation: typing 3s steps(30,end) infinite alternate; }
+    @keyframes typing { from { width: 0 } to { width: 100% } }
 </style>
 </head>
 <body>
-<div id="terminal">
-  <div id="typedPrompt" class="typed"></div>
-  <div id="titleSection" class="hidden">
-    <div class="ascii-title">Geva Kipper</div>
-    <div class="subtitle">Currently at Google, working on large-scale systems engineering.</div>
-    <div class="dynamic-subtitle typed" id="dynSub"></div>
-  </div>
+    <!-- Title bar -->
+    <div class="titlebar">
+        <div class="traffic-lights">
+            <span class="close"></span>
+            <span class="min"></span>
+            <span class="max"></span>
+        </div>
+    </div>
 
-  <div id="projects" class="hidden">
-    <div class="box">
-      <canvas class="bg"></canvas>
-      <div class="box-content">
-        <div class="header">$ cat GlglStats.info</div>
-        <p>Statistics visualization engine for structured datasets.<br>
-        <a class="symlink" href="https://glglstats.geekip.dev" target="_blank">[project site]</a>
-        <a class="symlink" href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">[conference video]</a>
-        </p>
-      </div>
-    </div>
-    <div class="box" id="dibuk">
-      <canvas class="bg" id="dibuk-heat"></canvas>
-      <div class="box-content">
-        <div class="header">$ cat AhuzatDibuk.log</div>
-        <p>Socio-political analysis of urban infrastructures.<br>
-          <a class="symlink" href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">[news 1]</a>
-          <a class="symlink" href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">[news 2]</a>
-          <a class="symlink" href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">[Facebook post]</a>
-        </p>
-      </div>
-    </div>
-    <div class="box" id="orienting">
-      <canvas class="bg" id="poly-canvas"></canvas>
-      <div class="box-content">
-        <div class="header">$ cat 2DPartOrienting.txt</div>
-        <p>Computational geometry techniques for orienting flat parts.<br>
-          <a class="symlink" href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">[project website / source code]</a>
-        </p>
-      </div>
-    </div>
-    <div class="box">
-      <div class="box-content">
-        <div class="header">$ cat TuringJest.arena</div>
-        <p>An AI-powered punning arena.<br>
-          <a class="symlink" href="https://jest.geekip.dev" target="_blank">[visit arena]</a>
-        </p>
-        <div class="pun">"Why did the AI cross the road? To optimize chicken traffic."</div>
-      </div>
-    </div>
-    <div class="box" id="rhymes">
-      <div class="box-content">
-        <div class="header">$ cat RhymesOfIsrael.ext</div>
-        <p>A chrome extension augmenting rhymes.<br>
-          <button class="install" 
-            onclick="window.open('https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb','_blank')">[Install extension]</button>
-        </p>
-      </div>
-    </div>
-    <div class="box">
-      <div class="box-content">
-        <div class="header">$ cat Portfolio.meta</div>
-        <p>This very site and its recursive mirror.<br>
-          <a class="symlink" href="https://geekip.dev" target="_blank">[geekip.dev]</a>
-        </p>
-      </div>
-    </div>
-    <div class="socials">
--rw-r--r--  <a href="https://github.com/gevak" target="_blank">github.com/gevak</a>  
--rw-r--r--  <a href="https://linkedin.com/in/gevakip" target="_blank">linkedin.com/in/gevakip</a>  
--rw-r--r--  <a href="https://facebook.com/geva.kipper" target="_blank">facebook.com/geva.kipper</a>  
-    </div>
-  </div>
-</div>
+    <!-- Main container -->
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h3>Files</h3>
+            <div class="file" data-file="about_me.py">about_me.py</div>
+            <div class="file" data-file="glglstats.py">glglstats.py</div>
+            <div class="file" data-file="ahuzat_dibuk.py">ahuzat_dibuk.py</div>
+            <div class="file" data-file="orienting.cpp">orienting.cpp</div>
+            <div class="file" data-file="turing_jest.js">turing_jest.js</div>
+            <div class="file" data-file="rhymes_extension.js">rhymes_extension.js</div>
+            <div class="file" data-file="portfolio.html">portfolio.html</div>
+            <div class="file" data-file="contacts.json">contacts.json</div>
+        </div>
 
-<div id="rhyme-panel">“This portfolio is reshaped with rhyme,  
-changed by AI, time after time.”</div>
+        <!-- Editor -->
+        <div class="editor">
+            <pre id="editor-content">
+<span class="comment"># Geva Kipper</span>
+<span class="comment"># Software Engineer @ Google — currently building large-scale distributed systems</span>
+<span class="comment"># This site is dynamically re-designed every day by AI, making it ever-changing</span>
+            </pre>
+            <div id="output" class="output"></div>
+        </div>
+    </div>
 
-<footer>
-  <div><span class="blink"></span> This layout generated collaboratively with an AI (GPT-4).</div>
-  <div id="stopwatch"></div>
-</footer>
+    <!-- Footer -->
+    <div class="footer">
+        <div>// Site generated by ChatGPT (AI model, 2025)</div>
+        <div class="stopwatch" id="stopwatch"></div>
+    </div>
 
 <script>
-// Typing effect
-const promptText = "geva@google:~$ ./portfolio.sh";
-const typedPrompt = document.getElementById("typedPrompt");
-let idx=0;
-function typePrompt(){
-  if(idx < promptText.length){
-    typedPrompt.textContent += promptText[idx++];
-    setTimeout(typePrompt, 60);
-  } else {
-    document.getElementById("titleSection").classList.add("visible");
-    dynamicSubtitleTyping();
-    setTimeout(()=> document.getElementById("projects").classList.add("visible"), 1000);
-  }
-}
-typePrompt();
+/* Code snippets for each file */
+const snippets = {
+    "about_me.py": `<span class="comment"># About Me</span>
+<span class="keyword">def</span> <span class="func">about</span>():
+    <span class="string">"Software Engineer passionate about distributed systems, data, and creative coding."</span>`,
 
-function dynamicSubtitleTyping(){
-  const text = "This portfolio is re-designed each day by AI — and is thus ever-changing.";
-  const dyn = document.getElementById("dynSub");
-  let i=0;
-  function step(){
-    if(i<text.length){
-      dyn.textContent+=text[i++];
-      setTimeout(step,50);
-    }
-  }
-  step();
-}
+    "glglstats.py": `<span class="comment"># GlglStats project</span>
+<span class="keyword">import</span> compression
+<span class="keyword">def</span> <span class="func">analyze</span>():
+    <span class="keyword">return</span> <span class="string">"https://glglstats.geekip.dev"</span>
+    # Hover link below to see console output
+    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="string yt-link">"YouTube talk"</a>`,
 
-// Heatmap ASCII animation
-const dibukCanvas = document.getElementById("dibuk-heat");
-const ctx = dibukCanvas.getContext("2d");
-dibukCanvas.width=300; dibukCanvas.height=80;
-function heatmap(){
-  const chars = " .:-=+*#%@";
-  ctx.clearRect(0,0,dibukCanvas.width,dibukCanvas.height);
-  for(let y=0;y<dibukCanvas.height;y+=10){
-    for(let x=0;x<dibukCanvas.width;x+=6){
-      let val = Math.sin((x+y+Date.now()/200)/15);
-      let idx = Math.floor((val+1)/2 * (chars.length-1));
-      ctx.fillStyle="#0f0";
-      ctx.fillText(chars[idx], x, y);
-    }
-  }
-}
-setInterval(heatmap,150);
+    "ahuzat_dibuk.py": `<span class="comment"># Ahuzat Dibuk scraping and visualization</span>
+<span class="keyword">data</span> = [<span class="number">0,1,2,3,4</span>]
+<span class="string">""" Click to expand news mentions """</span>
+<div class="doc-trigger"><span class="string">"Open docstring panel"</span></div>
+<div class="docstring"><a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">Channel 13 article</a> |
+<a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">Mako article</a></div>`,
 
-// Rotating polygon ASCII
-const polyCanvas = document.getElementById("poly-canvas");
-const pctx = polyCanvas.getContext("2d");
-polyCanvas.width=300; polyCanvas.height=100;
-let angle=0;
-function polygon(){
-  pctx.clearRect(0,0,polyCanvas.width,polyCanvas.height);
-  pctx.fillStyle="#0f0";
-  const size=30;
-  const cx=150, cy=50;
-  const sides=5;
-  for(let s=0;s<sides;s++){
-    let x = cx + size*Math.cos(angle+2*Math.PI*s/sides);
-    let y = cy + size*Math.sin(angle+2*Math.PI*s/sides);
-    pctx.fillText("*", x, y);
-  }
-  angle+=0.1;
-}
-setInterval(polygon,120);
+    "orienting.cpp": `<span class="comment">// 2D Part Orienting project</span>
+<span class="keyword">#include</span> &lt;iostream&gt;
+<span class="keyword">struct</span> Part {
+    <span class="keyword">void</span> <span class="func">orient</span>();
+}; 
+// Hover to align parts visually.
+<a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="string">"Project link"</a>`,
 
-// Rhymes panel hover
-const rhymeBox = document.getElementById("rhymes");
-rhymeBox.addEventListener("mouseenter",()=>document.body.classList.add("show-rhyme"));
-rhymeBox.addEventListener("mouseleave",()=>document.body.classList.remove("show-rhyme"));
-
-// Stopwatch from future start date
-const startTime = new Date("2025-08-19T01:07:12Z").getTime();
-function updateStopwatch(){
-  const now = Date.now();
-  let diff = Math.floor((now - startTime)/1000);
-  if(diff<0) diff=0;
-  const h = String(Math.floor(diff/3600)).padStart(2,"0");
-  const m = String(Math.floor((diff%3600)/60)).padStart(2,"0");
-  const s = String(diff%60).padStart(2,"0");
-  document.getElementById("stopwatch").textContent=`${h}:${m}:${s}`;
+    "turing_jest.js": `// The Turing Jest
+function jest(prompt) {
+    return "Why did the AI cross the road? To optimize your " + prompt + "!";
 }
-setInterval(updateStopwatch,1000);
+// Type below:
+<input id="jest-input" placeholder="Enter a word"></input>`,
+
+    "rhymes_extension.js": `// Rhymes of Israel
+chrome.runtime.onInstalled.addListener(() => {
+    // Headlines become rhymes!
+    <div class="typewriter">"Breaking News" → "Shaking Views"</div>
+});
+<a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank">Extension link</a>`,
+
+    "portfolio.html": `&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body&gt;
+    &lt;div id='portfolio'&gt;Self-referential portfolio site&lt;/div&gt;
+    &lt;button onclick="location.reload()"&gt;render()&lt;/button&gt;
+&lt;/body&gt;
+&lt;/html&gt;`,
+
+    "contacts.json": `{
+    <span class="json-key">"github"</span>: <a class="json-value" href="https://github.com/gevak" target="_blank">"github.com/gevak"</a>,
+    <span class="json-key">"linkedin"</span>: <a class="json-value" href="https://linkedin.com/in/gevakip" target="_blank">"linkedin.com/in/gevakip"</a>,
+    <span class="json-key">"facebook"</span>: <a class="json-value" href="https://facebook.com/geva.kipper" target="_blank">"facebook.com/geva.kipper"</a>
+}`
+};
+
+/* File click logic */
+const files = document.querySelectorAll('.file');
+const editorContent = document.getElementById('editor-content');
+const output = document.getElementById('output');
+
+files.forEach(f => {
+    f.addEventListener('click', () => {
+        files.forEach(i => i.classList.remove('active'));
+        f.classList.add('active');
+        editorContent.innerHTML = snippets[f.dataset.file] || '';
+        output.innerHTML = '';
+
+        // special behaviors
+        if (f.dataset.file === "glglstats.py") {
+            document.querySelector('.yt-link').addEventListener('mouseover', () => {
+                output.innerText = "--> Running LZ77 compression analysis... Output: Too much repetition detected!";
+            });
+        }
+        if (f.dataset.file === "ahuzat_dibuk.py") {
+            document.querySelector('.doc-trigger').addEventListener('click', () => {
+                document.querySelector('.docstring').classList.toggle('visible');
+            });
+        }
+        if (f.dataset.file === "turing_jest.js") {
+            document.getElementById('jest-input').addEventListener('input', e => {
+                output.innerText = "Console: " + "Why did the AI cross the road? To optimize your " + e.target.value + "!";
+            });
+        }
+    });
+});
+
+/* Stopwatch logic */
+function updateStopwatch() {
+    const start = new Date("2025-08-20T01:05:19Z").getTime();
+    const now = new Date().getTime();
+    let diff = Math.floor((now - start) / 1000);
+    const d = Math.floor(diff / (3600*24));
+    diff %= 3600*24;
+    const h = Math.floor(diff / 3600);
+    diff %= 3600;
+    const m = Math.floor(diff / 60);
+    const s = diff % 60;
+    document.getElementById("stopwatch").textContent = 
+        d + "d " + h.toString().padStart(2,'0') + ":" + m.toString().padStart(2,'0') + ":" + s.toString().padStart(2,'0');
+}
+setInterval(updateStopwatch, 1000);
 updateStopwatch();
 </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250819",
+          pageId: "20250820",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
