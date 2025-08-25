@@ -46,12 +46,25 @@ def extract_idea(text: str) -> str:
     return match.group(1).strip('* \t.')
   return ''
 
+def get_random_english_word() -> str:
+  words = open('english-nouns.txt', 'r').read().splitlines()
+  return random.choice(words)
+
+def get_text_date() -> str:
+  # Get today's date
+  today = datetime.today()
+  # Format the date into "Month Day" format
+  return f"{today.strftime('%B')} {today.day}"
+
 def get_idea_title(model: str) -> str:
   force_idea = os.getenv('INPUT_FORCE_IDEA')
   if force_idea:
     return force_idea
   dreamer_prompt = open(_DREAMER_PROMPT_FILE, 'r').read()
-  response = prompt(dreamer_prompt, model)
+  inspiration = get_random_english_word()
+  date = get_text_date()
+  logging.info("Generating ideas with inspiration: '%s', date: '%s'", inspiration, date)
+  response = prompt(dreamer_prompt.format(inspiration=inspiration, date=date), model)
   logging.info("Got ideas response: %s", response)
   
   ideas = []
