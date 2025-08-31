@@ -2,21 +2,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper // AI Portfolio v4.2</title>
+    <title>Geva Kipper // Portfolio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* --- CORE STYLING & THEME --- */
         :root {
-            --bg-color: #1a1a1d;
-            --font-main: 'Fira Code', monospace;
-            --text-primary: #f0f0f0;
-            --text-secondary: #a0a0a0;
-            --accent-primary: #61f2f5;
-            --accent-glow: rgba(97, 242, 245, 0.5);
-            --card-bg: rgba(42, 42, 48, 0.6);
-            --card-border: #61f2f5;
+            --bg-color: #1E1E1E;
+            --text-color: #D4D4D4;
+            --bg-light: #2A2D2E;
+            --bg-lighter: #3c3c3c;
+            --border-color: #333333;
+            --terminal-bg: #181818;
+            --black: #000000;
+            --amber: #FFC66D;
+            --teal: #4EC9B0;
+            --magenta: #C586C0;
+            --blue: #569CD6;
+            --green-comment: #6A9955;
+            --red-control: #FC605C;
+            --yellow-control: #FDBC40;
+            --green-control: #34C749;
         }
 
         * {
@@ -26,520 +32,649 @@
         }
 
         html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            font-family: 'Fira Code', monospace;
             background-color: var(--bg-color);
-            color: var(--text-primary);
-            font-family: var(--font-main);
-            font-size: 16px;
-            line-height: 1.7;
-            overflow-x: hidden;
-            scroll-behavior: smooth;
+            color: var(--text-color);
+            font-size: 14px;
         }
 
-        ::selection {
-            background-color: var(--accent-primary);
-            color: var(--bg-color);
-        }
-
-        a {
-            color: var(--accent-primary);
-            text-decoration: none;
-            transition: all 0.2s ease-in-out;
-        }
-
-        a:hover {
-            text-shadow: 0 0 8px var(--accent-glow);
-        }
-        
-        /* --- TERMINAL INTERFACE --- */
-        #terminal-container {
-            min-height: 100vh;
+        /* --- Loading Screen --- */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
             display: flex;
-            flex-direction: column;
             justify-content: center;
-            align-items: flex-start;
-            padding: 2rem;
-            width: 100%;
-            max-width: 900px;
-            margin: 0 auto;
-            transition: min-height 0.8s ease-in-out;
+            align-items: center;
+            z-index: 1000;
+            font-size: 1.2rem;
+            transition: opacity 0.8s ease-in-out;
         }
 
-        #terminal-container.has-content {
-            min-height: auto;
-            padding-top: 5vh;
-            padding-bottom: 5vh;
-            justify-content: flex-start;
+        #loading-screen.fade-out {
+            opacity: 0;
         }
 
-        .terminal-line {
-            white-space: pre-wrap;
-            width: 100%;
+        #loading-text {
+            white-space: pre;
         }
-        
-        #prompt-line {
+
+        /* --- Main IDE Layout --- */
+        .ide-container {
+            display: grid;
+            height: 100vh;
+            grid-template-columns: 240px 1fr 280px;
+            grid-template-rows: auto 1fr auto;
+            grid-template-areas:
+                "header header header"
+                "explorer editor info"
+                "terminal terminal terminal";
+        }
+
+        /* --- Header / Status Bar --- */
+        .status-bar {
+            grid-area: header;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 15px;
+            background-color: var(--bg-light);
+            border-bottom: 1px solid var(--black);
+        }
+
+        .header-left .file-path {
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: var(--text-color);
+        }
+
+        .header-left .code-comment {
+            color: var(--green-comment);
+            font-size: 0.8rem;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .window-controls span {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .window-controls .close { background-color: var(--red-control); }
+        .window-controls .minimize { background-color: var(--yellow-control); }
+        .window-controls .maximize { background-color: var(--green-control); }
+
+        /* --- Left Column: File Explorer --- */
+        .file-explorer {
+            grid-area: explorer;
+            padding: 15px 10px;
+            background-color: var(--bg-light);
+            border-right: 1px solid var(--black);
+            overflow-y: auto;
+        }
+
+        .file-tree span {
             display: flex;
             align-items: center;
+            padding-left: 10px;
+            font-weight: bold;
+            margin-bottom: 10px;
         }
 
-        .prompt-symbol {
-            color: var(--accent-primary);
-            font-weight: 700;
+        .file-tree .folder-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            opacity: 0.7;
         }
 
-        #user-input {
-            outline: none;
-            flex-grow: 1;
+        .file-list {
+            list-style: none;
+            padding-left: 20px;
         }
 
-        #cursor {
-            background-color: var(--accent-primary);
-            width: 10px;
-            height: 1.2em;
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        .file-item:hover {
+            background-color: var(--bg-lighter);
+        }
+
+        .file-item.active {
+            background-color: var(--bg-lighter);
+        }
+
+        .file-item svg {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        /* --- Center Column: Code Editor --- */
+        .code-editor {
+            grid-area: editor;
+            padding: 20px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+
+        .code-editor pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* Syntax Highlighting */
+        .syntax-keyword { color: var(--blue); }
+        .syntax-class { color: var(--teal); }
+        .syntax-comment { color: var(--green-comment); }
+        .syntax-string { color: var(--magenta); }
+        .syntax-variable { color: #9CDCFE; } /* A lighter blue */
+        .syntax-function { color: var(--amber); }
+
+        .syntax-string a {
+            color: var(--magenta);
+            text-decoration: underline;
+            transition: color 0.2s ease, text-shadow 0.2s ease;
+        }
+
+        .syntax-string a:hover {
+            color: #e6a0d9;
+            text-shadow: 0 0 5px var(--magenta);
+        }
+
+        .code-block-embed {
+            margin-top: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .code-block-embed iframe {
+            display: block;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            border: none;
+        }
+        
+        /* Markdown Preview Styles */
+        .markdown-preview h1 { color: var(--teal); font-size: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px; }
+        .markdown-preview p { margin-bottom: 15px; line-height: 1.7; }
+        .markdown-preview a { color: var(--amber); text-decoration: none; border-bottom: 1px dotted var(--amber); transition: color 0.2s ease, border-bottom-color 0.2s ease; }
+        .markdown-preview a:hover { color: #ffd899; border-bottom-color: #ffd899; }
+        .markdown-preview code { background-color: var(--bg-light); padding: 2px 5px; border-radius: 3px; }
+
+        /* --- Right Column: Info & Actions --- */
+        .info-panel {
+            grid-area: info;
+            padding: 20px;
+            background-color: var(--bg-light);
+            border-left: 1px solid var(--black);
+            overflow-y: auto;
+        }
+        
+        .info-panel h3 {
+            color: var(--teal);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .info-panel p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: #b0b0b0;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .action-buttons a {
+            display: block;
+            text-align: center;
+            padding: 10px;
+            background-color: var(--blue);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .action-buttons a:hover {
+            background-color: #79b8f3;
+            transform: translateY(-1px);
+        }
+
+        /* --- Bottom Bar: Terminal --- */
+        .terminal {
+            grid-area: terminal;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--terminal-bg);
+            padding: 8px 15px;
+            border-top: 1px solid var(--black);
+            font-size: 0.85rem;
+        }
+
+        .terminal-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .terminal-prompt {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .terminal-prompt a {
+            color: var(--text-color);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        
+        .terminal-prompt a:hover {
+            color: var(--amber);
+        }
+
+        .cursor {
             display: inline-block;
+            width: 8px;
+            height: 1.2em;
+            background-color: var(--text-color);
             animation: blink 1s steps(1) infinite;
-            margin-left: 4px;
+            vertical-align: middle;
         }
 
         @keyframes blink {
             50% { opacity: 0; }
         }
 
-        #subtitle {
-            margin-top: 1rem;
-            font-size: 0.8em;
-            color: var(--text-secondary);
+        .terminal-right {
+            text-align: right;
+            color: #aaa;
+        }
+        
+        .terminal-right div {
+            line-height: 1.4;
         }
 
-        /* --- PROJECT GRID --- */
-        #content-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 1rem;
-            padding: 0 2rem 2rem;
-            width: 100%;
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-        
-        .project-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--card-border);
-            padding: 1.5rem;
-            backdrop-filter: blur(5px);
-            opacity: 0;
-            transform: translateY(30px);
-            transition: opacity 0.5s ease-out, transform 0.5s ease-out, box-shadow 0.3s ease;
-            box-shadow: 0 0 0px var(--accent-glow);
-        }
-
-        .project-card.visible {
-            opacity: 1;
-            transform: translateY(0);
-            animation: glitch 0.3s steps(2, jump-none) 1;
-        }
-
-        @keyframes glitch {
-            0% { transform: translate(0); }
-            20% { transform: translate(-2px, 2px); }
-            40% { transform: translate(-2px, -2px); }
-            60% { transform: translate(2px, 2px); }
-            80% { transform: translate(2px, -2px); }
-            100% { transform: translate(0); }
-        }
-        
-        .project-card:hover {
-            box-shadow: 0 0 15px var(--accent-glow);
-        }
-        
-        .card-title {
-            color: var(--accent-primary);
-            font-weight: 700;
-            font-size: 1.1em;
-            margin-bottom: 0.75rem;
-        }
-
-        .card-tags {
-            margin-bottom: 1rem;
-            font-size: 0.85em;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-
-        .card-tag {
-            color: var(--accent-primary);
-            opacity: 0.9;
-        }
-        
-        .card-description {
-            margin-bottom: 1.5rem;
-            color: var(--text-primary);
-            font-size: 0.95em;
-        }
-
-        .card-links {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        
-        .card-links a, .card-links div {
-            font-size: 0.9em;
-            font-weight: 500;
-        }
-        
-        /* --- FOOTER --- */
-        footer {
-            padding: 1.5rem 2rem;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            text-align: center;
-            width: 100%;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        
-        .footer-separator {
-            width: 100%;
-            height: 1px;
-            background: var(--accent-primary);
-            margin: 1rem auto 2rem;
-            box-shadow: 0 0 8px var(--accent-glow);
-        }
     </style>
 </head>
 <body>
 
-    <div id="terminal-container">
-        <div id="terminal-history"></div>
-        <div id="prompt-line">
-            <span class="prompt-symbol">QUERY > </span>
-            <span id="user-input"></span>
-            <span id="cursor"></span>
-        </div>
-        <div id="subtitle" style="display: none;">// This site is procedurally regenerated by AI every 24 hours. Visuals and layout may vary.</div>
+    <div id="loading-screen">
+        <span id="loading-text"></span>
     </div>
-    
-    <main id="content-grid"></main>
 
-    <footer id="footer" style="display: none;">
-        <div class="footer-separator"></div>
-        <div id="footer-content">
-            DESIGN & CONTENT GENERATED BY: OpenAI GPT-4 Model // SESSION_ID: <span id="session-id"></span><br>
-            SYSTEM UPTIME: <span id="uptime"></span>
-        </div>
-    </footer>
+    <div class="ide-container">
+        <header class="status-bar">
+            <div class="header-left">
+                <div class="file-path">~/portfolio/Geva_Kipper/</div>
+                <div class="code-comment">// Senior Software Engineer at Google, working on core infrastructure and developer tools.</div>
+                <div class="code-comment">// This site's layout is procedurally generated by an AI each day; content and style may evolve.</div>
+            </div>
+            <div class="window-controls">
+                <span class="close"></span>
+                <span class="minimize"></span>
+                <span class="maximize"></span>
+            </div>
+        </header>
 
+        <aside class="file-explorer">
+            <div class="file-tree">
+                <span>
+                    <svg class="folder-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.11 0-2 .89-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8c0-1.11-.9-2-2-2h-8l-2-2z"></path></svg>
+                    src/
+                </span>
+                <ul class="file-list" id="file-list">
+                    <!-- File items will be injected by JavaScript -->
+                </ul>
+            </div>
+        </aside>
+
+        <main id="code-editor-content" class="code-editor">
+            <!-- Project content will be injected by JavaScript -->
+        </main>
+
+        <aside id="info-panel-content" class="info-panel">
+            <!-- Info panel content will be injected by JavaScript -->
+        </aside>
+
+        <footer class="terminal">
+            <div class="terminal-left">
+                <div class="terminal-prompt">
+                    <span>$</span>
+                    <a href="https://github.com/gevak" target="_blank" rel="noopener noreferrer">open github.com/gevak</a>
+                </div>
+                <div class="terminal-prompt">
+                    <span>$</span>
+                    <a href="https://linkedin.com/in/gevakip" target="_blank" rel="noopener noreferrer">open linkedin.com/in/gevakip</a>
+                </div>
+                 <div class="terminal-prompt">
+                    <span>$</span>
+                    <a href="https://facebook.com/geva.kipper" target="_blank" rel="noopener noreferrer">open facebook.com/geva.kipper</a> 
+                    <span class="cursor"></span>
+                </div>
+            </div>
+            <div class="terminal-right">
+                <div id="ai-credit">[INFO] UI generated by a GPT-4 class assistant.</div>
+                <div id="commit-timer">[INFO] Time since last major commit: 00:00:00</div>
+            </div>
+        </footer>
+    </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- DOM ELEMENTS ---
-            const terminalContainer = document.getElementById('terminal-container');
-            const terminalHistory = document.getElementById('terminal-history');
-            const userInput = document.getElementById('user-input');
-            const cursor = document.getElementById('cursor');
-            const subtitle = document.getElementById('subtitle');
-            const contentGrid = document.getElementById('content-grid');
-            const footer = document.getElementById('footer');
-            const sessionIdEl = document.getElementById('session-id');
-            const uptimeEl = document.getElementById('uptime');
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DATA ---
+        const ICONS = {
+            python: `<svg fill="currentColor" viewBox="0 0 24 24"><path d="M14.6 19.6c-1.2 0-2.3-.6-2.9-1.5h-.1c-.6.9-1.7 1.5-2.9 1.5-2.1 0-3.8-1.7-3.8-3.8s1.7-3.8 3.8-3.8c1.2 0 2.3.6 2.9 1.5h.1c.6-.9 1.7-1.5 2.9-1.5 2.1 0 3.8 1.7 3.8 3.8.1 2.1-1.6 3.8-3.8 3.8zm-3-5.9c-.9 0-1.6.7-1.6 1.6s.7 1.6 1.6 1.6 1.6-.7 1.6-1.6c0-.9-.7-1.6-1.6-1.6zm-1.8-7.9h-5v4.5c0 1.2.6 2.3 1.5 2.9v.1c-.9.6-1.5 1.7-1.5 2.9s.6 2.3 1.5 2.9v.1c-.9.6-1.5 1.7-1.5 2.9v4.5h5v-4.5c0-1.2-.6-2.3-1.5-2.9v-.1c.9-.6 1.5-1.7 1.5-2.9s-.6-2.3-1.5-2.9v-.1c.9-.6 1.5-1.7 1.5-2.9V5.8zm6.7 13.7c-.9 0-1.6-.7-1.6-1.6s.7-1.6 1.6-1.6 1.6.7 1.6 1.6-.7 1.6-1.6 1.6zm1.8-7.9h5V5.8c0-1.2-.6-2.3-1.5-2.9v-.1c.9-.6 1.5-1.7 1.5-2.9S20.7 0 19.8 0h-5v4.5c0 1.2.6 2.3 1.5 2.9v.1c-.9.6-1.5 1.7-1.5 2.9s.6 2.3 1.5 2.9v.1c-.9.6-1.5 1.7-1.5 2.9v4.5z"/></svg>`,
+            cpp: `<svg fill="currentColor" viewBox="0 0 24 24"><path d="M14.5 7.5a1 1 0 0 1-1-1v-2h-3v2a1 1 0 1 1-2 0v-2h-3v2a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1zm-1 2h-2v3h-3v2h3v3h2v-3h3v-2h-3v-3zm3.5 10.5a.999.999 0 0 1-.801-.4l-3.2-4.8a1.002 1.002 0 1 1 1.602-1.066l2.399 3.6 2.4-3.6a1.002 1.002 0 1 1 1.602 1.066l-3.2 4.8a.999.999 0 0 1-.802.4zm-14-1a1 1 0 0 1-1-1v-12a1 1 0 0 1 1-1h5.5v2h-4.5v10h4.5v2H4z" /></svg>`,
+            jsx: `<svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/><path d="M12 5.253a6.746 6.746 0 1 0 4.773 11.519A6.746 6.746 0 0 0 12 5.253zM10.5 12a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0z"/><path d="m16.773 7.227-1.414 1.414A4.75 4.75 0 0 1 12 16.747a4.73 4.73 0 0 1-3.359-1.385l-1.414 1.414A6.73 6.73 0 0 0 12 18.747a6.73 6.73 0 0 0 4.773-2.02l-1.414-1.414A4.73 4.73 0 0 1 12 16.747a4.75 4.75 0 0 1-3.359-1.385l1.414-1.414A2.73 2.73 0 0 0 12 14.747a2.73 2.73 0 0 0 1.947-.81L12.533 12.52a1.5 1.5 0 1 1-1.06-1.06l1.414-1.414-1.414-1.414 1.414-1.414-1.414-1.414 1.414-1.414.053.053z"/></svg>`,
+            ext: `<svg fill="currentColor" viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>`,
+            md: `<svg fill="currentColor" viewBox="0 0 24 24"><path d="M2.333 19.333V4.667h19.333v14.666H2.333zM0 22h24V2H0v20zm8.667-5.333h2.667V8h-2.667v8.667zm-4-4h2.667v4h-2.667v-4zm13.333-4.667v8.667h2V8h-2zM15 12.667h2.667V8H15v4.667z"/></svg>`,
+        };
 
-            // --- DATA ---
-            const projects = [
-                {
-                    id: 'glglstats',
-                    title: 'PROJECT: GlglStats',
-                    tags: ['Python', 'Data Analysis', 'LZ77 Compression'],
-                    description: 'Analysis of lyrical repetitiveness in Israeli pop music using compression algorithms. Includes pattern visualization for selected songs.',
-                    links: [
-                        { text: '> LAUNCH SITE: glglstats.geekip.dev', url: 'https://glglstats.geekip.dev' },
-                        { text: '> WATCH TALK: PyData TLV', url: 'https://www.youtube.com/watch?v=jrKAtOsj1Lo' }
-                    ]
-                },
-                {
-                    id: 'ahuzatdibuk',
-                    title: 'PROJECT: Ahuzat Dibuk',
-                    tags: ['Python', 'Web Scraping', 'Data Visualization'],
-                    description: 'Scraping and visualization of Tel-Aviv parking lot occupancy, generating predictive heat-maps to assist local residents.',
-                    links: [
-                        { text: '> NEWS: Channel 13', url: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/' },
-                        { text: '> NEWS: Mako', url: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm' },
-                        { text: '> SOURCE POST: Facebook', url: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943' }
-                    ]
-                },
-                {
-                    id: 'partorienting',
-                    title: 'PROJECT: 2D Part Orienting',
-                    tags: ['C++', 'Computational Geometry', 'Algorithms'],
-                    description: 'Open-source implementation of a push-plan algorithm for orienting arbitrary simple polygons to a target orientation.',
-                    links: [
-                        { text: '> VIEW CODE & INFO', url: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/' }
-                    ]
-                },
-                {
-                    id: 'turingjest',
-                    title: 'PROJECT: The Turing Jest',
-                    tags: ['LLM', 'Full-Stack', 'Gamification'],
-                    description: 'An arena where Large Language Models compete to generate and explain puns. User ratings determine the "funniest" AI.',
-                    links: [
-                        { text: '> LAUNCH SITE: jest.geekip.dev', url: 'https://jest.geekip.dev' }
-                    ]
-                },
-                {
-                    id: 'rhymesofisrael',
-                    title: 'PROJECT: Rhymes of Israel',
-                    tags: ['LLM', 'Chrome Extension', 'JavaScript'],
-                    description: 'A browser extension that uses an LLM to automatically rewrite Israeli news headlines into satirical, rhyming couplets.',
-                    links: [
-                        { text: '> INSTALL EXTENSION', url: 'https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb' }
-                    ]
-                },
-                {
-                    id: 'metaportfolio',
-                    title: 'PROJECT: Meta-Portfolio',
-                    tags: ['JavaScript', 'HTML/CSS', 'AI-Driven Design'],
-                    description: 'A self-referential project. This very portfolio is designed to be interrogated, with its content and structure served dynamically.',
-                    links: [
-                        { text: '> VIEW ROOT DOMAIN: geekip.dev', url: 'https://geekip.dev' }
-                    ]
-                },
-                {
-                    id: 'contact',
-                    title: 'SYSTEM.LINKS',
-                    tags: [], // No tags for contact
-                    description: 'Access developer profiles and social channels.',
-                    links: [
-                        { text: '> GITHUB: /gevak', url: 'https://github.com/gevak' },
-                        { text: '> LINKEDIN: /in/gevakip', url: 'https://linkedin.com/in/gevakip' },
-                        { text: '> FACEBOOK: /geva.kipper', url: 'https://facebook.com/geva.kipper' }
-                    ]
-                }
-            ];
+        const projectsData = [
+            { id: 'portfolio', fileName: 'Portfolio.md', icon: ICONS.md },
+            { id: 'glglstats', fileName: 'GlglStats.py', icon: ICONS.python },
+            { id: 'ahuzat_dibuk', fileName: 'AhuzatDibuk.py', icon: ICONS.python },
+            { id: 'part_orienting', fileName: 'PartOrienting.cpp', icon: ICONS.cpp },
+            { id: 'turing_jest', fileName: 'TheTuringJest.jsx', icon: ICONS.jsx },
+            { id: 'rhymes_of_israel', fileName: 'RhymesOfIsrael.ext', icon: ICONS.ext },
+        ];
+        
+        const projectContent = {
+            portfolio: {
+                editor: () => `
+                    <div class="markdown-preview">
+                        <h1>Geva Kipper // Portfolio</h1>
+                        <p>Welcome to my interactive portfolio. This website is designed to look and feel like an Integrated Development Environment (IDE). It's a single-page application built with vanilla JavaScript, showcasing my projects in the form of "source code".</p>
+                        <p>The layout is inspired by modern code editors like VS Code, featuring a file explorer on the left, this main editor panel, and an info panel on the right with quick actions for each project. The "terminal" at the bottom provides links to my social profiles.</p>
+                        <p>The entire site is a single HTML file — no external CSS or JS files, and no build process. The content for each project is dynamically rendered when you click on its corresponding "file" in the explorer.</p>
+                        <p>This project itself is a demonstration of my ability to create clean, responsive, and creative user interfaces with a strong focus on detail and user experience. Feel free to explore the code and check out my main website at <a href="https://geekip.dev" target="_blank" rel="noopener noreferrer">geekip.dev</a>.</p>
+                    </div>`,
+                info: () => `
+                    <h3>About This Site</h3>
+                    <p>This portfolio is a self-contained single-page application designed to mimic a developer's IDE, built with vanilla HTML, CSS, and JavaScript.</p>
+                    <div class="action-buttons">
+                        <a href="https://geekip.dev" target="_blank" rel="noopener noreferrer">Visit Main Site</a>
+                    </div>`
+            },
+            glglstats: {
+                editor: () => `
+                    <pre><code><span class="syntax-keyword">class</span> <span class="syntax-class">GlglStats</span>:
+    <span class="syntax-comment">"""
+    A comprehensive data analysis platform for the Israeli Army Radio (Galgalatz)
+    weekly music chart. It scrapes, processes, and visualizes historical
+    chart data, offering insights into music trends in Israel since 2009.
+    """</span>
 
-            // --- STATE ---
-            let inputLocked = true;
-            let commandHistory = [];
-            let historyIndex = -1;
+    <span class="syntax-keyword">def</span> <span class="syntax-function">__init__</span>(<span class="syntax-variable">self</span>):
+        <span class="syntax-comment"># Tech Stack</span>
+        <span class="syntax-keyword">from</span> backend <span class="syntax-keyword">import</span> Python, Flask
+        <span class="syntax-keyword">from</span> data_science <span class="syntax-keyword">import</span> Pandas, NumPy
+        <span class="syntax-keyword">from</span> frontend <span class="syntax-keyword">import</span> React, ChartJS
+        
+        <span class="syntax-comment"># --- Project Links ---</span>
+        <span class="syntax-variable">self.website_url</span> = <span class="syntax-string">"<a href="https://glglstats.geekip.dev" target="_blank" rel="noopener noreferrer">https://glglstats.geekip.dev</a>"</span>
+        <span class="syntax-variable">self.talk_url</span> = <span class="syntax-string">"<a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=jrKAtOsj1Lo</a>"</span>
+        
+        <span class="syntax-comment"># --- Visual Output: PyCon Israel 2022 Talk ---</span>
+        <div class="code-block-embed">
+            <iframe src="https://www.youtube.com/embed/jrKAtOsj1Lo" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+</code></pre>`,
+                info: () => `
+                    <h3>GlglStats</h3>
+                    <p>An analytics platform for Israel's most popular music chart. Features data scraping, processing, and a rich visualization dashboard.</p>
+                    <div class="action-buttons">
+                        <a href="https://glglstats.geekip.dev" target="_blank" rel="noopener noreferrer">Visit Site</a>
+                        <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" rel="noopener noreferrer">Watch Talk</a>
+                    </div>`
+            },
+            ahuzat_dibuk: {
+                editor: () => `
+                    <pre><code><span class="syntax-keyword">def</span> <span class="syntax-function">analyze_parking_fines</span>(<span class="syntax-variable">city</span>=<span class="syntax-string">"Tel Aviv"</span>):
+    <span class="syntax-comment">"""
+    This project investigated the distribution of parking fines in Tel Aviv,
+    using data obtained via a Freedom of Information Act (FOIA) request. 
+    The analysis revealed non-uniform patterns, sparking a public conversation
+    and gaining significant media attention.
+    """</span>
 
-            // --- CORE FUNCTIONS ---
+    <span class="syntax-comment"># Tech & Tools</span>
+    <span class="syntax-keyword">import</span> pandas <span class="syntax-keyword">as</span> data_analysis
+    <span class="syntax-keyword">import</span> matplotlib <span class="syntax-keyword">as</span> visualization
+    <span class="syntax-keyword">import</span> foia_request <span class="syntax-keyword">as</span> data_acquisition
 
-            const typeWriter = (element, text, speed = 40, callback = () => {}) => {
-                let i = 0;
-                element.innerHTML = '';
-                const type = () => {
-                    if (i < text.length) {
-                        element.innerHTML += text.charAt(i);
-                        i++;
-                        setTimeout(type, speed);
-                    } else {
-                        callback();
-                    }
-                };
-                type();
-            };
+    <span class="syntax-comment"># --- Media Coverage & Original Post ---</span>
+    <span class="syntax-variable">PRIMARY_POST_URL</span> = <span class="syntax-string">"<a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" rel="noopener noreferrer">https://facebook.com/.../10159636301195943</a>"</span>
+    <span class="syntax-variable">MAKO_ARTICLE</span> = <span class="syntax-string">"<a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" rel="noopener noreferrer">https://mako.co.il/.../Article-ae43964b891bf71027.htm</a>"</span>
+    <span class="syntax-variable">CHANNEL_13_ARTICLE</span> = <span class="syntax-string">"<a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" rel="noopener noreferrer">https://13tv.co.il/.../parking-902956407/</a>"</span>
 
-            const createTerminalLine = (text = '', innerHTML = false) => {
-                const line = document.createElement('div');
-                line.classList.add('terminal-line');
-                if (innerHTML) {
-                    line.innerHTML = text;
-                } else {
-                    line.textContent = text;
-                }
-                return line;
-            };
+    <span class="syntax-keyword">print</span>(<span class="syntax-string">"Analysis complete. The findings suggest certain areas are disproportionately targeted."</span>)
+    <span class="syntax-keyword">return</span> {
+        <span class="syntax-string">'impact'</span>: <span class="syntax-string">'High public engagement and media coverage'</span>,
+        <span class="syntax-string">'conclusion'</span>: <span class="syntax-string">'Data-driven stories can drive civic discourse.'</span>,
+    }
+</code></pre>`,
+                info: () => `
+                    <h3>'Ahuzat Dibuk' Parking Fines</h3>
+                    <p>A data-journalism project that analyzed parking fine distribution in Tel Aviv, leading to widespread media coverage and public discussion.</p>
+                     <div class="action-buttons">
+                        <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" rel="noopener noreferrer">View Facebook Post</a>
+                        <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" rel="noopener noreferrer">Read on 13tv</a>
+                        <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" rel="noopener noreferrer">Read on Mako</a>
+                    </div>`
+            },
+            part_orienting: {
+                editor: () => `
+                    <pre><code><span class="syntax-comment">// A C++ implementation of an algorithm to find the optimal orientation
+// for a 2D part to minimize its cross-section, crucial for applications 
+// like 3D printing and robotic grasping.</span>
 
-            const processCommand = async (command) => {
-                inputLocked = true;
-                userInput.textContent = '';
-                
-                const userLine = createTerminalLine();
-                userLine.innerHTML = `<span class="prompt-symbol">QUERY > </span>${command}`;
-                terminalHistory.appendChild(userLine);
-                
-                commandHistory.unshift(command);
-                historyIndex = -1;
+<span class="syntax-keyword">#include</span> <span class="syntax-string"><iostream></span>
+<span class="syntax-keyword">#include</span> <span class="syntax-string"><vector></span>
+<span class="syntax-keyword">#include</span> <span class="syntax-string"><CGAL/Polygon_2.h></span>
 
-                const aiResponseLine = createTerminalLine();
-                terminalHistory.appendChild(aiResponseLine);
-                
-                let aiResponseText = '';
-                let projectsToShow = [];
+<span class="syntax-keyword">namespace</span> <span class="syntax-class">ComputationalGeometry</span> {
 
-                command = command.toLowerCase().trim();
+    <span class="syntax-keyword">class</span> <span class="syntax-class">PartOrienting</span> {
+    <span class="syntax-keyword">public</span>:
+        <span class="syntax-comment">// Finds the stable poses and minimal cross-section of a 2D polygon.</span>
+        <span class="syntax-class">Orientation</span> <span class="syntax-function">findOptimalOrientation</span>(<span class="syntax-keyword">const</span> <span class="syntax-class">Polygon_2</span>& part);
+    };
+}
 
-                switch (true) {
-                    case command === 'help' || command === '?':
-                        aiResponseText = `[AI Responding...]\nAvailable commands:\n  'show all projects' - Displays all project data.\n  'about {project}'   - Shows a specific project card.\n  'contact' / 'links'   - Shows contact and social links.\n  'clear'             - Clears the project cards.\n  'reset'             - Resets the terminal interface.`;
-                        break;
-                    
-                    case command === 'show all projects' || command === 'projects' || command === 'all':
-                        aiResponseText = `[AI Responding...] QUERY ACCEPTED. MATERIALIZING PROJECT MATRIX...`;
-                        projectsToShow = projects.filter(p => p.id !== 'contact');
-                        break;
-                        
-                    case command.startsWith('about '):
-                        const projectName = command.substring(6).replace(/\s+/g, '');
-                        const foundProject = projects.find(p => p.id.toLowerCase().includes(projectName));
-                        if(foundProject) {
-                            aiResponseText = `[AI Responding...] ISOLATING DATA FOR PROJECT: ${foundProject.title}...`;
-                            projectsToShow = [foundProject];
-                        } else {
-                            aiResponseText = `[AI Responding...] ERROR: Project data for query '${projectName}' not found.`;
-                        }
-                        break;
+<span class="syntax-comment">// --- Project Details & Source Code ---</span>
+<span class="syntax-keyword">const char*</span> <span class="syntax-variable">project_page</span> = <span class="syntax-string">"<a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" rel="noopener noreferrer">https://cgl.cs.tau.ac.il/projects/2d-part-orienting/</a>"</span>;
+</code></pre>`,
+                info: () => `
+                    <h3>2D Part Orienting</h3>
+                    <p>An academic project in computational geometry to find the optimal orientation for 2D shapes, with applications in manufacturing and robotics.</p>
+                    <div class="action-buttons">
+                        <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" rel="noopener noreferrer">View Project Page</a>
+                    </div>`
+            },
+            turing_jest: {
+                editor: () => `
+                    <pre><code><span class="syntax-keyword">import</span> React <span class="syntax-keyword">from</span> <span class="syntax-string">'react'</span>;
+<span class="syntax-keyword">import</span> { OpenAI } <span class="syntax-keyword">from</span> <span class="syntax-string">'@openai/api'</span>;
 
-                    case command === 'contact' || command === 'links' || command === 'socials':
-                        aiResponseText = `[AI Responding...] ACCESSING SECURE CONTACT CHANNELS...`;
-                        projectsToShow = projects.filter(p => p.id === 'contact');
-                        break;
-                        
-                    case command === 'clear':
-                        aiResponseText = `[AI Responding...] DEMATERIALIZING PROJECT MATRIX.`;
-                        contentGrid.innerHTML = '';
-                        terminalContainer.classList.remove('has-content');
-                        break;
-                    
-                    case command === 'reset':
-                        aiResponseText = `[AI Responding...] SYSTEM RESETTING... STAND BY.`;
-                        setTimeout(()=> window.location.reload(), 1500);
-                        break;
+<span class="syntax-comment">/**
+ * @name TheTuringJest
+ * @description A web-based game where players must distinguish between
+ * jokes written by a human and those generated by an AI (GPT).
+ * It's a fun take on the classic Turing Test.
+ */</span>
+<span class="syntax-keyword">const</span> <span class="syntax-class">TheTuringJest</span> = () => {
+    <span class="syntax-comment">// Game logic to fetch jokes and manage score...</span>
 
-                    default:
-                        aiResponseText = `[AI Responding...] COMMAND NOT RECOGNIZED. Type 'help' for a list of available commands.`;
-                }
+    <span class="syntax-keyword">return</span> (
+        <span class="syntax-string"><'div'></span>
+            <span class="syntax-string"><'h1'></span>Can you beat the AI?<span class="syntax-string"></'h1'></span>
+            {<span class="syntax-comment">/* ... UI components ... */}</span>
+        <span class="syntax-string"></'div'></span>
+    );
+};
 
-                typeWriter(aiResponseLine, aiResponseText, 20, () => {
-                    displayProjects(projectsToShow);
-                    inputLocked = false;
-                    cursor.style.display = 'inline-block';
-                    window.scrollTo(0, document.body.scrollHeight);
-                });
-            };
+<span class="syntax-keyword">export const</span> <span class="syntax-variable">site_url</span> = <span class="syntax-string">"<a href="https://jest.geekip.dev" target="_blank" rel="noopener noreferrer">https://jest.geekip.dev</a>"</span>;
+</code></pre>`,
+                info: () => `
+                    <h3>The Turing Jest</h3>
+                    <p>A game that challenges you to tell the difference between human-written jokes and AI-generated ones. A playful experiment with generative AI.</p>
+                    <div class="action-buttons">
+                        <a href="https://jest.geekip.dev" target="_blank" rel="noopener noreferrer">Visit Site</a>
+                    </div>`
+            },
+            rhymes_of_israel: {
+                editor: () => `
+                    <pre><code><span class="syntax-comment">/*
+ * manifest.json for "Rhymes of Israel"
+ * A Chrome extension that finds Hebrew rhymes for any selected word on a page.
+ * It uses a custom-built rhyming engine and API.
+ */</span>
+{
+    "<span class="syntax-variable">manifest_version</span>": <span class="syntax-keyword">3</span>,
+    "<span class="syntax-variable">name</span>": <span class="syntax-string">"Rhymes of Israel"</span>,
+    "<span class="syntax-variable">version</span>": <span class="syntax-string">"1.0"</span>,
+    "<span class="syntax-variable">description</span>": <span class="syntax-string">"Finds Hebrew rhymes for selected text."</span>,
+    "<span class="syntax-variable">permissions</span>": [
+        "<span class="syntax-string">activeTab</span>",
+        "<span class="syntax-string">scripting</span>",
+        "<span class="syntax-string">contextMenus</span>"
+    ],
+    "<span class="syntax-variable">homepage_url</span>": <span class="syntax-string">"<a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" rel="noopener noreferrer">https://chromewebstore.google.com/...</a>"</span>
+}
+</code></pre>`,
+                info: () => `
+                    <h3>Rhymes of Israel</h3>
+                    <p>A Chrome extension for Hebrew writers and poets. Select any word on a webpage to instantly find rhymes using a custom-built rhyming engine.</p>
+                    <div class="action-buttons">
+                        <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" rel="noopener noreferrer">Install Extension</a>
+                    </div>`
+            },
+        };
+        
+        // --- UI & LOGIC ---
+        const loadingScreen = document.getElementById('loading-screen');
+        const loadingText = document.getElementById('loading-text');
+        const fileList = document.getElementById('file-list');
+        const codeEditorContent = document.getElementById('code-editor-content');
+        const infoPanelContent = document.getElementById('info-panel-content');
+        const commitTimer = document.getElementById('commit-timer');
 
-            const displayProjects = (projectsArr) => {
-                if (projectsArr.length === 0) return;
-                
-                terminalContainer.classList.add('has-content');
-                contentGrid.innerHTML = ''; // Clear previous content
+        // 1. Loading Animation
+        const loadingMessages = [
+            "Booting virtual environment...",
+            "Compiling portfolio...",
+            "Resolving dependencies...",
+            "Instantiating modules...",
+            "Initializing AI UI v3.4.2...",
+            "Done."
+        ];
+        let msgIndex = 0;
 
-                projectsArr.forEach((project, index) => {
+        const loadingInterval = setInterval(() => {
+            if (loadingText) {
+                loadingText.textContent = loadingMessages[msgIndex];
+                msgIndex++;
+                if (msgIndex >= loadingMessages.length) {
+                    clearInterval(loadingInterval);
                     setTimeout(() => {
-                        const card = document.createElement('div');
-                        card.classList.add('project-card');
-
-                        const tagsHTML = project.tags.map(tag => `<span class="card-tag">[${tag}]</span>`).join(' ');
-                        
-                        const linksHTML = project.links.map(link => 
-                            `<a href="${link.url}" target="_blank" rel="noopener noreferrer">${link.text}</a>`
-                        ).join('');
-
-                        card.innerHTML = `
-                            <div class="card-title">${project.title}</div>
-                            ${project.tags.length > 0 ? `<div class="card-tags">${tagsHTML}</div>` : ''}
-                            <div class="card-description">${project.description}</div>
-                            <div class="card-links">${linksHTML}</div>
-                        `;
-                        contentGrid.appendChild(card);
-                        setTimeout(() => card.classList.add('visible'), 50);
-
-                    }, index * 150);
-                });
-            };
-
-            // --- FOOTER & UPTIME ---
-
-            const initializeFooter = () => {
-                sessionIdEl.textContent = Math.random().toString(16).substring(2, 10).toUpperCase();
-                
-                const startTime = new Date('2025-08-30T00:59:57Z');
-                
-                const updateUptime = () => {
-                    const now = new Date();
-                    const diff = now - startTime;
-
-                    const s = Math.floor(diff / 1000);
-                    const m = Math.floor(s / 60);
-                    const h = Math.floor(m / 60);
-
-                    const pad = (n) => String(n).padStart(2, '0');
-                    const padHours = (n) => String(n).padStart(3, '0');
-
-                    uptimeEl.textContent = `${padHours(h)}:${pad(m % 60)}:${pad(s % 60)}`;
-                };
-                
-                updateUptime();
-                setInterval(updateUptime, 1000);
-
-                footer.style.display = 'block';
-            };
-
-
-            // --- INPUT HANDLING ---
-            
-            document.addEventListener('keydown', (e) => {
-                if (inputLocked) return;
-
-                if (e.key === 'Enter') {
-                    cursor.style.display = 'none';
-                    processCommand(userInput.textContent);
-                } else if (e.key === 'Backspace') {
-                    userInput.textContent = userInput.textContent.slice(0, -1);
-                } else if (e.key === "ArrowUp") {
-                    e.preventDefault();
-                    if(historyIndex < commandHistory.length - 1) {
-                        historyIndex++;
-                        userInput.textContent = commandHistory[historyIndex];
-                    }
-                } else if (e.key === "ArrowDown") {
-                    e.preventDefault();
-                    if(historyIndex > 0) {
-                        historyIndex--;
-                        userInput.textContent = commandHistory[historyIndex];
-                    } else {
-                        historyIndex = -1;
-                        userInput.textContent = "";
-                    }
-                } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-                    userInput.textContent += e.key;
+                        if (loadingScreen) {
+                            loadingScreen.classList.add('fade-out');
+                            setTimeout(() => loadingScreen.style.display = 'none', 800);
+                        }
+                    }, 500);
                 }
-            });
-            
-            // --- INITIALIZATION SEQUENCE ---
-
-            const init = () => {
-                const headerLine1 = createTerminalLine();
-                const headerLine2 = createTerminalLine();
-                terminalHistory.appendChild(headerLine1);
-                terminalHistory.appendChild(headerLine2);
-
-                const text1 = '[AI_PORTFOLIO_GEN_v4.2] ONLINE. DATA LOADED.';
-                const text2 = 'SUBJECT: Geva Kipper, Software Engineer @ Google, focusing on large-scale data processing infrastructure.';
-                
-                typeWriter(headerLine1, text1, 40, () => {
-                    typeWriter(headerLine2, text2, 40, () => {
-                        inputLocked = false;
-                        subtitle.style.display = 'block';
-                        initializeFooter();
-                        // Auto-show help command hint after a delay
-                        setTimeout(() => {
-                            if (userInput.textContent.length === 0) {
-                                typeWriter(userInput, `Try typing 'help'`, 60);
-                                setTimeout(() => userInput.textContent = '', 3000);
-                            }
-                        }, 4000);
-                    });
-                });
-            };
-
-            init();
+            }
+        }, 600);
+        
+        // 2. Populate File Explorer
+        projectsData.forEach(project => {
+            const li = document.createElement('li');
+            li.className = 'file-item';
+            li.dataset.projectId = project.id;
+            li.innerHTML = `${project.icon} ${project.fileName}`;
+            fileList.appendChild(li);
         });
+
+        // 3. Content Rendering
+        const displayProject = (projectId) => {
+            const project = projectContent[projectId];
+            if (!project) return;
+            
+            codeEditorContent.innerHTML = project.editor();
+            infoPanelContent.innerHTML = project.info();
+            
+            // Update active state in file list
+            document.querySelectorAll('.file-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.projectId === projectId);
+            });
+        };
+        
+        fileList.addEventListener('click', (e) => {
+            const target = e.target.closest('.file-item');
+            if (target) {
+                displayProject(target.dataset.projectId);
+            }
+        });
+
+        // 4. Commit Timer
+        const lastCommitDate = new Date('2024-05-20T10:00:00Z');
+        
+        const updateTimer = () => {
+            const now = new Date();
+            const diff = now - lastCommitDate;
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            const format = (num) => num.toString().padStart(2, '0');
+
+            if (commitTimer) {
+                commitTimer.textContent = `[INFO] Time since last major commit: ${format(hours)}:${format(minutes)}:${format(seconds)}`;
+            }
+        };
+
+        setInterval(updateTimer, 1000);
+        updateTimer();
+
+        // 5. Initial state
+        displayProject('portfolio');
+    });
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250830",
+          pageId: "20250831",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
