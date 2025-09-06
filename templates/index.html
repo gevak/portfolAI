@@ -2,624 +2,652 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | The Evolving Labyrinth</title>
+    <title>Geva Kipper - The K-Map</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Roboto+Mono:wght@300&display=swap" rel="stylesheet">
     <style>
-        /* CSS Reset & Base Styles */
         :root {
-            /* These variables are placeholders and will be overwritten by JavaScript */
-            --bg-color: #111;
-            --primary-color: #eee;
-            --accent-color: #00ffff;
-            --text-light-color: #aaa;
-            --text-main-color: #ddd;
-            --box-bg-color: rgba(26, 26, 26, 0.7);
-            --box-border-color: rgba(0, 255, 255, 0.5);
-            --box-border-radius: 8px;
-            --box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
             --font-main: 'Inter', sans-serif;
-            --font-heading: 'Sora', sans-serif;
-            --font-mono: 'IBM Plex Mono', monospace;
-            --backdrop-filter: blur(10px);
-            --background-css: var(--bg-color);
-            --icon-filter: none;
+            --font-mono: 'Roboto Mono', monospace;
+            --color-text: #ffffff;
+            --color-bg: #050508;
+            --color-glass-bg: rgba(10, 10, 15, 0.6);
+            --color-highlight: #00ffff; /* Default, will be updated by JS */
+            --transition-speed: 0.5s;
         }
-
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;600;800&family=Inter:wght@300;400&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
 
-        body {
-            background: var(--background-css);
-            background-attachment: fixed;
-            color: var(--text-main-color);
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            background-color: var(--color-bg);
+            color: var(--color-text);
             font-family: var(--font-main);
-            overflow-x: hidden;
-            transition: background 1s ease;
+            overscroll-behavior: none;
         }
 
-        /* Timeline SVG */
-        #timeline-svg {
-            position: absolute;
+        #canvas-container {
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -1;
+            z-index: 1;
+        }
+
+        #ui-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none; /* Allow clicks to pass through to canvas if needed, but children will override */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ----- Sections ----- */
+        .section {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity var(--transition-speed) ease-out, transform var(--transition-speed) ease-out;
             pointer-events: none;
         }
 
-        #timeline-path {
-            stroke-width: 2.5;
-            stroke: var(--accent-color);
-            fill: none;
-            transition: stroke 1s ease;
-        }
-
-        /* Main Container */
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            position: relative;
-            padding: 0 40px;
-        }
-
-        /* Hero Section */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            position: relative;
-        }
-
-        .hero h1 {
-            font-family: var(--font-heading);
-            font-size: clamp(3rem, 10vw, 5.5rem);
-            font-weight: 800;
-            margin: 0;
-            color: var(--primary-color);
-            letter-spacing: -2px;
-        }
-
-        .hero .job-description {
-            font-size: clamp(1rem, 4vw, 1.25rem);
-            font-weight: 300;
-            color: var(--text-light-color);
-            max-width: 600px;
-            margin: 1rem 0;
-        }
-
-        .hero .ai-subtitle {
-            margin-top: 2rem;
-            max-width: 450px;
-            font-size: 0.9rem;
-            color: var(--text-light-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            font-style: italic;
-        }
-
-        .ai-icon {
-            width: 28px;
-            height: 28px;
-            filter: var(--icon-filter);
-        }
-
-        /* Project Sections */
-        .project-section {
-            padding: 10vh 0;
-            position: relative;
-        }
-
-        .project-box {
-            position: absolute;
-            width: clamp(300px, 40%, 450px);
-            padding: 1.5rem;
-            background: var(--box-bg-color);
-            border: 1.5px solid var(--box-border-color);
-            border-radius: var(--box-border-radius);
-            box-shadow: var(--box-shadow);
-            backdrop-filter: var(--backdrop-filter);
-            -webkit-backdrop-filter: var(--backdrop-filter);
-            transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1), 
-                        opacity 0.6s cubic-bezier(0.165, 0.84, 0.44, 1),
-                        background 0.3s ease;
-            opacity: 0;
-            transform-origin: center;
-        }
-
-        .project-box:hover {
-            transform: translateY(-8px) scale(1.02);
-            background: rgba(40,40,40, 0.8);
-        }
-
-        /* Animation class */
-        .project-box.is-visible {
+        .section.active {
             opacity: 1;
-            transform: translateY(0) translateX(0);
+            transform: translateY(0);
+            pointer-events: all;
         }
 
-        /* Box positioning and entry animation */
-        .project-box.align-left {
-            left: 0;
-            transform: translateX(-30px);
+        /* ----- Intro Section ----- */
+        #intro {
+            text-align: center;
+            max-width: 600px;
+            padding: 20px;
         }
 
-        .project-box.align-right {
-            right: 0;
-            transform: translateX(30px);
-        }
-
-        .project-box h2 {
-            font-family: var(--font-heading);
-            font-size: 1.75rem;
+        #intro h1 {
+            font-size: 3.5rem;
             font-weight: 600;
-            color: var(--primary-color);
+            letter-spacing: 1px;
+        }
+
+        #intro h2 {
+            font-size: 1.2rem;
+            font-weight: 400;
+            color: #ccc;
+            margin-top: 1rem;
+        }
+
+        #intro p {
+            margin-top: 2rem;
+            font-size: 1rem;
+            font-style: italic;
+            color: var(--color-highlight);
+            text-shadow: 0 0 8px var(--color-highlight), 0 0 12px var(--color-highlight);
+            line-height: 1.6;
+            transition: color 1s, text-shadow 1s;
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        .scroll-indicator svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.2; transform: translateX(-50%) translateY(0); }
+            50% { opacity: 1; transform: translateX(-50%) translateY(5px); }
+            100% { opacity: 0.2; transform: translateX(-50%) translateY(0); }
+        }
+
+        /* ----- Project Panels ----- */
+        .project-panel {
+            backdrop-filter: blur(12px) saturate(120%);
+            -webkit-backdrop-filter: blur(12px) saturate(120%);
+            background-color: var(--color-glass-bg);
+            border-radius: 12px;
+            padding: 2rem 2.5rem;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+        
+        .project-panel::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 15%;
+            width: 4px;
+            height: 70%;
+            background-color: var(--glow-color);
+            box-shadow: 0 0 8px var(--glow-color), 0 0 12px var(--glow-color), 0 0 16px var(--glow-color);
+            border-radius: 4px;
+            transition: background-color 1s, box-shadow 1s;
+        }
+        
+        #project-1 { --glow-color: #00aaff; }
+        #project-2 { --glow-color: #ffaa00; }
+        #project-3 { --glow-color: #cc88ff; }
+        #project-4 { --glow-color: #ff5577; }
+        #project-5 { --glow-color: #44dd88; }
+        #project-6 { --glow-color: #ffffff; }
+
+        .project-panel h3 {
+            font-size: 2rem;
+            font-weight: 600;
             margin-bottom: 0.75rem;
         }
 
-        .project-box p {
-            font-size: 0.95rem;
+        .project-panel p {
+            font-size: 1rem;
             line-height: 1.6;
-            color: var(--text-main-color);
-            margin-bottom: 1.25rem;
+            color: #ddd;
+            margin-bottom: 1.5rem;
         }
-        
+
         .project-links {
             display: flex;
-            gap: 15px;
+            gap: 1.5rem;
+            align-items: center;
         }
 
-        .project-links a {
-            color: var(--accent-color);
-            text-decoration: none;
+        .link-item {
             position: relative;
+            display: inline-block;
+        }
+
+        .link-item a {
             display: block;
-            transition: transform 0.2s ease, filter 0.2s ease;
+            color: #ccc;
+            transition: color 0.3s, filter 0.3s;
         }
 
-        .project-links a:hover {
-            transform: scale(1.15);
-            filter: drop-shadow(0 0 8px var(--accent-color));
-        }
-
-        .project-links svg {
-            width: 24px;
-            height: 24px;
+        .link-item svg {
+            width: 28px;
+            height: 28px;
             fill: currentColor;
         }
 
-        /* Tooltip */
-        .tooltip {
+        .link-item a:hover {
+            color: var(--color-text);
+            filter: drop-shadow(0 0 5px var(--glow-color));
+        }
+
+        .link-label {
             position: absolute;
-            bottom: 130%;
+            bottom: 100%;
             left: 50%;
-            transform: translateX(-50%);
-            background-color: #222;
-            color: #fff;
-            padding: 5px 10px;
+            transform: translateX(-50%) translateY(-5px);
+            white-space: nowrap;
+            background: #222;
+            color: var(--color-text);
+            padding: 4px 8px;
             border-radius: 4px;
             font-size: 0.8rem;
-            white-space: nowrap;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.2s ease, visibility 0.2s ease;
-            z-index: 10;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
         }
 
-        .project-links a:hover .tooltip {
+        .link-item:hover .link-label {
             opacity: 1;
             visibility: visible;
+            transform: translateX(-50%) translateY(-10px);
         }
 
-        /* Connect Node */
-        #connect-node {
+        /* ----- Footer Section ----- */
+        #footer {
+            text-align: center;
+            bottom: 0;
+            width: 100%;
+            padding-bottom: 3rem;
+            align-items: flex-end;
+        }
+
+        .footer-content {
+            pointer-events: all;
+        }
+
+        .social-links {
             display: flex;
             justify-content: center;
-            align-items: center;
-            gap: 30px;
-            padding: 2.5rem;
-        }
-
-        #connect-node .project-links a svg {
-            width: 36px;
-            height: 36px;
+            gap: 2.5rem;
+            margin-bottom: 1.5rem;
         }
         
-        /* Footer */
-        footer {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 2rem 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.85rem;
-            color: var(--text-light-color);
-            border-top: 1px solid var(--box-border-color);
-            margin-top: 10vh;
+        .social-links a {
+            color: #888;
+            transition: color 0.3s, transform 0.3s;
         }
 
-        .footer-timer {
+        .social-links a:hover {
+            color: var(--color-text);
+            transform: scale(1.1);
+        }
+        
+        .social-links svg {
+            width: 32px;
+            height: 32px;
+            fill: currentColor;
+        }
+        
+        .footer-text {
             font-family: var(--font-mono);
-            font-size: 0.9rem;
-            color: var(--primary-color);
+            font-size: 0.8rem;
+            color: #666;
+            line-height: 1.5;
         }
 
-        /* Responsive Styles */
-        @media (max-width: 768px) {
-            .container { padding: 0 20px; }
-            .project-box {
-                position: relative;
-                width: 100%;
-                left: auto !important;
-                right: auto !important;
-                margin-bottom: 5rem;
-                transform: translateY(30px);
-            }
-             .project-box.is-visible {
-                transform: translateY(0);
-            }
-            #timeline-svg {
-                left: -40%;
-            }
-            footer {
-                flex-direction: column;
-                gap: 1rem;
-                text-align: center;
-            }
+        #stopwatch {
+            min-width: 15ch;
+            display: inline-block;
+        }
+
+        /* ----- Media Queries For Small Screens ----- */
+        @media (max-width: 640px) {
+            #intro h1 { font-size: 2.5rem; }
+            #intro h2 { font-size: 1rem; }
+            #intro p { font-size: 0.9rem; }
+            .project-panel { padding: 1.5rem; max-width: calc(100% - 40px); }
+            .project-panel h3 { font-size: 1.5rem; }
+            .project-panel p { font-size: 0.9rem; }
+            .project-links { gap: 1rem; }
+            .link-item svg { width: 24px; height: 24px; }
         }
     </style>
 </head>
 <body>
-
-    <svg id="timeline-svg">
-        <path id="timeline-path"/>
-    </svg>
+    <!-- The generative art canvas will be attached here -->
+    <div id="canvas-container"></div>
     
-    <div class="container">
-        <header class="hero">
+    <!-- UI elements are overlaid on top -->
+    <div id="ui-container">
+        
+        <!-- Intro Section -->
+        <div id="intro" class="section active">
             <h1>Geva Kipper</h1>
-            <p class="job-description">A software engineer at Google, exploring the intersection of data, algorithms, and creativity.</p>
-            <div class="ai-subtitle">
-                <span class="ai-icon-container"></span>
-                <p>This portfolio is a living project, algorithmically re-designed each day by an AI. What you see today may be gone tomorrow.</p>
+            <h2>Currently building the next generation of Search at Google.</h2>
+            <p>This digital canvas is procedurally generated by an AI each day, its form and color seeded by the contents of my resume. What you see is a unique, one-day-only piece of art.</p>
+            <div class="scroll-indicator">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 13 12 18 17 13"></polyline><polyline points="7 6 12 11 17 6"></polyline></svg>
             </div>
-        </header>
+        </div>
 
-        <main id="project-section" class="project-section">
-            <!-- Project boxes will be dynamically inserted here -->
-        </main>
-
-        <footer>
-            <div class="footer-credit">This design was generated by Claude, a large language model from Anthropic.</div>
-            <div class="footer-timer">
-                <span>Time Since Genesis:</span>
-                <span id="timer">00 : 00 : 00</span>
+        <!-- Project 1: GlglStats -->
+        <div id="project-1" class="section">
+            <div class="project-panel">
+                <h3>GlglStats</h3>
+                <p>A Python project measuring the repetitiveness of Israeli pop-chart songs using LZ77 compression, with visualizations of repetition patterns in famous tracks.</p>
+                <div class="project-links">
+                    <div class="link-item">
+                        <a href="https://glglstats.geekip.dev" target="_blank" rel="noopener noreferrer">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                        </a>
+                        <span class="link-label">Live Site</span>
+                    </div>
+                    <div class="link-item">
+                        <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" rel="noopener noreferrer">
+                           <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+                        </a>
+                        <span class="link-label">Watch Talk</span>
+                    </div>
+                </div>
             </div>
-        </footer>
+        </div>
+        
+        <!-- Project 2: Ahuzat Dibuk -->
+        <div id="project-2" class="section">
+             <div class="project-panel">
+                <h3>Ahuzat Dibuk</h3>
+                <p>Python-based data scraping and visualization of Tel-Aviv parking lot occupancy, generating heatmaps to help residents find parking.</p>
+                <div class="project-links">
+                    <div class="link-item"><a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 16H5V7h14v12zm-2-7H7v-2h10v2zm-4 4H7v-2h6v2zm4-8H7V7h10v2z"/></svg></a><span class="link-label">News Story</span></div>
+                    <div class="link-item"><a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 16H5V7h14v12zm-2-7H7v-2h10v2zm-4 4H7v-2h6v2zm4-8H7V7h10v2z"/></svg></a><span class="link-label">News Story</span></div>
+                    <div class="link-item"><a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"/></svg></a><span class="link-label">Original Post</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Project 3: 2D Part Orienting -->
+        <div id="project-3" class="section">
+             <div class="project-panel">
+                <h3>2D Part Orienting</h3>
+                <p>C++ implementation of an efficient algorithm for constructing a 'push plan' to orient a polygon, contributed to an open-source computational geometry library.</p>
+                <div class="project-links">
+                    <div class="link-item"><a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg></a><span class="link-label">View Code & Paper</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project 4: The Turing Jest -->
+        <div id="project-4" class="section">
+             <div class="project-panel">
+                <h3>The Turing Jest</h3>
+                <p>An LLM arena where transformer models compete to create and explain puns. User ratings determine the wittiest AI.</p>
+                <div class="project-links">
+                    <div class="link-item"><a href="https://jest.geekip.dev" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM9 14c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm0-4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm6 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm0-4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-.01 7.5c-2.03 0-3.8-1.12-4.75-2.82-.1-.17-.02-.4.15-.5.17-.1.4-.02.5.15.85 1.52 2.45 2.57 4.1 2.57s3.25-1.05 4.1-2.57c.1-.17.33-.25.5-.15.17.1.25.33.15.5-1 1.7-2.72 2.82-4.75 2.82z"/></svg></a><span class="link-label">Visit Arena</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project 5: Rhymes of Israel -->
+        <div id="project-5" class="section">
+             <div class="project-panel">
+                <h3>Rhymes of Israel</h3>
+                <p>A Chrome extension leveraging an LLM to rewrite Israeli news headlines into comedic rhymes, in the style of a high-school yearbook.</p>
+                <div class="project-links">
+                    <div class="link-item"><a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M20.5 11H19v-2c0-1.1-.9-2-2-2h-2V6c0-1.1-.9-2-2-2h-2V3.5c0-.83-.67-1.5-1.5-1.5S8 2.67 8 3.5V4H6c-1.1 0-2 .9-2 2v2H3.5c-.83 0-1.5.67-1.5 1.5S2.67 13 3.5 13H5v2c0 1.1.9 2 2 2h2v2c0 1.1.9 2 2 2h2v2.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V20h2c1.1 0 2-.9 2-2v-2h1.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5z"/></svg></a><span class="link-label">Install Extension</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project 6: This Website -->
+        <div id="project-6" class="section">
+             <div class="project-panel">
+                <h3>This Website</h3>
+                <p>A meta-project; a single-page portfolio designed as a unique piece of generative art, re-imagined daily by an AI.</p>
+                <div class="project-links">
+                     <div class="link-item"><a href="https://geekip.dev" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm5.15 10.85c-.99.99-2.33 1.54-3.71 1.54-1.13 0-2.2-.33-3.11-.92-1.23-.8-2.03-2.05-2.28-3.47h2.05c.22.82.78 1.52 1.52 1.91.59.3 1.25.46 1.9.46 1.05 0 2.01-.4 2.73-1.12.72-.72 1.12-1.68 1.12-2.73s-.4-2.01-1.12-2.73c-.72-.72-1.68-1.12-2.73-1.12-.65 0-1.31.16-1.9.46-.74.39-1.3 1.09-1.52 1.91H4.95c.25-1.42 1.05-2.67 2.28-3.47.91-.59 1.98-.92 3.11-.92 1.38 0 2.72.55 3.71 1.54.99.99 1.54 2.33 1.54 3.71s-.55 2.72-1.54 3.71z"/></svg></a><span class="link-label">View Source (You are here)</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Section -->
+        <div id="footer" class="section">
+            <div class="footer-content">
+                <div class="social-links">
+                    <a href="https://github.com/gevak" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                        <svg viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.15-1.11-1.46-1.11-1.46-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.1.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.72c0 .27.18.58.69.48A10 10 0 0 0 22 12 10 10 0 0 0 12 2Z"/></svg>
+                    </a>
+                    <a href="https://linkedin.com/in/gevakip" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                        <svg viewBox="0 0 24 24"><path d="M21.1 2H2.9C2.4 2 2 2.4 2 2.9v18.2C2 21.6 2.4 22 2.9 22h18.2c.5 0 .9-.4.9-.9V2.9c0-.5-.4-.9-.9-.9zM8.3 18.3H5.7V9.7h2.6v8.6zM7 8.5c-.9 0-1.7-.7-1.7-1.7S6.1 5.1 7 5.1s1.7.7 1.7 1.7S7.9 8.5 7 8.5zm11.3 9.8h-2.5v-4.1c0-1-.4-1.7-1.3-1.7-.7 0-1.1.5-1.3.9-.1.2-.1.4-.1.6v4.3h-2.5s.03-7.8 0-8.6h2.5v1.1c.4-.6 1-1.4 2.3-1.4 1.7 0 3 1.1 3 3.5v5.4z"/></svg>
+                    </a>
+                    <a href="https://facebook.com/geva.kipper" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                        <svg viewBox="0 0 24 24"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"/></svg>
+                    </a>
+                </div>
+                <div class="footer-text">
+                    <p>Design procedurally generated by an OpenAI Model.</p>
+                    <p>Time since genesis: <span id="stopwatch">-</span></p>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- CDN for p5.js -->
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.9.1/lib/p5.js"></script>
+
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', () => {
 
-        // --- DATA ---
-        const projectData = [
-            {
-                title: "GlglStats",
-                description: "A Python project that measures the repetitiveness of Israeli pop-chart songs using LZ77 compression and visualizes repetition patterns in famous tracks.",
-                links: [
-                    { type: 'link', url: 'https://glglstats.geekip.dev', tooltip: 'View Website' },
-                    { type: 'play', url: 'https://www.youtube.com/watch?v=jrKAtOsj1Lo', tooltip: 'Watch Conference Talk' }
-                ]
-            },
-            {
-                title: "Ahuzat Dibuk",
-                description: "A Python scraping and data visualization project that collects occupancy statistics for Tel-Aviv parking lots, generating heat-maps for residents.",
-                links: [
-                    { type: 'news', url: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/', tooltip: 'Read 13tv Article' },
-                    { type: 'news', url: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm', tooltip: 'Read Mako Article' },
-                    { type: 'facebook', url: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943', tooltip: 'View Original Post' }
-                ]
-            },
-            {
-                title: "2D Part Orienting",
-                description: "A C++ implementation of an efficient algorithm for constructing a 'push plan' to orient a given polygon, contributed to an open-source computational geometry library.",
-                links: [
-                    { type: 'code', url: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/', tooltip: 'View Project and Code' }
-                ]
-            },
-            {
-                title: "The Turing Jest",
-                description: "An LMSYS-style arena where Large Language Models compete at creating and explaining puns, with user-based ratings determining the wittiest AI.",
-                links: [
-                    { type: 'link', url: 'https://jest.geekip.dev', tooltip: 'Visit The Turing Jest' }
-                ]
-            },
-            {
-                title: "Rhymes of Israel",
-                description: "A Chrome extension leveraging an LLM to humorously rewrite Israeli news headlines into rhyming couplets, in the style of a high school yearbook.",
-                links: [
-                    { type: 'chrome', url: 'https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb', tooltip: 'View on Chrome Web Store' }
-                ]
-            },
-            {
-                title: "The Evolving Labyrinth",
-                description: "A meta-project; the very portfolio you are viewing. It is built with modern web technologies and features a daily-regenerating design powered by AI.",
-                links: [
-                    { type: 'infinity', url: 'https://geekip.dev', tooltip: 'This Website' }
-                ]
-            },
-            {
-                isConnectNode: true,
-                links: [
-                    { type: 'github', url: 'https://github.com/gevak', tooltip: 'GitHub' },
-                    { type: 'linkedin', url: 'https://linkedin.com/in/gevakip', tooltip: 'LinkedIn' },
-                    { type: 'facebook', url: 'https://facebook.com/geva.kipper', tooltip: 'Facebook' }
-                ]
-            }
-        ];
-
-        const icons = {
-            link: `<svg viewBox="0 0 24 24"><path d="M10.59,13.41C11,13.8 11,14.44 10.59,14.83C10.2,15.22 9.56,15.22 9.17,14.83L5.64,11.3C4.86,10.52 4.86,9.25 5.64,8.47L6.35,7.76C6.74,7.37 7.38,7.37 7.77,7.76C8.16,8.15 8.16,8.79 7.77,9.18L7.06,9.89C6.67,10.28 6.67,10.92 7.06,11.31L10.59,14.83V13.41M18.36,5.64C17.58,4.86 16.31,4.86 15.53,5.64L14.82,6.35C14.43,6.74 14.43,7.38 14.82,7.77C15.21,8.16 15.85,8.16 16.24,7.77L16.95,7.06C17.34,6.67 17.98,6.67 18.37,7.06C18.76,7.45 18.76,8.09 18.37,8.48L14.83,12C14.44,12.39 13.8,12.39 13.41,12C13,11.61 13,10.97 13.41,10.58L14.12,9.88C14.51,9.49 15.15,9.49 15.54,9.88L16.24,10.59C16.63,10.98 17.27,10.98 17.66,10.59L18.37,9.88C19.15,9.1 19.15,7.83 18.37,7.05L17.66,6.34C17.27,5.95 16.63,5.95 16.24,6.34L15.53,7.05C15.14,7.44 14.5,7.44 14.11,7.05C13.72,6.66 13.72,6.02 14.11,5.63L14.82,4.92C15.6,4.14 16.87,4.14 17.65,4.92L19.06,6.33C19.84,7.11 19.84,8.38 19.06,9.16L15.53,12.69C14.75,13.47 13.48,13.47 12.7,12.69L11.29,11.28C10.9,10.89 10.26,10.89 9.87,11.28C9.48,11.67 9.48,12.31 9.87,12.7L11.28,14.11C12.06,14.89 13.33,14.89 14.11,14.11L19.77,8.45C20.55,7.67 20.55,6.4 19.77,5.62L18.36,4.21V5.64Z" /></svg>`,
-            play: `<svg viewBox="0 0 24 24"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg>`,
-            news: `<svg viewBox="0 0 24 24"><path d="M20,22H4C2.9,22 2,21.1 2,20V4C2,2.9 2.9,2 4,2H20C21.1,2 22,2.9 22,4V20C22,21.1 21.1,22 20,22M12,17H20V15H12V17M12,13H20V11H12V13M12,9H20V7H12V9M4,20H10V4H4V20Z" /></svg>`,
-            code: `<svg viewBox="0 0 24 24"><path d="M8.7,15.9L4.8,12L8.7,8.1L10.1,9.5L7.6,12L10.1,14.5L8.7,15.9M15.3,15.9L13.9,14.5L16.4,12L13.9,9.5L15.3,8.1L19.2,12L15.3,15.9Z" /></svg>`,
-            facebook: `<svg viewBox="0 0 24 24"><path d="M12 2.04C6.5 2.04 2 6.53 2 12.06C2 17.06 5.66 21.21 10.44 21.96V14.96H7.9V12.06H10.44V9.85C10.44 7.32 11.93 5.96 14.22 5.96C15.31 5.96 16.45 6.15 16.45 6.15V8.62H15.19C13.95 8.62 13.56 9.39 13.56 10.18V12.06H16.34L15.89 14.96H13.56V21.96A10 10 0 0 0 22 12.06C22 6.53 17.5 2.04 12 2.04Z" /></svg>`,
-            chrome: `<svg viewBox="0 0 24 24"><path d="M15.2,12.8L12.8,15.2L11.2,12.8L12.8,11.2L15.2,12.8M12,2C17.5,2 22,6.5 22,12C22,17.5 17.5,22 12,22C6.5,22 2,17.5 2,12C2,6.5 6.5,2 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6.9C9.7,6.9 7.8,8.2 6.9,10.1L9.1,10.6C9.5,9.4 10.6,8.5 12,8.5C13.9,8.5 15.5,10.1 15.5,12C15.5,12.4 15.4,12.8 15.2,13.2L17.5,15.5C18.4,14.3 19,12.8 19,11.1C18.9,8.7 15.8,6.9 12,6.9Z" /></svg>`,
-            infinity: `<svg viewBox="0 0 24 24"><path d="M12,4C7.58,4 4,7.58 4,12C4,16.42 7.58,20 12,20C15.5,20 18.46,17.65 19.47,14.5H14.82V12.5H21.5C21.5,12.84 21.5,13.16 21.5,13.5C21.5,18.19 17.31,22 12,22C6.48,22 2,17.52 2,12C2,6.48 6.48,2 12,2C14.77,2 17.2,3.13 18.9,5L17.5,6.4C16.17,4.92 14.21,4 12,4M15,8H17V13H12V11H15V8Z"/></svg>`,
-            github: `<svg viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21V19.21C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.83,16.41C14.17,16.72 14.5,17.33 14.5,18.26V21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z" /></svg>`,
-            linkedin: `<svg viewBox="0 0 24 24"><path d="M19 3A2 2 0 0 1 21 5V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V5A2 2 0 0 1 5 3H19M18.5 18.5V13.2A3.26 3.26 0 0 0 15.24 9.94C14.39 9.94 13.4 10.46 13 11.1V10.13H10.13V18.5H13V13.74C13 12.81 13.38 11.93 14.31 11.93C15.24 11.93 15.62 12.81 15.62 13.74V18.5H18.5M6.88 8.56A1.68 1.68 0 0 0 8.56 6.88C8.56 6 7.78 5.2 6.88 5.2C6 5.2 5.2 6 5.2 6.88A1.68 1.68 0 0 0 6.88 8.56M8.27 18.5V10.13H5.5V18.5H8.27Z" /></svg>`
-        };
-        
-        const aiIcons = [
-            `<svg class="ai-icon" viewBox="0 0 24 24"><path fill="var(--accent-color)" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M8,17.5A1.5,1.5 0 0,1 6.5,16A1.5,1.5 0 0,1 8,14.5A1.5,1.5 0 0,1 9.5,16A1.5,1.5 0 0,1 8,17.5M16,17.5A1.5,1.5 0 0,1 14.5,16A1.5,1.5 0 0,1 16,14.5A1.5,1.5 0 0,1 17.5,16A1.5,1.5 0 0,1 16,17.5M12.5,13.25L15.36,10.39L14.3,9.33L11.5,12.12L8.64,9.26L7.58,10.32L10.5,13.25L7.58,16.18L8.64,17.24L11.5,14.37L14.3,17.24L15.36,16.18L12.5,13.25Z" transform="rotate(0 0 0)"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="20s" repeatCount="indefinite"/></svg>`,
-            `<svg class="ai-icon" viewBox="0 0 24 24"><path fill="var(--accent-color)" d="M12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8M12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M21.5,12C21.5,12.8 21.4,13.6 21.1,14.3L19.5,13.8C19.7,13.2 19.8,12.6 19.8,12C19.8,9.7 18.5,7.8 16.5,6.9L17.1,5.2C19.5,6.4 21.2,8.9 21.5,12M2.5,12C2.5,11.2 2.6,10.4 2.9,9.7L4.5,10.2C4.3,10.8 4.2,11.4 4.2,12C4.2,14.3 5.5,16.2 7.5,17.1L6.9,18.8C4.5,17.6 2.8,15.1 2.5,12M12,2.5C11.2,2.5 10.4,2.6 9.7,2.9L10.2,4.5C10.8,4.3 11.4,4.2 12,4.2C14.3,4.2 16.2,5.5 17.1,7.5L18.8,6.9C17.6,4.5 15.1,2.8 12,2.5M12,21.5C12.8,21.5 13.6,21.4 14.3,21.1L13.8,19.5C13.2,19.7 12.6,19.8 12,19.8C9.7,19.8 7.8,18.5 6.9,16.5L5.2,17.1C6.4,19.5 8.9,21.2 12,21.5Z"><animateTransform attributeName="transform" type="rotate" from="360 12 12" to="0 12 12" dur="30s" repeatCount="indefinite"/></svg>`,
-            `<svg class="ai-icon" viewBox="0 0 24 24"><path fill="var(--accent-color)" d="M12 2.69l5.31 5.31-1.42 1.42L12 5.54l-3.89 3.88-1.42-1.42L12 2.69zm0 18.62l-5.31-5.31 1.42-1.42L12 18.46l3.89-3.88 1.42 1.42L12 21.31zm-5.31-10.62L2.81 12l3.88 3.89 1.42-1.42L5.54 12l2.57-2.57-1.42-1.42zM19.19 12l-3.88-3.89-1.42 1.42L18.46 12l-2.57 2.57 1.42 1.42L19.19 12z"><animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite" /></svg>`
-        ];
-
-        // --- PRNG (Pseudo-Random Number Generator) ---
-        // Using Mulberry32 for its simplicity and decent distribution.
-        function mulberry32(a) {
-            return function() {
-                a |= 0; a = a + 0x6D2B79F5 | 0;
-                let t = Math.imul(a ^ a >>> 15, 1 | a);
-                t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-                return ((t ^ t >>> 14) >>> 0) / 4294967296;
-            }
-        }
-       
-        // --- THEME GENERATION ---
-        const today = new Date();
-        const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-        const rand = mulberry32(seed);
-
-        const themes = [
-            // Theme 1: Bio-Mechanical
-            () => ({
-                '--primary-color': '#00ffc3',
-                '--accent-color': '#00ffc3',
-                '--text-light-color': '#9efff0',
-                '--text-main-color': '#d1fff8',
-                '--box-bg-color': 'rgba(10, 48, 41, 0.6)',
-                '--box-border-color': 'rgba(0, 255, 195, 0.4)',
-                '--box-border-radius': '0px',
-                '--font-heading': "'Sora', sans-serif",
-                '--background-css': `linear-gradient(rgba(7, 20, 17, 0.8), rgba(7, 20, 17, 0.8)), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill='%2300ffc3' fill-opacity='0.05'%3E%3Crect x='0' y='0' width='50' height='50'/%3E%3Crect x='50' y='50' width='50' height='50'/%3E%3C/g%3E%3C/svg%3E"), #071411`,
-            }),
-            // Theme 2: Celestial Cartography
-            () => ({
-                '--primary-color': '#e0e6ff',
-                '--accent-color': '#a3b3ff',
-                '--text-light-color': '#c2caff',
-                '--text-main-color': '#e0e6ff',
-                '--box-bg-color': 'rgba(23, 27, 61, 0.6)',
-                '--box-border-color': 'rgba(163, 179, 255, 0.5)',
-                '--box-border-radius': '50%',
-                '--font-heading': "'Sora', sans-serif",
-                '--background-css': `radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%)`, 
-            }),
-            // Theme 3: Architectural Blueprint
-            () => ({
-                '--primary-color': '#ffffff',
-                '--accent-color': '#87CEFA',
-                '--text-light-color': '#a7dcfd',
-                '--text-main-color': '#d0eaff',
-                '--box-bg-color': 'rgba(23, 44, 61, 0.6)',
-                '--box-border-color': 'rgba(135, 206, 250, 0.5)',
-                '--box-border-radius': '2px',
-                '--font-heading': "'IBM Plex Mono', monospace",
-                '--background-css': `#0a192f url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%231d3450' fill-opacity='0.4' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`,
-                '--icon-filter': 'brightness(0) invert(1)'
-            })
-        ];
-
-        function applyDailyTheme() {
-            const themeIndex = Math.floor(rand() * themes.length);
-            const themeStyles = themes[themeIndex]();
-
-            for (const [key, value] of Object.entries(themeStyles)) {
-                document.documentElement.style.setProperty(key, value);
-            }
+            // --- CONFIGURATION & STATE ---
+            const sections = document.querySelectorAll('.section');
+            const totalSections = sections.length;
+            let currentSectionIndex = 0;
+            let isScrolling = false;
+            let scrollTimeout;
             
-            // Set AI Icon
-            const iconIndex = Math.floor(rand() * aiIcons.length);
-            document.querySelector('.ai-icon-container').innerHTML = aiIcons[iconIndex];
-
-            return themeIndex;
-        }
-
-        const activeThemeIndex = applyDailyTheme();
-
-        // --- DOM GENERATION & LAYOUT ---
-        const projectSection = document.getElementById('project-section');
-        const timelinePath = document.getElementById('timeline-path');
-        
-        function generateLayout() {
-            projectSection.innerHTML = '';
-            const pathPoints = [];
-            const numProjects = projectData.length;
-            const viewportHeight = window.innerHeight;
-            const totalHeight = (numProjects * 0.8) * viewportHeight;
-            const segmentHeight = totalHeight / numProjects;
-
-            // Generate Path
-            let pathD = `M ${window.innerWidth / 2}, 0`;
-            let currentY = 0;
-            const midX = window.innerWidth / 2;
-            const xVariance = window.innerWidth / 5;
-
-            // Start point in hero
-            pathD += ` L ${midX}, ${viewportHeight * 0.8}`;
-            pathPoints.push({ x: midX, y: viewportHeight * 0.8 });
-            currentY = viewportHeight * 0.8;
-
-            for (let i = 0; i < numProjects; i++) {
-                const nextY = currentY + segmentHeight;
-                let nextX;
-
-                if (activeThemeIndex === 2) { // Architectural theme
-                    const lastX = pathPoints[pathPoints.length - 1].x;
-                    nextX = (i % 2 === 0) ? midX - xVariance / 2 : midX + xVariance / 2;
-                    pathD += ` L ${lastX}, ${nextY - segmentHeight/2}`;
-                    pathD += ` L ${nextX}, ${nextY}`;
-                } else { // Organic themes
-                    nextX = midX + (rand() - 0.5) * xVariance;
-                    const cp1x = pathPoints[pathPoints.length - 1].x;
-                    const cp1y = currentY + segmentHeight / 2;
-                    const cp2x = nextX;
-                    const cp2y = nextY - segmentHeight / 2;
-                    pathD += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${nextX},${nextY}`;
-                }
-                
-                pathPoints.push({ x: nextX, y: nextY });
-                currentY = nextY;
-            }
+            // Camera state for the p5.js canvas
+            let camera = { x: 0, y: 0, zoom: 1 };
+            let targetCamera = { x: 0, y: 0, zoom: 1 };
             
-            timelinePath.setAttribute('d', pathD);
-            projectSection.style.height = `${currentY}px`;
-            
-            // Create and position project boxes
-            projectData.forEach((project, i) => {
-                const box = document.createElement('div');
-                box.className = 'project-box';
-                
-                const {x, y} = pathPoints[i+1];
-                box.style.top = `${y}px`;
+            // Define camera positions for each section
+            const cameraWaypoints = [
+                { x: 0, y: 0, zoom: 1.0 }, // 0: Intro
+                { x: 800, y: 300, zoom: 1.8 }, // 1: GlglStats
+                { x: -500, y: 900, zoom: 1.8 }, // 2: Ahuzat Dibuk
+                { x: -900, y: -200, zoom: 1.8 },// 3: 2D Part Orienting
+                { x: 400, y: -800, zoom: 1.8 }, // 4: The Turing Jest
+                { x: 1000, y: 1100, zoom: 1.8 },// 5: Rhymes of Israel
+                { x: 0, y: 400, zoom: 1.8 }, // 6: This Website (Meta)
+                { x: 0, y: 400, zoom: 0.4 }, // 7: Footer (Zoom out)
+            ];
 
-                let alignClass = (i % 2 === 0) ? 'align-left' : 'align-right';
-                 if (window.innerWidth <= 768) {
-                    alignClass = 'align-left'; // stack on mobile
-                }
-                box.classList.add(alignClass);
-                
-                let linksHTML = project.links.map(link => `
-                    <a href="${link.url}" target="_blank" rel="noopener noreferrer">
-                        ${icons[link.type]}
-                        <span class="tooltip">${link.tooltip}</span>
-                    </a>
-                `).join('');
+            // --- UI & NAVIGATION ---
 
-                if (project.isConnectNode) {
-                    box.id = 'connect-node';
-                    box.innerHTML = `<div class="project-links">${linksHTML}</div>`;
-                } else {
-                    box.innerHTML = `
-                        <h2>${project.title}</h2>
-                        <p>${project.description}</p>
-                        <div class="project-links">${linksHTML}</div>
-                    `;
-                }
-                projectSection.appendChild(box);
-            });
-
-            // After layout, do scroll-based animations
-            setupScrollAnimations();
-        }
-        
-        // --- INTERACTIVITY ---
-        function setupScrollAnimations() {
-            // 1. Timeline Draw
-            const pathLength = timelinePath.getTotalLength();
-            timelinePath.style.strokeDasharray = pathLength;
-            timelinePath.style.strokeDashoffset = pathLength;
-
-            function updateTimeline() {
-                const scrollPercentage = (window.scrollY) / (document.documentElement.scrollHeight - window.innerHeight);
-                const drawLength = pathLength * scrollPercentage * 1.1; // *1.1 to finish a bit early
-                timelinePath.style.strokeDashoffset = Math.max(0, pathLength - drawLength);
-            }
-            
-            // 2. Project Box Fade-in
-            const boxes = document.querySelectorAll('.project-box');
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('is-visible');
+            function updateUI() {
+                sections.forEach((section, index) => {
+                    // Footer is special, it's at the last waypoint but indexed before.
+                    const isFooter = (index === totalSections - 1);
+                    if (isFooter && currentSectionIndex === totalSections) {
+                         section.classList.add('active');
+                    } else if (index === currentSectionIndex && !isFooter) {
+                        section.classList.add('active');
+                    } else {
+                        section.classList.remove('active');
                     }
                 });
-            }, { threshold: 0.1 });
+            }
 
-            boxes.forEach(box => observer.observe(box));
+            function navigate(direction) {
+                if (isScrolling) return;
 
-            // Attach scroll listener
-            window.addEventListener('scroll', updateTimeline, { passive: true });
-            updateTimeline(); // Initial call
-        }
+                const newIndex = currentSectionIndex + direction;
 
-        // --- FOOTER TIMER ---
-        function startTimer() {
-            const timerElement = document.getElementById('timer');
-            const genesisDate = new Date('2025-09-05T01:02:21');
+                if (newIndex >= 0 && newIndex <= totalSections) {
+                    currentSectionIndex = newIndex;
+                    targetCamera = cameraWaypoints[currentSectionIndex];
+                    updateUI();
 
-            setInterval(() => {
-                const now = new Date();
-                const diff = now - genesisDate;
+                    isScrolling = true;
+                    setTimeout(() => { isScrolling = false; }, 800); // Cooldown to prevent rapid scrolling
+                }
+            }
+            
+            // --- EVENT LISTENERS ---
 
-                if (diff < 0) { // Handle case before genesis
-                    timerElement.textContent = "Awaiting Genesis...";
-                    return;
+            window.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                // Debounce the scroll event
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    const direction = e.deltaY > 0 ? 1 : -1;
+                    navigate(direction);
+                }, 50); // Small debounce window
+            }, { passive: false });
+
+            let touchStartY = 0;
+            window.addEventListener('touchstart', (e) => {
+                touchStartY = e.touches[0].clientY;
+            }, { passive: true });
+
+            window.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touchEndY = e.touches[0].clientY;
+
+                if (Math.abs(touchStartY - touchEndY) > 50) { // Threshold for swipe
+                    const direction = touchStartY > touchEndY ? 1 : -1;
+                    navigate(direction);
+                    touchStartY = touchEndY; // Reset start position to prevent multiple fires on one long swipe
                 }
 
-                let seconds = Math.floor(diff / 1000);
-                let minutes = Math.floor(seconds / 60);
-                let hours = Math.floor(minutes / 60);
+            }, { passive: false });
 
-                seconds = seconds % 60;
-                minutes = minutes % 60;
 
-                const pad = (num) => num.toString().padStart(2, '0');
+            // --- LIVE STOPWATCH ---
+            const stopwatchElement = document.getElementById('stopwatch');
+            const genesisDate = new Date('2025-09-06T01:01:04Z');
 
-                timerElement.textContent = `${pad(hours)} : ${pad(minutes)} : ${pad(seconds)}`;
-            }, 1000);
-        }
+            function updateStopwatch() {
+                const now = new Date();
+                let diff = now.getTime() - genesisDate.getTime();
 
-        // --- INITIALIZATION ---
-        generateLayout();
-        startTimer();
+                const isFuture = diff < 0;
+                if (isFuture) {
+                    diff = -diff;
+                }
+                
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-        // Handle window resize to recalculate layout
-        let resizeTimer;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(generateLayout, 250);
+                const hhh = String(hours).padStart(3, '0');
+                const mm = String(minutes).padStart(2, '0');
+                const ss = String(seconds).padStart(2, '0');
+                
+                stopwatchElement.textContent = `${isFuture ? '-' : ''}${hhh}:${mm}:${ss}`;
+            }
+
+            setInterval(updateStopwatch, 1000);
+            updateStopwatch();
+
+            // --- P5.JS GENERATIVE ART ---
+            
+            const sketch = (p) => {
+                let particles = [];
+                const keywords = ["Python", "LLM", "Geometry", "Data", "AI", "Web"];
+                let artPalette;
+                let dailySeed;
+
+                class Particle {
+                    constructor(x, y) {
+                        this.pos = p.createVector(x, y);
+                        this.vel = p.createVector(p.random(-0.5, 0.5), p.random(-0.5, 0.5));
+                        this.acc = p.createVector(0, 0);
+                        this.maxSpeed = 1;
+                        this.color = p.random(artPalette.slice(1)); // Don't use darkest color for particles
+                        this.lifespan = 255;
+                    }
+
+                    update() {
+                        // Add organic movement using Perlin noise
+                        let noiseFactor = 0.002;
+                        let angle = p.noise(this.pos.x * noiseFactor, this.pos.y * noiseFactor) * p.TWO_PI * 4;
+                        this.acc.add(p.createVector(p.cos(angle), p.sin(angle)).mult(0.05));
+
+                        this.vel.add(this.acc);
+                        this.vel.limit(this.maxSpeed);
+                        this.pos.add(this.vel);
+                        this.acc.mult(0);
+                    }
+                    
+                    show() {
+                        const c = p.color(this.color);
+                        p.noStroke();
+                        p.fill(c.levels[0], c.levels[1], c.levels[2], this.lifespan);
+                        p.ellipse(this.pos.x, this.pos.y, 3, 3);
+                    }
+                }
+                
+                function generatePalette(seed) {
+                    p.randomSeed(seed);
+                    const baseHue = p.random(360);
+                    p.colorMode(p.HSB, 360, 100, 100, 100);
+                    
+                    const highlightColor = p.color((baseHue + p.random(-20, 20)) % 360, p.random(70, 90), p.random(90, 100));
+                    
+                    document.documentElement.style.setProperty('--color-highlight', highlightColor.toString('#rrggbb'));
+
+                    return [
+                        p.color(baseHue, 10, 5), // Dark bg color
+                        highlightColor,
+                        p.color((baseHue + 30) % 360, 60, 80),
+                        p.color((baseHue + 150) % 360, 70, 90),
+                        p.color((baseHue - 30) % 360, 50, 100),
+                    ];
+                }
+
+                p.setup = () => {
+                    const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                    canvas.parent('canvas-container');
+                    
+                    dailySeed = new Date().toDateString().split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                    
+                    artPalette = generatePalette(dailySeed);
+                    
+                    keywords.forEach((keyword, i) => {
+                       const waypoint = cameraWaypoints[i+1];
+                       for(let j = 0; j < 50; j++) {
+                           particles.push(new Particle(
+                               waypoint.x + p.random(-150, 150),
+                               waypoint.y + p.random(-150, 150)
+                           ));
+                       }
+                    });
+                    
+                    // Add some sparse "space dust" particles
+                    for(let i = 0; i < 200; i++) {
+                         particles.push(new Particle(p.random(-2000, 2000), p.random(-2000, 2000)));
+                    }
+                };
+
+                p.draw = () => {
+                    // Animate camera
+                    camera.x = p.lerp(camera.x, targetCamera.x, 0.05);
+                    camera.y = p.lerp(camera.y, targetCamera.y, 0.05);
+                    camera.zoom = p.lerp(camera.zoom, targetCamera.zoom, 0.05);
+
+                    // Set background with a trail effect
+                    const bgColor = artPalette[0];
+                    p.background(bgColor.levels[0], bgColor.levels[1], bgColor.levels[2], 20);
+
+                    p.translate(p.width / 2, p.height / 2);
+                    p.scale(camera.zoom);
+                    p.translate(-camera.x, -camera.y);
+                    
+                    // Draw connections between nearby particles
+                    p.strokeWeight(0.5);
+                    for (let i = 0; i < particles.length; i++) {
+                        for (let j = i + 1; j < particles.length; j++) {
+                            const d = p.dist(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y);
+                            if (d < 100) {
+                                let c = p.color(particles[i].color);
+                                p.stroke(c.levels[0], c.levels[1], c.levels[2], p.map(d, 0, 100, 50, 0));
+                                p.line(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y);
+                            }
+                        }
+                    }
+
+                    // Update and draw particles
+                    for (const particle of particles) {
+                        particle.update();
+                        particle.show();
+                    }
+                };
+                
+                p.windowResized = () => {
+                    p.resizeCanvas(p.windowWidth, p.windowHeight);
+                };
+            };
+
+            // Initialize p5
+            new p5(sketch);
+            // Initial UI state
+            updateUI();
         });
-
-    });
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250905",
+          pageId: "20250906",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
