@@ -2,652 +2,778 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - The K-Map</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Roboto+Mono:wght@300&display=swap" rel="stylesheet">
+    <title>Geva Kipper | Portfolio</title>
     <style>
         :root {
-            --font-main: 'Inter', sans-serif;
-            --font-mono: 'Roboto Mono', monospace;
-            --color-text: #ffffff;
-            --color-bg: #050508;
-            --color-glass-bg: rgba(10, 10, 15, 0.6);
-            --color-highlight: #00ffff; /* Default, will be updated by JS */
-            --transition-speed: 0.5s;
+            --bg-color: #12141d;
+            --text-color: #c9d1d9;
+            --text-secondary-color: #8b949e;
+            --panel-bg: #1a1e2b;
+            --border-color: #30363d;
+            --font-main: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            --font-mono: 'SF Mono', 'Consolas', 'Menlo', 'Courier', monospace;
+
+            --color-branch-1: #39c5bb;
+            --color-branch-2: #f779b7;
+            --color-branch-3: #ff9b42;
+            --color-branch-4: #8d76ff;
+            --color-branch-5: #61dafb;
+            --color-branch-6: #ffcd29;
+            --color-branch-7: #e0e0e0;
         }
 
+        /* --- Basic Setup & Typography --- */
         * {
             box-sizing: border-box;
-            margin: 0;
-            padding: 0;
         }
 
-        html, body {
-            overflow: hidden;
-            width: 100%;
-            height: 100%;
-            background-color: var(--color-bg);
-            color: var(--color-text);
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
             font-family: var(--font-main);
-            overscroll-behavior: none;
+            margin: 0;
+            overflow-x: hidden;
         }
 
-        #canvas-container {
+        /* --- Layout --- */
+        .page-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .left-column {
+            width: 25vw;
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
+            height: 100vh;
+            border-right: 1px solid var(--border-color);
         }
 
-        #ui-container {
-            position: fixed;
+        .right-column {
+            width: 75vw;
+            margin-left: 25vw;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Left Column: Git Tree --- */
+        .git-timeline-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        #git-svg {
+            position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-            pointer-events: none; /* Allow clicks to pass through to canvas if needed, but children will override */
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        }
+        
+        #git-svg .git-branch {
+            fill: none;
+            stroke-width: 2px;
+            stroke-linecap: round;
         }
 
-        /* ----- Sections ----- */
-        .section {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity var(--transition-speed) ease-out, transform var(--transition-speed) ease-out;
-            pointer-events: none;
+        #git-svg .commit-node-group .commit-node {
+            stroke-width: 2.5px;
+            fill: var(--bg-color);
+            fill-opacity: 0.6;
+            transition: all 0.3s ease;
+        }
+        
+        #git-svg .commit-node-group .commit-hash {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            fill: var(--text-secondary-color);
+            transition: fill 0.3s ease;
         }
 
-        .section.active {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: all;
+        #git-svg .commit-node-group .commit-node-hitbox {
+             fill: transparent;
+             cursor: pointer;
+        }
+        
+        #git-svg .commit-node-group:hover .commit-node {
+            transform-origin: center;
+            transform: scale(1.3);
+            fill-opacity: 1;
         }
 
-        /* ----- Intro Section ----- */
-        #intro {
-            text-align: center;
-            max-width: 600px;
-            padding: 20px;
+        #git-svg .commit-node-group:hover .commit-hash {
+            fill: var(--text-color);
         }
 
-        #intro h1 {
-            font-size: 3.5rem;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
-
-        #intro h2 {
-            font-size: 1.2rem;
-            font-weight: 400;
-            color: #ccc;
-            margin-top: 1rem;
-        }
-
-        #intro p {
-            margin-top: 2rem;
-            font-size: 1rem;
-            font-style: italic;
-            color: var(--color-highlight);
-            text-shadow: 0 0 8px var(--color-highlight), 0 0 12px var(--color-highlight);
-            line-height: 1.6;
-            transition: color 1s, text-shadow 1s;
-        }
-
-        .scroll-indicator {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            animation: pulse 2s infinite ease-in-out;
-        }
-
-        .scroll-indicator svg {
-            width: 24px;
-            height: 24px;
+        #git-svg .commit-node-group.active .commit-node {
+            fill-opacity: 1;
+            transform: scale(1.3);
+            animation: pulse 1.5s infinite;
         }
 
         @keyframes pulse {
-            0% { opacity: 0.2; transform: translateX(-50%) translateY(0); }
-            50% { opacity: 1; transform: translateX(-50%) translateY(5px); }
-            100% { opacity: 0.2; transform: translateX(-50%) translateY(0); }
+            0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
         }
 
-        /* ----- Project Panels ----- */
-        .project-panel {
-            backdrop-filter: blur(12px) saturate(120%);
-            -webkit-backdrop-filter: blur(12px) saturate(120%);
-            background-color: var(--color-glass-bg);
-            border-radius: 12px;
-            padding: 2rem 2.5rem;
-            width: 90%;
-            max-width: 500px;
-            position: relative;
-        }
-        
-        .project-panel::before {
-            content: '';
+        /* Custom glow for each branch color */
+        #git-svg .commit-node-group.active[data-color="--color-branch-1"] .commit-node { animation: pulse-1 1.5s infinite; }
+        @keyframes pulse-1 { 0% { filter: drop-shadow(0 0 0 var(--color-branch-1));} 70% { filter: drop-shadow(0 0 8px var(--color-branch-1));} 100% { filter: drop-shadow(0 0 0 var(--color-branch-1));} }
+        #git-svg .commit-node-group.active[data-color="--color-branch-2"] .commit-node { animation: pulse-2 1.5s infinite; }
+        @keyframes pulse-2 { 0% { filter: drop-shadow(0 0 0 var(--color-branch-2));} 70% { filter: drop-shadow(0 0 8px var(--color-branch-2));} 100% { filter: drop-shadow(0 0 0 var(--color-branch-2));} }
+        #git-svg .commit-node-group.active[data-color="--color-branch-3"] .commit-node { animation: pulse-3 1.5s infinite; }
+        @keyframes pulse-3 { 0% { filter: drop-shadow(0 0 0 var(--color-branch-3));} 70% { filter: drop-shadow(0 0 8px var(--color-branch-3));} 100% { filter: drop-shadow(0 0 0 var(--color-branch-3));} }
+        #git-svg .commit-node-group.active[data-color="--color-branch-4"] .commit-node { animation: pulse-4 1.5s infinite; }
+        @keyframes pulse-4 { 0% { filter: drop-shadow(0 0 0 var(--color-branch-4));} 70% { filter: drop-shadow(0 0 8px var(--color-branch-4));} 100% { filter: drop-shadow(0 0 0 var(--color-branch-4));} }
+        #git-svg .commit-node-group.active[data-color="--color-branch-5"] .commit-node { animation: pulse-5 1.5s infinite; }
+        @keyframes pulse-5 { 0% { filter: drop-shadow(0 0 0 var(--color-branch-5));} 70% { filter: drop-shadow(0 0 8px var(--color-branch-5));} 100% { filter: drop-shadow(0 0 0 var(--color-branch-5));} }
+        #git-svg .commit-node-group.active[data-color="--color-branch-6"] .commit-node { animation: pulse-6 1.5s infinite; }
+        @keyframes pulse-6 { 0% { filter: drop-shadow(0 0 0 var(--color-branch-6));} 70% { filter: drop-shadow(0 0 8px var(--color-branch-6));} 100% { filter: drop-shadow(0 0 0 var(--color-branch-6));} }
+        #git-svg .commit-node-group.active[data-color="--color-branch-7"] .commit-node { animation: pulse-7 1.5s infinite; }
+        @keyframes pulse-7 { 0% { filter: drop-shadow(0 0 0 var(--color-branch-7));} 70% { filter: drop-shadow(0 0 8px var(--color-branch-7));} 100% { filter: drop-shadow(0 0 0 var(--color-branch-7));} }
+
+
+        .head-tag {
             position: absolute;
-            left: 0;
-            top: 15%;
-            width: 4px;
-            height: 70%;
-            background-color: var(--glow-color);
-            box-shadow: 0 0 8px var(--glow-color), 0 0 12px var(--glow-color), 0 0 16px var(--glow-color);
+            background-color: var(--color-branch-1);
+            color: var(--bg-color);
+            padding: 2px 6px;
             border-radius: 4px;
-            transition: background-color 1s, box-shadow 1s;
-        }
-        
-        #project-1 { --glow-color: #00aaff; }
-        #project-2 { --glow-color: #ffaa00; }
-        #project-3 { --glow-color: #cc88ff; }
-        #project-4 { --glow-color: #ff5577; }
-        #project-5 { --glow-color: #44dd88; }
-        #project-6 { --glow-color: #ffffff; }
-
-        .project-panel h3 {
-            font-size: 2rem;
-            font-weight: 600;
-            margin-bottom: 0.75rem;
-        }
-
-        .project-panel p {
-            font-size: 1rem;
-            line-height: 1.6;
-            color: #ddd;
-            margin-bottom: 1.5rem;
-        }
-
-        .project-links {
-            display: flex;
-            gap: 1.5rem;
-            align-items: center;
-        }
-
-        .link-item {
-            position: relative;
-            display: inline-block;
-        }
-
-        .link-item a {
-            display: block;
-            color: #ccc;
-            transition: color 0.3s, filter 0.3s;
-        }
-
-        .link-item svg {
-            width: 28px;
-            height: 28px;
-            fill: currentColor;
-        }
-
-        .link-item a:hover {
-            color: var(--color-text);
-            filter: drop-shadow(0 0 5px var(--glow-color));
-        }
-
-        .link-label {
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%) translateY(-5px);
-            white-space: nowrap;
-            background: #222;
-            color: var(--color-text);
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, transform 0.3s;
-            pointer-events: none;
-        }
-
-        .link-item:hover .link-label {
-            opacity: 1;
-            visibility: visible;
-            transform: translateX(-50%) translateY(-10px);
-        }
-
-        /* ----- Footer Section ----- */
-        #footer {
-            text-align: center;
-            bottom: 0;
-            width: 100%;
-            padding-bottom: 3rem;
-            align-items: flex-end;
-        }
-
-        .footer-content {
-            pointer-events: all;
-        }
-
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 2.5rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .social-links a {
-            color: #888;
-            transition: color 0.3s, transform 0.3s;
-        }
-
-        .social-links a:hover {
-            color: var(--color-text);
-            transform: scale(1.1);
-        }
-        
-        .social-links svg {
-            width: 32px;
-            height: 32px;
-            fill: currentColor;
-        }
-        
-        .footer-text {
             font-family: var(--font-mono);
-            font-size: 0.8rem;
-            color: #666;
-            line-height: 1.5;
+            font-size: 11px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.5s ease;
         }
 
-        #stopwatch {
-            min-width: 15ch;
+        .tooltip {
+            position: absolute;
+            background-color: #0d1117;
+            color: var(--text-color);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: var(--font-main);
+            border: 1px solid var(--border-color);
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            z-index: 100;
+        }
+
+        /* --- Right Column: Content Panels --- */
+        .content-panel {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 5vh 8vw;
+            border-bottom: 1px solid var(--border-color);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        .content-panel.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Header Panel */
+        .header-panel h1 {
+            font-size: clamp(2.5rem, 5vw, 4.5rem);
+            margin: 0;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .header-panel .subtitle {
+            font-family: var(--font-mono);
+            font-size: clamp(1rem, 1.5vw, 1.2rem);
+            color: var(--text-secondary-color);
+            margin-top: 1rem;
+        }
+        
+        .header-panel .subtitle-comment {
+            color: #6a737d; /* Comment color */
+            font-style: italic;
+        }
+
+        /* Project Panels */
+        .project-panel {
+            gap: 1.5rem;
+        }
+
+        .project-panel .panel-header {
+            font-family: var(--font-mono);
+            font-size: 1.5rem;
+            color: var(--text-color);
+        }
+
+        .project-panel .panel-content {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--text-secondary-color);
+            max-width: 70ch;
+        }
+        
+        .project-panel .panel-content video, .project-panel .panel-content img, .project-panel .panel-content .animated-svg {
+            max-width: 300px;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .project-panel .panel-links {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            font-family: var(--font-mono);
+            font-size: 1rem;
+        }
+
+        .project-panel .panel-links a {
+            color: var(--text-secondary-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .project-panel .panel-links a .link-text {
+            color: var(--color-branch-1);
+            text-decoration: underline;
+        }
+
+        .project-panel .panel-links a:hover {
+            color: var(--text-color);
+        }
+        
+        .project-panel .panel-links a:hover .link-text {
+            color: #58a6ff;
+        }
+        
+
+        /* Contact Panel */
+        .contact-panel .socials {
+            display: flex;
+            gap: 3rem;
+        }
+
+        .contact-panel .social-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.8rem;
+            text-decoration: none;
+            color: var(--text-secondary-color);
+            transition: color 0.3s ease, transform 0.3s ease;
+        }
+        
+        .contact-panel .social-link:hover {
+            color: var(--text-color);
+            transform: translateY(-5px);
+        }
+
+        .contact-panel .social-link svg {
+            width: 48px;
+            height: 48px;
+            fill: currentColor;
+        }
+        
+        .contact-panel .social-link span {
+            font-family: var(--font-mono);
+        }
+        
+        /* Special Animations */
+
+        /* 2D Part Orienting SVG Animation */
+        .part-orienting-svg {
+            background-color: #2a3040;
+        }
+        .orienting-part {
+            fill: var(--color-branch-3);
+            stroke: #fff;
+            stroke-width: 2;
+            animation: orient-part 8s infinite ease-in-out;
+            transform-origin: center;
+        }
+        @keyframes orient-part {
+            0% { transform: translate(150px, 150px) rotate(120deg) scale(0.8); }
+            20% { transform: translate(80px, 70px) rotate(-30deg) scale(0.8); }
+            40% { transform: translate(75px, 85px) rotate(10deg) scale(0.8); }
+            60% { transform: translate(100px, 100px) rotate(0deg) scale(1); }
+            100% { transform: translate(100px, 100px) rotate(0deg) scale(1); }
+        }
+
+        /* Turing Jest Text Animation */
+        #turing-jest-output { white-space: pre-wrap; }
+        .cursor {
             display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background-color: var(--text-color);
+            animation: blink 1s step-end infinite;
+            vertical-align: bottom;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Rhymes of Israel Animation */
+        .rhymes-animation {
+            position: relative;
+            height: 3em; 
+            overflow: hidden;
+        }
+        .rhyme-line {
+            position: absolute;
+            width: 100%;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+        .rhyme-line.before {
+            opacity: 1;
+            transform: translateY(0%);
+        }
+        .rhyme-line.after {
+            opacity: 0;
+            transform: translateY(100%);
+            color: var(--color-branch-5);
+            font-weight: 500;
         }
 
-        /* ----- Media Queries For Small Screens ----- */
-        @media (max-width: 640px) {
-            #intro h1 { font-size: 2.5rem; }
-            #intro h2 { font-size: 1rem; }
-            #intro p { font-size: 0.9rem; }
-            .project-panel { padding: 1.5rem; max-width: calc(100% - 40px); }
-            .project-panel h3 { font-size: 1.5rem; }
-            .project-panel p { font-size: 0.9rem; }
-            .project-links { gap: 1rem; }
-            .link-item svg { width: 24px; height: 24px; }
+
+        /* --- Footer --- */
+        footer {
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary-color);
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        footer.show {
+            opacity: 1;
+        }
+
+        footer .uptime-counter {
+            font-family: var(--font-mono);
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 800px) {
+            .page-container {
+                flex-direction: column;
+            }
+            .left-column {
+                display: none; /* Hide complex git timeline on mobile */
+            }
+            .right-column {
+                width: 100%;
+                margin-left: 0;
+            }
+            .content-panel {
+                min-height: 90vh;
+                 padding: 5vh 5vw;
+            }
+            footer {
+                flex-direction: column;
+                gap: 0.5rem;
+                text-align: center;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- The generative art canvas will be attached here -->
-    <div id="canvas-container"></div>
-    
-    <!-- UI elements are overlaid on top -->
-    <div id="ui-container">
-        
-        <!-- Intro Section -->
-        <div id="intro" class="section active">
-            <h1>Geva Kipper</h1>
-            <h2>Currently building the next generation of Search at Google.</h2>
-            <p>This digital canvas is procedurally generated by an AI each day, its form and color seeded by the contents of my resume. What you see is a unique, one-day-only piece of art.</p>
-            <div class="scroll-indicator">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 13 12 18 17 13"></polyline><polyline points="7 6 12 11 17 6"></polyline></svg>
-            </div>
-        </div>
 
-        <!-- Project 1: GlglStats -->
-        <div id="project-1" class="section">
-            <div class="project-panel">
-                <h3>GlglStats</h3>
-                <p>A Python project measuring the repetitiveness of Israeli pop-chart songs using LZ77 compression, with visualizations of repetition patterns in famous tracks.</p>
-                <div class="project-links">
-                    <div class="link-item">
-                        <a href="https://glglstats.geekip.dev" target="_blank" rel="noopener noreferrer">
-                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-                        </a>
-                        <span class="link-label">Live Site</span>
+    <div class="page-container">
+        <aside class="left-column">
+            <div class="git-timeline-container">
+                <svg id="git-svg"></svg>
+                <div id="head-tag" class="head-tag">HEAD -&gt; main</div>
+                <div id="tooltip" class="tooltip"></div>
+            </div>
+        </aside>
+
+        <main class="right-column">
+            <section id="header" class="content-panel header-panel">
+                <h1>Geva Kipper</h1>
+                <p class="subtitle">Working on core search features at Google.</p>
+                <p class="subtitle subtitle-comment">// This site's design is regenerated daily by an AI. Its appearance is ever-changing.</p>
+            </section>
+
+            <section id="glglstats" class="content-panel project-panel">
+                <h2 class="panel-header">feat(analysis): GlglStats</h2>
+                <div class="panel-content">
+                    From the makers of the legendary "Galgalatz playlist in Excel", GlglStats is an interactive exploration of Israel's most popular radio station's playlist archive since 2009. The tool uncovers trends, repetition patterns, and artist statistics.
+                    <video class="animated-media" src="https://geekip.dev/assets/glgl-trim.mp4" autoplay muted loop playsinline></video>
+                </div>
+                <div class="panel-links">
+                    <a href="https://glglstats.geekip.dev" target="_blank">&gt; view_live_site: <span class="link-text">https://glglstats.geekip.dev</span></a>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">&gt; watch_talk: <span class="link-text">PyData TLV Presentation [YouTube]</span></a>
+                </div>
+            </section>
+
+            <section id="ahuzat-dibuk" class="content-panel project-panel">
+                <h2 class="panel-header">feat(data-viz): Ahuzat Dibuk</h2>
+                <div class="panel-content">
+                    A data visualization project mapping the most complained-about parking spots in Tel Aviv, based on crowdsourced data from the "Secret Tel Aviv" Facebook group. The resulting heatmap went viral and was covered by national news outlets.
+                    <img class="animated-media" src="https://geekip.dev/assets/ahuzat-dibuk.gif" alt="Heatmap of Tel Aviv parking complaints">
+                </div>
+                <div class="panel-links">
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">&gt; coverage: <span class="link-text">Channel 13 News</span></a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">&gt; coverage: <span class="link-text">Mako</span></a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">&gt; source_post: <span class="link-text">Secret Tel Aviv [Facebook]</span></a>
+                </div>
+            </section>
+
+            <section id="part-orienting" class="content-panel project-panel">
+                <h2 class="panel-header">feat(geometry): 2D Part Orienting</h2>
+                <div class="panel-content">
+                    An academic project implementing a CGAL-based algorithm to find the stable resting positions of a 2D polygon under gravity. The visualization shows the polygon being pushed and settling into its final, most stable orientation.
+                    <svg class="animated-media part-orienting-svg" viewBox="0 0 200 200">
+                      <polygon class="orienting-part" points="50,150 100,20 150,150 120,150 100,100 80,150" />
+                    </svg>
+                </div>
+                <div class="panel-links">
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">&gt; academic_info --code: <span class="link-text">TAU CGAL Project</span></a>
+                </div>
+            </section>
+
+            <section id="turing-jest" class="content-panel project-panel">
+                <h2 class="panel-header">feat(llm): The Turing Jest</h2>
+                <div class="panel-content">
+                    An LLM-powered arena where you can't tell human wit from machine-generated puns. The backend generates puns using a fine-tuned model and a custom algorithm, then pits them against human entries for users to rate.
+                    <div class="animated-media" style="background-color: #2a3040; padding: 1em; font-family:var(--font-mono); font-size: 0.9em; line-height: 1.5;">
+                        <span id="turing-jest-output"></span><span class="cursor"></span>
                     </div>
-                    <div class="link-item">
-                        <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" rel="noopener noreferrer">
-                           <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
-                        </a>
-                        <span class="link-label">Watch Talk</span>
+                </div>
+                <div class="panel-links">
+                    <a href="https://jest.geekip.dev" target="_blank">&gt; open_arena: <span class="link-text">https://jest.geekip.dev</span></a>
+                </div>
+            </section>
+
+            <section id="rhymes-of-israel" class="content-panel project-panel">
+                <h2 class="panel-header">fix(news): Rhymes of Israel</h2>
+                <div class="panel-content">
+                    A comedic browser extension that finds the main headline on Israeli news sites and replaces it with a rhyming, often absurd, alternative. It's a small fix to make the news cycle a little more bearable.
+                    <div class="animated-media rhymes-animation" style="padding: 1em; font-size: 1.1em; line-height: 1.5;">
+                        <div id="rhyme-before" class="rhyme-line before">Police Chief vows to crack down on crime</div>
+                        <div id="rhyme-after" class="rhyme-line after">Police Chief says, "It's lemon-thyme!"</div>
                     </div>
                 </div>
-            </div>
-        </div>
-        
-        <!-- Project 2: Ahuzat Dibuk -->
-        <div id="project-2" class="section">
-             <div class="project-panel">
-                <h3>Ahuzat Dibuk</h3>
-                <p>Python-based data scraping and visualization of Tel-Aviv parking lot occupancy, generating heatmaps to help residents find parking.</p>
-                <div class="project-links">
-                    <div class="link-item"><a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 16H5V7h14v12zm-2-7H7v-2h10v2zm-4 4H7v-2h6v2zm4-8H7V7h10v2z"/></svg></a><span class="link-label">News Story</span></div>
-                    <div class="link-item"><a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 16H5V7h14v12zm-2-7H7v-2h10v2zm-4 4H7v-2h6v2zm4-8H7V7h10v2z"/></svg></a><span class="link-label">News Story</span></div>
-                    <div class="link-item"><a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"/></svg></a><span class="link-label">Original Post</span></div>
+                <div class="panel-links">
+                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank">&gt; install_extension <span class="link-text">--chrome</span></a>
                 </div>
-            </div>
-        </div>
-        
-        <!-- Project 3: 2D Part Orienting -->
-        <div id="project-3" class="section">
-             <div class="project-panel">
-                <h3>2D Part Orienting</h3>
-                <p>C++ implementation of an efficient algorithm for constructing a 'push plan' to orient a polygon, contributed to an open-source computational geometry library.</p>
-                <div class="project-links">
-                    <div class="link-item"><a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg></a><span class="link-label">View Code & Paper</span></div>
-                </div>
-            </div>
-        </div>
+            </section>
 
-        <!-- Project 4: The Turing Jest -->
-        <div id="project-4" class="section">
-             <div class="project-panel">
-                <h3>The Turing Jest</h3>
-                <p>An LLM arena where transformer models compete to create and explain puns. User ratings determine the wittiest AI.</p>
-                <div class="project-links">
-                    <div class="link-item"><a href="https://jest.geekip.dev" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM9 14c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm0-4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm6 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm0-4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-.01 7.5c-2.03 0-3.8-1.12-4.75-2.82-.1-.17-.02-.4.15-.5.17-.1.4-.02.5.15.85 1.52 2.45 2.57 4.1 2.57s3.25-1.05 4.1-2.57c.1-.17.33-.25.5-.15.17.1.25.33.15.5-1 1.7-2.72 2.82-4.75 2.82z"/></svg></a><span class="link-label">Visit Arena</span></div>
+            <section id="portfolio" class="content-panel project-panel">
+                <h2 class="panel-header">chore(meta): Portfolio Site v3.AI</h2>
+                <div class="panel-content">
+                    The Git-inspired timeline you are currently viewing.
                 </div>
-            </div>
-        </div>
-
-        <!-- Project 5: Rhymes of Israel -->
-        <div id="project-5" class="section">
-             <div class="project-panel">
-                <h3>Rhymes of Israel</h3>
-                <p>A Chrome extension leveraging an LLM to rewrite Israeli news headlines into comedic rhymes, in the style of a high-school yearbook.</p>
-                <div class="project-links">
-                    <div class="link-item"><a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M20.5 11H19v-2c0-1.1-.9-2-2-2h-2V6c0-1.1-.9-2-2-2h-2V3.5c0-.83-.67-1.5-1.5-1.5S8 2.67 8 3.5V4H6c-1.1 0-2 .9-2 2v2H3.5c-.83 0-1.5.67-1.5 1.5S2.67 13 3.5 13H5v2c0 1.1.9 2 2 2h2v2c0 1.1.9 2 2 2h2v2.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V20h2c1.1 0 2-.9 2-2v-2h1.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5z"/></svg></a><span class="link-label">Install Extension</span></div>
+                <div class="panel-links">
+                    <a href="https://geekip.dev" target="_blank" onclick="alert('This is the source code of reality!'); return false;">&gt; view_source_code_of_reality: <span class="link-text">https://geekip.dev</span></a>
                 </div>
-            </div>
-        </div>
+            </section>
 
-        <!-- Project 6: This Website -->
-        <div id="project-6" class="section">
-             <div class="project-panel">
-                <h3>This Website</h3>
-                <p>A meta-project; a single-page portfolio designed as a unique piece of generative art, re-imagined daily by an AI.</p>
-                <div class="project-links">
-                     <div class="link-item"><a href="https://geekip.dev" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm5.15 10.85c-.99.99-2.33 1.54-3.71 1.54-1.13 0-2.2-.33-3.11-.92-1.23-.8-2.03-2.05-2.28-3.47h2.05c.22.82.78 1.52 1.52 1.91.59.3 1.25.46 1.9.46 1.05 0 2.01-.4 2.73-1.12.72-.72 1.12-1.68 1.12-2.73s-.4-2.01-1.12-2.73c-.72-.72-1.68-1.12-2.73-1.12-.65 0-1.31.16-1.9.46-.74.39-1.3 1.09-1.52 1.91H4.95c.25-1.42 1.05-2.67 2.28-3.47.91-.59 1.98-.92 3.11-.92 1.38 0 2.72.55 3.71 1.54.99.99 1.54 2.33 1.54 3.71s-.55 2.72-1.54 3.71z"/></svg></a><span class="link-label">View Source (You are here)</span></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer Section -->
-        <div id="footer" class="section">
-            <div class="footer-content">
-                <div class="social-links">
-                    <a href="https://github.com/gevak" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
-                        <svg viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.15-1.11-1.46-1.11-1.46-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.1.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.72c0 .27.18.58.69.48A10 10 0 0 0 22 12 10 10 0 0 0 12 2Z"/></svg>
+            <section id="contact" class="content-panel contact-panel">
+                <h2 class="panel-header">ref: find-me</h2>
+                <div class="socials">
+                    <a href="https://github.com/gevak" target="_blank" class="social-link">
+                         <svg viewBox="0 0 16 16" version="1.1" aria-hidden="true"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+                        <span>GitHub</span>
                     </a>
-                    <a href="https://linkedin.com/in/gevakip" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
-                        <svg viewBox="0 0 24 24"><path d="M21.1 2H2.9C2.4 2 2 2.4 2 2.9v18.2C2 21.6 2.4 22 2.9 22h18.2c.5 0 .9-.4.9-.9V2.9c0-.5-.4-.9-.9-.9zM8.3 18.3H5.7V9.7h2.6v8.6zM7 8.5c-.9 0-1.7-.7-1.7-1.7S6.1 5.1 7 5.1s1.7.7 1.7 1.7S7.9 8.5 7 8.5zm11.3 9.8h-2.5v-4.1c0-1-.4-1.7-1.3-1.7-.7 0-1.1.5-1.3.9-.1.2-.1.4-.1.6v4.3h-2.5s.03-7.8 0-8.6h2.5v1.1c.4-.6 1-1.4 2.3-1.4 1.7 0 3 1.1 3 3.5v5.4z"/></svg>
+                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-link">
+                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.25 6.5 1.75 1.75 0 016.5 8.25zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.62 1.62 0 0013 14.19a.63.63 0 00-.1.44V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 4.42z"></path></svg>
+                        <span>LinkedIn</span>
                     </a>
-                    <a href="https://facebook.com/geva.kipper" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-                        <svg viewBox="0 0 24 24"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"/></svg>
+                    <a href="https://facebook.com/geva.kipper" target="_blank" class="social-link">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7.02h-2.53v-2.89h2.53V9.8c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.89h-2.33v7.02c4.78-.75 8.44-4.9 8.44-9.9C22 6.53 17.5 2.04 12 2.04z"></path></svg>
+                        <span>Facebook</span>
                     </a>
                 </div>
-                <div class="footer-text">
-                    <p>Design procedurally generated by an OpenAI Model.</p>
-                    <p>Time since genesis: <span id="stopwatch">-</span></p>
-                </div>
-            </div>
-        </div>
+            </section>
+        </main>
     </div>
 
-    <!-- CDN for p5.js -->
-    <script src="https://cdn.jsdelivr.net/npm/p5@1.9.1/lib/p5.js"></script>
+    <footer id="page-footer">
+        <div class="ai-credit">UI/UX by Claude 3 Opus, an AI assistant.</div>
+        <div id="uptime-counter" class="uptime-counter">UPTIME: 0000d 00h 00m 00s</div>
+    </footer>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
+<script>
+document.addEventListener('DOMContentLoaded', () => {
 
-            // --- CONFIGURATION & STATE ---
-            const sections = document.querySelectorAll('.section');
-            const totalSections = sections.length;
-            let currentSectionIndex = 0;
-            let isScrolling = false;
-            let scrollTimeout;
-            
-            // Camera state for the p5.js canvas
-            let camera = { x: 0, y: 0, zoom: 1 };
-            let targetCamera = { x: 0, y: 0, zoom: 1 };
-            
-            // Define camera positions for each section
-            const cameraWaypoints = [
-                { x: 0, y: 0, zoom: 1.0 }, // 0: Intro
-                { x: 800, y: 300, zoom: 1.8 }, // 1: GlglStats
-                { x: -500, y: 900, zoom: 1.8 }, // 2: Ahuzat Dibuk
-                { x: -900, y: -200, zoom: 1.8 },// 3: 2D Part Orienting
-                { x: 400, y: -800, zoom: 1.8 }, // 4: The Turing Jest
-                { x: 1000, y: 1100, zoom: 1.8 },// 5: Rhymes of Israel
-                { x: 0, y: 400, zoom: 1.8 }, // 6: This Website (Meta)
-                { x: 0, y: 400, zoom: 0.4 }, // 7: Footer (Zoom out)
-            ];
+    /* --- DATA & CONFIG --- */
+    const projects = [
+        { id: 'header', title: 'Geva Kipper', parent: null, branch: 0, color: 'var(--color-branch-1)' },
+        { id: 'glglstats', title: 'GlglStats', parent: 'header', branch: 0, color: 'var(--color-branch-1)' },
+        { id: 'ahuzat-dibuk', title: 'Ahuzat Dibuk', parent: 'glglstats', branch: 1, color: 'var(--color-branch-2)' },
+        { id: 'part-orienting', title: '2D Part Orienting', parent: 'glglstats', branch: 2, color: 'var(--color-branch-3)' },
+        { id: 'turing-jest', title: 'The Turing Jest', parent: 'part-orienting', branch: 2, color: 'var(--color-branch-3)'},
+        { id: 'rhymes-of-israel', title: 'Rhymes of Israel', parent: 'ahuzat-dibuk', branch: 1, color: 'var(--color-branch-2)' },
+        { id: 'portfolio', title: 'Portfolio v3.AI', parent: 'turing-jest', branch: 3, color: 'var(--color-branch-6)' },
+        { id: 'contact', title: 'Contact & Socials', parent: ['rhymes-of-israel', 'portfolio'], branch: 0, color: 'var(--color-branch-7)', isMerge: true }
+    ];
 
-            // --- UI & NAVIGATION ---
+    /* --- UPCOMING & ANIMATIONS --- */
+    const uptimeStartDate = new Date('2025-09-07T01:07:05');
+    const uptimeCounter = document.getElementById('uptime-counter');
 
-            function updateUI() {
-                sections.forEach((section, index) => {
-                    // Footer is special, it's at the last waypoint but indexed before.
-                    const isFooter = (index === totalSections - 1);
-                    if (isFooter && currentSectionIndex === totalSections) {
-                         section.classList.add('active');
-                    } else if (index === currentSectionIndex && !isFooter) {
-                        section.classList.add('active');
-                    } else {
-                        section.classList.remove('active');
-                    }
+    function updateUptime() {
+        const now = new Date();
+        const diff = now - uptimeStartDate;
+
+        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+        uptimeCounter.textContent = `UPTIME: ${String(d).padStart(4, '0')}d ${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
+    }
+    setInterval(updateUptime, 1000);
+    updateUptime();
+    
+    // Turing Jest typing animation
+    const jestTarget = document.getElementById('turing-jest-output');
+    const jestLines = [
+        "Human pun: Why don't scientists trust atoms? Because they make up everything! (Rating: 8.2/10)",
+        "AI pun: I told my computer I needed a break, and it sent me a Kit-Kat. (Rating: 7.9/10)"
+    ];
+    let jestLineIndex = 0;
+    let jestCharIndex = 0;
+    function typeJest() {
+        if (jestLineIndex < jestLines.length) {
+            if (jestCharIndex < jestLines[jestLineIndex].length) {
+                jestTarget.innerHTML += jestLines[jestLineIndex].charAt(jestCharIndex);
+                jestCharIndex++;
+                setTimeout(typeJest, 30);
+            } else {
+                jestTarget.innerHTML += '\n'; // New line
+                jestLineIndex++;
+                jestCharIndex = 0;
+                setTimeout(typeJest, 1000); // Pause between lines
+            }
+        } else {
+            // Reset and loop
+            jestLineIndex = 0;
+            jestCharIndex = 0;
+            jestTarget.innerHTML = '';
+            setTimeout(typeJest, 1500);
+        }
+    }
+    typeJest();
+    
+    // Rhymes animation
+    const rhymeBefore = document.getElementById('rhyme-before');
+    const rhymeAfter = document.getElementById('rhyme-after');
+    setInterval(() => {
+        rhymeBefore.style.opacity = '0';
+        rhymeBefore.style.transform = 'translateY(-100%)';
+        rhymeAfter.style.opacity = '1';
+        rhymeAfter.style.transform = 'translateY(0%)';
+
+        setTimeout(() => {
+            rhymeBefore.style.opacity = '1';
+            rhymeBefore.style.transform = 'translateY(0%)';
+            rhymeAfter.style.opacity = '0';
+            rhymeAfter.style.transform = 'translateY(100%)';
+        }, 3000);
+    }, 6000);
+
+    /* --- GIT TIMELINE LOGIC --- */
+    const svg = document.getElementById('git-svg');
+    const tooltip = document.getElementById('tooltip');
+    const headTag = document.getElementById('head-tag');
+    const SVG_NS = "http://www.w3.org/2000/svg";
+
+    const commitNodeData = new Map();
+    let leftColumnWidth = 0;
+    const branchOffsets = [-30, -55, 30, 55]; // X-offsets for branches
+    const commitRadius = 5;
+
+    function generateCommitHash() {
+        return Math.random().toString(16).substring(2, 9);
+    }
+
+    function createSVGElement(tag, attributes) {
+        const el = document.createElementNS(SVG_NS, tag);
+        for (const key in attributes) {
+            el.setAttribute(key, attributes[key]);
+        }
+        return el;
+    }
+
+    function drawTimeline() {
+        svg.innerHTML = ''; // Clear previous render
+        commitNodeData.clear();
+        
+        const mainContent = document.querySelector('.right-column');
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', mainContent.offsetHeight);
+        leftColumnWidth = svg.getBoundingClientRect().width;
+        
+        const centerX = leftColumnWidth / 2;
+
+        // 1. Calculate node positions
+        projects.forEach(p => {
+            const section = document.getElementById(p.id);
+            if (section) {
+                const y = section.offsetTop + section.offsetHeight / 2;
+                const branchIndex = p.branch - 1;
+                const x = p.branch === 0 ? centerX : centerX + branchOffsets[branchIndex];
+                
+                commitNodeData.set(p.id, {
+                    ...p,
+                    x,
+                    y,
+                    hash: generateCommitHash(),
                 });
             }
-
-            function navigate(direction) {
-                if (isScrolling) return;
-
-                const newIndex = currentSectionIndex + direction;
-
-                if (newIndex >= 0 && newIndex <= totalSections) {
-                    currentSectionIndex = newIndex;
-                    targetCamera = cameraWaypoints[currentSectionIndex];
-                    updateUI();
-
-                    isScrolling = true;
-                    setTimeout(() => { isScrolling = false; }, 800); // Cooldown to prevent rapid scrolling
-                }
-            }
-            
-            // --- EVENT LISTENERS ---
-
-            window.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                // Debounce the scroll event
-                clearTimeout(scrollTimeout);
-                scrollTimeout = setTimeout(() => {
-                    const direction = e.deltaY > 0 ? 1 : -1;
-                    navigate(direction);
-                }, 50); // Small debounce window
-            }, { passive: false });
-
-            let touchStartY = 0;
-            window.addEventListener('touchstart', (e) => {
-                touchStartY = e.touches[0].clientY;
-            }, { passive: true });
-
-            window.addEventListener('touchmove', (e) => {
-                e.preventDefault();
-                const touchEndY = e.touches[0].clientY;
-
-                if (Math.abs(touchStartY - touchEndY) > 50) { // Threshold for swipe
-                    const direction = touchStartY > touchEndY ? 1 : -1;
-                    navigate(direction);
-                    touchStartY = touchEndY; // Reset start position to prevent multiple fires on one long swipe
-                }
-
-            }, { passive: false });
-
-
-            // --- LIVE STOPWATCH ---
-            const stopwatchElement = document.getElementById('stopwatch');
-            const genesisDate = new Date('2025-09-06T01:01:04Z');
-
-            function updateStopwatch() {
-                const now = new Date();
-                let diff = now.getTime() - genesisDate.getTime();
-
-                const isFuture = diff < 0;
-                if (isFuture) {
-                    diff = -diff;
-                }
-                
-                const hours = Math.floor(diff / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-                const hhh = String(hours).padStart(3, '0');
-                const mm = String(minutes).padStart(2, '0');
-                const ss = String(seconds).padStart(2, '0');
-                
-                stopwatchElement.textContent = `${isFuture ? '-' : ''}${hhh}:${mm}:${ss}`;
-            }
-
-            setInterval(updateStopwatch, 1000);
-            updateStopwatch();
-
-            // --- P5.JS GENERATIVE ART ---
-            
-            const sketch = (p) => {
-                let particles = [];
-                const keywords = ["Python", "LLM", "Geometry", "Data", "AI", "Web"];
-                let artPalette;
-                let dailySeed;
-
-                class Particle {
-                    constructor(x, y) {
-                        this.pos = p.createVector(x, y);
-                        this.vel = p.createVector(p.random(-0.5, 0.5), p.random(-0.5, 0.5));
-                        this.acc = p.createVector(0, 0);
-                        this.maxSpeed = 1;
-                        this.color = p.random(artPalette.slice(1)); // Don't use darkest color for particles
-                        this.lifespan = 255;
-                    }
-
-                    update() {
-                        // Add organic movement using Perlin noise
-                        let noiseFactor = 0.002;
-                        let angle = p.noise(this.pos.x * noiseFactor, this.pos.y * noiseFactor) * p.TWO_PI * 4;
-                        this.acc.add(p.createVector(p.cos(angle), p.sin(angle)).mult(0.05));
-
-                        this.vel.add(this.acc);
-                        this.vel.limit(this.maxSpeed);
-                        this.pos.add(this.vel);
-                        this.acc.mult(0);
-                    }
-                    
-                    show() {
-                        const c = p.color(this.color);
-                        p.noStroke();
-                        p.fill(c.levels[0], c.levels[1], c.levels[2], this.lifespan);
-                        p.ellipse(this.pos.x, this.pos.y, 3, 3);
-                    }
-                }
-                
-                function generatePalette(seed) {
-                    p.randomSeed(seed);
-                    const baseHue = p.random(360);
-                    p.colorMode(p.HSB, 360, 100, 100, 100);
-                    
-                    const highlightColor = p.color((baseHue + p.random(-20, 20)) % 360, p.random(70, 90), p.random(90, 100));
-                    
-                    document.documentElement.style.setProperty('--color-highlight', highlightColor.toString('#rrggbb'));
-
-                    return [
-                        p.color(baseHue, 10, 5), // Dark bg color
-                        highlightColor,
-                        p.color((baseHue + 30) % 360, 60, 80),
-                        p.color((baseHue + 150) % 360, 70, 90),
-                        p.color((baseHue - 30) % 360, 50, 100),
-                    ];
-                }
-
-                p.setup = () => {
-                    const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-                    canvas.parent('canvas-container');
-                    
-                    dailySeed = new Date().toDateString().split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                    
-                    artPalette = generatePalette(dailySeed);
-                    
-                    keywords.forEach((keyword, i) => {
-                       const waypoint = cameraWaypoints[i+1];
-                       for(let j = 0; j < 50; j++) {
-                           particles.push(new Particle(
-                               waypoint.x + p.random(-150, 150),
-                               waypoint.y + p.random(-150, 150)
-                           ));
-                       }
-                    });
-                    
-                    // Add some sparse "space dust" particles
-                    for(let i = 0; i < 200; i++) {
-                         particles.push(new Particle(p.random(-2000, 2000), p.random(-2000, 2000)));
-                    }
-                };
-
-                p.draw = () => {
-                    // Animate camera
-                    camera.x = p.lerp(camera.x, targetCamera.x, 0.05);
-                    camera.y = p.lerp(camera.y, targetCamera.y, 0.05);
-                    camera.zoom = p.lerp(camera.zoom, targetCamera.zoom, 0.05);
-
-                    // Set background with a trail effect
-                    const bgColor = artPalette[0];
-                    p.background(bgColor.levels[0], bgColor.levels[1], bgColor.levels[2], 20);
-
-                    p.translate(p.width / 2, p.height / 2);
-                    p.scale(camera.zoom);
-                    p.translate(-camera.x, -camera.y);
-                    
-                    // Draw connections between nearby particles
-                    p.strokeWeight(0.5);
-                    for (let i = 0; i < particles.length; i++) {
-                        for (let j = i + 1; j < particles.length; j++) {
-                            const d = p.dist(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y);
-                            if (d < 100) {
-                                let c = p.color(particles[i].color);
-                                p.stroke(c.levels[0], c.levels[1], c.levels[2], p.map(d, 0, 100, 50, 0));
-                                p.line(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y);
-                            }
-                        }
-                    }
-
-                    // Update and draw particles
-                    for (const particle of particles) {
-                        particle.update();
-                        particle.show();
-                    }
-                };
-                
-                p.windowResized = () => {
-                    p.resizeCanvas(p.windowWidth, p.windowHeight);
-                };
-            };
-
-            // Initialize p5
-            new p5(sketch);
-            // Initial UI state
-            updateUI();
         });
-    </script>
+
+        // 2. Draw branches
+        commitNodeData.forEach(node => {
+            if (node.isMerge) {
+                 node.parent.forEach(pId => {
+                    const parentNode = commitNodeData.get(pId);
+                    if (parentNode) drawBranch(parentNode, node, parentNode.color);
+                 });
+            } else if (node.parent) {
+                const parentNode = commitNodeData.get(node.parent);
+                if (parentNode) drawBranch(parentNode, node, node.color);
+            }
+        });
+        
+        // 3. Draw nodes & text
+        commitNodeData.forEach(node => {
+            drawCommitNode(node);
+        });
+        
+        // Position HEAD tag
+        const firstNode = commitNodeData.get(projects[0].id);
+        if (firstNode) {
+            headTag.style.top = `${firstNode.y - (commitRadius * 2)}px`;
+            headTag.style.left = `${firstNode.x + commitRadius + 25}px`;
+            headTag.style.opacity = '1';
+        }
+    }
+
+    function drawBranch(startNode, endNode, color) {
+        const pathData = `M ${startNode.x} ${startNode.y} C ${startNode.x} ${startNode.y + 70}, ${endNode.x} ${endNode.y - 70}, ${endNode.x} ${endNode.y}`;
+        const path = createSVGElement('path', {
+            'd': pathData,
+            'stroke': color,
+            'class': 'git-branch',
+        });
+        svg.prepend(path); // Prepend to draw under nodes
+    }
+    
+    function drawCommitNode(node) {
+        const group = createSVGElement('g', {
+            'class': 'commit-node-group',
+            'data-id': node.id,
+            'data-color': node.color.replace('var(', '').replace(')', '')
+        });
+        
+        const nodeCircle = createSVGElement('circle', {
+            'cx': node.x, 'cy': node.y, 'r': commitRadius,
+            'stroke': node.color,
+            'class': 'commit-node'
+        });
+
+        const hashText = createSVGElement('text', {
+            'x': node.x + commitRadius + 8, 'y': node.y + (commitRadius/2),
+            'class': 'commit-hash'
+        });
+        hashText.textContent = node.hash;
+        
+        const hitBox = createSVGElement('circle', {
+            'cx': node.x, 'cy': node.y, 'r': commitRadius * 3,
+            'class': 'commit-node-hitbox'
+        });
+
+        group.appendChild(nodeCircle);
+        group.appendChild(hashText);
+        group.appendChild(hitBox);
+        svg.appendChild(group);
+
+        // Event listeners for tooltips
+        group.addEventListener('mouseenter', () => {
+            tooltip.textContent = node.title;
+            tooltip.style.opacity = '1';
+        });
+        group.addEventListener('mousemove', (e) => {
+            tooltip.style.left = `${e.clientX + 15}px`;
+            tooltip.style.top = `${e.clientY + 15}px`;
+        });
+        group.addEventListener('mouseleave', () => {
+            tooltip.style.opacity = '0';
+        });
+        group.addEventListener('click', () => {
+             document.getElementById(node.id).scrollIntoView({ behavior: 'smooth' });
+        });
+    }
+
+    /* --- SCROLL INTERSECTION OBSERVER --- */
+    const panels = document.querySelectorAll('.content-panel');
+    const footer = document.getElementById('page-footer');
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const id = entry.target.getAttribute('id');
+            const nodeGroup = svg.querySelector(`.commit-node-group[data-id="${id}"]`);
+            
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                
+                // Deactivate all others, activate current
+                svg.querySelectorAll('.commit-node-group.active').forEach(n => n.classList.remove('active'));
+                if (nodeGroup) {
+                    nodeGroup.classList.add('active');
+                }
+            } else {
+                 entry.target.classList.remove('is-visible');
+            }
+        });
+    }, { rootMargin: '-50% 0px -50% 0px' }); // Activates when panel is in the middle of the viewport
+
+    panels.forEach(panel => observer.observe(panel));
+
+    // Footer observer
+    const footerObserver = new IntersectionObserver((entries) => {
+        if(entries[0].isIntersecting) {
+            footer.classList.add('show');
+        } else {
+            footer.classList.remove('show');
+        }
+    }, { threshold: 0.1 });
+    
+    // Observe the last content panel for footer visibility
+    const lastPanel = document.getElementById('contact');
+    if (lastPanel) {
+        footerObserver.observe(lastPanel);
+    }
+    
+    /* --- INITIALIZATION & RESIZE --- */
+    // Initial draw and redraw on resize
+    drawTimeline();
+    window.addEventListener('resize', drawTimeline);
+
+});
+</script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250906",
+          pageId: "20250907",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
