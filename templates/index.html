@@ -2,588 +2,681 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>geekip.dev // Geva Kipper</title>
+    <title>Geva Kipper Transit System</title>
+    
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700&family=Roboto+Mono:wght@400&family=Orbitron:wght@500&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
     <style>
+        /* --- Base & Reset --- */
         :root {
-            --background: #1a1a1a;
-            --foreground: #FFBF00;
-            --cyan: #00FFFF;
-            --shadow-glow: rgba(255, 191, 0, 0.3);
-            --font: 'Fira Code', monospace;
+            --color-python: #28a745;
+            --color-cpp: #dc3545;
+            --color-llm: #007bff;
+            --color-web: #ffc107;
+            --font-main: 'Montserrat', sans-serif;
+            --font-mono: 'Roboto Mono', monospace;
+            --font-digital: 'Orbitron', sans-serif;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --bg-color: #121214;
+            --panel-bg: rgba(26, 26, 28, 0.85);
         }
 
-        * {
+        *, *::before, *::after {
             box-sizing: border-box;
         }
 
         html, body {
-            height: 100%;
-            width: 100%;
             margin: 0;
             padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: var(--font-main);
+            color: var(--text-primary);
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at top left, rgba(255, 255, 255, 0.03), transparent 30%), 
+                              radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.02), transparent 40%);
         }
 
-        body {
-            background-color: var(--background);
-            color: var(--foreground);
-            font-family: var(--font);
-            font-size: 16px;
-            line-height: 1.5;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden; /* Prevent body scroll, terminal will scroll */
-        }
-
-        /* CRT Screen Effect */
-        body::before {
-            content: " ";
-            display: block;
+        /* --- Header --- */
+        .main-header {
             position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            background: 
-                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 2;
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none;
-            animation: flicker 0.15s infinite;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 10;
+            width: 90%;
+            max-width: 800px;
+        }
+
+        .main-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: 2px;
+            color: #fff;
+        }
+
+        .main-header .subtitle {
+            font-size: 1.1rem;
+            font-weight: 300;
+            margin: 8px 0 12px;
+            color: var(--text-secondary);
+        }
+
+        .main-header .glitch-subtitle {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--color-python);
+            text-shadow: 0 0 3px var(--color-python);
+            animation: text-flicker 4s linear infinite;
+        }
+
+        @keyframes text-flicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% {
+                text-shadow: 0 0 3px var(--color-python), 0 0 6px var(--color-python);
+                opacity: 1;
+            }
+            20%, 24%, 55% {
+                text-shadow: none;
+                opacity: 0.7;
+            }
         }
         
-        body::after {
-            content: " ";
-            display: block;
+        /* --- SVG Map --- */
+        #transit-map-container {
             position: absolute;
             top: 0;
             left: 0;
-            bottom: 0;
-            right: 0;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, rgba(26, 26, 26, 0.2) 80%, var(--background) 100%);
-            opacity: 0.4;
+            width: 100%;
+            height: 100%;
+        }
+
+        #transit-map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Line Styles */
+        .line {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: all 0.3s ease;
+        }
+        
+        .line-glow {
+            fill: none;
+            stroke-width: 20;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .station-group:hover .line-glow {
+           opacity: 0.3;
+        }
+        
+        .line.python { stroke: var(--color-python); }
+        .line.cpp { stroke: var(--color-cpp); }
+        .line.llm { stroke: var(--color-llm); }
+        .line.web { stroke: var(--color-web); }
+        
+        .line-glow.python { stroke: var(--color-python); }
+        .line-glow.cpp { stroke: var(--color-cpp); }
+        .line-glow.llm { stroke: var(--color-llm); }
+        .line-glow.web { stroke: var(--color-web); }
+
+        /* Line Drawing Animation */
+        @keyframes draw-line {
+            to { stroke-dashoffset: 0; }
+        }
+
+        .line.animated {
+            stroke-dasharray: 1;
+            stroke-dashoffset: 1;
+            animation: draw-line 2s ease-out forwards;
+        }
+
+        /* Station Styles */
+        .station-group {
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .station-group.visible {
+            opacity: 1;
+        }
+
+        .station-circle {
+            stroke-width: 3;
+            stroke: #121214;
+            transition: transform 0.3s ease;
+        }
+        
+        .station-group:hover .station-circle.outer-ring {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        .station-label {
+            font-family: var(--font-main);
+            font-size: 16px;
+            font-weight: 300;
+            fill: var(--text-primary);
+            opacity: 0;
+            transition: opacity 0.3s ease;
             pointer-events: none;
         }
 
-        @keyframes flicker {
-            0% { opacity: 0.2; }
-            20% { opacity: 0.7; }
-            40% { opacity: 0.3; }
-            60% { opacity: 0.9; }
-            80% { opacity: 0.2; }
-            100% { opacity: 0.8; }
+        .station-group:hover .station-label {
+            opacity: 1;
         }
 
-        #terminal-container {
-            flex-grow: 1;
-            padding: 20px;
+        /* --- Information Panel (Modal) --- */
+        #info-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            transform: translateX(100%);
+            width: 100%;
+            max-width: 450px;
+            height: 100vh;
+            background-color: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
             overflow-y: auto;
-            position: relative;
-            z-index: 1;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        #terminal-container p,
-        #terminal-container pre,
-        #terminal-container div.line {
-            margin: 0;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            text-shadow: 0 0 5px var(--shadow-glow);
+        #info-panel.active {
+            transform: translateX(0);
         }
 
-        #output {
-            display: flex;
-            flex-direction: column;
+        .panel-content {
+            padding: 40px;
         }
 
-        .prompt-user { color: var(--cyan); }
-        .prompt-host { color: var(--foreground); }
-
-        #input-line {
-            display: flex;
-            align-items: center;
-        }
-
-        #cli-input {
+        #panel-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
             background: transparent;
             border: none;
-            color: var(--foreground);
-            font-family: var(--font);
-            font-size: 16px;
-            flex-grow: 1;
-            padding: 0;
-            margin: 0;
-            outline: none;
-            text-shadow: 0 0 5px var(--shadow-glow);
-        }
-
-        .cursor {
-            display: inline-block;
-            width: 9px; /* font-size dependent */
-            height: 1.2em;
-            background-color: var(--foreground);
-            animation: blink 1s step-end infinite;
-            margin-left: 2px;
-            box-shadow: 0 0 10px var(--shadow-glow);
-        }
-
-        @keyframes blink {
-            from, to { background-color: transparent }
-            50% { background-color: var(--foreground); }
-        }
-        
-        a, .clickable {
-            color: var(--cyan);
-            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 2rem;
             cursor: pointer;
+            transition: color 0.3s;
         }
-
-        a:hover, .clickable:hover {
-            text-decoration: underline;
-            filter: brightness(1.2);
-        }
-
-        .ls-item .clickable {
-            color: var(--cyan);
+        #panel-close:hover {
+            color: #fff;
         }
         
-        #ascii-logo {
-            letter-spacing: -2px;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
+        .panel-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
         }
 
-        #help-box {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(26, 26, 26, 0.5);
-            border: 1px solid rgba(255, 191, 0, 0.2);
-            padding: 10px;
-            font-size: 0.8em;
-            opacity: 0.7;
-            z-index: 3;
-            border-radius: 4px;
-        }
-        
-        #help-box ul {
-            list-style: none;
+        #panel-title {
+            font-size: 2.2rem;
+            font-weight: 700;
             margin: 0;
+            color: #fff;
+        }
+        
+        #panel-skills {
+            display: flex;
+            margin-left: 15px;
+        }
+        
+        .skill-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        #panel-description {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        #panel-links, #panel-socials {
+            list-style: none;
             padding: 0;
         }
 
-        #status-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: space-between;
-            background-color: var(--background);
-            padding: 5px 20px;
-            font-size: 0.8em;
-            border-top: 1px solid rgba(255, 191, 0, 0.3);
-            z-index: 3;
-            text-shadow: 0 0 5px var(--shadow-glow);
+        #panel-links li, #panel-socials li {
+            margin-bottom: 15px;
         }
+
+        #panel-links a, #panel-socials a {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            padding: 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        #panel-links a:hover, #panel-socials a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        #panel-links i, #panel-socials i {
+            font-size: 1.5rem;
+            width: 30px;
+            text-align: center;
+            margin-right: 15px;
+        }
+        
+        #panel-socials a { font-size: 1.2rem; padding: 15px; }
+        #panel-socials i { font-size: 1.8rem; }
+
+
+        /* --- Footer --- */
+        .main-footer {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            font-size: 0.8rem;
+            color: #666;
+            z-index: 10;
+        }
+
+        .main-footer .credit {
+            margin-bottom: 5px;
+        }
+        
+        .main-footer .stopwatch {
+            font-family: var(--font-digital);
+            color: #777;
+            letter-spacing: 1px;
+        }
+        
+        /* Media Queries for smaller screens */
+        @media (max-width: 768px) {
+            .main-header {
+                top: 20px;
+            }
+            .main-header h1 {
+                font-size: 1.8rem;
+            }
+            .main-header .subtitle {
+                font-size: 0.9rem;
+            }
+            .main-header .glitch-subtitle {
+                font-size: 0.7rem;
+            }
+             #info-panel {
+                max-width: 90%;
+            }
+            .main-footer {
+                bottom: 10px;
+                font-size: 0.7rem;
+            }
+        }
+
     </style>
 </head>
 <body>
 
-    <div id="help-box">
-        <strong>Commands:</strong>
-        <ul>
-            <li>&gt; help</li>
-            <li>&gt; ls [projects]</li>
-            <li>&gt; cat [file]</li>
-            <li>&gt; socials</li>
-            <li>&gt; clear</li>
-        </ul>
-    </div>
-    
-    <div id="terminal-container">
-        <div id="output"></div>
-        <div id="input-line">
-            <span id="prompt"></span>
-            <input type="text" id="cli-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" autofocus />
-            <span class="cursor"></span>
-        </div>
+    <!-- Header -->
+    <header class="main-header">
+        <h1>GEVA KIPPER</h1>
+        <p class="subtitle">Currently exploring the frontiers of language and code at Google.</p>
+        <p class="glitch-subtitle">// This site is algorithmically re-designed daily by AI. Its form is ever-changing.</p>
+    </header>
+
+    <!-- SVG Transit Map -->
+    <div id="transit-map-container">
+        <svg id="transit-map" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet"></svg>
     </div>
 
-    <div id="status-bar">
-        <span id="ai-credit">// Site design for 2025-09-08 generated by a GPT-series Large Language Model.</span>
-        <span id="uptime-counter">AI_DESIGN_SESSION_UPTIME: 000:00:00</span>
-    </div>
+    <!-- Information Panel -->
+    <aside id="info-panel">
+        <button id="panel-close">&times;</button>
+        <div class="panel-content">
+            <div class="panel-header">
+                <h2 id="panel-title"></h2>
+                <div id="panel-skills"></div>
+            </div>
+            <p id="panel-description"></p>
+            <ul id="panel-links"></ul>
+            <ul id="panel-socials"></ul>
+        </div>
+    </aside>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <p class="credit">Design Concept by GPT-4o. Last iteration: <span id="last-iteration-date"></span>.</p>
+        <p class="stopwatch">Time Since Genesis: <span id="genesis-stopwatch"></span></p>
+    </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const output = document.getElementById('output');
-            const input = document.getElementById('cli-input');
-            const promptEl = document.getElementById('prompt');
-            const terminalContainer = document.getElementById('terminal-container');
-            const uptimeCounter = document.getElementById('uptime-counter');
-            
-            const promptText = `GevaKipper@geekip.dev:~$ `;
-            const promptHTML = `<span class="prompt-user">GevaKipper</span><span class="prompt-host">@geekip.dev:~$ </span>`;
-            let commandHistory = [];
-            let historyIndex = -1;
-            let commandQueue = [];
 
-            const fileSystem = {
-                'projects': {
-                    type: 'directory',
-                    content: {
-                        'GlglStats': { size: '4.2K', perms: '-rwxr-xr--', content: `
-==================================================
-== PROJECT: GlglStats                           ==
-==================================================
-
-A Python project measuring the repetitiveness of Israeli pop-chart songs
-based on LZ77 compression. It also generates visualizations of repetition
-patterns in a selection of famous songs.
-
-[LINK]    View the site: https://glglstats.geekip.dev
-[VIDEO]   Watch my talk at PyData TLV: https://www.youtube.com/watch?v=jrKAtOsj1Lo
-`
-                        },
-                        'Ahuzat_Dibuk': { size: '8.1K', perms: '-rwxr-xr--', content: `
-==================================================
-== PROJECT: Ahuzat Dibuk                        ==
-==================================================
-
-An urban exploration game across Tel Aviv, leading players to a secret
-location for a ghostly puzzle-filled gathering. It gained viral attention
-and media coverage.
-
-[POST]    Original viral post: https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943
-[MEDIA]   Channel 13 News coverage: https://13tv.co.il/item/news/domestic/internal/parking-902956407/
-[MEDIA]   Mako article: https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm
-`
-                        },
-                        '2D_Part_Orienting': { size: '1.5K', perms: '-rwxr-xr--', content: `
-==================================================
-== PROJECT: 2D Part Orienting                   ==
-==================================================
-
-An academic project in computational geometry from my time at Tel Aviv
-University. This research focuses on an algorithm for efficiently
-orienting 2D parts using parallel line probes.
-
-[LINK]    Project Page & Code: https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/
-`
-                        },
-                        'The_Turing_Jest': { size: '9.9K', perms: '-rwxr-xr--', content: `
-==================================================
-== PROJECT: The Turing Jest                     ==
-==================================================
-
-A web-based game where you must distinguish between a human and an AI
-based on their answers to humorous, open-ended questions. Can you beat
-the machine at its own game?
-
-[LINK]    Play the game: https://jest.geekip.dev
-`
-                        },
-                        'Rhymes_of_Israel': { size: '3.8K', perms: '-rwxr-xr--', content: `
-==================================================
-== PROJECT: Rhymes of Israel                    ==
-==================================================
-
-A Chrome extension that finds Hebrew rhymes for any selected word on a
-webpage. A fun tool for writers, poets, and songsmiths working in Hebrew.
-
-[LINK]    Get it on the Chrome Web Store: https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb
-`
-                        },
-                        'This_Very_Website': { size: '1.0K', perms: '-rwxr-xr--', content: `
-==================================================
-== PROJECT: This Very Website                   ==
-==================================================
-
-You are here. This terminal is a portfolio project in itself, designed
-to be both a showcase and an experience. The entire site is a single
-HTML file, powered by vanilla JavaScript to create an interactive
-terminal emulator.
-
-[LINK]    The place: https://geekip.dev
-`
-                        },
-                    }
-                },
-                'motd.txt': { type: 'file', content: `> This website's design is re-generated daily by an AI. The layout, aesthetics, and user experience are ever-changing.` },
+            // --- DATA ---
+            const SKILLS = {
+                python: { name: 'Python', color: 'var(--color-python)' },
+                cpp: { name: 'C++', color: 'var(--color-cpp)' },
+                llm: { name: 'LLM/AI', color: 'var(--color-llm)' },
+                web: { name: 'Web/Front-End', color: 'var(--color-web)' },
             };
 
-            const commands = {
-                whoami: () => `> Geva Kipper // Software Engineer at Google, crafting the future of large-scale data infrastructure.`,
-                socials: () => `
-Connecting to external nodes...
+            const LINES = {
+                llm:    { d: 'M 100 450 H 1500', skills: ['llm'] },
+                python: { d: 'M 300 150 C 500 150, 400 750, 700 750 S 900 150, 1100 150', skills: ['python'] },
+                web:    { d: 'M 150 250 C 150 550, 1450 250, 1450 550', skills: ['web'] },
+                cpp:    { d: 'M 200 800 H 1400', skills: ['cpp'] },
+            };
 
-[GITHUB]   > <a href="https://github.com/gevak" target="_blank">github.com/gevak</a>
-[LINKEDIN] > <a href="https://linkedin.com/in/gevakip" target="_blank">linkedin.com/in/gevakip</a>
-[FACEBOOK] > <a href="https://facebook.com/geva.kipper" target="_blank">facebook.com/geva.kipper</a>
-`,
-                help: () => `Available commands:
-  help               - Shows this help message.
-  ls [directory]     - Lists files and directories. Try 'ls projects'.
-  cat [file]         - Displays the content of a file. Try 'cat projects/GlglStats'.
-  socials            - Displays social media links.
-  clear              - Clears the terminal screen.`,
-                ls: (args) => {
-                    const path = args[0] || '';
-                    if (path === 'projects') {
-                        let output = `total ${Object.keys(fileSystem.projects.content).length}\n`;
-                        for (const file in fileSystem.projects.content) {
-                            const { perms, size } = fileSystem.projects.content[file];
-                            output += `${perms} 1 geva staff ${size.padEnd(4)} <span class="clickable ls-item" data-command="cat projects/${file}">${file}</span>\n`;
-                        }
-                        return output.trim();
-                    }
-                    return `ls: cannot access '${path}': No such file or directory`;
+            const STATIONS = [
+                {
+                    id: 'portfolio',
+                    name: 'Portfolio Website',
+                    skills: ['python', 'cpp', 'llm', 'web'],
+                    coords: { x: 800, y: 450 },
+                    description: "This very website. A portfolio designed as an interactive, animated subway map. Built from scratch in a single HTML file with modern JavaScript and CSS, it reflects a blend of creative design and front-end development skills. The map is dynamically generated, and the entire experience aims to be a living digital artifact.",
+                    links: [
+                        { type: 'map-pin', label: 'You Are Here', url: 'https://geekip.dev' },
+                    ]
                 },
-                cat: (args) => {
-                    const path = args[0];
-                    if (!path) return `cat: missing operand`;
-                    
-                    if (path === 'motd.txt') {
-                        return fileSystem['motd.txt'].content;
-                    }
-                    
-                    const pathParts = path.split('/');
-                    if (pathParts.length === 2 && pathParts[0] === 'projects') {
-                        const project = pathParts[1];
-                        if (fileSystem.projects.content[project]) {
-                             return parseContent(fileSystem.projects.content[project].content);
-                        }
-                    }
-                    return `cat: ${path}: No such file or directory`;
+                {
+                    id: 'turing_jest',
+                    name: 'The Turing Jest',
+                    skills: ['llm', 'web'],
+                    coords: { x: 350, y: 450 },
+                    description: "A web-based game where you must distinguish between a human and an AI in a free-form chat. This project explores the nuances of human and AI conversation, presented in a clean, interactive interface. It's a practical application of the classic Turing Test concept.",
+                    links: [
+                        { type: 'globe', label: 'Play the Game', url: 'https://jest.geekip.dev' },
+                    ]
                 },
-                clear: () => {
-                    output.innerHTML = '';
-                    return '';
+                {
+                    id: 'glglstats',
+                    name: 'GlglStats',
+                    skills: ['python', 'web'],
+                    coords: { x: 1100, y: 345 },
+                    description: "A comprehensive analytics platform for 'Galgalatz', Israel's most popular radio station. It scrapes and analyzes real-time broadcast data to provide insights into song popularity, artist airtime, and trends. Presented at the PyCon Israel conference.",
+                    links: [
+                        { type: 'globe', label: 'Visit Website', url: 'https://glglstats.geekip.dev' },
+                        { type: 'youtube', label: 'Watch Conference Talk', url: 'https://www.youtube.com/watch?v=jrKAtOsj1Lo' },
+                    ]
+                },
+                {
+                    id: 'ahuzat_dibuk',
+                    name: 'Ahuzat Dibuk',
+                    skills: ['python'],
+                    coords: { x: 575, y: 686 },
+                    description: "A data-journalism project that exposed a phenomenon of public parking being sold as private in Tel Aviv. The investigation involved web scraping, data analysis, and visualization, culminating in media coverage and a discussion about public space utilization.",
+                    links: [
+                        { type: 'newspaper', label: '13 TV News Coverage', url: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/' },
+                        { type: 'newspaper', label: 'Mako News Article', url: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm' },
+                        { type: 'facebook', label: 'Original Viral Post', url: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943' },
+                    ]
+                },
+                {
+                    id: 'part_orienting',
+                    name: '2D Part Orienting',
+                    skills: ['cpp'],
+                    coords: { x: 400, y: 800 },
+                    description: "A C++ project from my academic studies at Tel-Aviv University focusing on computational geometry. The algorithm finds the optimal orientation for a 2D polygonal part to be printed or machined, minimizing the required support material. It employs advanced geometric algorithms and data structures.",
+                    links: [
+                        { type: 'code', label: 'Project & Code Page', url: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/' },
+                    ]
+                },
+                {
+                    id: 'rhymes_of_israel',
+                    name: 'Rhymes of Israel',
+                    skills: ['web'],
+                    coords: { x: 150, y: 390 },
+                    description: "A Chrome browser extension that finds rhymes in Hebrew. It's a handy tool for poets, songwriters, and writers, leveraging a custom-built rhyming dictionary and a lightweight front-end to provide suggestions directly in the browser.",
+                    links: [
+                        { type: 'puzzle', label: 'Chrome Web Store', url: 'https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb' },
+                    ]
+                },
+                {
+                    id: 'junction',
+                    name: 'Junction',
+                    skills: ['python', 'cpp', 'llm', 'web'],
+                    coords: { x: 1300, y: 550 },
+                    description: "My professional and social hub. Connect with me on these platforms to see more of my work, professional experience, and occasional thoughts.",
+                    isSocial: true,
+                    links: [
+                        { type: 'github', label: 'GitHub', url: 'https://github.com/gevak' },
+                        { type: 'linkedin', label: 'LinkedIn', url: 'https://linkedin.com/in/gevakip' },
+                        { type: 'facebook', label: 'Facebook', url: 'https://facebook.com/geva.kipper' },
+                    ]
                 }
+            ];
+
+            const ICON_MAP = {
+                website: 'bi-globe',
+                youtube: 'bi-youtube',
+                newspaper: 'bi-newspaper',
+                facebook: 'bi-facebook',
+                code: 'bi-code-slash',
+                'map-pin': 'bi-geo-alt-fill',
+                puzzle: 'bi-puzzle-fill',
+                github: 'bi-github',
+                linkedin: 'bi-linkedin',
+                globe: 'bi-globe'
             };
 
-            const typeText = (element, text, delay = 5) => {
-                return new Promise(resolve => {
-                    let i = 0;
-                    function type() {
-                        if (i < text.length) {
-                            element.innerHTML += text.charAt(i);
-                            i++;
-                            scrollToBottom();
-                            setTimeout(type, delay);
-                        } else {
-                            resolve();
-                        }
-                    }
-                    type();
+            // --- SVG Namespace ---
+            const SVG_NS = "http://www.w3.org/2000/svg";
+
+            // --- Elements ---
+            const svg = document.getElementById('transit-map');
+            const infoPanel = document.getElementById('info-panel');
+            const panelTitle = document.getElementById('panel-title');
+            const panelSkills = document.getElementById('panel-skills');
+            const panelDescription = document.getElementById('panel-description');
+            const panelLinks = document.getElementById('panel-links');
+            const panelSocials = document.getElementById('panel-socials');
+            const panelClose = document.getElementById('panel-close');
+            
+            // --- Map Generation ---
+            function createMap() {
+                // 1. Draw Lines
+                Object.keys(LINES).forEach((key, index) => {
+                    const lineData = LINES[key];
+                    
+                    // Create glow path first so it's underneath
+                    const glowPath = document.createElementNS(SVG_NS, 'path');
+                    glowPath.setAttribute('d', lineData.d);
+                    glowPath.setAttribute('class', `line-glow ${lineData.skills[0]}`);
+
+                    const linePath = document.createElementNS(SVG_NS, 'path');
+                    linePath.setAttribute('id', `line-${key}`);
+                    linePath.setAttribute('d', lineData.d);
+                    linePath.setAttribute('class', `line ${lineData.skills[0]}`);
+                    
+                    // Add animation with delay
+                    const totalLength = linePath.getTotalLength();
+                    linePath.style.strokeDasharray = totalLength;
+                    linePath.style.strokeDashoffset = totalLength;
+                    linePath.style.animation = `draw-line 2s ease-out ${index * 0.2}s forwards`;
+                    
+                    svg.appendChild(glowPath);
+                    svg.appendChild(linePath);
                 });
-            };
-            
-            const parseContent = (content) => {
-                return content.replace(/\[(LINK|VIDEO|POST|MEDIA)\]\s+([^:]+):\s+(https?:\/\/[^\s]+)/g,
-                    (match, type, text, url) => `[${type}]    ${text}: <a href="${url}" target="_blank">${url}</a>`);
-            };
 
-            const executeCommand = async (cmdString) => {
-                const line = document.createElement('div');
-                line.classList.add('line');
-                line.innerHTML = `${promptHTML}${cmdString}`;
-                output.appendChild(line);
+                // 2. Draw Stations
+                STATIONS.forEach(station => {
+                    const stationGroup = document.createElementNS(SVG_NS, 'g');
+                    stationGroup.setAttribute('id', `station-${station.id}`);
+                    stationGroup.setAttribute('class', 'station-group');
+                    stationGroup.setAttribute('data-id', station.id);
+                    stationGroup.style.transformOrigin = `${station.coords.x}px ${station.coords.y}px`;
 
-                if (cmdString.trim() !== '' && (commandHistory.length === 0 || commandHistory[commandHistory.length - 1] !== cmdString)) {
-                    commandHistory.push(cmdString);
-                }
-                historyIndex = commandHistory.length;
 
-                const parts = cmdString.trim().split(' ').filter(p => p);
-                const cmd = parts[0];
-                const args = parts.slice(1);
-
-                const resultDiv = document.createElement('div');
-                resultDiv.classList.add('line');
-                output.appendChild(resultDiv);
-
-                if (commands[cmd]) {
-                    const result = commands[cmd](args);
-                    if (cmd === 'clear') {
-                        // special handling for clear
-                        output.innerHTML = '';
-                    } else {
-                        await typeText(resultDiv, result, 2);
+                    if (station.skills.length > 1) { // Interchange station
+                        station.skills.forEach((skill, i) => {
+                            const ring = document.createElementNS(SVG_NS, 'circle');
+                            ring.setAttribute('cx', station.coords.x);
+                            ring.setAttribute('cy', station.coords.y);
+                            ring.setAttribute('r', 8 + i * 6);
+                            ring.setAttribute('fill', 'none');
+                            ring.setAttribute('stroke', SKILLS[skill].color);
+                            ring.setAttribute('stroke-width', 4);
+                            ring.setAttribute('class', i === 0 ? 'station-circle outer-ring' : 'station-circle');
+                            stationGroup.appendChild(ring);
+                        });
+                    } else { // Simple station
+                        const circle = document.createElementNS(SVG_NS, 'circle');
+                        circle.setAttribute('cx', station.coords.x);
+                        circle.setAttribute('cy', station.coords.y);
+                        circle.setAttribute('r', 10);
+                        circle.setAttribute('fill', SKILLS[station.skills[0]].color);
+                        circle.setAttribute('class', 'station-circle outer-ring');
+                        stationGroup.appendChild(circle);
                     }
-                } else if (cmd) {
-                     await typeText(resultDiv, `G-OS: command not found: ${cmd}`);
-                }
-                
-                scrollToBottom();
-                if (commandQueue.length > 0) {
-                    const nextCommand = commandQueue.shift();
-                    await runAutoCommand(nextCommand.cmd, nextCommand.delay);
-                } else {
-                    enableInput();
-                }
-            };
-            
-            const runAutoCommand = async (cmd, delay = 50) => {
-                disableInput();
-                const line = document.createElement('div');
-                line.classList.add('line');
-                line.innerHTML = promptHTML;
-                output.appendChild(line);
-                
-                await typeText(line, cmd, delay);
-                await new Promise(resolve => setTimeout(resolve, 200));
-                executeCommand(cmd);
-            };
-            
-            input.addEventListener('keydown', async (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const cmd = input.value;
-                    input.value = '';
-                    disableInput();
-                    await executeCommand(cmd);
-                    enableInput();
-                } else if (e.key === 'ArrowUp') {
-                     e.preventDefault();
-                    if (historyIndex > 0) {
-                        historyIndex--;
-                        input.value = commandHistory[historyIndex];
-                        input.setSelectionRange(input.value.length, input.value.length);
-                    }
-                } else if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    if (historyIndex < commandHistory.length - 1) {
-                        historyIndex++;
-                        input.value = commandHistory[historyIndex];
-                        input.setSelectionRange(input.value.length, input.value.length);
-                    } else {
-                         historyIndex = commandHistory.length;
-                         input.value = '';
-                    }
-                }
-            });
 
-            output.addEventListener('click', (e) => {
-                if (e.target.classList.contains('clickable')) {
-                    const cmd = e.target.getAttribute('data-command');
-                    if (cmd) {
-                        input.value = cmd;
-                        input.focus();
-                        // Instead of simulating an enter key press, we can directly execute
-                        disableInput();
-                        executeCommand(cmd).then(enableInput);
-                    }
-                }
-            });
-
-            document.body.addEventListener('click', () => {
-                input.focus();
-            });
-
-            function scrollToBottom() {
-                terminalContainer.scrollTop = terminalContainer.scrollHeight;
-            }
-            
-            function disableInput() {
-                input.disabled = true;
-                promptEl.style.display = 'none';
-                document.querySelector('#input-line .cursor').style.display = 'none';
-            }
-
-            function enableInput() {
-                input.disabled = false;
-                promptEl.innerHTML = promptHTML;
-                promptEl.style.display = 'inline';
-                document.querySelector('#input-line .cursor').style.display = 'inline-block';
-                input.focus();
-                scrollToBottom();
-            }
-
-            const startBootSequence = async () => {
-                disableInput();
-                const bootLines = [
-                    'INITIALIZING G-OS v2025.09.08...',
-                    'MEMORY CHECK... 4096MB OK',
-                    'LOADING KERNEL... OK',
-                    'MOUNTING /dev/portfolio... OK',
-                    'STARTING AI DESIGN INTERFACE... OK',
-                    '',
-                    'Welcome.'
-                ];
-
-                const bootContainer = document.createElement('div');
-                output.appendChild(bootContainer);
-
-                for (const line of bootLines) {
-                    const p = document.createElement('p');
-                    bootContainer.appendChild(p);
-                    await typeText(p, line, 20);
-                    await new Promise(resolve => setTimeout(resolve, 50));
-                }
-
-                const logo = document.createElement('pre');
-                logo.id = 'ascii-logo';
-                logo.innerHTML = `
-  _  __       _     
- | |/ /      | |    
- | ' /  __ _ | | __ 
- |  <  / _\` || |/ / 
- | . \\| (_| ||   <  
- |_|\\_\\\\__,_||_|\\_\\ 
-`;
-                output.appendChild(logo);
-                await new Promise(resolve => setTimeout(resolve, 100));
-                logo.style.opacity = '1';
-                await new Promise(resolve => setTimeout(resolve, 1200));
-                logo.style.opacity = '0';
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                output.innerHTML = '';
-                
-                commandQueue.push({ cmd: 'whoami' });
-                commandQueue.push({ cmd: 'cat motd.txt' });
-                
-                // Start the command chain
-                const firstCommand = commandQueue.shift();
-                await runAutoCommand(firstCommand.cmd, 75);
-            };
-
-            const startUptimeCounter = () => {
-                // To honor the prompt's theme, we'll start with a base time derived
-                // from "01:04:58" and add the session uptime to it.
-                const baseSeconds = 1 * 3600 + 4 * 60 + 58;
-                const pageLoadTime = Date.now();
-
-                function pad(num) {
-                    return num.toString().padStart(2, '0');
-                }
-
-                setInterval(() => {
-                    const elapsedSeconds = Math.floor((Date.now() - pageLoadTime) / 1000);
-                    const totalSeconds = baseSeconds + elapsedSeconds;
-
-                    const hours = Math.floor(totalSeconds / 3600);
-                    const minutes = Math.floor((totalSeconds % 3600) / 60);
-                    const seconds = totalSeconds % 60;
+                    // Station Label
+                    const label = document.createElementNS(SVG_NS, 'text');
+                    label.setAttribute('x', station.coords.x + 25);
+                    label.setAttribute('y', station.coords.y + 5);
+                    label.setAttribute('class', 'station-label');
+                    label.textContent = station.name;
+                    stationGroup.appendChild(label);
                     
-                    uptimeCounter.textContent = `AI_DESIGN_SESSION_UPTIME: ${hours.toString().padStart(3, '0')}:${pad(minutes)}:${pad(seconds)}`;
-                }, 1000);
-            };
+                    svg.appendChild(stationGroup);
+                });
+                
+                // Animate stations in after lines are drawn
+                setTimeout(() => {
+                    document.querySelectorAll('.station-group').forEach(sg => {
+                        sg.classList.add('visible');
+                    });
+                }, 2500);
+            }
+
+            // --- Panel Logic ---
+            function populateAndShowPanel(stationId) {
+                const station = STATIONS.find(s => s.id === stationId);
+                if (!station) return;
+                
+                // Populate content
+                panelTitle.textContent = station.name;
+                panelDescription.textContent = station.description;
+                
+                // Clear old content
+                panelSkills.innerHTML = '';
+                panelLinks.innerHTML = '';
+                panelSocials.innerHTML = '';
+
+                // Add skill dots
+                station.skills.forEach(skillId => {
+                    const dot = document.createElement('div');
+                    dot.className = 'skill-dot';
+                    dot.style.backgroundColor = SKILLS[skillId].color;
+                    panelSkills.appendChild(dot);
+                });
+                
+                // Add links
+                const targetList = station.isSocial ? panelSocials : panelLinks;
+                panelLinks.style.display = station.isSocial ? 'none' : 'block';
+                panelSocials.style.display = station.isSocial ? 'block' : 'none';
+
+                station.links.forEach(link => {
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.href = link.url;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    
+                    const icon = document.createElement('i');
+                    icon.className = ICON_MAP[link.type] || 'bi-link-45deg';
+                    
+                    const text = document.createTextNode(link.label);
+                    
+                    a.appendChild(icon);
+                    a.appendChild(text);
+                    li.appendChild(a);
+                    targetList.appendChild(li);
+                });
+
+                // Show panel
+                infoPanel.classList.add('active');
+            }
+
+            function hidePanel() {
+                infoPanel.classList.remove('active');
+            }
             
-            startBootSequence();
-            startUptimeCounter();
+            // --- Event Listeners ---
+            svg.addEventListener('click', (e) => {
+                const stationGroup = e.target.closest('.station-group');
+                if (stationGroup) {
+                    populateAndShowPanel(stationGroup.dataset.id);
+                }
+            });
+
+            panelClose.addEventListener('click', hidePanel);
+            
+            // --- Footer Logic ---
+            function updateStopwatch() {
+                const genesisDate = new Date('2025-09-09T05:44:05');
+                const now = new Date();
+                const diff = now - genesisDate;
+
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                document.getElementById('genesis-stopwatch').textContent = 
+                    `${String(hours).padStart(4, '0')} Hours, ` +
+                    `${String(minutes).padStart(2, '0')} Minutes, ` +
+                    `${String(seconds).padStart(2, '0')} Seconds`;
+            }
+            
+            function setIterationDate() {
+                const today = new Date();
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                document.getElementById('last-iteration-date').textContent = today.toLocaleDateString('en-US', options);
+            }
+
+            // --- Initialization ---
+            createMap();
+            setIterationDate();
+            updateStopwatch();
+            setInterval(updateStopwatch, 1000);
+            
         });
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20250908",
+          pageId: "20250909",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
