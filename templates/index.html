@@ -2,853 +2,559 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - Retro Arcade Quest</title>
+    <title>DEBUGGING SESSION: Geva Kipper</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
-        body {
-            font-family: 'Press Start 2P', cursive;
-            background: linear-gradient(180deg, #1a0033 0%, #000000 100%);
-            color: #fff;
-            overflow-x: hidden;
-            position: relative;
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
         }
-        
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff; }
+            50% { text-shadow: 0 0 20px #00ffff, 0 0 30px #00ffff, 0 0 40px #00ffff; }
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: scaleY(0.5); }
+            50% { transform: scaleY(1); }
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes tunnel {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.1); opacity: 0; }
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
         body::before {
             content: '';
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0, 0, 0, 0.15) 0px,
-                rgba(0, 0, 0, 0.15) 2px,
-                transparent 2px,
-                transparent 4px
-            );
+            height: 3px;
+            background: linear-gradient(transparent, rgba(0, 255, 255, 0.1));
+            animation: scanline 4s linear infinite;
             pointer-events: none;
-            z-index: 9999;
-        }
-        
-        body::after {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border-radius: 2%;
-            box-shadow: inset 0 0 100px rgba(0,0,0,0.5);
-            pointer-events: none;
-            z-index: 9998;
-        }
-        
-        .hud {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            text-align: center;
             z-index: 1000;
-            border-bottom: 4px solid #00ff00;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
         }
-        
-        .hud h1 {
-            font-size: 24px;
-            color: #00ff00;
-            text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00;
-            margin-bottom: 10px;
-            letter-spacing: 2px;
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
         }
-        
-        .hud .subtitle {
-            font-size: 8px;
-            color: #ffff00;
-            font-family: Arial, sans-serif;
-            margin-bottom: 10px;
-        }
-        
-        .hud .magic {
-            font-size: 7px;
-            color: #ff00ff;
-            font-style: italic;
-            animation: shimmer 2s infinite;
-        }
-        
-        @keyframes shimmer {
-            0%, 100% { opacity: 0.7; }
-            50% { opacity: 1; text-shadow: 0 0 10px #ff00ff; }
-        }
-        
-        .game-area {
-            margin-top: 150px;
+
+        header {
+            margin-bottom: 40px;
             padding: 20px;
-            min-height: calc(100vh - 300px);
-            position: relative;
+            border-bottom: 2px solid #2d2d2d;
         }
-        
-        .character {
-            position: fixed;
-            left: 50px;
-            bottom: 250px;
-            width: 64px;
-            height: 64px;
-            z-index: 500;
-            transition: left 0.8s cubic-bezier(0.4, 0.0, 0.2, 1), bottom 0.3s;
-            image-rendering: pixelated;
+
+        h1 {
+            color: #00ffff;
+            font-size: 2em;
+            margin-bottom: 10px;
+            animation: glow 2s ease-in-out infinite;
         }
-        
-        .character.walking {
-            animation: walk 0.4s steps(2) infinite;
-        }
-        
-        .character.jumping {
-            animation: jump 0.6s ease-out;
-        }
-        
-        .character.idle {
-            animation: idle 2s ease-in-out infinite;
-        }
-        
-        @keyframes walk {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
-        }
-        
-        @keyframes jump {
-            0% { transform: translateY(0); }
-            50% { transform: translateY(-80px); }
-            100% { transform: translateY(0); }
-        }
-        
-        @keyframes idle {
-            0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-2deg); }
-            75% { transform: rotate(2deg); }
-        }
-        
-        .zones-container {
-            display: flex;
-            gap: 40px;
-            padding: 20px;
-            overflow-x: auto;
-            scroll-behavior: smooth;
-        }
-        
-        .zone {
-            min-width: 200px;
-            height: 300px;
-            position: relative;
-            cursor: pointer;
-            transition: all 0.5s ease;
-        }
-        
-        .zone.expanded {
-            min-width: 600px;
-            height: auto;
-            min-height: 500px;
-        }
-        
-        .zone-door {
-            width: 100%;
-            height: 300px;
-            border: 4px solid;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.5s;
-            background: rgba(0, 0, 0, 0.6);
-        }
-        
-        .zone.expanded .zone-door {
-            transform: rotateY(90deg);
-            opacity: 0;
-            height: 0;
-            overflow: hidden;
-        }
-        
-        .boss-indicator {
-            font-size: 20px;
-            color: #ff0000;
-            text-shadow: 0 0 10px #ff0000;
-            animation: pulse 1s infinite;
-            margin-bottom: 20px;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 0.5; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.1); }
-        }
-        
-        .zone-icon {
-            font-size: 48px;
-            margin: 20px 0;
-        }
-        
-        .zone-content {
-            display: none;
-            padding: 30px;
-            background: rgba(0, 0, 0, 0.8);
-            border: 4px solid;
-            position: relative;
-        }
-        
-        .zone.expanded .zone-content {
-            display: block;
-            animation: expandContent 0.5s ease;
-        }
-        
-        @keyframes expandContent {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .zone-content h2 {
-            font-size: 20px;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
-        }
-        
-        .zone-content p {
-            font-family: Arial, sans-serif;
-            font-size: 14px;
-            line-height: 1.6;
-            margin-bottom: 20px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 15px;
-            border-radius: 5px;
-        }
-        
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 40px;
-            height: 40px;
-            background: #ff0000;
-            color: #fff;
-            border: 3px solid #fff;
-            cursor: pointer;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-        
-        .close-btn:hover {
-            background: #fff;
-            color: #ff0000;
-            transform: scale(1.1);
-        }
-        
-        .power-up {
+
+        .cursor {
             display: inline-block;
-            padding: 10px 20px;
-            background: linear-gradient(45deg, #ffff00, #ff8800);
-            color: #000;
-            text-decoration: none;
-            margin: 10px;
-            border: 3px solid #fff;
-            font-size: 10px;
-            transition: all 0.2s;
-            box-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+            width: 10px;
+            height: 1.2em;
+            background-color: #00ffff;
+            margin-left: 5px;
+            animation: blink 1s step-end infinite;
         }
-        
-        .power-up:hover {
-            transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 5px 20px rgba(255, 255, 0, 0.8);
+
+        .current-work {
+            color: #dcdcaa;
+            font-size: 1.1em;
+            margin: 10px 0;
         }
-        
-        .video-container {
+
+        .ai-notice {
+            color: #6a9955;
+            font-style: italic;
+            opacity: 0.7;
+            font-size: 0.9em;
+        }
+
+        .bug-container {
             margin: 20px 0;
-            border: 8px solid #333;
-            background: #000;
-            padding: 10px;
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
         }
-        
-        .video-container iframe {
-            width: 100%;
-            height: 315px;
-            border: none;
+
+        .bug-box {
+            background-color: #252526;
+            border: 1px solid #3e3e42;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            overflow: hidden;
+            transition: all 0.3s ease;
         }
-        
-        .mini-map {
-            position: fixed;
-            bottom: 100px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.9);
+
+        .bug-box:hover {
+            border-color: #007acc;
+            box-shadow: 0 0 15px rgba(0, 122, 204, 0.3);
+        }
+
+        .bug-header {
             padding: 15px;
-            border: 3px solid #00ff00;
-            z-index: 1000;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            user-select: none;
         }
-        
-        .mini-map-title {
-            font-size: 8px;
-            color: #00ff00;
-            margin-bottom: 10px;
-            text-align: center;
+
+        .bug-indicator {
+            font-size: 1.2em;
+            transition: transform 0.3s ease;
         }
-        
-        .mini-map-icons {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
+
+        .bug-box.fixed .bug-indicator {
+            transform: scale(1.2);
         }
-        
-        .mini-map-icon {
+
+        .bug-id {
+            color: #569cd6;
+            font-weight: bold;
+        }
+
+        .bug-title {
+            color: #dcdcaa;
+            flex-grow: 1;
+        }
+
+        .bug-description {
+            color: #ce9178;
+            font-size: 0.9em;
+        }
+
+        .bug-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+            background-color: #2d2d30;
+        }
+
+        .bug-box.fixed .bug-details {
+            max-height: 1000px;
+        }
+
+        .bug-content {
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .bug-content a {
+            color: #4ec9b0;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .bug-content a:hover {
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .string { color: #ce9178; }
+        .number { color: #b5cea8; }
+        .keyword { color: #569cd6; }
+        .function { color: #dcdcaa; }
+        .comment { color: #6a9955; }
+        .property { color: #9cdcfe; }
+
+        .waveform {
+            display: inline-flex;
+            gap: 2px;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        .waveform span {
+            display: inline-block;
+            width: 3px;
+            background-color: #00ffff;
+            animation: wave 1s ease-in-out infinite;
+        }
+
+        .waveform span:nth-child(2) { animation-delay: 0.1s; }
+        .waveform span:nth-child(3) { animation-delay: 0.2s; }
+        .waveform span:nth-child(4) { animation-delay: 0.3s; }
+        .waveform span:nth-child(5) { animation-delay: 0.4s; }
+
+        .parking-grid {
+            display: inline-block;
+            margin-left: 10px;
+            font-size: 0.8em;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .polygon {
             width: 40px;
             height: 40px;
-            border: 2px solid #666;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #4ec9b0;
+            margin-left: 10px;
+            display: inline-block;
+            clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+            animation: rotate 4s linear infinite;
         }
-        
-        .mini-map-icon:hover {
-            border-color: #00ff00;
-            transform: scale(1.1);
+
+        .quote-blink {
+            animation: blink 1.5s ease-in-out infinite;
+            color: #dcdcaa;
         }
-        
-        .mini-map-icon.active {
-            border-color: #ffff00;
-            animation: mapPulse 1s infinite;
-            box-shadow: 0 0 10px #ffff00;
-        }
-        
-        .mini-map-icon.visited {
-            border-color: #00ff00;
-        }
-        
-        .mini-map-icon.visited::after {
-            content: '✓';
-            position: absolute;
-            color: #00ff00;
-            font-size: 20px;
-        }
-        
-        @keyframes mapPulse {
-            0%, 100% { box-shadow: 0 0 10px #ffff00; }
-            50% { box-shadow: 0 0 20px #ffff00; }
-        }
-        
-        .footer {
-            background: rgba(0, 0, 0, 0.95);
-            border-top: 4px solid #00ff00;
-            padding: 30px;
-            text-align: center;
-            margin-top: 100px;
+
+        .tunnel {
             position: relative;
-        }
-        
-        .footer::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(255, 255, 255, 0.03) 0px,
-                rgba(255, 255, 255, 0.03) 1px,
-                transparent 1px,
-                transparent 2px
-            );
-            pointer-events: none;
-        }
-        
-        .footer-text {
-            font-size: 8px;
-            color: #00ff00;
-            margin-bottom: 15px;
-            letter-spacing: 2px;
-        }
-        
-        .timer {
-            font-size: 14px;
-            color: #ffff00;
-            text-shadow: 0 0 10px #ffff00;
-            font-family: 'Courier New', monospace;
-            letter-spacing: 3px;
-        }
-        
-        .particle {
-            position: fixed;
-            pointer-events: none;
-            z-index: 9997;
-            animation: float-up 1s ease-out forwards;
-        }
-        
-        @keyframes float-up {
-            to {
-                transform: translateY(-100px);
-                opacity: 0;
-            }
-        }
-        
-        .explosion {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            background: #ffff00;
-            border-radius: 50%;
-            animation: explode 0.5s ease-out forwards;
-        }
-        
-        @keyframes explode {
-            to {
-                transform: scale(3);
-                opacity: 0;
-            }
-        }
-        
-        /* Zone-specific colors */
-        .zone-python .zone-door { border-color: #ffd700; background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(0, 0, 0, 0.6)); }
-        .zone-python .zone-content { border-color: #ffd700; }
-        .zone-python .zone-door::before { content: '🐍'; font-size: 64px; position: absolute; opacity: 0.3; }
-        
-        .zone-parking .zone-door { border-color: #ff8800; background: linear-gradient(135deg, rgba(255, 136, 0, 0.2), rgba(0, 0, 0, 0.6)); }
-        .zone-parking .zone-content { border-color: #ff8800; }
-        .zone-parking .zone-door::before { content: '🚗'; font-size: 64px; position: absolute; opacity: 0.3; }
-        
-        .zone-2d .zone-door { border-color: #00ffff; background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(0, 0, 0, 0.6)); }
-        .zone-2d .zone-content { border-color: #00ffff; }
-        .zone-2d .zone-door::before { content: '📐'; font-size: 64px; position: absolute; opacity: 0.3; }
-        
-        .zone-jest .zone-door { border-color: #ff00ff; background: linear-gradient(135deg, rgba(255, 0, 255, 0.2), rgba(0, 0, 0, 0.6)); }
-        .zone-jest .zone-content { border-color: #ff00ff; }
-        .zone-jest .zone-door::before { content: '🃏'; font-size: 64px; position: absolute; opacity: 0.3; }
-        
-        .zone-rhymes .zone-door { border-color: #ff0000; background: linear-gradient(135deg, rgba(255, 0, 0, 0.2), rgba(0, 0, 0, 0.6)); }
-        .zone-rhymes .zone-content { border-color: #ff0000; }
-        .zone-rhymes .zone-door::before { content: '📰'; font-size: 64px; position: absolute; opacity: 0.3; }
-        
-        .zone-portfolio .zone-door { border-color: #c0c0c0; background: linear-gradient(135deg, rgba(192, 192, 192, 0.2), rgba(0, 0, 0, 0.6)); }
-        .zone-portfolio .zone-content { border-color: #c0c0c0; }
-        .zone-portfolio .zone-door::before { content: '🪞'; font-size: 64px; position: absolute; opacity: 0.3; }
-        
-        .zone-social .zone-door { border-color: #00ff00; background: linear-gradient(135deg, rgba(0, 255, 0, 0.2), rgba(0, 0, 0, 0.6)); }
-        .zone-social .zone-content { border-color: #00ff00; }
-        .zone-social .zone-door::before { content: '🌐'; font-size: 64px; position: absolute; opacity: 0.3; }
-        
-        .background-animation {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0.1;
-            pointer-events: none;
+            height: 60px;
             overflow: hidden;
         }
-        
-        .links-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+
+        .tunnel-text {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            white-space: nowrap;
         }
-        
-        .social-links {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            align-items: center;
+
+        .tunnel-layer {
+            animation: tunnel 3s linear infinite;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
         }
-        
-        .social-link {
-            display: flex;
-            align-items: center;
-            gap: 15px;
+
+        .tunnel-layer:nth-child(1) { animation-delay: 0s; }
+        .tunnel-layer:nth-child(2) { animation-delay: 0.5s; }
+        .tunnel-layer:nth-child(3) { animation-delay: 1s; }
+        .tunnel-layer:nth-child(4) { animation-delay: 1.5s; }
+        .tunnel-layer:nth-child(5) { animation-delay: 2s; }
+
+        .ascii-icon {
+            display: inline-block;
+            margin-right: 10px;
+            color: #00ffff;
+        }
+
+        footer {
+            margin-top: 50px;
             padding: 15px;
-            background: rgba(0, 255, 0, 0.2);
-            border: 3px solid #00ff00;
-            text-decoration: none;
-            color: #00ff00;
-            font-size: 12px;
-            transition: all 0.3s;
-            width: 100%;
-            max-width: 400px;
+            border-top: 2px solid #2d2d2d;
+            background: linear-gradient(to right, #252526, #1e1e1e);
+            font-size: 0.9em;
         }
-        
-        .social-link:hover {
-            background: rgba(0, 255, 0, 0.4);
-            transform: translateX(10px);
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
+
+        .runtime {
+            color: #4ec9b0;
+            animation: flicker 3s ease-in-out infinite;
         }
-        
-        .social-icon {
-            font-size: 32px;
-        }
-        
+
         @media (max-width: 768px) {
-            .hud h1 { font-size: 16px; }
-            .hud .subtitle { font-size: 6px; }
-            .hud .magic { font-size: 6px; }
-            .zone { min-width: 150px; }
-            .zone.expanded { min-width: 90vw; }
-            .mini-map { bottom: 80px; right: 10px; padding: 10px; }
-            .mini-map-icons { grid-template-columns: repeat(3, 1fr); gap: 5px; }
-            .mini-map-icon { width: 30px; height: 30px; }
+            h1 { font-size: 1.5em; }
+            .current-work { font-size: 1em; }
+            .bug-header { flex-direction: column; align-items: flex-start; }
         }
     </style>
 </head>
 <body>
-    <div class="hud">
-        <h1>GEVA KIPPER</h1>
-        <div class="subtitle">Engineering Reality at Google, One Algorithm at a Time</div>
-        <div class="magic">⚡ This dungeon regenerates daily through AI magic - no two visits are the same ⚡</div>
-    </div>
+    <div class="container">
+        <header>
+            <h1>DEBUGGING SESSION: Geva Kipper<span class="cursor"></span></h1>
+            <div class="current-work">// Currently engineering solutions at Google</div>
+            <div class="ai-notice">/* Portfolio auto-generated daily by AI - design changes with each compilation */</div>
+        </header>
 
-    <div class="character idle" id="character">
-        <svg width="64" height="64" viewBox="0 0 64 64">
-            <rect x="20" y="8" width="24" height="8" fill="#FFD700"/>
-            <rect x="16" y="16" width="32" height="16" fill="#FF6B6B"/>
-            <rect x="20" y="32" width="24" height="16" fill="#4ECDC4"/>
-            <rect x="20" y="48" width="8" height="16" fill="#45B7D1"/>
-            <rect x="36" y="48" width="8" height="16" fill="#45B7D1"/>
-            <rect x="24" y="20" width="4" height="4" fill="#000"/>
-            <rect x="36" y="20" width="4" height="4" fill="#000"/>
-        </svg>
-    </div>
-
-    <div class="game-area">
-        <div class="zones-container" id="zonesContainer">
-            <!-- Zone 1: GlglStats -->
-            <div class="zone zone-python" data-zone="0">
-                <div class="zone-door">
-                    <div class="boss-indicator">BOSS</div>
-                    <div class="zone-icon">🎵</div>
-                    <div style="font-size: 10px;">GlglStats</div>
+        <div class="bug-container">
+            <!-- BUG_001: GlglStats -->
+            <div class="bug-box" data-bug="001">
+                <div class="bug-header">
+                    <span class="bug-indicator">🔴</span>
+                    <span class="bug-id">BUG_001</span>
+                    <span class="bug-title">GLGLSTATS()</span>
                 </div>
-                <div class="zone-content">
-                    <div class="background-animation">
-                        <div style="font-size: 40px; opacity: 0.3; animation: float 3s infinite;">♪ ♫ ♬ ♪ ♫</div>
-                    </div>
-                    <button class="close-btn" onclick="closeZone(this)">✕</button>
-                    <h2>🎵 GlglStats</h2>
-                    <p>A Python-powered analytics tool that visualizes musical patterns and statistics. Experience the rhythm of data through algorithmic harmony.</p>
-                    <div class="video-container">
-                        <iframe src="https://www.youtube.com/embed/jrKAtOsj1Lo" allowfullscreen></iframe>
-                    </div>
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="power-up">🌐 Visit GlglStats</a>
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="power-up">📺 Watch Presentation</a>
+                <div class="bug-description" style="padding: 0 15px 15px 60px;">
+                    Error: WebGL performance metrics unreported - visualization layer missing
                 </div>
-            </div>
-
-            <!-- Zone 2: Ahuzat Dibuk -->
-            <div class="zone zone-parking" data-zone="1">
-                <div class="zone-door">
-                    <div class="boss-indicator">BOSS</div>
-                    <div class="zone-icon">🚗</div>
-                    <div style="font-size: 10px;">Ahuzat Dibuk</div>
-                </div>
-                <div class="zone-content">
-                    <button class="close-btn" onclick="closeZone(this)">✕</button>
-                    <h2>🚗 Ahuzat Dibuk</h2>
-                    <p>The haunted parking lot of Tel Aviv. A viral investigation into mysterious parking patterns that caught the attention of national media.</p>
-                    <div class="links-grid">
-                        <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="power-up">📱 Facebook Post</a>
-                        <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="power-up">📺 Channel 13 News</a>
-                        <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="power-up">📰 Mako Article</a>
+                <div class="bug-details">
+                    <div class="bug-content">
+                        <div><span class="keyword">const</span> <span class="property">project_name</span> = <span class="string">"GlglStats"</span>;</div>
+                        <div><span class="keyword">const</span> <span class="property">description</span> = <span class="string">"WebGL performance analysis tool for real-time graphics debugging"</span>;</div>
+                        <div><span class="keyword">const</span> <span class="property">video_ref</span> = <span class="number">0x</span><a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">YouTube_Conference_Presentation</a>;</div>
+                        <div><span class="keyword">const</span> <span class="property">live_demo</span> = <span class="number">0x</span><a href="https://glglstats.geekip.dev" target="_blank">glglstats.geekip.dev</a>;</div>
+                        <div style="margin-top: 10px;">
+                            <span class="comment">// Audio visualization:</span>
+                            <span class="waveform">
+                                <span style="height: 10px;"></span>
+                                <span style="height: 20px;"></span>
+                                <span style="height: 15px;"></span>
+                                <span style="height: 25px;"></span>
+                                <span style="height: 12px;"></span>
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Zone 3: 2D Part Orienting -->
-            <div class="zone zone-2d" data-zone="2">
-                <div class="zone-door">
-                    <div class="boss-indicator">BOSS</div>
-                    <div class="zone-icon">📐</div>
-                    <div style="font-size: 10px;">2D Part Orienting</div>
+            <!-- BUG_002: Ahuzat Dibuk -->
+            <div class="bug-box" data-bug="002">
+                <div class="bug-header">
+                    <span class="bug-indicator">🔴</span>
+                    <span class="bug-id">BUG_002</span>
+                    <span class="bug-title">AHUZAT_DIBUK()</span>
                 </div>
-                <div class="zone-content">
-                    <button class="close-btn" onclick="closeZone(this)">✕</button>
-                    <h2>📐 2D Part Orienting</h2>
-                    <p>Computational geometry research from Tel Aviv University. Algorithms that solve the puzzle of optimal part orientation in 2D space.</p>
-                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="power-up">🎓 Research Page</a>
+                <div class="bug-description" style="padding: 0 15px 15px 60px;">
+                    Error: Parking space allocation algorithm unreachable - memory overflow in Tel Aviv grid
                 </div>
-            </div>
-
-            <!-- Zone 4: The Turing Jest -->
-            <div class="zone zone-jest" data-zone="3">
-                <div class="zone-door">
-                    <div class="boss-indicator">BOSS</div>
-                    <div class="zone-icon">🃏</div>
-                    <div style="font-size: 10px;">Turing Jest</div>
-                </div>
-                <div class="zone-content">
-                    <button class="close-btn" onclick="closeZone(this)">✕</button>
-                    <h2>🃏 The Turing Jest</h2>
-                    <p>Can AI make you laugh? An experimental comedy platform where algorithms attempt to crack jokes and generate humor. The ultimate test: human vs. machine wit.</p>
-                    <a href="https://jest.geekip.dev" target="_blank" class="power-up">😄 Try the Jest</a>
-                </div>
-            </div>
-
-            <!-- Zone 5: Rhymes of Israel -->
-            <div class="zone zone-rhymes" data-zone="4">
-                <div class="zone-door">
-                    <div class="boss-indicator">BOSS</div>
-                    <div class="zone-icon">🇮🇱</div>
-                    <div style="font-size: 10px;">Rhymes of Israel</div>
-                </div>
-                <div class="zone-content">
-                    <button class="close-btn" onclick="closeZone(this)">✕</button>
-                    <h2>🇮🇱 Rhymes of Israel</h2>
-                    <p>A Chrome extension that brings Hebrew poetry and wordplay to your browser. Discover the musical quality of the Hebrew language through intelligent rhyme detection.</p>
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="power-up">🔌 Install Extension</a>
+                <div class="bug-details">
+                    <div class="bug-content">
+                        <div>{</div>
+                        <div style="margin-left: 20px;"><span class="property">"project"</span>: <span class="string">"Ahuzat Dibuk"</span>,</div>
+                        <div style="margin-left: 20px;"><span class="property">"description"</span>: <span class="string">"Real-time parking availability tracker for Tel Aviv using computer vision"</span>,</div>
+                        <div style="margin-left: 20px;"><span class="property">"announcement"</span>: <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank"><span class="string">"Facebook Post"</span></a>,</div>
+                        <div style="margin-left: 20px;"><span class="property">"media_coverage"</span>: [</div>
+                        <div style="margin-left: 40px;"><a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank"><span class="string">"Channel 13 News"</span></a>,</div>
+                        <div style="margin-left: 40px;"><a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank"><span class="string">"Mako News"</span></a></div>
+                        <div style="margin-left: 20px;">]</div>
+                        <div>}</div>
+                        <div style="margin-top: 10px;">
+                            <span class="comment">// Live grid status:</span>
+                            <span class="parking-grid">[█][░][█][░][█]</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Zone 6: Portfolio Meta -->
-            <div class="zone zone-portfolio" data-zone="5">
-                <div class="zone-door">
-                    <div class="boss-indicator">BOSS</div>
-                    <div class="zone-icon">🪞</div>
-                    <div style="font-size: 10px;">This Site</div>
+            <!-- BUG_003: 2D Part Orienting -->
+            <div class="bug-box" data-bug="003">
+                <div class="bug-header">
+                    <span class="bug-indicator">🔴</span>
+                    <span class="bug-id">BUG_003</span>
+                    <span class="bug-title">ORIENT_2D_PARTS()</span>
                 </div>
-                <div class="zone-content">
-                    <button class="close-btn" onclick="closeZone(this)">✕</button>
-                    <h2>🪞 The Portfolio Itself</h2>
-                    <p>You're already here! This retro arcade experience is itself a project - a recursive hall of mirrors where the portfolio becomes the art.</p>
-                    <a href="https://geekip.dev" target="_blank" class="power-up">🔄 Reload Reality</a>
+                <div class="bug-description" style="padding: 0 15px 15px 60px;">
+                    Error: Polygon orientation heuristic diverging - rotation matrix undefined
+                </div>
+                <div class="bug-details">
+                    <div class="bug-content">
+                        <div><span class="keyword">class</span> <span class="function">PartOrienter</span> {</div>
+                        <div style="margin-left: 20px;"><span class="keyword">public</span>:</div>
+                        <div style="margin-left: 40px;"><span class="comment">// Automated orientation detection for 2D parts</span></div>
+                        <div style="margin-left: 40px;"><span class="comment">// Research project at Tel-Aviv University</span></div>
+                        <div style="margin-left: 40px;"><span class="keyword">void</span> <span class="function">orient</span>() {</div>
+                        <div style="margin-left: 60px;"><span class="comment">// see implementation at: <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">TAU Computer Graphics Lab</a></span></div>
+                        <div style="margin-left: 40px;">}</div>
+                        <div>};</div>
+                        <div style="margin-top: 10px;">
+                            <span class="comment">// Rotating polygon:</span>
+                            <span class="polygon"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Zone 7: Social Links -->
-            <div class="zone zone-social" data-zone="6">
-                <div class="zone-door">
-                    <div class="boss-indicator">BOSS</div>
-                    <div class="zone-icon">🌐</div>
-                    <div style="font-size: 10px;">Connect</div>
+            <!-- BUG_004: The Turing Jest -->
+            <div class="bug-box" data-bug="004">
+                <div class="bug-header">
+                    <span class="bug-indicator">🔴</span>
+                    <span class="bug-id">BUG_004</span>
+                    <span class="bug-title">TURING_JEST()</span>
                 </div>
-                <div class="zone-content">
-                    <button class="close-btn" onclick="closeZone(this)">✕</button>
-                    <h2>🌐 Social Crossroads</h2>
-                    <p>Choose your path to connect across the digital realm.</p>
-                    <div class="social-links">
-                        <a href="https://github.com/gevak" target="_blank" class="social-link">
-                            <span class="social-icon">💻</span>
-                            <span>GitHub: gevak</span>
-                        </a>
-                        <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-link">
-                            <span class="social-icon">💼</span>
-                            <span>LinkedIn: gevakip</span>
-                        </a>
-                        <a href="https://facebook.com/geva.kipper" target="_blank" class="social-link">
-                            <span class="social-icon">👥</span>
-                            <span>Facebook: geva.kipper</span>
-                        </a>
+                <div class="bug-description" style="padding: 0 15px 15px 60px;">
+                    Error: Human-AI discrimination test failing - humor module indistinguishable
+                </div>
+                <div class="bug-details">
+                    <div class="bug-content">
+                        <div><span class="keyword">function</span> <span class="function">turingJest</span>() {</div>
+                        <div style="margin-left: 20px;"><span class="keyword">const</span> <span class="property">concept</span> = <span class="string">"A game testing if you can distinguish AI-generated jokes from human ones"</span>;</div>
+                        <div style="margin-left: 20px;"><span class="keyword">const</span> <span class="property">url</span> = <span class="quote-blink">"</span><a href="https://jest.geekip.dev" target="_blank"><span class="string">jest.geekip.dev</span></a><span class="quote-blink">"</span>;</div>
+                        <div style="margin-left: 20px;"><span class="keyword">return</span> <span class="string">"Can you pass the test?"</span>;</div>
+                        <div>}</div>
+                        <div style="margin-top: 10px;"><span class="comment">// Note the wordplay: Turing <span class="quote-blink">Test</span> → Turing <span class="quote-blink">Jest</span></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BUG_005: Rhymes of Israel -->
+            <div class="bug-box" data-bug="005">
+                <div class="bug-header">
+                    <span class="bug-indicator">🔴</span>
+                    <span class="bug-id">BUG_005</span>
+                    <span class="bug-title">RHYMES_OF_ISRAEL()</span>
+                </div>
+                <div class="bug-description" style="padding: 0 15px 15px 60px;">
+                    Error: Hebrew rhyme dictionary unindexed - phonetic matching system offline
+                </div>
+                <div class="bug-details">
+                    <div class="bug-content">
+                        <div>{</div>
+                        <div style="margin-left: 20px;"><span class="property">"manifest_version"</span>: <span class="number">3</span>,</div>
+                        <div style="margin-left: 20px;"><span class="property">"name"</span>: <span class="string">"Rhymes of Israel"</span>,</div>
+                        <div style="margin-left: 20px;"><span class="property">"description"</span>: <span class="string">"Chrome extension for finding Hebrew rhymes in real-time"</span>,</div>
+                        <div style="margin-left: 20px;"><span class="property">"install_url"</span>: <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank"><span class="string">"Chrome Web Store"</span></a>,</div>
+                        <div style="margin-left: 20px;"><span class="property">"unicode_sample"</span>: <span class="string">"\u05E9\u05D9\u05E8\u05D4"</span> <span class="comment">// שירה</span></div>
+                        <div>}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BUG_006: Portfolio Meta -->
+            <div class="bug-box" data-bug="006">
+                <div class="bug-header">
+                    <span class="bug-indicator">🔴</span>
+                    <span class="bug-id">BUG_006</span>
+                    <span class="bug-title">PORTFOLIO_META()</span>
+                </div>
+                <div class="bug-description" style="padding: 0 15px 15px 60px;">
+                    Error: Recursive self-reference detected - stack overflow imminent
+                </div>
+                <div class="bug-details">
+                    <div class="bug-content">
+                        <div><span class="keyword">while</span>(<span class="number">true</span>) {</div>
+                        <div style="margin-left: 20px;"><span class="function">display</span>(<span class="string">"This very portfolio you're viewing"</span>);</div>
+                        <div style="margin-left: 20px;"><span class="function">navigate</span>(<a href="https://geekip.dev" target="_blank"><span class="string">"geekip.dev"</span></a>);</div>
+                        <div>}</div>
+                        <div style="margin-top: 10px;" class="tunnel">
+                            <div class="tunnel-layer"><a href="https://geekip.dev" target="_blank" style="font-size: 16px;">geekip.dev</a></div>
+                            <div class="tunnel-layer"><a href="https://geekip.dev" target="_blank" style="font-size: 16px;">geekip.dev</a></div>
+                            <div class="tunnel-layer"><a href="https://geekip.dev" target="_blank" style="font-size: 16px;">geekip.dev</a></div>
+                            <div class="tunnel-layer"><a href="https://geekip.dev" target="_blank" style="font-size: 16px;">geekip.dev</a></div>
+                            <div class="tunnel-layer"><a href="https://geekip.dev" target="_blank" style="font-size: 16px;">geekip.dev</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BUG_007: External Dependencies -->
+            <div class="bug-box" data-bug="007">
+                <div class="bug-header">
+                    <span class="bug-indicator">🔴</span>
+                    <span class="bug-id">BUG_007</span>
+                    <span class="bug-title">EXTERNAL_DEPENDENCIES()</span>
+                </div>
+                <div class="bug-description" style="padding: 0 15px 15px 60px;">
+                    Warning: Missing social network imports - connection modules unresolved
+                </div>
+                <div class="bug-details">
+                    <div class="bug-content">
+                        <div>
+                            <span class="ascii-icon">┌─┐<br>├─┤<br>└─┘</span>
+                            <span class="keyword">import</span> profile <span class="keyword">from</span> <span class="string">'<a href="https://github.com/gevak" target="_blank">github.com/gevak</a>'</span>;
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <span class="ascii-icon">╔═╗<br>║░║<br>╚═╝</span>
+                            <span class="keyword">import</span> network <span class="keyword">from</span> <span class="string">'<a href="https://linkedin.com/in/gevakip" target="_blank">linkedin.com/in/gevakip</a>'</span>;
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <span class="ascii-icon">┏━┓<br>┃░┃<br>┗━┛</span>
+                            <span class="keyword">import</span> social <span class="keyword">from</span> <span class="string">'<a href="https://facebook.com/geva.kipper" target="_blank">facebook.com/geva.kipper</a>'</span>;
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="mini-map">
-        <div class="mini-map-title">MAP</div>
-        <div class="mini-map-icons" id="miniMapIcons">
-            <div class="mini-map-icon" onclick="jumpToZone(0)" data-map="0">🎵</div>
-            <div class="mini-map-icon" onclick="jumpToZone(1)" data-map="1">🚗</div>
-            <div class="mini-map-icon" onclick="jumpToZone(2)" data-map="2">📐</div>
-            <div class="mini-map-icon" onclick="jumpToZone(3)" data-map="3">🃏</div>
-            <div class="mini-map-icon" onclick="jumpToZone(4)" data-map="4">🇮🇱</div>
-            <div class="mini-map-icon" onclick="jumpToZone(5)" data-map="5">🪞</div>
-            <div class="mini-map-icon" onclick="jumpToZone(6)" data-map="6">🌐</div>
-        </div>
-    </div>
-
-    <div class="footer">
-        <div class="footer-text">LEVEL DESIGN BY CLAUDE (ANTHROPIC) | DUNGEON MASTER AI</div>
-        <div class="timer" id="timer">TIME SINCE LAST RESPAWN: 00d 00h 00m 00s</div>
+        <footer>
+            <div>
+                <span class="comment">Session compiled by:</span> <span class="function">Claude</span> <span class="comment">(Anthropic AI Model)</span> | 
+                <span class="comment">Runtime:</span> <span class="runtime" id="runtime">00:00:00</span>
+            </div>
+        </footer>
     </div>
 
     <script>
-        let currentZone = null;
-        const character = document.getElementById('character');
-        const visitedZones = new Set();
+        // Bug toggle functionality
+        document.querySelectorAll('.bug-box').forEach(box => {
+            const header = box.querySelector('.bug-header');
+            const indicator = box.querySelector('.bug-indicator');
+            
+            header.addEventListener('click', () => {
+                const wasFixed = box.classList.contains('fixed');
+                box.classList.toggle('fixed');
+                indicator.textContent = wasFixed ? '🔴' : '🟢';
+            });
+        });
+
+        // Runtime counter
+        const startTime = new Date('2024-01-01T00:00:00'); // Placeholder timestamp
         
-        // Timer functionality
-        const respawnDate = new Date('2025-10-12T01:05:52');
-        
-        function updateTimer() {
+        function updateRuntime() {
             const now = new Date();
-            const diff = now - respawnDate;
+            const diff = Math.floor((now - startTime) / 1000);
             
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            const hours = String(Math.floor(diff / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+            const seconds = String(diff % 60).padStart(2, '0');
             
-            document.getElementById('timer').textContent = 
-                `TIME SINCE LAST RESPAWN: ${String(days).padStart(2, '0')}d ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
+            document.getElementById('runtime').textContent = `${hours}:${minutes}:${seconds}`;
         }
         
-        setInterval(updateTimer, 1000);
-        updateTimer();
-        
-        // Zone interaction
-        document.querySelectorAll('.zone').forEach((zone, index) => {
-            zone.querySelector('.zone-door').addEventListener('click', function(e) {
-                if (!zone.classList.contains('expanded')) {
-                    openZone(zone, index);
-                }
-            });
+        updateRuntime();
+        setInterval(updateRuntime, 1000);
+
+        // Optional: Add click sound effect
+        const playClickSound = () => {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        };
+
+        document.querySelectorAll('.bug-header').forEach(header => {
+            header.addEventListener('click', playClickSound);
         });
-        
-        function openZone(zone, index) {
-            // Close any open zones
-            document.querySelectorAll('.zone.expanded').forEach(z => {
-                z.classList.remove('expanded');
-            });
-            
-            // Move character
-            const zoneRect = zone.getBoundingClientRect();
-            character.classList.remove('idle');
-            character.classList.add('walking', 'jumping');
-            character.style.left = (zoneRect.left - 20) + 'px';
-            
-            setTimeout(() => {
-                character.classList.remove('walking', 'jumping');
-                character.classList.add('idle');
-            }, 800);
-            
-            // Create explosion effect
-            createExplosion(zoneRect.left + zoneRect.width / 2, zoneRect.top + zoneRect.height / 2);
-            
-            // Expand zone
-            setTimeout(() => {
-                zone.classList.add('expanded');
-                currentZone = index;
-                visitedZones.add(index);
-                updateMiniMap();
-                zone.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 400);
-        }
-        
-        function closeZone(btn) {
-            const zone = btn.closest('.zone');
-            zone.classList.remove('expanded');
-            
-            character.classList.remove('idle');
-            character.classList.add('walking');
-            character.style.left = '50px';
-            
-            setTimeout(() => {
-                character.classList.remove('walking');
-                character.classList.add('idle');
-            }, 800);
-            
-            currentZone = null;
-            updateMiniMap();
-        }
-        
-        function jumpToZone(index) {
-            const zones = document.querySelectorAll('.zone');
-            const zone = zones[index];
-            
-            if (zone) {
-                zone.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setTimeout(() => {
-                    openZone(zone, index);
-                }, 500);
-            }
-        }
-        
-        function updateMiniMap() {
-            document.querySelectorAll('.mini-map-icon').forEach((icon, index) => {
-                icon.classList.remove('active');
-                if (visitedZones.has(index)) {
-                    icon.classList.add('visited');
-                }
-                if (currentZone === index) {
-                    icon.classList.add('active');
-                }
-            });
-        }
-        
-        function createExplosion(x, y) {
-            for (let i = 0; i < 8; i++) {
-                const explosion = document.createElement('div');
-                explosion.className = 'explosion';
-                explosion.style.left = x + 'px';
-                explosion.style.top = y + 'px';
-                explosion.style.position = 'fixed';
-                
-                const angle = (Math.PI * 2 * i) / 8;
-                const distance = 30;
-                explosion.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
-                explosion.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
-                
-                document.body.appendChild(explosion);
-                
-                setTimeout(() => explosion.remove(), 500);
-            }
-        }
-        
-        function createParticle(x, y, char) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.textContent = char;
-            particle.style.left = x + 'px';
-            particle.style.top = y + 'px';
-            particle.style.fontSize = '24px';
-            document.body.appendChild(particle);
-            
-            setTimeout(() => particle.remove(), 1000);
-        }
-        
-        // Add hover effects to power-ups
-        document.addEventListener('mouseover', function(e) {
-            if (e.target.classList.contains('power-up')) {
-                const rect = e.target.getBoundingClientRect();
-                createParticle(rect.left + rect.width / 2, rect.top, '✨');
-            }
-        });
-        
-        // Add click effects
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('power-up') || e.target.classList.contains('social-link')) {
-                const rect = e.target.getBoundingClientRect();
-                for (let i = 0; i < 3; i++) {
-                    setTimeout(() => {
-                        createParticle(
-                            rect.left + Math.random() * rect.width,
-                            rect.top,
-                            ['⭐', '💫', '✨', '🌟'][Math.floor(Math.random() * 4)]
-                        );
-                    }, i * 100);
-                }
-            }
-        });
-        
-        // Initialize
-        updateMiniMap();
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20251012",
+          pageId: "20251013",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
