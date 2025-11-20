@@ -2,708 +2,668 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CLASSIFIED DOSSIER // GEVA KIPPER</title>
-    
-    <!-- Fonts: Monospaced and Stencil styles -->
+    <title>GEVA KIPPER - TRANSACTION LOG</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Fira+Code:wght@300;500;700&family=Share+Tech+Mono&family=Special+Elite&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    
     <style>
-        /* --- CORE VARIABLES --- */
         :root {
-            --bg-color: #0f0f0f;
-            --term-green: #00ff41;
-            --alert-red: #ff003c;
-            --dim-grid: rgba(0, 255, 65, 0.1);
-            --text-main: 'Fira Code', monospace;
-            --text-header: 'Black Ops One', cursive;
-            --text-tech: 'Share Tech Mono', monospace;
-            --border-width: 1px;
+            --bg-color: #1a1a1a;
+            --paper-color: #f4f4f4;
+            --ink-color: #111111;
+            --ink-subtle: rgba(17, 17, 17, 0.85);
+            --dashed-border: 2px dashed var(--ink-color);
+            --font-main: 'VT323', monospace;
         }
 
         * {
             box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            cursor: crosshair; /* Custom cursor feel */
         }
 
         body {
             background-color: var(--bg-color);
-            color: #e0e0e0;
-            font-family: var(--text-main);
+            margin: 0;
+            padding: 40px 0;
+            font-family: var(--font-main);
+            color: var(--ink-color);
             overflow-x: hidden;
-            min-height: 100vh;
+            perspective: 1000px; /* For the 3D sway effect */
+        }
+
+        /* The Receipt Container */
+        #receipt-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            transform-origin: top center;
+            will-change: transform;
+            transition: transform 0.1s ease-out;
+        }
+
+        .receipt {
+            background-color: var(--paper-color);
+            width: 380px;
+            max-width: 95vw;
+            position: relative;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            /* Paper texture noise overlay */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+        }
+
+        /* Jagged Bottom Edge */
+        .receipt::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -10px;
+            width: 100%;
+            height: 10px;
+            background: 
+                linear-gradient(45deg, transparent 33.333%, var(--paper-color) 33.333%, var(--paper-color) 66.667%, transparent 66.667%),
+                linear-gradient(-45deg, transparent 33.333%, var(--paper-color) 33.333%, var(--paper-color) 66.667%, transparent 66.667%);
+            background-size: 20px 40px;
+            background-position: 0 -20px;
+        }
+
+        /* Typography & General Layout */
+        h1, h2, h3, p {
+            margin: 0;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+
+        a {
+            color: var(--ink-color);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Hover Overstrike Effect */
+        a:hover {
+            text-shadow: 0.5px 0 0 var(--ink-color); /* Simulates double-strike bold */
+            font-weight: 900;
+        }
+
+        .separator {
+            width: 100%;
+            border-bottom: var(--dashed-border);
+            margin: 15px 0;
+            opacity: 0.6;
+        }
+
+        .double-separator {
+            border-bottom: 4px double var(--ink-color);
+            margin: 15px 0;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+        }
+        .logo {
+            font-size: 3rem;
+            letter-spacing: 2px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            opacity: 0.9;
+        }
+
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .disclaimer-box {
+            border: var(--dashed-border);
+            padding: 10px;
+            font-size: 1rem;
+            text-align: left;
+            margin-top: 15px;
+        }
+
+        /* Project Items */
+        .item-row {
+            margin-bottom: 20px;
             display: flex;
             flex-direction: column;
+            gap: 10px;
+        }
+
+        .item-header {
+            font-size: 1.4rem;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between; /* In case we want price right aligned later */
+        }
+
+        .visual-container {
+            width: 100%;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.03);
+            overflow: hidden;
             position: relative;
         }
 
-        /* --- NOISE OVERLAY --- */
-        .noise-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
+        /* Canvas for Dithered Effects */
+        canvas.dither-canvas {
+            image-rendering: pixelated; 
             width: 100%;
             height: 100%;
-            pointer-events: none;
-            z-index: 999;
-            opacity: 0.05;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            object-fit: contain;
         }
 
-        /* --- HEADER --- */
-        .top-banner {
-            background: repeating-linear-gradient(45deg, var(--alert-red), var(--alert-red) 10px, #000 10px, #000 20px);
-            color: #fff;
-            text-align: center;
-            font-family: var(--text-header);
-            padding: 5px 0;
-            letter-spacing: 2px;
-            border-bottom: 2px solid var(--alert-red);
-            text-shadow: 2px 2px 0px #000;
+        .action-links {
+            font-size: 1.1rem;
+            padding-left: 10px;
         }
 
-        header {
-            padding: 2rem 5%;
-            border-bottom: 1px solid var(--dim-grid);
-            position: relative;
+        .sub-link {
+            display: block;
+            margin-left: 20px;
+            font-size: 1rem;
+        }
+        
+        .sub-link::before {
+            content: "+ ";
         }
 
-        header::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 0;
-            width: 30px;
-            height: 3px;
-            background: var(--term-green);
-            animation: scan-line 2s infinite linear;
-        }
-
-        h1.profile-name {
-            font-family: var(--text-tech);
-            font-size: 3rem;
-            color: #fff;
-            text-transform: uppercase;
-            margin-bottom: 0.5rem;
-            min-height: 3.5rem;
-        }
-
-        .status-line {
-            display: inline-block;
-            background: rgba(0, 255, 65, 0.15);
-            color: var(--term-green);
-            padding: 0.25rem 0.75rem;
-            font-size: 0.9rem;
-            border: 1px solid var(--term-green);
-            margin-bottom: 1rem;
-            text-transform: uppercase;
-        }
-
-        .ai-subtitle {
-            font-size: 0.8rem;
-            color: #888;
-            font-family: var(--text-tech);
-        }
-
-        .glitch-text {
-            position: relative;
-            display: inline-block;
-        }
-
-        /* --- LAYOUT: BENTO GRID --- */
-        main {
-            flex: 1;
-            padding: 2rem 5%;
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            grid-auto-rows: minmax(200px, auto);
-            gap: 1.5rem;
-            max-width: 1600px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        /* Responsive Breakpoints */
-        @media (max-width: 1024px) {
-            main { grid-template-columns: repeat(6, 1fr); }
-        }
-        @media (max-width: 768px) {
-            main { grid-template-columns: 1fr; display: flex; flex-direction: column; }
-            h1.profile-name { font-size: 2rem; }
-        }
-
-        /* --- CARD GENERIC STYLES --- */
-        .dossier-file {
-            position: relative;
-            border: 1px solid #333;
-            background: rgba(20, 20, 20, 0.6);
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        /* Corner Brackets */
-        .dossier-file::before, .dossier-file::after {
-            content: '';
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            border: 1px solid transparent;
-            transition: all 0.3s;
-        }
-        .dossier-file::before { 
-            top: -1px; left: -1px; 
-            border-top-color: #555; border-left-color: #555; 
-        }
-        .dossier-file::after { 
-            bottom: -1px; right: -1px; 
-            border-bottom-color: #555; border-right-color: #555; 
-        }
-
-        .dossier-file:hover {
-            border-color: var(--term-green);
-            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
-        }
-        .dossier-file:hover::before { border-top-color: var(--term-green); border-left-color: var(--term-green); width: 100%; height: 100%; }
-        .dossier-file:hover::after { border-bottom-color: var(--term-green); border-right-color: var(--term-green); width: 100%; height: 100%; }
-
-        .file-header {
-            font-family: var(--text-header);
-            font-size: 1.2rem;
-            margin-bottom: 1rem;
-            color: #ccc;
-            z-index: 2;
-            border-bottom: 1px dashed #444;
-            padding-bottom: 0.5rem;
-        }
-
-        .file-content {
-            z-index: 2;
-            font-size: 0.9rem;
-            line-height: 1.4;
-            color: #aaa;
-            flex-grow: 1;
-        }
-
-        .action-btn {
-            display: inline-block;
-            margin-top: 1rem;
-            padding: 0.5rem 1rem;
-            background: transparent;
-            border: 1px solid var(--term-green);
-            color: var(--term-green);
-            text-decoration: none;
-            font-family: var(--text-tech);
-            font-size: 0.8rem;
-            text-transform: uppercase;
+        .sku-code {
+            font-family: 'VT323', monospace;
             letter-spacing: 1px;
-            transition: 0.2s;
-            z-index: 3;
-            position: relative;
-            align-self: flex-start;
+            border: 1px solid var(--ink-color);
+            padding: 2px 6px;
+            display: inline-block;
+            margin-top: 5px;
         }
 
-        .action-btn:hover {
-            background: var(--term-green);
-            color: #000;
-        }
-
-        .action-btn i { margin-right: 8px; }
-
-        /* --- SPECIFIC CARD STYLES --- */
-
-        /* 1. GlglStats (Audio/Matrix) */
-        .box-glgl {
-            grid-column: span 4;
-            grid-row: span 2;
-        }
-        .waveform-bg {
-            position: absolute;
-            bottom: 10%;
-            left: 0;
-            width: 100%;
-            height: 50px;
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-around;
-            opacity: 0.3;
-            pointer-events: none;
-        }
-        .bar {
-            width: 5px;
-            background: var(--term-green);
-            animation: equalizer 1s infinite ease-in-out;
-        }
-        .matrix-canvas {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            opacity: 0;
-            transition: opacity 0.5s;
-            pointer-events: none;
-        }
-        .box-glgl:hover .matrix-canvas { opacity: 0.2; }
-
-        /* 2. Ahuzat Dibuk (Heatmap) */
-        .box-parking {
-            grid-column: span 4;
-            grid-row: span 2;
-            background: radial-gradient(circle at 70% 30%, rgba(255, 60, 0, 0.15), transparent 50%), #141414;
-        }
-        .heat-spot {
-            position: absolute;
-            width: 100px; height: 100px;
-            background: red;
-            filter: blur(40px);
-            border-radius: 50%;
-            opacity: 0.2;
-            animation: pulse-heat 4s infinite alternate;
-        }
-
-        /* 3. 2D Part (Geometry) */
-        .box-geom {
-            grid-column: span 4;
-            grid-row: span 1;
-            display: flex;
-            flex-direction: row;
-        }
-        .poly-anim {
-            position: absolute;
-            right: -20px; top: 10px;
-            width: 100px; height: 100px;
-            border: 1px solid var(--term-green);
-            transform-style: preserve-3d;
-            animation: rotate-poly 10s infinite linear;
-            opacity: 0.4;
-        }
-
-        /* 4. Turing Jest (Split) */
-        .box-turing {
-            grid-column: span 4;
-            grid-row: span 1;
-            background: linear-gradient(90deg, rgba(0, 0, 255, 0.05) 50%, rgba(255, 0, 0, 0.05) 50%);
-        }
-        .chat-bubble {
-            background: rgba(255,255,255,0.1);
-            padding: 5px;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            margin-bottom: 5px;
-            max-width: 80%;
-        }
-        .chat-left { border-left: 2px solid blue; }
-        .chat-right { margin-left: auto; border-right: 2px solid red; text-align: right;}
-
-        /* 5. Rhymes (Comic/Paper) */
-        .box-rhyme {
-            grid-column: span 6;
-            grid-row: span 1;
-            background-color: #ddd;
-            color: #111;
-            clip-path: polygon(0 0, 98% 2%, 100% 100%, 2% 98%);
-        }
-        .box-rhyme .file-header { 
-            color: #000; border-bottom: 2px solid #000; 
-            font-family: 'Special Elite', cursive;
-        }
-        .box-rhyme .file-content { color: #222; font-family: 'Special Elite', cursive; }
-        .box-rhyme .action-btn { border-color: #000; color: #000; }
-        .box-rhyme:hover { background-color: #fff; }
-
-        /* 6. Meta-Portfolio (Recursion) */
-        .box-meta {
-            grid-column: span 6;
-            grid-row: span 1;
-            overflow: hidden;
-            perspective: 1000px;
-        }
-        .recursion-layer {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            border: 1px solid var(--term-green);
-            width: 80%; height: 80%;
-            opacity: 0.5;
-            animation: zoom-in 8s infinite linear;
-        }
-        .layer-2 { animation-delay: -2s; width: 60%; height: 60%; border-color: var(--alert-red); }
-        .layer-3 { animation-delay: -4s; width: 40%; height: 40%; }
-        .gps-marker {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            color: #fff;
-            text-shadow: 0 0 10px var(--term-green);
-            font-size: 2rem;
-            z-index: 5;
-        }
-
-        /* 7. Contact (ID Card) */
-        .box-contact {
-            grid-column: span 12;
-            grid-row: span 1;
-            display: flex;
-            justify-content: space-around; /* align items properly */
-            align-items: center;
-            background: repeating-linear-gradient(0deg, transparent, transparent 2px, #111 3px);
-            border: 1px solid white;
-        }
-        .contact-links {
-            display: flex;
-            gap: 2rem;
-            flex-wrap: wrap;
-            justify-content: center;
-            width: 100%;
-        }
-        .contact-item {
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
-            text-decoration: none;
-            color: #aaa;
-            transition: 0.3s;
-        }
-        .contact-item:hover { color: #fff; transform: scale(1.05); }
-        .stamp-box {
-            width: 60px; height: 60px;
-            border: 2px solid #555;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .star-rating {
             font-size: 1.5rem;
-            background: #222;
-        }
-        .contact-item:hover .stamp-box {
-            border-color: var(--term-green);
-            color: var(--term-green);
-            box-shadow: 0 0 15px var(--term-green);
+            line-height: 1;
         }
 
-        /* --- FOOTER --- */
-        footer {
-            padding: 2rem 5%;
-            border-top: 1px solid var(--alert-red);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-family: var(--text-tech);
-            background: #0a0a0a;
+        .btn-install {
+            border: 2px solid var(--ink-color);
+            background: transparent;
+            color: var(--ink-color);
+            padding: 5px 15px;
+            font-family: var(--font-main);
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            display: inline-block;
+            margin-top: 5px;
         }
-        .timer {
-            color: var(--alert-red);
+
+        /* Animation Specifics */
+        .rotate-stepped {
+            animation: spin 4s steps(8) infinite;
+            transform-origin: center;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Footer */
+        .loyalty-section {
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
+
+        .icons-row {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 10px;
+        }
+
+        .social-icon {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--ink-color);
+            border-radius: 50%; /* Stamp look */
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 1.5rem;
             font-weight: bold;
-            text-shadow: 0 0 5px var(--alert-red);
+        }
+        
+        .social-link-text {
+            font-size: 0.9rem;
+            display: block;
+            font-stretch: condensed;
         }
 
-        /* --- ANIMATIONS --- */
-        @keyframes scan-line { 0% { left: 0; } 100% { left: 100%; } }
-        @keyframes equalizer { 0%, 100% { height: 5px; } 50% { height: 30px; } }
-        @keyframes pulse-heat { from { opacity: 0.2; transform: scale(1); } to { opacity: 0.5; transform: scale(1.2); } }
-        @keyframes rotate-poly { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes zoom-in { 0% { opacity: 0; transform: translate(-50%,-50%) scale(3); } 50% { opacity: 0.5; } 100% { opacity: 0; transform: translate(-50%,-50%) scale(0); } }
-        
-        /* --- TRANSITION OVERLAY --- */
-        #signal-lost-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #fff;
-            z-index: 10000;
-            opacity: 0;
-            pointer-events: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .total-section {
+            text-align: center;
+            font-size: 1.2rem;
         }
-        .static-screen {
-            width: 100%; height: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-            opacity: 0;
+
+        .cashier-id {
+            margin-bottom: 5px;
         }
-        .lost-text {
-            position: absolute; color: black; font-weight: 900; font-size: 3rem; font-family: var(--text-header);
-            background: #fff; padding: 1rem; border: 5px solid black;
+
+        .stopwatch {
+            font-size: 1.6rem;
+            font-weight: bold;
+            letter-spacing: 2px;
         }
 
     </style>
 </head>
 <body>
 
-    <div class="noise-overlay"></div>
-    
-    <!-- Transition Overlay -->
-    <div id="signal-lost-overlay">
-        <div class="static-screen"></div>
-        <div class="lost-text" style="display:none;">SIGNAL LOST</div>
-    </div>
-
-    <div class="top-banner">
-        EYES ONLY / RECRUITER CLEARANCE VERIFIED
-    </div>
-
-    <header>
-        <h1 class="profile-name" id="name-decrypt"></h1>
-        <div class="status-line">MISSION: SRE @ GOOGLE | STATUS: ACTIVE</div>
-        <div class="ai-subtitle">
-            [SYSTEM WARNING] This website is re-designed each day by AI Model #842. 
-            <span style="color:var(--alert-red); animation: blink 0.1s infinite;">DOM Structure Unstable.</span>
-        </div>
-    </header>
-
-    <main>
-        <!-- Box 1: GlglStats -->
-        <div class="dossier-file box-glgl">
-            <canvas id="matrixCanvas" class="matrix-canvas"></canvas>
-            <div class="waveform-bg">
-                <div class="bar" style="animation-delay:0s"></div>
-                <div class="bar" style="animation-delay:0.2s"></div>
-                <div class="bar" style="animation-delay:0.4s"></div>
-                <div class="bar" style="animation-delay:0.1s"></div>
-                <div class="bar" style="animation-delay:0.5s"></div>
-                <div class="bar" style="animation-delay:0.3s"></div>
-            </div>
-            <div class="file-header">FILE: GLGLSTATS.MOV</div>
-            <div class="file-content">
-                Analyzing repetitive patterns in Eurovision logic. <br><br>
-                > Compression Algorithm: DETECTED<br>
-                > Viral Propagation: HIGH
-            </div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <a href="https://glglstats.geekip.dev" class="action-btn external-link"><i class="fas fa-chart-line"></i> Access Data</a>
-                <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" class="action-btn external-link"><i class="fas fa-video"></i> Play Surveillance</a>
-            </div>
-        </div>
-
-        <!-- Box 2: Ahuzat Dibuk -->
-        <div class="dossier-file box-parking">
-            <div class="heat-spot" style="top:20%; left:20%;"></div>
-            <div class="heat-spot" style="bottom:20%; right:20%; animation-delay: 1s; background:orange;"></div>
-            <div class="file-header">CASE: AHUZAT DIBUK</div>
-            <div class="file-content">
-                Forensic analysis of municipal parking infrastructure. Anomalies detected in occupancy rates. <br><br>
-                > Sector: Tel Aviv<br>
-                > Threat Level: GRIDLOCK
-            </div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" class="action-btn external-link"><i class="fab fa-facebook-f"></i> Intercepted Comms</a>
-                <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" class="action-btn external-link"><i class="fas fa-newspaper"></i> Leak #1</a>
-            </div>
-        </div>
-
-        <!-- Box 3: 2D Part Orienting -->
-        <div class="dossier-file box-geom">
-            <div class="poly-anim"></div>
-            <div>
-                <div class="file-header">SCHEMATIC: 2D ORIENT</div>
-                <div class="file-content">
-                    Algorithm for orientation correction of polygonal geometry.<br>
-                    > Efficiency: O(n log n)
-                </div>
-                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" class="action-btn external-link"><i class="fas fa-drafting-compass"></i> Download Blueprint</a>
-            </div>
-        </div>
-
-        <!-- Box 4: Turing Jest -->
-        <div class="dossier-file box-turing">
-            <div class="file-header">EVENT: TURING JEST</div>
-            <div class="file-content">
-                <div class="chat-bubble chat-left">AI: Make me laugh.</div>
-                <div class="chat-bubble chat-right">User: [REDACTED]</div>
-                <br>LLM Competitive Arena.
-            </div>
-            <a href="https://jest.geekip.dev" class="action-btn external-link"><i class="fas fa-robot"></i> Enter Arena</a>
-        </div>
-
-        <!-- Box 5: Rhymes of Israel -->
-        <div class="dossier-file box-rhyme">
-            <div class="file-header">PROJECT: RHYME_SCHEME</div>
-            <div class="file-content">
-                Injecting comedic overlays into browser DOM.<br>
-                WARNING: May cause side-splitting exceptions.
-            </div>
-            <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" class="action-btn external-link"><i class="fab fa-chrome"></i> Install Patch</a>
-        </div>
-
-        <!-- Box 6: Meta Portfolio -->
-        <div class="dossier-file box-meta">
-            <div class="recursion-layer"></div>
-            <div class="recursion-layer layer-2"></div>
-            <div class="recursion-layer layer-3"></div>
-            <div class="gps-marker"><i class="fas fa-crosshairs"></i></div>
-            <div style="position:relative; z-index:4; text-align:center; margin-top: auto;">
-                <div class="file-header" style="border:none;">LOC: YOU ARE HERE</div>
-                <a href="https://geekip.dev" class="action-btn external-link">Recursion Entry Point</a>
-            </div>
-        </div>
-
-        <!-- Box 7: Contacts -->
-        <div class="dossier-file box-contact">
-            <div class="contact-links">
-                <a href="https://github.com/gevak" class="contact-item external-link">
-                    <div class="stamp-box"><i class="fab fa-github"></i></div>
-                    <span>SOURCE_CODE</span>
-                    <span style="font-size:0.6rem; letter-spacing:2px;">|||||||||</span>
-                </a>
-                <a href="https://linkedin.com/in/gevakip" class="contact-item external-link">
-                    <div class="stamp-box"><i class="fab fa-linkedin"></i></div>
-                    <span>DOSSIER</span>
-                    <span style="font-size:0.6rem; border:1px solid #555; padding:0 2px;">CLASSIFIED</span>
-                </a>
-                <a href="https://facebook.com/geva.kipper" class="contact-item external-link">
-                    <div class="stamp-box"><i class="fab fa-facebook"></i></div>
-                    <span>CIVILIAN_ID</span>
-                    <span style="font-size:0.6rem;">[PHOTO N/A]</span>
-                </a>
-            </div>
-        </div>
-    </main>
-
-    <footer>
-        <div>
-            Architected by AI Model [Version Redacted]. Iteration #842.<br>
-            Secure Connection Established.
-        </div>
-        <div style="text-align: right;">
-            <div style="font-size: 0.8rem; color: #666;">TIME ELAPSED SINCE INCIDENT 2025-11-19</div>
-            <div class="timer" id="doomsday-timer">00:00:00:00</div>
-        </div>
-    </footer>
-
-    <script>
-        /* --- 1. DECRYPTION TEXT EFFECT --- */
-        const nameElement = document.getElementById('name-decrypt');
-        const finalName = "GEVA KIPPER";
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890@#$%^&*";
+<div id="receipt-container">
+    <div class="receipt">
         
-        let iterations = 0;
-        const decryptEffect = setInterval(() => {
-            nameElement.innerText = finalName
-                .split("")
-                .map((letter, index) => {
-                    if(index < iterations) {
-                        return letter;
-                    }
-                    return chars[Math.floor(Math.random() * chars.length)]
-                })
-                .join("");
-            
-            if(iterations >= finalName.length) clearInterval(decryptEffect);
-            iterations += 1/3; // Speed of resolve
-        }, 30);
+        <!-- HEADER -->
+        <header class="header">
+            <div class="logo">GEVA KIPPER</div>
+            <div class="double-separator"></div>
+            <div class="meta-row">
+                <span>ROLE: SOFTWARE ENGINEER</span>
+                <span>LOC: GOOGLE HQ</span>
+            </div>
+            <div class="disclaimer-box">
+                NOTICE: This interface is re-generated daily by AI. Design subject to algorithmic drift.
+            </div>
+        </header>
 
-        /* --- 2. DOOMSDAY TIMER (Count UP to Future) --- */
-        // The prompt creates a paradox: "Time Elapsed since [Future Date]".
-        // To visualize this with urgency and Sci-Fi logic, we display T-MINUS to the event.
-        // Or, to fits "Time Capsule from Future", we simply count up from a negative start.
-        const targetDate = new Date('2025-11-19T00:00:00').getTime();
-        const timerEl = document.getElementById('doomsday-timer');
+        <div class="separator"></div>
 
-        setInterval(() => {
-            const now = new Date().getTime();
-            const distance = targetDate - now; // Time remaining to future date
+        <!-- ITEMS LIST -->
+        <div id="items-list">
 
-            // Paradox Logic: Display raw milliseconds counting unpredictably or standard T-Minus
-            const days = Math.floor(Math.abs(distance) / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((Math.abs(distance) % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((Math.abs(distance) % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((Math.abs(distance) % (1000 * 60)) / 1000);
-            const ms = Math.floor((Math.abs(distance) % 1000) / 10);
+            <!-- Item 01 -->
+            <div class="item-row">
+                <div class="item-header">QTY 1: GLGLSTATS (PYTHON)</div>
+                <div class="visual-container">
+                    <canvas id="c-glgl" width="300" height="80"></canvas>
+                </div>
+                <div class="action-links">
+                    <a href="https://glglstats.geekip.dev" target="_blank">[SKU: WEB_SITE]</a><br>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">[SKU: PY_DATA_TALK]</a>
+                </div>
+            </div>
+            <div class="separator"></div>
 
-            // Format: T-MINUS or T-PLUS depending on date
-            const prefix = distance > 0 ? "T-MINUS " : "T-PLUS ";
-            
-            timerEl.innerText = `${prefix} ${days}d ${hours}h ${minutes}m ${seconds}s .${ms}`;
-            
-            // Add glitch effect occasionally
-            if(Math.random() > 0.95) {
-                timerEl.style.textShadow = "2px 0 red, -2px 0 blue";
-                setTimeout(()=> timerEl.style.textShadow = "0 0 5px var(--alert-red)", 100);
-            }
-        }, 50);
+            <!-- Item 02 -->
+            <div class="item-row">
+                <div class="item-header">QTY 1: HEATMAP ANALYTICS</div>
+                <div class="visual-container">
+                    <canvas id="c-map" width="300" height="80"></canvas>
+                </div>
+                <div class="action-links">
+                    <div>AHUZAT DIBUK COVERAGE:</div>
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="sub-link">REF: NEWS_13</a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="sub-link">REF: MAKO</a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="sub-link">REF: SECRET_TLV</a>
+                </div>
+            </div>
+            <div class="separator"></div>
 
-        /* --- 3. MATRIX RAIN (Card 1) --- */
-        const canvas = document.getElementById('matrixCanvas');
-        const ctx = canvas.getContext('2d');
+            <!-- Item 03 -->
+            <div class="item-row">
+                <div class="item-header">QTY 1: C++ ALGO // GEOMETRY</div>
+                <!-- Rotating polygon handled via CSS + Dither combo -->
+                <div class="visual-container">
+                     <!-- We will draw a polygon on canvas and rely on CSS to rotate the whole container slightly, 
+                          but for specific wireframe rotation we can do it in JS or just CSS rotate the canvas wrapper -->
+                     <div class="rotate-stepped" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items:center;">
+                        <canvas id="c-poly" width="100" height="80"></canvas>
+                     </div>
+                </div>
+                <div class="action-links" style="text-align: center;">
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" style="text-decoration: underline; font-weight: bold; font-size: 1.3rem;">VIEW SOURCE</a>
+                </div>
+            </div>
+            <div class="separator"></div>
 
-        // Resize canvas
-        const resizeCanvas = () => {
-            const parent = canvas.parentElement;
-            canvas.width = parent.clientWidth;
-            canvas.height = parent.clientHeight;
-        };
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+            <!-- Item 04 -->
+            <div class="item-row">
+                <div class="item-header">QTY 1: LLM_ARENA_PUNS</div>
+                <div class="star-rating">★★★★★</div>
+                <div class="visual-container">
+                    <canvas id="c-jest" width="300" height="80"></canvas>
+                </div>
+                <div class="action-links">
+                    <a href="https://jest.geekip.dev" target="_blank" class="sku-code">SURVEY CODE: JEST.DEV</a>
+                </div>
+            </div>
+            <div class="separator"></div>
 
-        const matrixChars = "01";
-        const fontSize = 10;
-        const columns = canvas.width / fontSize;
-        const drops = Array(Math.floor(columns)).fill(1);
+             <!-- Item 05 -->
+             <div class="item-row">
+                <div class="item-header">QTY 1: CHROME_EXT (COMEDY)</div>
+                <div class="visual-container">
+                    <canvas id="c-rhyme" width="300" height="80"></canvas>
+                </div>
+                <div class="action-links" style="text-align:center;">
+                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn-install">INSTALL EXTENSION</a>
+                </div>
+            </div>
+            <div class="separator"></div>
 
-        function drawMatrix() {
-            // Transparent black to create fade trail
-            ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+             <!-- Item 06 -->
+             <div class="item-row">
+                <div class="item-header">QTY 1: RECURSION_ERROR</div>
+                <div class="visual-container">
+                    <canvas id="c-meta" width="300" height="80"></canvas>
+                </div>
+                <div class="action-links">
+                    <a href="https://geekip.dev" target="_blank">SELF_REFERENCE: TRUE</a>
+                </div>
+            </div>
+            <div class="separator"></div>
 
-            ctx.fillStyle = "#0F0"; // Green text
-            ctx.font = fontSize + "px monospace";
+        </div>
 
-            for (let i = 0; i < drops.length; i++) {
-                const text = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
-                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        <!-- SOCIALS -->
+        <div class="loyalty-section">
+            <div style="margin-bottom: 10px; font-weight: bold;">*** LOYALTY CONNECT ***</div>
+            <div class="icons-row">
+                <a href="https://github.com/gevak" target="_blank">
+                    <div class="social-icon">GH</div>
+                </a>
+                <a href="https://linkedin.com/in/gevakip" target="_blank">
+                    <div class="social-icon">LI</div>
+                </a>
+                <a href="https://facebook.com/geva.kipper" target="_blank">
+                    <div class="social-icon">FB</div>
+                </a>
+            </div>
+            <div style="text-align: center; margin-top:5px;">
+                <a href="https://github.com/gevak" class="social-link-text">github.com/gevak</a>
+                <a href="https://linkedin.com/in/gevakip" class="social-link-text">linkedin.com/in/gevakip</a>
+            </div>
+        </div>
 
-                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975)
-                    drops[i] = 0;
-                drops[i]++;
-            }
-            requestAnimationFrame(drawMatrix);
+        <div class="double-separator"></div>
+
+        <!-- FOOTER -->
+        <footer class="total-section">
+            <div class="cashier-id">CASHIER ID: AI_MODEL_V1</div>
+            <div class="stopwatch" id="live-timer">LOADING...</div>
+        </footer>
+
+    </div>
+</div>
+
+<script>
+    /* 
+     * 1. GRAPHICS ENGINE (Floyd-Steinberg Dithering)
+     * We draw vector shapes to a canvas, then run pixel manipulation to dither them
+     * to purely black and transparent/white pixels.
+     */
+
+    function applyDither(ctx, width, height) {
+        const imgData = ctx.getImageData(0, 0, width, height);
+        const data = imgData.data;
+        
+        // Convert to grayscale first, then dither
+        for (let i = 0; i < data.length; i += 4) {
+            const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+            data[i] = avg;     // R
+            data[i + 1] = avg; // G
+            data[i + 2] = avg; // B
         }
-        drawMatrix();
 
-        /* --- 4. SELF DESTRUCT NAVIGATION --- */
-        const links = document.querySelectorAll('.external-link');
-        const overlay = document.getElementById('signal-lost-overlay');
-        const staticScreen = overlay.querySelector('.static-screen');
-        const lostText = overlay.querySelector('.lost-text');
-        const overlaySound = new Audio("data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA=="); // Silent placeholder for logic
+        // Floyd-Steinberg
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const i = (y * width + x) * 4;
+                const oldPixel = data[i];
+                const newPixel = oldPixel < 128 ? 0 : 255;
+                
+                data[i] = newPixel;
+                data[i + 1] = newPixel;
+                data[i + 2] = newPixel;
+                // data[i+3] is alpha, keep as is (usually 255 unless transparent)
 
-        links.forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const targetUrl = this.href;
+                const quantError = oldPixel - newPixel;
 
-                // 1. Flash White
-                overlay.style.opacity = '1';
-                overlay.style.background = 'white';
-                overlay.style.pointerEvents = 'all';
+                if (x + 1 < width) {
+                    const idx = (y * width + (x + 1)) * 4;
+                    data[idx] += quantError * 7 / 16;
+                }
+                if (x - 1 >= 0 && y + 1 < height) {
+                    const idx = ((y + 1) * width + (x - 1)) * 4;
+                    data[idx] += quantError * 3 / 16;
+                }
+                if (y + 1 < height) {
+                    const idx = ((y + 1) * width + x) * 4;
+                    data[idx] += quantError * 5 / 16;
+                }
+                if (x + 1 < width && y + 1 < height) {
+                    const idx = ((y + 1) * width + (x + 1)) * 4;
+                    data[idx] += quantError * 1 / 16;
+                }
+            }
+        }
+        ctx.putImageData(imgData, 0, 0);
+    }
 
-                // 2. Cut to Static after 100ms
-                setTimeout(() => {
-                    overlay.style.background = 'black';
-                    staticScreen.style.opacity = '0.8';
-                    lostText.style.display = 'block';
-                    
-                    // 3. Navigate after 600ms
-                    setTimeout(() => {
-                        window.location.href = targetUrl;
-                    }, 600);
-                }, 100);
-            });
-        });
+    // Drawing Functions for specific items
+    
+    function drawGlgl(id) {
+        const cvs = document.getElementById(id);
+        const ctx = cvs.getContext('2d');
+        // Draw white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0,0,300,80);
+        
+        // Draw Sparkline
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, 40);
+        for(let x=0; x<300; x+=5) {
+            // Random noise to look like audio waveform
+            const y = 40 + (Math.random() * 60 - 30);
+            ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        
+        // Apply dither to make it look printed
+        applyDither(ctx, 300, 80);
+    }
 
-    </script>
+    function drawMap(id) {
+        const cvs = document.getElementById(id);
+        const ctx = cvs.getContext('2d');
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0,0,300,80);
+
+        // Draw Heatmap Grid
+        for(let y=0; y<80; y+=10) {
+            for(let x=0; x<300; x+=10) {
+                // Random gray intensity
+                const intensity = Math.floor(Math.random() * 255);
+                ctx.fillStyle = `rgb(${intensity},${intensity},${intensity})`;
+                ctx.fillRect(x, y, 10, 10);
+            }
+        }
+        applyDither(ctx, 300, 80);
+    }
+
+    function drawPoly(id) {
+        const cvs = document.getElementById(id);
+        const ctx = cvs.getContext('2d');
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0,0,100,80);
+        
+        // Draw Shape
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(50, 10);
+        ctx.lineTo(90, 30);
+        ctx.lineTo(70, 70);
+        ctx.lineTo(30, 70);
+        ctx.lineTo(10, 30);
+        ctx.closePath();
+        ctx.stroke();
+        
+        // Internal triangulation lines
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(50,10); ctx.lineTo(70,70);
+        ctx.moveTo(50,10); ctx.lineTo(30,70);
+        ctx.stroke();
+
+        applyDither(ctx, 100, 80);
+    }
+
+    function drawJest(id) {
+        const cvs = document.getElementById(id);
+        const ctx = cvs.getContext('2d');
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0,0,300,80);
+
+        // Draw split face
+        // Left Robot
+        ctx.fillStyle = '#aaa';
+        ctx.fillRect(120, 10, 30, 60);
+        ctx.fillStyle = 'black';
+        ctx.fillRect(125, 25, 10, 10); // eye
+
+        // Right Jester
+        ctx.fillStyle = '#555';
+        ctx.beginPath();
+        ctx.moveTo(150, 10);
+        ctx.lineTo(180, 10);
+        ctx.lineTo(185, 30); // Hat tip
+        ctx.lineTo(165, 70);
+        ctx.lineTo(150, 70);
+        ctx.fill();
+        
+        applyDither(ctx, 300, 80);
+    }
+
+    function drawRhyme(id) {
+        const cvs = document.getElementById(id);
+        const ctx = cvs.getContext('2d');
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0,0,300,80);
+
+        // Newspaper Layout
+        ctx.fillStyle = 'black';
+        // Headline blocks
+        ctx.fillRect(50, 10, 200, 15);
+        // Columns
+        ctx.fillStyle = '#888';
+        for(let row=0; row<3; row++) {
+            ctx.fillRect(50, 35 + (row*12), 90, 8);
+            ctx.fillRect(150, 35 + (row*12), 100, 8);
+        }
+        applyDither(ctx, 300, 80);
+    }
+
+    function drawMeta(id) {
+        const cvs = document.getElementById(id);
+        const ctx = cvs.getContext('2d');
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0,0,300,80);
+        
+        // Recursion Rectangles
+        ctx.strokeStyle = 'black';
+        let w = 60, h = 70;
+        let x = 150 - w/2;
+        let y = 40 - h/2;
+        
+        for(let i=0; i<5; i++) {
+            ctx.strokeRect(x, y, w, h);
+            x += 5;
+            y += 5;
+            w -= 10;
+            h -= 10;
+        }
+
+        applyDither(ctx, 300, 80);
+    }
+
+    // Run Dithering
+    window.addEventListener('load', () => {
+        drawGlgl('c-glgl');
+        drawMap('c-map');
+        drawPoly('c-poly');
+        drawJest('c-jest');
+        drawRhyme('c-rhyme');
+        drawMeta('c-meta');
+    });
+
+
+    /* 
+     * 2. SCROLL SWAY ANIMATION
+     * Calculates scroll velocity to rotate the receipt in 3D space.
+     */
+    
+    let lastScrollY = window.scrollY;
+    const container = document.querySelector('.receipt');
+    
+    function swayLoop() {
+        const currentScrollY = window.scrollY;
+        const velocity = currentScrollY - lastScrollY;
+        
+        // Clamp velocity to prevent extreme swinging
+        const rotation = Math.max(Math.min(velocity * 0.1, 5), -5);
+        
+        // Apply transform. Note: Container needs perspective in CSS.
+        container.style.transform = `rotateX(${rotation}deg) translateY(${rotation > 0 ? -rotation : rotation}px)`;
+        
+        lastScrollY = currentScrollY;
+        requestAnimationFrame(swayLoop);
+    }
+    swayLoop();
+
+
+    /* 
+     * 3. TIMER / STOPWATCH
+     * Counts from reference date: 2025-11-20 01:04:37
+     */
+
+    const timerEl = document.getElementById('live-timer');
+    const targetDate = new Date('2025-11-20T01:04:37').getTime();
+
+    function updateTimer() {
+        const now = new Date().getTime();
+        const diff = now - targetDate;
+        const isFuture = diff < 0;
+        const absDiff = Math.abs(diff);
+
+        const hours = Math.floor(absDiff / (1000 * 60 * 60));
+        const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((absDiff % (1000 * 60)) / 1000);
+
+        // Format with leading zeros
+        const hh = String(hours).padStart(2, '0');
+        const mm = String(minutes).padStart(2, '0');
+        const ss = String(seconds).padStart(2, '0');
+
+        // Flicker effect on seconds: random chance opacity
+        const flicker = Math.random() > 0.9 ? 0.5 : 1;
+        
+        const prefix = isFuture ? "ETA: -" : "T+: ";
+        timerEl.innerHTML = `${prefix}${hh}:${mm}<span style="opacity:${flicker}">:${ss}</span>`;
+    }
+
+    setInterval(updateTimer, 100); // Updates 10 times a second for responsiveness
+
+</script>
+
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20251119",
+          pageId: "20251120",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
