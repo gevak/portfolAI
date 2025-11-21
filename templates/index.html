@@ -2,668 +2,697 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GEVA KIPPER - TRANSACTION LOG</title>
+    <title>Geva Kipper | SDE @ Google</title>
+    
+    <!-- Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Playfair+Display:ital,wght@0,900;1,900&display=swap" rel="stylesheet">
+
     <style>
         :root {
-            --bg-color: #1a1a1a;
-            --paper-color: #f4f4f4;
-            --ink-color: #111111;
-            --ink-subtle: rgba(17, 17, 17, 0.85);
-            --dashed-border: 2px dashed var(--ink-color);
-            --font-main: 'VT323', monospace;
+            --bg-color: #050505;
+            --text-color: #ffffff;
+            --accent-cyan: #00f3ff;
+            --accent-magenta: #ff00ff;
+            --accent-lime: #39ff14;
+            --glass-bg: rgba(10, 10, 12, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-serif: 'Playfair Display', serif;
         }
 
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
             background-color: var(--bg-color);
-            margin: 0;
-            padding: 40px 0;
-            font-family: var(--font-main);
-            color: var(--ink-color);
+            color: var(--text-color);
+            font-family: var(--font-mono);
             overflow-x: hidden;
-            perspective: 1000px; /* For the 3D sway effect */
+            min-height: 100vh;
+            cursor: crosshair;
         }
 
-        /* The Receipt Container */
-        #receipt-container {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            transform-origin: top center;
-            will-change: transform;
-            transition: transform 0.1s ease-out;
-        }
-
-        .receipt {
-            background-color: var(--paper-color);
-            width: 380px;
-            max-width: 95vw;
-            position: relative;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            /* Paper texture noise overlay */
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-        }
-
-        /* Jagged Bottom Edge */
-        .receipt::after {
-            content: "";
-            position: absolute;
+        /* === The Living Background === */
+        #life-engine {
+            position: fixed;
+            top: 0;
             left: 0;
-            bottom: -10px;
-            width: 100%;
-            height: 10px;
-            background: 
-                linear-gradient(45deg, transparent 33.333%, var(--paper-color) 33.333%, var(--paper-color) 66.667%, transparent 66.667%),
-                linear-gradient(-45deg, transparent 33.333%, var(--paper-color) 33.333%, var(--paper-color) 66.667%, transparent 66.667%);
-            background-size: 20px 40px;
-            background-position: 0 -20px;
-        }
-
-        /* Typography & General Layout */
-        h1, h2, h3, p {
-            margin: 0;
-            line-height: 1.2;
-            text-transform: uppercase;
-        }
-
-        a {
-            color: var(--ink-color);
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        /* Hover Overstrike Effect */
-        a:hover {
-            text-shadow: 0.5px 0 0 var(--ink-color); /* Simulates double-strike bold */
-            font-weight: 900;
-        }
-
-        .separator {
-            width: 100%;
-            border-bottom: var(--dashed-border);
-            margin: 15px 0;
-            opacity: 0.6;
-        }
-
-        .double-separator {
-            border-bottom: 4px double var(--ink-color);
-            margin: 15px 0;
-        }
-
-        /* Header */
-        .header {
-            text-align: center;
-        }
-        .logo {
-            font-size: 3rem;
-            letter-spacing: 2px;
-            font-weight: bold;
-            margin-bottom: 5px;
-            opacity: 0.9;
-        }
-
-        .meta-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 1.2rem;
-            margin-bottom: 10px;
-        }
-
-        .disclaimer-box {
-            border: var(--dashed-border);
-            padding: 10px;
-            font-size: 1rem;
-            text-align: left;
-            margin-top: 15px;
-        }
-
-        /* Project Items */
-        .item-row {
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .item-header {
-            font-size: 1.4rem;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between; /* In case we want price right aligned later */
-        }
-
-        .visual-container {
-            width: 100%;
-            height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.03);
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* Canvas for Dithered Effects */
-        canvas.dither-canvas {
-            image-rendering: pixelated; 
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            z-index: -1;
         }
 
-        .action-links {
+        /* === Typography & Header === */
+        header {
+            text-align: center;
+            padding: 4rem 1rem 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: -2px;
+            margin-bottom: 0.5rem;
+            animation: assembleText 1.5s cubic-bezier(0.21, 1, 0.31, 1) forwards;
+            opacity: 0;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .subtitle {
             font-size: 1.1rem;
-            padding-left: 10px;
+            opacity: 0.9;
+            margin-bottom: 1.5rem;
         }
 
-        .sub-link {
-            display: block;
-            margin-left: 20px;
-            font-size: 1rem;
+        .ai-disclaimer {
+            font-size: 0.8rem;
+            color: var(--accent-lime);
+            background: rgba(0, 20, 0, 0.5);
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            border: 1px solid var(--accent-lime);
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
+        }
+
+        .ai-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background: var(--accent-lime);
+            animation: blink 1s infinite;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+
+        /* === The Bento Grid === */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 5;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 80px; /* Space for footer */
+        }
+
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            height: 300px; /* Uniform height for masonry feel */
+        }
+
+        .card.collision-active {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.4), inset 0 0 10px rgba(0, 243, 255, 0.2);
+            transform: scale(1.005);
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            z-index: 2;
+        }
+
+        .card p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #ddd;
+            z-index: 2;
+            flex-grow: 1;
+        }
+
+        .card-links {
+            margin-top: 15px;
+            z-index: 2;
+            display: flex;
+            gap: 15px;
+        }
+
+        .card a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.9rem;
+            position: relative;
+            transition: color 0.2s;
+        }
+
+        .card a:hover {
+            color: var(--text-color);
+            text-shadow: 0 0 8px var(--accent-cyan);
+        }
+
+        /* === Specific Card Styles === */
+        
+        /* 1. GlglStats - Waveform */
+        #card-glglstats .visual {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 4px;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        .bar {
+            width: 6px;
+            background: var(--accent-magenta);
+            animation: wave 1s ease-in-out infinite;
+        }
+        .bar:nth-child(odd) { animation-duration: 0.8s; }
+        .bar:nth-child(2n) { animation-duration: 1.1s; }
+        .bar:nth-child(3n) { animation-duration: 1.3s; }
+
+        /* 2. Ahuzat Dibuk - Map Texture */
+        #card-ahuzat {
+            background-image: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.05) 2px, transparent 2px), 
+                              radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 2px, transparent 2px);
+            background-size: 30px 30px;
+        }
+        .map-lines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.02) 10px, rgba(255,255,255,0.02) 11px);
+            pointer-events: none;
+        }
+
+        /* 3. 2D Part - Geometry */
+        #card-2dpart .poly-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border: 2px solid var(--accent-lime);
+            transform: rotate(45deg);
+            animation: rotatePoly 10s linear infinite;
+        }
+
+        /* 4. Turing Jest */
+        #card-turing .split-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 2rem;
+            opacity: 0.8;
+        }
+
+        /* 5. Rhymes - Newspaper */
+        #card-rhymes h2 {
+            font-family: var(--font-serif);
+            font-style: italic;
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #fff;
+            padding-bottom: 5px;
+        }
+
+        /* 6. Meta Portfolio */
+        #card-meta {
+            border: 1px solid var(--accent-cyan);
+        }
+        .recursive-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            width: 80%;
+            height: 80%;
+            border: 1px solid rgba(255,255,255,0.2);
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        .recursive-frame::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60%; height: 60%;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* 7. Contact Hub */
+        #card-contact {
+            grid-column: span 1; /* Keep it square-ish depending on grid */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid var(--accent-lime);
+        }
+        .social-icons {
+            display: flex;
+            gap: 20px;
+            font-size: 1.5rem;
+        }
+        .paus-indicator {
+            position: absolute;
+            bottom: 10px;
+            font-size: 0.7rem;
+            color: var(--accent-lime);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #card-contact:hover .paus-indicator {
+            opacity: 1;
+        }
+
+        /* === Footer === */
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #000;
+            border-top: 1px solid #222;
+            padding: 5px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            z-index: 100;
+            color: #666;
         }
         
-        .sub-link::before {
-            content: "+ ";
+        .timer {
+            color: var(--accent-cyan);
+            font-weight: 700;
+            font-family: monospace;
+            padding: 2px 8px;
+            background: #111;
+            border-radius: 3px;
         }
 
-        .sku-code {
-            font-family: 'VT323', monospace;
-            letter-spacing: 1px;
-            border: 1px solid var(--ink-color);
-            padding: 2px 6px;
-            display: inline-block;
-            margin-top: 5px;
+        /* Animations */
+        @keyframes assembleText {
+            0% { opacity: 0; letter-spacing: 10px; filter: blur(10px); }
+            100% { opacity: 1; letter-spacing: -2px; filter: blur(0); }
         }
 
-        .star-rating {
-            font-size: 1.5rem;
-            line-height: 1;
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
         }
 
-        .btn-install {
-            border: 2px solid var(--ink-color);
-            background: transparent;
-            color: var(--ink-color);
-            padding: 5px 15px;
-            font-family: var(--font-main);
-            font-size: 1.2rem;
-            text-transform: uppercase;
-            display: inline-block;
-            margin-top: 5px;
+        @keyframes wave {
+            0%, 100% { height: 10px; }
+            50% { height: 50px; }
         }
 
-        /* Animation Specifics */
-        .rotate-stepped {
-            animation: spin 4s steps(8) infinite;
-            transform-origin: center;
-        }
-
-        @keyframes spin {
+        @keyframes rotatePoly {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
 
-        /* Footer */
-        .loyalty-section {
-            text-align: center;
-            margin-top: 20px;
-            margin-bottom: 30px;
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            .grid { grid-template-columns: 1fr; }
         }
-
-        .icons-row {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 10px;
-        }
-
-        .social-icon {
-            width: 40px;
-            height: 40px;
-            border: 2px solid var(--ink-color);
-            border-radius: 50%; /* Stamp look */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-        
-        .social-link-text {
-            font-size: 0.9rem;
-            display: block;
-            font-stretch: condensed;
-        }
-
-        .total-section {
-            text-align: center;
-            font-size: 1.2rem;
-        }
-
-        .cashier-id {
-            margin-bottom: 5px;
-        }
-
-        .stopwatch {
-            font-size: 1.6rem;
-            font-weight: bold;
-            letter-spacing: 2px;
-        }
-
     </style>
 </head>
 <body>
 
-<div id="receipt-container">
-    <div class="receipt">
-        
-        <!-- HEADER -->
-        <header class="header">
-            <div class="logo">GEVA KIPPER</div>
-            <div class="double-separator"></div>
-            <div class="meta-row">
-                <span>ROLE: SOFTWARE ENGINEER</span>
-                <span>LOC: GOOGLE HQ</span>
-            </div>
-            <div class="disclaimer-box">
-                NOTICE: This interface is re-generated daily by AI. Design subject to algorithmic drift.
-            </div>
-        </header>
+    <canvas id="life-engine"></canvas>
 
-        <div class="separator"></div>
+    <header>
+        <h1>GEVA KIPPER</h1>
+        <div class="subtitle">Software Engineer at Google</div>
+        <div class="ai-disclaimer">
+            > This interface is hallucinogenic—redesigned daily by AI to ensure perpetual novelty.<span class="ai-cursor"></span>
+        </div>
+    </header>
 
-        <!-- ITEMS LIST -->
-        <div id="items-list">
+    <div class="container">
+        <div class="grid">
+            
+            <!-- 1. GlglStats -->
+            <article class="card" id="card-glglstats">
+                <div class="content">
+                    <h2>GlglStats</h2>
+                    <p>High-precision pop-chart analysis using LZ77 algorithms. Visualize the repetitive nature of modern music through data compression stats.</p>
+                    <div class="card-links">
+                        <a href="https://glglstats.geekip.dev" target="_blank" id="trigger-glgl">Launch Site</a>
+                        <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">Watch Talk</a>
+                    </div>
+                </div>
+                <div class="visual">
+                    <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                    <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                    <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                </div>
+            </article>
 
-            <!-- Item 01 -->
-            <div class="item-row">
-                <div class="item-header">QTY 1: GLGLSTATS (PYTHON)</div>
-                <div class="visual-container">
-                    <canvas id="c-glgl" width="300" height="80"></canvas>
+            <!-- 2. Ahuzat Dibuk -->
+            <article class="card" id="card-ahuzat">
+                <div class="map-lines"></div>
+                <div class="content">
+                    <h2>Ahuzat Dibuk</h2>
+                    <p>Automated parking scraper and heat-map generator for Tel-Aviv. Exposed real-time parking availability and pricing corruption trends.</p>
+                    <div class="card-links">
+                        <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">News Item</a>
+                    </div>
                 </div>
-                <div class="action-links">
-                    <a href="https://glglstats.geekip.dev" target="_blank">[SKU: WEB_SITE]</a><br>
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">[SKU: PY_DATA_TALK]</a>
-                </div>
-            </div>
-            <div class="separator"></div>
+            </article>
 
-            <!-- Item 02 -->
-            <div class="item-row">
-                <div class="item-header">QTY 1: HEATMAP ANALYTICS</div>
-                <div class="visual-container">
-                    <canvas id="c-map" width="300" height="80"></canvas>
+            <!-- 3. 2D Part Orienting -->
+            <article class="card" id="card-2dpart">
+                <div class="poly-icon"></div>
+                <div class="content">
+                    <h2>2D Part Orienting</h2>
+                    <p>Algorithmic robotics research. C++ implementation of push-plans to orient polygonal parts on a conveyor belt without sensors.</p>
+                    <div class="card-links">
+                        <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">Research Page</a>
+                    </div>
                 </div>
-                <div class="action-links">
-                    <div>AHUZAT DIBUK COVERAGE:</div>
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="sub-link">REF: NEWS_13</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="sub-link">REF: MAKO</a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="sub-link">REF: SECRET_TLV</a>
-                </div>
-            </div>
-            <div class="separator"></div>
+            </article>
 
-            <!-- Item 03 -->
-            <div class="item-row">
-                <div class="item-header">QTY 1: C++ ALGO // GEOMETRY</div>
-                <!-- Rotating polygon handled via CSS + Dither combo -->
-                <div class="visual-container">
-                     <!-- We will draw a polygon on canvas and rely on CSS to rotate the whole container slightly, 
-                          but for specific wireframe rotation we can do it in JS or just CSS rotate the canvas wrapper -->
-                     <div class="rotate-stepped" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items:center;">
-                        <canvas id="c-poly" width="100" height="80"></canvas>
-                     </div>
+            <!-- 4. The Turing Jest -->
+            <article class="card" id="card-turing">
+                <div class="split-icon">🤖🃏</div>
+                <div class="content">
+                    <h2>The Turing Jest</h2>
+                    <p>A competitive arena for Large Language Models. Which AI has the better sense of humor? A blind A/B testing platform for machine-generated puns.</p>
+                    <div class="card-links">
+                        <a href="https://jest.geekip.dev" target="_blank">Start Battle</a>
+                    </div>
                 </div>
-                <div class="action-links" style="text-align: center;">
-                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" style="text-decoration: underline; font-weight: bold; font-size: 1.3rem;">VIEW SOURCE</a>
-                </div>
-            </div>
-            <div class="separator"></div>
+            </article>
 
-            <!-- Item 04 -->
-            <div class="item-row">
-                <div class="item-header">QTY 1: LLM_ARENA_PUNS</div>
-                <div class="star-rating">★★★★★</div>
-                <div class="visual-container">
-                    <canvas id="c-jest" width="300" height="80"></canvas>
+            <!-- 5. Rhymes of Israel -->
+            <article class="card" id="card-rhymes">
+                <div class="content">
+                    <h2>Rhymes of Israel</h2>
+                    <p>Browser extension that transforms mundane news headlines into rhyming couplets using phonetic analysis algorithms.</p>
+                    <div class="card-links">
+                        <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank">Add to Chrome</a>
+                    </div>
                 </div>
-                <div class="action-links">
-                    <a href="https://jest.geekip.dev" target="_blank" class="sku-code">SURVEY CODE: JEST.DEV</a>
-                </div>
-            </div>
-            <div class="separator"></div>
+            </article>
 
-             <!-- Item 05 -->
-             <div class="item-row">
-                <div class="item-header">QTY 1: CHROME_EXT (COMEDY)</div>
-                <div class="visual-container">
-                    <canvas id="c-rhyme" width="300" height="80"></canvas>
+            <!-- 6. The Meta Portfolio -->
+            <article class="card" id="card-meta">
+                <div class="recursive-frame"></div>
+                <div class="content">
+                    <h2>The Meta-Portfolio</h2>
+                    <p>A self-referential loop. The site you are currently viewing, generated with a Game of Life physics engine.</p>
+                    <div class="card-links">
+                        <a href="https://geekip.dev">geekip.dev</a>
+                    </div>
                 </div>
-                <div class="action-links" style="text-align:center;">
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn-install">INSTALL EXTENSION</a>
-                </div>
-            </div>
-            <div class="separator"></div>
+            </article>
 
-             <!-- Item 06 -->
-             <div class="item-row">
-                <div class="item-header">QTY 1: RECURSION_ERROR</div>
-                <div class="visual-container">
-                    <canvas id="c-meta" width="300" height="80"></canvas>
+            <!-- 7. Contact Hub -->
+            <article class="card" id="card-contact">
+                <h2 style="margin: 0 0 1rem 0; font-size: 1rem; opacity: 0.7; text-transform: uppercase;">Connect</h2>
+                <div class="social-icons">
+                    <a href="https://github.com/gevak" target="_blank">GH</a>
+                    <a href="https://linkedin.com/in/gevakip" target="_blank">LI</a>
+                    <a href="https://facebook.com/geva.kipper" target="_blank">FB</a>
                 </div>
-                <div class="action-links">
-                    <a href="https://geekip.dev" target="_blank">SELF_REFERENCE: TRUE</a>
-                </div>
-            </div>
-            <div class="separator"></div>
+                <div class="paus-indicator">[ SIMULATION PAUSED ]</div>
+            </article>
 
         </div>
-
-        <!-- SOCIALS -->
-        <div class="loyalty-section">
-            <div style="margin-bottom: 10px; font-weight: bold;">*** LOYALTY CONNECT ***</div>
-            <div class="icons-row">
-                <a href="https://github.com/gevak" target="_blank">
-                    <div class="social-icon">GH</div>
-                </a>
-                <a href="https://linkedin.com/in/gevakip" target="_blank">
-                    <div class="social-icon">LI</div>
-                </a>
-                <a href="https://facebook.com/geva.kipper" target="_blank">
-                    <div class="social-icon">FB</div>
-                </a>
-            </div>
-            <div style="text-align: center; margin-top:5px;">
-                <a href="https://github.com/gevak" class="social-link-text">github.com/gevak</a>
-                <a href="https://linkedin.com/in/gevakip" class="social-link-text">linkedin.com/in/gevakip</a>
-            </div>
-        </div>
-
-        <div class="double-separator"></div>
-
-        <!-- FOOTER -->
-        <footer class="total-section">
-            <div class="cashier-id">CASHIER ID: AI_MODEL_V1</div>
-            <div class="stopwatch" id="live-timer">LOADING...</div>
-        </footer>
-
     </div>
-</div>
 
-<script>
-    /* 
-     * 1. GRAPHICS ENGINE (Floyd-Steinberg Dithering)
-     * We draw vector shapes to a canvas, then run pixel manipulation to dither them
-     * to purely black and transparent/white pixels.
-     */
+    <footer>
+        <div class="left-status">Site generated by AI Model [Claude 3.5-Sonnet]</div>
+        <div class="right-status">
+            RUNTIME: <span class="timer" id="elapsed-time">00:00:00</span>
+        </div>
+    </footer>
 
-    function applyDither(ctx, width, height) {
-        const imgData = ctx.getImageData(0, 0, width, height);
-        const data = imgData.data;
+    <script>
+        /* 
+        ========================================
+        THE LIVING CODE ENGINE: Game of Life
+        ========================================
+        */
         
-        // Convert to grayscale first, then dither
-        for (let i = 0; i < data.length; i += 4) {
-            const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-            data[i] = avg;     // R
-            data[i + 1] = avg; // G
-            data[i + 2] = avg; // B
+        const canvas = document.getElementById('life-engine');
+        const ctx = canvas.getContext('2d', { alpha: false }); // Optimize
+        const cards = document.querySelectorAll('.card');
+        const contactCard = document.getElementById('card-contact');
+        
+        // Configuration
+        const cellSize = 8;
+        const decayRate = 0.05; // How fast trails fade
+        let cols, rows;
+        let grid, nextGrid;
+        let obstacles = [];
+        let isPaused = false;
+        
+        // Colors: [R, G, B]
+        const colors = [
+            [0, 243, 255],  // Cyan
+            [255, 0, 255],  // Magenta
+            [57, 255, 20]   // Lime
+        ];
+
+        // --- Initialization ---
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            cols = Math.ceil(canvas.width / cellSize);
+            rows = Math.ceil(canvas.height / cellSize);
+            
+            // Initialize grids with float values for fading (0 = dead, 1 = full life)
+            grid = new Float32Array(cols * rows).fill(0);
+            nextGrid = new Float32Array(cols * rows).fill(0);
+            
+            // Initial Spawn: Create text-like chaos near header
+            spawnCluster(Math.floor(cols/2), Math.floor(rows/4), 50);
         }
 
-        // Floyd-Steinberg
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                const i = (y * width + x) * 4;
-                const oldPixel = data[i];
-                const newPixel = oldPixel < 128 ? 0 : 255;
-                
-                data[i] = newPixel;
-                data[i + 1] = newPixel;
-                data[i + 2] = newPixel;
-                // data[i+3] is alpha, keep as is (usually 255 unless transparent)
+        function getIndex(x, y) {
+            if (x < 0 || x >= cols || y < 0 || y >= rows) return -1;
+            return x + y * cols;
+        }
 
-                const quantError = oldPixel - newPixel;
+        function updateObstacles() {
+            obstacles = [];
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                obstacles.push({
+                    left: Math.floor(rect.left / cellSize),
+                    right: Math.floor(rect.right / cellSize),
+                    top: Math.floor(rect.top / cellSize),
+                    bottom: Math.floor(rect.bottom / cellSize),
+                    element: card
+                });
+            });
+        }
 
-                if (x + 1 < width) {
-                    const idx = (y * width + (x + 1)) * 4;
-                    data[idx] += quantError * 7 / 16;
+        // --- The Engine ---
+        function checkCollision(x, y) {
+            for (let obs of obstacles) {
+                if (x >= obs.left && x <= obs.right && y >= obs.top && y <= obs.bottom) {
+                    // Trigger DOM effect
+                    if (!obs.element.classList.contains('collision-active')) {
+                        obs.element.classList.add('collision-active');
+                        setTimeout(() => obs.element.classList.remove('collision-active'), 200);
+                    }
+                    return true; // Collision detected
                 }
-                if (x - 1 >= 0 && y + 1 < height) {
-                    const idx = ((y + 1) * width + (x - 1)) * 4;
-                    data[idx] += quantError * 3 / 16;
+            }
+            return false;
+        }
+
+        function step() {
+            if (isPaused) {
+                draw(); // Just redraw existing state, don't update
+                requestAnimationFrame(step);
+                return;
+            }
+
+            // Swap buffers logic handled manually for performance
+            let idx = 0;
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    
+                    // Check solid matter collision
+                    if (checkCollision(x, y)) {
+                        nextGrid[idx] = 0;
+                        idx++;
+                        continue; 
+                    }
+
+                    const state = grid[idx];
+                    
+                    // Count neighbors
+                    let neighbors = 0;
+                    for (let i = -1; i <= 1; i++) {
+                        for (let j = -1; j <= 1; j++) {
+                            if (i === 0 && j === 0) continue;
+                            const nIdx = getIndex(x + i, y + j);
+                            if (nIdx !== -1 && grid[nIdx] >= 0.9) {
+                                neighbors++;
+                            }
+                        }
+                    }
+
+                    // Rules
+                    if (state >= 0.9) {
+                        // Alive
+                        if (neighbors < 2 || neighbors > 3) {
+                            nextGrid[idx] = state - decayRate; // Dies
+                        } else {
+                            nextGrid[idx] = 1; // Survives
+                        }
+                    } else {
+                        // Dead or Fading
+                        if (neighbors === 3) {
+                            nextGrid[idx] = 1; // Reproduction
+                        } else {
+                            nextGrid[idx] = Math.max(0, state - decayRate); // Decay
+                        }
+                    }
+                    idx++;
                 }
-                if (y + 1 < height) {
-                    const idx = ((y + 1) * width + x) * 4;
-                    data[idx] += quantError * 5 / 16;
-                }
-                if (x + 1 < width && y + 1 < height) {
-                    const idx = ((y + 1) * width + (x + 1)) * 4;
-                    data[idx] += quantError * 1 / 16;
+            }
+
+            // Swap arrays
+            let temp = grid;
+            grid = nextGrid;
+            nextGrid = temp;
+
+            draw();
+            requestAnimationFrame(step);
+        }
+
+        function draw() {
+            // Clear background
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            let idx = 0;
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const value = grid[idx];
+                    if (value > 0) {
+                        // Pick color based on position for gradient effect
+                        const colorIdx = (x + y) % 3; // crude hash
+                        const [r, g, b] = colors[Math.floor(Math.random() * 3)]; // Randomize for scintiallation
+                        
+                        // Alpha based on life value (age/fade)
+                        const alpha = value; // Non-linear for better contrast
+                        
+                        // Draw pixel
+                        ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+                        ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
+                    }
+                    idx++;
                 }
             }
         }
-        ctx.putImageData(imgData, 0, 0);
-    }
 
-    // Drawing Functions for specific items
-    
-    function drawGlgl(id) {
-        const cvs = document.getElementById(id);
-        const ctx = cvs.getContext('2d');
-        // Draw white background
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0,0,300,80);
-        
-        // Draw Sparkline
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(0, 40);
-        for(let x=0; x<300; x+=5) {
-            // Random noise to look like audio waveform
-            const y = 40 + (Math.random() * 60 - 30);
-            ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-        
-        // Apply dither to make it look printed
-        applyDither(ctx, 300, 80);
-    }
+        // --- Interactions ---
 
-    function drawMap(id) {
-        const cvs = document.getElementById(id);
-        const ctx = cvs.getContext('2d');
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0,0,300,80);
+        // 1. Mouse Spawner
+        window.addEventListener('mousemove', (e) => {
+            const gx = Math.floor(e.clientX / cellSize);
+            const gy = Math.floor(e.clientY / cellSize);
+            spawnCluster(gx, gy, 3); // Paint life
+        });
 
-        // Draw Heatmap Grid
-        for(let y=0; y<80; y+=10) {
-            for(let x=0; x<300; x+=10) {
-                // Random gray intensity
-                const intensity = Math.floor(Math.random() * 255);
-                ctx.fillStyle = `rgb(${intensity},${intensity},${intensity})`;
-                ctx.fillRect(x, y, 10, 10);
+        function spawnCluster(cx, cy, radius) {
+            for (let i = 0; i < radius * 5; i++) {
+                const offsetX = Math.floor(Math.random() * radius * 2 - radius);
+                const offsetY = Math.floor(Math.random() * radius * 2 - radius);
+                const idx = getIndex(cx + offsetX, cy + offsetY);
+                if (idx !== -1) grid[idx] = 1;
             }
         }
-        applyDither(ctx, 300, 80);
-    }
 
-    function drawPoly(id) {
-        const cvs = document.getElementById(id);
-        const ctx = cvs.getContext('2d');
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0,0,100,80);
-        
-        // Draw Shape
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(50, 10);
-        ctx.lineTo(90, 30);
-        ctx.lineTo(70, 70);
-        ctx.lineTo(30, 70);
-        ctx.lineTo(10, 30);
-        ctx.closePath();
-        ctx.stroke();
-        
-        // Internal triangulation lines
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(50,10); ctx.lineTo(70,70);
-        ctx.moveTo(50,10); ctx.lineTo(30,70);
-        ctx.stroke();
+        // 2. Scroll Sync (Update Collisions)
+        window.addEventListener('scroll', updateObstacles);
+        window.addEventListener('resize', () => {
+            resize();
+            updateObstacles();
+        });
 
-        applyDither(ctx, 100, 80);
-    }
+        // 3. Specific Element Interactions
+        const glglLink = document.getElementById('trigger-glgl');
+        glglLink.addEventListener('mouseenter', (e) => {
+            const rect = e.target.getBoundingClientRect();
+            const cx = Math.floor((rect.left + rect.width/2) / cellSize);
+            const cy = Math.floor((rect.bottom + 20) / cellSize); // Spawn below
+            spawnCluster(cx, cy, 20); // Massive pulse
+        });
 
-    function drawJest(id) {
-        const cvs = document.getElementById(id);
-        const ctx = cvs.getContext('2d');
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0,0,300,80);
+        // 4. Pause on Contact Hub
+        contactCard.addEventListener('mouseenter', () => isPaused = true);
+        contactCard.addEventListener('mouseleave', () => isPaused = false);
 
-        // Draw split face
-        // Left Robot
-        ctx.fillStyle = '#aaa';
-        ctx.fillRect(120, 10, 30, 60);
-        ctx.fillStyle = 'black';
-        ctx.fillRect(125, 25, 10, 10); // eye
+        // --- Footer Timer ---
+        const timerEl = document.getElementById('elapsed-time');
+        // Target Date: 2025-11-21 01:05:32
+        // Assuming this is the start epoch as per spec
+        const startEpoch = new Date('2025-11-21T01:05:32').getTime();
 
-        // Right Jester
-        ctx.fillStyle = '#555';
-        ctx.beginPath();
-        ctx.moveTo(150, 10);
-        ctx.lineTo(180, 10);
-        ctx.lineTo(185, 30); // Hat tip
-        ctx.lineTo(165, 70);
-        ctx.lineTo(150, 70);
-        ctx.fill();
-        
-        applyDither(ctx, 300, 80);
-    }
+        function updateTimer() {
+            const now = new Date().getTime();
+            // Calculate absolute difference
+            let diff = now - startEpoch;
+            
+            // Handling if we are before the date (though spec implies elapsed since)
+            // We'll just show absolute time elapsed/remaining
+            if (diff < 0) diff = -diff;
 
-    function drawRhyme(id) {
-        const cvs = document.getElementById(id);
-        const ctx = cvs.getContext('2d');
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0,0,300,80);
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-        // Newspaper Layout
-        ctx.fillStyle = 'black';
-        // Headline blocks
-        ctx.fillRect(50, 10, 200, 15);
-        // Columns
-        ctx.fillStyle = '#888';
-        for(let row=0; row<3; row++) {
-            ctx.fillRect(50, 35 + (row*12), 90, 8);
-            ctx.fillRect(150, 35 + (row*12), 100, 8);
-        }
-        applyDither(ctx, 300, 80);
-    }
-
-    function drawMeta(id) {
-        const cvs = document.getElementById(id);
-        const ctx = cvs.getContext('2d');
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0,0,300,80);
-        
-        // Recursion Rectangles
-        ctx.strokeStyle = 'black';
-        let w = 60, h = 70;
-        let x = 150 - w/2;
-        let y = 40 - h/2;
-        
-        for(let i=0; i<5; i++) {
-            ctx.strokeRect(x, y, w, h);
-            x += 5;
-            y += 5;
-            w -= 10;
-            h -= 10;
+            timerEl.innerText = 
+                String(hours).padStart(2, '0') + ':' + 
+                String(minutes).padStart(2, '0') + ':' + 
+                String(seconds).padStart(2, '0');
+            
+            requestAnimationFrame(updateTimer);
         }
 
-        applyDither(ctx, 300, 80);
-    }
+        // --- Start ---
+        resize();
+        updateObstacles();
+        step();
+        updateTimer();
 
-    // Run Dithering
-    window.addEventListener('load', () => {
-        drawGlgl('c-glgl');
-        drawMap('c-map');
-        drawPoly('c-poly');
-        drawJest('c-jest');
-        drawRhyme('c-rhyme');
-        drawMeta('c-meta');
-    });
-
-
-    /* 
-     * 2. SCROLL SWAY ANIMATION
-     * Calculates scroll velocity to rotate the receipt in 3D space.
-     */
-    
-    let lastScrollY = window.scrollY;
-    const container = document.querySelector('.receipt');
-    
-    function swayLoop() {
-        const currentScrollY = window.scrollY;
-        const velocity = currentScrollY - lastScrollY;
-        
-        // Clamp velocity to prevent extreme swinging
-        const rotation = Math.max(Math.min(velocity * 0.1, 5), -5);
-        
-        // Apply transform. Note: Container needs perspective in CSS.
-        container.style.transform = `rotateX(${rotation}deg) translateY(${rotation > 0 ? -rotation : rotation}px)`;
-        
-        lastScrollY = currentScrollY;
-        requestAnimationFrame(swayLoop);
-    }
-    swayLoop();
-
-
-    /* 
-     * 3. TIMER / STOPWATCH
-     * Counts from reference date: 2025-11-20 01:04:37
-     */
-
-    const timerEl = document.getElementById('live-timer');
-    const targetDate = new Date('2025-11-20T01:04:37').getTime();
-
-    function updateTimer() {
-        const now = new Date().getTime();
-        const diff = now - targetDate;
-        const isFuture = diff < 0;
-        const absDiff = Math.abs(diff);
-
-        const hours = Math.floor(absDiff / (1000 * 60 * 60));
-        const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((absDiff % (1000 * 60)) / 1000);
-
-        // Format with leading zeros
-        const hh = String(hours).padStart(2, '0');
-        const mm = String(minutes).padStart(2, '0');
-        const ss = String(seconds).padStart(2, '0');
-
-        // Flicker effect on seconds: random chance opacity
-        const flicker = Math.random() > 0.9 ? 0.5 : 1;
-        
-        const prefix = isFuture ? "ETA: -" : "T+: ";
-        timerEl.innerHTML = `${prefix}${hh}:${mm}<span style="opacity:${flicker}">:${ss}</span>`;
-    }
-
-    setInterval(updateTimer, 100); // Updates 10 times a second for responsiveness
-
-</script>
-
+    </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20251120",
+          pageId: "20251121",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
