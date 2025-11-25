@@ -2,725 +2,797 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | Software Engineer</title>
+    <title>Geva Kipper | The Symphonic Terminal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;600&family=Roboto+Mono:ital,wght@0,300;0,500;1,400&family=Playfair+Display:ital,wght@1,700&family=Permanent+Marker&display=swap" rel="stylesheet">
+    
     <style>
-        /* --- RESET & FONTS --- */
-        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;500;700&family=Montserrat:wght@800;900&family=Orbitron:wght@400;700&display=swap');
-        
+        /* --- CSS VARIABLES & RESET --- */
         :root {
-            --bg: #121212;
-            --neon-green: #39ff14;
-            --neon-dim: #1e8a0b;
-            --chrome: #dcdcdc;
-            --chrome-dark: #757575;
-            --text: #ffffff;
-            --bar-height: 20px;
-            --plate-height: 350px;
-            --plate-width: 90%;
-            --max-plate-width: 600px;
+            --bg-color: #0a0a0a;
+            --neon-cyan: #00f3ff;
+            --neon-red: #ff003c;
+            --glass-bg: rgba(20, 20, 20, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --font-mono: 'Fira Code', monospace;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            cursor: none; /* Hide default cursor for the Baton */
+            margin: 0;
+            padding: 0;
+        }
 
         body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: 'Fira Code', monospace;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
             overflow-x: hidden;
-            /* Hide scrollbar visually but allow scroll mechanics */
-            scrollbar-width: none; 
-            -ms-overflow-style: none;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
         }
-        body::-webkit-scrollbar { display: none; }
 
-        /* --- SCROLL SPACER --- */
-        /* This invisible element provides the height for scrolling */
-        #scroll-dummy {
-            height: 800vh; /* Roughly 1 screen per project + buffers */
-            width: 100%;
-            position: absolute;
-            top: 0;
-            z-index: -1;
+        /* --- THE BATON (CURSOR) --- */
+        #baton {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #fff 30%, transparent 70%);
+            border-radius: 50%;
             pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px 2px rgba(255, 255, 255, 0.8);
+            transition: width 0.1s, height 0.1s;
+            mix-blend-mode: difference;
+        }
+        #baton.active {
+            width: 40px;
+            height: 40px;
         }
 
-        /* --- STAGE (Fixed Viewport) --- */
-        #stage {
+        /* --- BACKGROUND CANVAS --- */
+        #sorting-canvas {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.3;
+        }
+
+        /* --- INITIALIZATION OVERLAY --- */
+        #init-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            cursor: pointer !important; /* Default cursor to click */
+        }
+        #init-overlay h1 {
+            cursor: pointer;
+            font-size: 2rem;
+            text-shadow: 0 0 10px var(--neon-cyan);
+            animation: pulse 2s infinite;
+        }
+
+        /* --- MAIN LAYOUT --- */
+        .layout-wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-end;
-            overflow: hidden;
+            padding: 2rem;
         }
 
         /* --- HEADER --- */
         header {
-            position: absolute;
-            top: 5vh;
             text-align: center;
-            z-index: 10;
-            width: 100%;
+            margin-bottom: 4rem;
+            margin-top: 2rem;
         }
 
-        h1 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: clamp(3rem, 8vw, 5rem);
-            color: var(--chrome);
-            text-transform: uppercase;
+        h1.name {
+            font-size: 3.5rem;
+            font-weight: 600;
             letter-spacing: -2px;
-            text-shadow: 0 0 10px rgba(255,255,255,0.1);
-            margin-bottom: 10px;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
         }
 
-        .badge {
-            background: var(--neon-green);
-            color: var(--bg);
-            padding: 5px 15px;
-            font-weight: 700;
+        .byline {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            opacity: 0;
+            animation: fadeIn 2s forwards 0.5s;
+        }
+
+        .ai-disclaimer {
+            font-size: 0.7rem;
+            color: var(--neon-red);
             text-transform: uppercase;
-            font-size: 0.9rem;
-            border-radius: 4px;
-            display: inline-block;
-            margin-bottom: 15px;
-            box-shadow: 0 0 15px var(--neon-dim);
+            animation: glitch 3s infinite alternate;
         }
 
-        .glitch-text {
-            font-size: 0.8rem;
-            color: #888;
-            position: relative;
-            display: inline-block;
-            animation: glitch-skew 3s infinite linear alternate-reverse;
-        }
-        
-        /* Glitch Animation Keyframes */
-        @keyframes glitch-skew {
-            0% { transform: skew(0deg); }
-            20% { transform: skew(-2deg); }
-            40% { transform: skew(2deg); }
-            60% { transform: skew(0deg); }
-            80% { transform: skew(1deg); }
-            100% { transform: skew(0deg); }
+        /* --- ORCHESTRA (PROJECTS) --- */
+        .orchestra-pit {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+            width: 100%;
+            max-width: 1400px;
+            perspective: 1000px;
         }
 
-        /* --- AVATAR & BARBELL --- */
-        .avatar-wrapper {
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 400px;
-            height: 400px;
+        /* Card Styles */
+        .project-card {
+            width: 350px;
+            min-height: 280px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: flex-end;
-            z-index: 5;
-            transition: transform 0.1s;
-        }
-
-        /* The Shake Animation when 'lifting' */
-        .shaking {
-            animation: shake 0.1s infinite;
-        }
-
-        @keyframes shake {
-            0% { transform: translateX(-51%) translateY(1px); }
-            25% { transform: translateX(-49%) translateY(-1px); }
-            50% { transform: translateX(-51%) translateY(-1px); }
-            75% { transform: translateX(-49%) translateY(1px); }
-            100% { transform: translateX(-50%) translateY(0); }
-        }
-
-        svg#geva-avatar {
-            width: 100%;
-            height: 100%;
-            overflow: visible;
-        }
-
-        /* Barbell Bar (The Input Field) */
-        .barbell-bar {
-            position: absolute;
-            bottom: 140px; /* Aligned with avatar shoulders */
-            width: 200vw; /* Extends off screen */
-            height: var(--bar-height);
-            background: #000;
-            border-top: 2px solid var(--chrome);
-            border-bottom: 2px solid var(--chrome);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
-            z-index: 6;
-        }
-        
-        .barbell-text {
-            color: var(--neon-green);
-            font-size: 12px;
-            opacity: 0.8;
-            letter-spacing: 2px;
-        }
-
-        /* --- WEIGHT PLATES (Projects) --- */
-        .plate-rack {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none; /* Let scrolls pass through */
-            z-index: 4; /* Behind avatar, above bg */
-        }
-
-        .plate {
-            position: absolute;
-            left: 50%;
-            /* Starts above viewport */
-            top: -100vh; 
-            transform: translateX(-50%);
-            width: var(--plate-width);
-            max-width: var(--max-plate-width);
-            height: var(--plate-height);
-            background: #1a1a1a;
-            border: 4px solid var(--chrome-dark);
-            border-radius: 10px;
-            display: grid;
-            grid-template-rows: auto 1fr auto;
-            padding: 20px;
-            transition: top 0.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s;
-            opacity: 0;
-            pointer-events: auto; /* Enable clicking buttons */
-            box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+            transition: all 0.3s ease;
+            position: relative;
             overflow: hidden;
         }
 
-        .plate.locked-in {
-            top: calc(100vh - 140px - var(--plate-height)); /* Sit on barbell */
-            opacity: 1;
+        /* Semi-Circle Arrangement (Desktop) */
+        @media(min-width: 1200px) {
+            .project-card:nth-child(1) { transform: translateY(40px) rotate(-10deg); }
+            .project-card:nth-child(2) { transform: translateY(10px) rotate(-5deg); }
+            .project-card:nth-child(3) { transform: translateY(0px) rotate(0deg); }
+            .project-card:nth-child(4) { transform: translateY(0px) rotate(0deg); }
+            .project-card:nth-child(5) { transform: translateY(10px) rotate(5deg); }
+            .project-card:nth-child(6) { transform: translateY(40px) rotate(10deg); }
+            
+            .project-card:hover {
+                transform: scale(1.05) translateY(-10px) rotate(0deg) !important;
+                z-index: 20;
+                box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+                border-color: var(--neon-cyan);
+            }
         }
 
-        .plate.stacked {
-            /* Fades out and moves up slightly as new one comes */
-            opacity: 0; 
-            transform: translateX(-50%) scale(0.9);
-            top: calc(100vh - 140px - var(--plate-height) + 20px);
+        @media(max-width: 1199px) {
+            .project-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+            }
         }
 
-        /* Plate Aesthetics */
-        .plate-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-        }
-        .plate-title {
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
-            font-size: 1.5rem;
-            color: var(--text);
-        }
-        .plate-weight {
-            color: var(--chrome-dark);
-            font-weight: bold;
-        }
-
-        .plate-content {
-            font-size: 0.9rem;
-            line-height: 1.5;
-            color: #ccc;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .plate-visual {
+        .card-visual {
             height: 100px;
             width: 100%;
-            background: #000;
-            margin-bottom: 10px;
-            border: 1px solid #333;
+            background: rgba(0,0,0,0.3);
+            margin-bottom: 1rem;
+            border-radius: 6px;
             position: relative;
             overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
-        .plate-ctas {
+        .card-content h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+        .card-content p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            margin-bottom: 1rem;
+        }
+
+        .card-actions {
+            margin-top: auto;
             display: flex;
             gap: 10px;
-            padding-top: 20px;
             flex-wrap: wrap;
         }
-
-        .btn {
+        
+        button, a.btn {
             background: transparent;
-            border: 1px solid var(--neon-green);
-            color: var(--neon-green);
-            padding: 8px 16px;
-            font-family: 'Fira Code', monospace;
-            font-size: 0.8rem;
-            cursor: pointer;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 5px 10px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
             text-decoration: none;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
+            text-transform: uppercase;
+            transition: 0.2s;
+            display: inline-block;
         }
-        .btn:hover {
-            background: var(--neon-green);
-            color: var(--bg);
-            box-shadow: 0 0 10px var(--neon-dim);
+        button:hover, a.btn:hover {
+            background: var(--neon-cyan);
+            color: #000;
         }
 
-        /* SPECIFIC PLATE VISUALS */
-        /* 1. GlglStats - Equalizer */
-        .eq-bar {
-            width: 10px;
-            background: var(--neon-green);
-            margin: 0 2px;
-            animation: equalizer 0.5s infinite alternate;
-        }
-        .eq-bar:nth-child(2) { animation-delay: 0.1s; height: 40%; }
-        .eq-bar:nth-child(3) { animation-delay: 0.3s; height: 70%; }
-        @keyframes equalizer { from { height: 10%; } to { height: 90%; } }
+        /* --- SPECIFIC CARD VISUALS --- */
+        /* 1. Violin / Waveform */
+        #canvas-violin { width: 100%; height: 100%; }
 
-        /* 2. Ahuzat - Heatmap */
-        .heatmap-bg {
-            width: 100%; height: 100%;
-            background: 
-                radial-gradient(circle at 20% 30%, rgba(255, 0, 0, 0.4) 0%, transparent 30%),
-                radial-gradient(circle at 70% 60%, rgba(255, 80, 0, 0.4) 0%, transparent 40%),
-                repeating-linear-gradient(45deg, #111 0, #111 10px, #151515 10px, #151515 20px);
+        /* 2. Percussion / Heatmap */
+        #visual-percussion {
+            background: linear-gradient(90deg, #2ecc71, #e74c3c);
+            background-size: 300% 100%;
+            transition: background-position 0.1s;
+        }
+        .lot-status { 
+            position: absolute; bottom: 5px; right: 5px; font-size: 0.7rem; font-weight: bold; background: #000; padding: 2px 5px; 
         }
 
-        /* 3. 2D Part - Polygon */
-        .polygon-rot {
-            width: 50px; height: 50px;
-            border: 2px solid var(--chrome);
-            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-            animation: spin-snap 2s infinite ease-in-out;
-        }
-        @keyframes spin-snap { 
-            0% { transform: rotate(0deg); } 
-            80% { transform: rotate(360deg); } 
-            100% { transform: rotate(360deg); } 
+        /* 3. Brass / Polygon */
+        #visual-brass { display: flex; justify-content: center; align-items: center; }
+        .polygon {
+            width: 50px; height: 50px; border: 2px solid var(--neon-cyan);
+            transform-origin: center; transition: transform 0.2s ease-out;
         }
 
-        /* 4. Turing Jest - VS */
-        .vs-screen {
-            display: flex; width: 100%; height: 100%;
+        /* 4. Woodwinds / Chat */
+        #visual-woodwinds { padding: 10px; display: flex; flex-direction: column; justify-content: space-around; }
+        .bubble {
+            background: white; color: black; padding: 5px 10px; border-radius: 10px; font-size: 0.6rem; width: fit-content;
         }
-        .vs-left, .vs-right { flex: 1; display: flex; align-items: center; justify-content: center; font-weight: bold;}
-        .vs-left { background: #220000; color: red; }
-        .vs-right { background: #000022; color: cyan; }
+        .bubble.left { align-self: flex-start; border-bottom-left-radius: 0; }
+        .bubble.right { align-self: flex-end; border-bottom-right-radius: 0; background: var(--neon-cyan); }
+        .orchestra-pit:hover .bubble { animation: bounce 1s infinite; }
 
-        /* 5. Rhymes - Newspaper */
-        .newspaper-bg {
-            background: #ddd;
-            color: #111;
-            font-family: 'Georgia', serif;
-            padding: 5px;
-            font-size: 10px;
-            width: 100%; height: 100%;
-            overflow: hidden;
-            opacity: 0.8;
-        }
+        /* 5. Chorus / Morph Fonts */
+        #visual-chorus { display: flex; justify-content: center; align-items: center; background: #fff; color: #000; }
+        .rhyme-text { font-family: 'Playfair Display', serif; font-size: 1.5rem; transition: all 0.3s; }
+        .project-card:hover .rhyme-text { font-family: 'Permanent Marker', cursive; transform: scale(1.1) rotate(-2deg); color: var(--neon-red); }
 
-        /* 6. Meta - Reflection */
-        .mirror-frame {
-            width: 60px; height: 35px;
-            border: 2px solid var(--neon-green);
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        /* --- FOOTER (The Cool Down) --- */
-        #footer {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 35vh;
+        /* 6. Mirror / Recursion */
+        #visual-mirror { 
             background: #0a0a0a;
-            transform: translateY(100%);
-            transition: transform 0.8s ease-out;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-top: 4px solid var(--chrome);
-            z-index: 20;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
         }
-        #footer.active {
-            transform: translateY(0);
+        .droste {
+            width: 60%; height: 60%; border: 1px solid rgba(255,255,255,0.3);
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+        }
+        .droste::after {
+            content: "Waiting for Conductor...";
+            font-size: 0.4rem; color: white; text-align: center;
+        }
+        /* Simulate recursion with nested shadows and scaling */
+        .droste-inner {
+            width: 60%; height: 60%; border: 1px solid var(--neon-cyan);
         }
 
-        .social-rack {
+        /* --- FOOTER & SOCIAL --- */
+        footer {
+            margin-top: 3rem;
+            text-align: center;
+            padding-bottom: 2rem;
+            width: 100%;
+        }
+        .social-links {
             display: flex;
-            gap: 30px;
-            margin-bottom: 20px;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
         }
         .social-icon {
-            width: 50px; height: 50px;
-            border: 2px solid var(--chrome-dark);
-            border-radius: 50%; /* Rings visuals */
+            width: 40px; height: 40px;
+            border: 1px solid var(--text-secondary);
+            border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            color: var(--text);
+            color: var(--text-primary);
             text-decoration: none;
-            font-size: 1.5rem;
-            transition: 0.2s;
+            font-size: 1.2rem;
+            transition: all 0.3s;
         }
         .social-icon:hover {
-            border-color: var(--neon-green);
-            color: var(--neon-green);
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+            transform: translateY(-5px);
+        }
+        /* Rhythm bounce applied via JS */
+
+        /* --- CHRONOMETER --- */
+        #chronometer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid var(--neon-red);
+            padding: 10px;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            text-align: right;
+            z-index: 100;
+            box-shadow: 0 0 10px rgba(255, 0, 60, 0.3);
+        }
+        #uptime-val {
+            color: var(--neon-red);
+            font-weight: bold;
+            font-size: 1rem;
+            display: block;
+        }
+        .model-credit { opacity: 0.6; font-size: 0.6rem; display: block; margin-top: 4px; }
+
+        /* --- MODAL --- */
+        #video-modal {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 10001;
+            align-items: center; justify-content: center;
+        }
+        #video-modal.open { display: flex; }
+        .modal-content {
+            position: relative; width: 80%; max-width: 800px; aspect-ratio: 16/9;
+            background: #000; border: 1px solid var(--neon-cyan);
+        }
+        .close-modal {
+            position: absolute; top: -30px; right: 0; color: white; cursor: pointer !important;
         }
 
-        .timer-display {
-            font-family: 'Fira Code', monospace;
-            font-size: 3rem;
-            color: #ff0d0d;
-            background: #000;
-            padding: 10px 30px;
-            border: 4px solid #333;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            text-shadow: 0 0 10px red;
+        /* --- ANIMATIONS --- */
+        @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes glitch {
+            0% { opacity: 1; transform: skew(0deg); }
+            20% { opacity: 0.8; transform: skew(-2deg); }
+            40% { opacity: 1; transform: skew(2deg); }
+            100% { opacity: 1; transform: skew(0deg); }
         }
-        .credits {
-            font-size: 0.7rem;
-            color: #555;
-            text-align: center;
-        }
-
-        /* --- RESPONSIVE --- */
-        @media (max-width: 600px) {
-            h1 { font-size: 2.5rem; }
-            .plate { width: 95%; padding: 15px; }
-            .plate-visual { height: 60px; }
-            .barbell-bar { display: none; /* Text input look breaks on small mobile, simplify */ }
-        }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
     </style>
+    <!-- FontAwesome wrapper for icons (CDN) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </head>
 <body>
 
-    <!-- Hidden scroll dummy -->
-    <div id="scroll-dummy"></div>
+    <!-- Custom Cursor -->
+    <div id="baton"></div>
 
-    <header>
-        <h1>GEVA KIPPER</h1>
-        <div class="badge">Software Engineer at Google</div>
-        <br>
-        <div class="glitch-text" data-text="Daily AI Build: v2025.11.24">
-            &lt; SYSTEM: This website is re-designed each day by AI &gt;
-        </div>
-    </header>
+    <!-- Interaction Init Overlay -->
+    <div id="init-overlay">
+        <h1>Click to Ascend Podium</h1>
+        <p style="color: #aaa; margin-top: 10px;">(Enables Audio & Animation)</p>
+    </div>
 
-    <main id="stage">
-        
-        <!-- The Barbell Physical Object -->
-        <div class="avatar-wrapper" id="avatar-container">
-            <!-- SVG Avatar -->
-            <svg id="geva-avatar" viewBox="0 0 200 200">
-                <!-- Defs for gradients -->
-                <defs>
-                    <linearGradient id="chromeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style="stop-color:#bdc3c7;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#2c3e50;stop-opacity:1" />
-                    </linearGradient>
-                </defs>
-                
-                <!-- Legs (Squat Stance) -->
-                <g id="legs">
-                    <path d="M70,180 L60,140 L80,110" stroke="#555" stroke-width="12" fill="none" stroke-linecap="round"/>
-                    <path d="M130,180 L140,140 L120,110" stroke="#555" stroke-width="12" fill="none" stroke-linecap="round"/>
-                </g>
+    <!-- Background Canvas -->
+    <canvas id="sorting-canvas"></canvas>
 
-                <!-- Body -->
-                <rect x="80" y="60" width="40" height="60" rx="5" fill="#333" stroke="#111"/>
-                <!-- Belt -->
-                <rect x="78" y="105" width="44" height="15" rx="2" fill="#222" stroke="var(--neon-green)" stroke-width="1"/>
+    <div class="layout-wrapper">
+        <!-- Header -->
+        <header>
+            <h1 class="name">Geva Kipper</h1>
+            <p class="byline">Building scalable systems and orchestrating code at Google.</p>
+            <p class="ai-disclaimer">This interface is hallucinated daily. Design generated by AI.</p>
+        </header>
 
-                <!-- Head -->
-                <circle cx="100" cy="45" r="18" fill="#e0e0e0" />
-                <!-- Sunglasses (Cyber) -->
-                <rect x="88" y="42" width="24" height="6" fill="#000" />
-
-                <!-- Arms Group -->
-                <g id="arms">
-                    <!-- Left Arm (Squat pos) -->
-                    <path id="arm-left" d="M80,70 L60,90 L55,135" stroke="#e0e0e0" stroke-width="10" fill="none" stroke-linecap="round"/>
-                    <!-- Right Arm (Squat pos) -->
-                    <path id="arm-right" d="M120,70 L140,90 L145,135" stroke="#e0e0e0" stroke-width="10" fill="none" stroke-linecap="round"/>
-                </g>
-
-                <!-- Triumph Arms (Hidden by default) -->
-                <g id="arms-triumph" style="opacity: 0;">
-                    <path d="M80,70 L60,40 L50,10" stroke="#e0e0e0" stroke-width="10" fill="none" stroke-linecap="round"/>
-                    <path d="M120,70 L140,40 L150,10" stroke="#e0e0e0" stroke-width="10" fill="none" stroke-linecap="round"/>
-                </g>
-            </svg>
-
-            <!-- The Barbell Bar -->
-            <div class="barbell-bar" id="barbell">
-                <span class="barbell-text">root@geva-gym:~/projects$ sudo lift --all</span>
-            </div>
-        </div>
-
-        <!-- The Project Plates -->
-        <div class="plate-rack">
+        <!-- Main Projects Arcs -->
+        <main class="orchestra-pit">
             
-            <!-- PROJECT 1: GLGLSTATS -->
-            <div class="plate" id="plate-0">
-                <div class="plate-header">
-                    <span class="plate-title">GLGLSTATS</span>
-                    <span class="plate-weight">45 LBS</span>
+            <!-- 1. The Lead Violin -->
+            <div class="project-card" data-sort-algo="quick">
+                <div class="card-visual" id="visual-violin">
+                    <canvas id="canvas-violin"></canvas>
                 </div>
-                <div class="plate-content">
-                    <div class="plate-visual" style="background: #111;">
-                        <div style="display:flex; align-items:flex-end; height: 60px;">
-                            <div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div>
-                            <div class="eq-bar"></div><div class="eq-bar"></div>
-                        </div>
-                        <span style="margin-left:10px; color:var(--neon-green); font-size:0.7em;">LZ77 COMPRESSION</span>
+                <div class="card-content">
+                    <h3>GlglStats (Lead Violin)</h3>
+                    <p>Analyzing pop-chart repetitiveness using LZ77 compression waveforms and Python.</p>
+                    <div class="card-actions">
+                        <a href="https://glglstats.geekip.dev" target="_blank" class="btn">Live Site</a>
+                        <button class="btn" onclick="openModal('jrKAtOsj1Lo')">Watch PyData</button>
                     </div>
-                    <p>Analyzing the repetitiveness of Israeli pop music using Python and compression algorithms.</p>
-                </div>
-                <div class="plate-ctas">
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn">▶ Talk</a>
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="btn">View Data</a>
                 </div>
             </div>
 
-            <!-- PROJECT 2: AHUZAT DIBUK -->
-            <div class="plate" id="plate-1">
-                <div class="plate-header">
-                    <span class="plate-title">AHUZAT DIBUK</span>
-                    <span class="plate-weight">90 LBS</span>
+            <!-- 2. The Percussion -->
+            <div class="project-card" data-sort-algo="merge" id="card-percussion">
+                <div class="card-visual" id="visual-percussion">
+                    <div class="lot-status">Occupancy: Calculating...</div>
                 </div>
-                <div class="plate-content">
-                    <div class="plate-visual">
-                        <div class="heatmap-bg"></div>
-                        <div style="position:absolute; color:white; font-weight:bold;">TEL AVIV MAP</div>
+                <div class="card-content">
+                    <h3>Ahuzat Dibuk (Percussion)</h3>
+                    <p>Real-time Tel-Aviv parking scraper and community tool.</p>
+                    <div class="card-actions">
+                        <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="btn">News 13</a>
+                        <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="btn">Mako</a>
+                        <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="btn">FB Community</a>
                     </div>
-                    <p>Scraping & Visualizing Tel-Aviv parking data. A viral investigation into the city's parking crisis.</p>
-                </div>
-                <div class="plate-ctas">
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="btn">Ch.13</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="btn">Mako</a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="btn">Post</a>
                 </div>
             </div>
 
-            <!-- PROJECT 3: 2D PART ORIENTING -->
-            <div class="plate" id="plate-2">
-                <div class="plate-header">
-                    <span class="plate-title">2D GEOMETRY</span>
-                    <span class="plate-weight">135 LBS</span>
+            <!-- 3. The Brass -->
+            <div class="project-card" data-sort-algo="bubble" id="card-brass">
+                <div class="card-visual" id="visual-brass">
+                    <div class="polygon"></div>
                 </div>
-                <div class="plate-content">
-                    <div class="plate-visual">
-                        <div class="polygon-rot"></div>
+                <div class="card-content">
+                    <h3>2D Part Orienting (Brass)</h3>
+                    <p>Computational geometry library implementation in C++ for orienting polygonal parts.</p>
+                    <div class="card-actions">
+                        <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn">View Algorithm</a>
                     </div>
-                    <p>C++ Implementation of the "Push Plan" algorithm for sensorless part orientation in robotics.</p>
-                </div>
-                <div class="plate-ctas">
-                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn">Source Code</a>
                 </div>
             </div>
 
-            <!-- PROJECT 4: THE TURING JEST -->
-            <div class="plate" id="plate-3">
-                <div class="plate-header">
-                    <span class="plate-title">THE TURING JEST</span>
-                    <span class="plate-weight">180 LBS</span>
+            <!-- 4. The Woodwinds -->
+            <div class="project-card" data-sort-algo="heap">
+                <div class="card-visual" id="visual-woodwinds">
+                    <div class="bubble left">Why did the LLM cross the road?</div>
+                    <div class="bubble right">To minimize the loss function!</div>
                 </div>
-                <div class="plate-content">
-                    <div class="plate-visual">
-                        <div class="vs-screen">
-                            <div class="vs-left">PUN</div>
-                            <div style="background:#000; color:#fff; padding:5px;">VS</div>
-                            <div class="vs-right">LOGIC</div>
-                        </div>
+                <div class="card-content">
+                    <h3>The Turing Jest (Woodwinds)</h3>
+                    <p>An AI vs Human pun competition platform.</p>
+                    <div class="card-actions">
+                        <a href="https://jest.geekip.dev" target="_blank" class="btn">Play the Arena</a>
                     </div>
-                    <p>An LMSYS-style arena for ranking LLM generated puns. Who is the funniest model?</p>
-                </div>
-                <div class="plate-ctas">
-                    <a href="https://jest.geekip.dev" target="_blank" class="btn">Enter Arena</a>
                 </div>
             </div>
 
-            <!-- PROJECT 5: RHYMES OF ISRAEL -->
-            <div class="plate" id="plate-4">
-                <div class="plate-header">
-                    <span class="plate-title">RHYMES OF IL</span>
-                    <span class="plate-weight">225 LBS</span>
+            <!-- 5. The Chorus -->
+            <div class="project-card" data-sort-algo="insertion">
+                <div class="card-visual" id="visual-chorus">
+                    <span class="rhyme-text">BREAKING NEWS</span>
                 </div>
-                <div class="plate-content">
-                    <div class="plate-visual">
-                        <div class="newspaper-bg">
-                            HEADLINE: BREAKING NEWS<br>NOW IT RHYMES WITH BLUES<br>THE DATA IS HERE...
-                        </div>
+                <div class="card-content">
+                    <h3>Rhymes of Israel (Chorus)</h3>
+                    <p>Chrome extension turning stressful news into comedic rhymes.</p>
+                    <div class="card-actions">
+                        <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn">Add to Chrome</a>
                     </div>
-                    <p>Chrome extension that rewrites local news headlines into yearbook-style rhyming couplets.</p>
-                </div>
-                <div class="plate-ctas">
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn">Add to Chrome</a>
                 </div>
             </div>
 
-            <!-- PROJECT 6: RECURSION -->
-            <div class="plate" id="plate-5">
-                <div class="plate-header">
-                    <span class="plate-title">META PORTFOLIO</span>
-                    <span class="plate-weight">LIFT FAILED</span>
+            <!-- 6. The Mirror -->
+            <div class="project-card" data-sort-algo="bogo">
+                <div class="card-visual" id="visual-mirror">
+                    <div class="droste"><div class="droste-inner"></div></div>
                 </div>
-                <div class="plate-content">
-                    <div class="plate-visual">
-                         <div class="mirror-frame">
-                             <div class="mirror-frame" style="transform: scale(0.7);">
-                                 <div class="mirror-frame" style="transform: scale(0.7);"></div>
-                             </div>
-                         </div>
+                <div class="card-content">
+                    <h3>Portfolio Meta-Link</h3>
+                    <p>A self-referential loop: The site you are currently conducting.</p>
+                    <div class="card-actions">
+                        <a href="https://geekip.dev" class="btn">Recursion</a>
                     </div>
-                    <p>The site you are currently looking at. Infinite recursion via CSS and Javascript.</p>
-                </div>
-                <div class="plate-ctas">
-                    <a href="https://geekip.dev" class="btn">geekip.dev</a>
                 </div>
             </div>
 
-        </div>
+        </main>
 
-        <!-- Footer Overlay -->
-        <footer id="footer">
-            <div class="timer-display" id="gym-timer">00:00:00</div>
-            <div style="color:#555; font-size:0.8rem; margin-bottom: 15px;">TIME SINCE: 2025-11-24</div>
-            
-            <div class="social-rack">
-                <a href="https://github.com/gevak" target="_blank" class="social-icon" title="GitHub">GH</a>
-                <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-icon" title="LinkedIn">LI</a>
-                <a href="https://facebook.com/geva.kipper" target="_blank" class="social-icon" title="Facebook">FB</a>
-            </div>
-            
-            <div class="credits">
-                SITE ARCHITECTURE GENERATED BY AI MODEL<br>
-                &copy; 2025 GEVA KIPPER
+        <!-- Footer -->
+        <footer>
+            <div class="social-links">
+                <a href="https://github.com/gevak" target="_blank" class="social-icon"><i class="fab fa-github"></i></a>
+                <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-icon"><i class="fab fa-linkedin-in"></i></a>
+                <a href="https://facebook.com/geva.kipper" target="_blank" class="social-icon"><i class="fab fa-facebook-f"></i></a>
             </div>
         </footer>
-    </main>
+    </div>
 
+    <!-- Chronometer -->
+    <div id="chronometer">
+        <div id="uptime-val">00:00:00:00</div>
+        <span style="color:#aaa; font-size:0.6rem">Runtime Duration</span>
+        <span class="model-credit">Architected by AI</span>
+    </div>
+
+    <!-- Video Modal -->
+    <div id="video-modal">
+        <div class="modal-content">
+            <div class="close-modal" onclick="closeModal()">[CLOSE]</div>
+            <iframe id="yt-frame" width="100%" height="100%" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
     <script>
-        // --- CONFIG ---
-        const plates = document.querySelectorAll('.plate');
-        const scrollDummy = document.getElementById('scroll-dummy');
-        const avatarWrapper = document.getElementById('avatar-container');
-        const avatarArms = document.getElementById('arms');
-        const avatarTriumph = document.getElementById('arms-triumph');
-        const barbell = document.getElementById('barbell');
-        const footer = document.getElementById('footer');
+        /* --- GLOBAL STATE --- */
+        const state = {
+            isConducting: false,
+            lastMouseTime: 0,
+            mousePos: { x: 0, y: 0 },
+            audioCtx: null,
+            masterGain: null,
+            array: [],
+            arraySize: 100,
+            sorter: null, // Generator function
+            currentAlgo: 'quick',
+            timerInterval: null
+        };
+
+        const canvas = document.getElementById('sorting-canvas');
+        const ctx = canvas.getContext('2d');
+        const baton = document.getElementById('baton');
         
-        // --- SCROLL LOGIC ---
-        window.addEventListener('scroll', () => {
-            const scrollTop = window.scrollY;
-            const maxScroll = document.body.scrollHeight - window.innerHeight;
-            const scrollFraction = scrollTop / maxScroll; // 0 to 1
+        /* --- RESIZE HANDLER --- */
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            state.arraySize = Math.floor(canvas.width / 10);
+            resetArray();
+        }
+        window.addEventListener('resize', resize);
 
-            // Calculate specific step based on number of plates
-            // We map scroll range to plate index ranges
-            const totalSteps = plates.length;
-            const stepSize = 1 / totalSteps;
+        /* --- INITIALIZATION --- */
+        document.getElementById('init-overlay').addEventListener('click', async function() {
+            // Audio Context Init
+            state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            state.masterGain = state.audioCtx.createGain();
+            state.masterGain.gain.value = 0.1; // Low volume
+            state.masterGain.connect(state.audioCtx.destination);
+
+            this.style.opacity = '0';
+            setTimeout(() => { this.style.display = 'none'; }, 500);
             
-            // AVATAR SHAKE LOGIC
-            // If we are not at the very bottom (finished), shake based on scroll movement
-            if (scrollFraction < 0.99) {
-                // Add shake class during movement
-                avatarWrapper.classList.add('shaking');
-                // Remove logic is debounced below
-                clearTimeout(window.shakeTimer);
-                window.shakeTimer = setTimeout(() => {
-                    avatarWrapper.classList.remove('shaking');
-                }, 150);
-
-                // Ensure Squat Stance
-                avatarArms.style.opacity = 1;
-                avatarTriumph.style.opacity = 0;
-                barbell.style.opacity = 1;
-                barbell.style.bottom = "140px"; // Shoulder rack position
-                footer.classList.remove('active');
-            } else {
-                // FINISHED STATE: TRIUMPH
-                avatarWrapper.classList.remove('shaking');
-                avatarArms.style.opacity = 0;
-                avatarTriumph.style.opacity = 1;
-                barbell.style.bottom = "300px"; // Overhead
-                barbell.style.transition = "bottom 0.4s ease-out";
-                footer.classList.add('active');
-            }
-
-            // PLATE STATE LOGIC
-            plates.forEach((plate, index) => {
-                // Determine if this plate should be visible
-                // A plate enters when scroll passes its threshold
-                const entryThreshold = index * stepSize;
-                const exitThreshold = (index + 1) * stepSize;
-
-                if (scrollFraction > entryThreshold) {
-                    // Determines if it's the Active plate or a Past plate
-                    if (scrollFraction < exitThreshold || index === plates.length - 1) {
-                        // ACTIVE (Locked in)
-                        plate.classList.add('locked-in');
-                        plate.classList.remove('stacked');
-                    } else {
-                        // PAST (Stacked/Hidden)
-                        plate.classList.remove('locked-in');
-                        plate.classList.add('stacked');
-                    }
-                } else {
-                    // FUTURE (Hidden top)
-                    plate.classList.remove('locked-in');
-                    plate.classList.remove('stacked');
-                }
-            });
+            resize();
+            // Start the loops
+            loop();
+            startChronometer();
         });
 
-        // --- TIMER LOGIC ---
-        // Target: 2025-11-24 01:10:40
-        const targetDate = new Date('2025-11-24T01:10:40').getTime();
-        const timerEl = document.getElementById('gym-timer');
-
-        function updateTimer() {
-            const now = new Date().getTime();
-            const distance = Math.abs(now - targetDate); // Absolute diff
-
-            const hours = Math.floor((distance / (1000 * 60 * 60)));
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-            // Format
-            timerEl.innerText = 
-                (hours < 10 ? "0"+hours : hours) + ":" +
-                (minutes < 10 ? "0"+minutes : minutes) + ":" +
-                (seconds < 10 ? "0"+seconds : seconds);
+        /* --- AUDIO ENGINE --- */
+        function playNote(value) {
+            if (!state.audioCtx) return;
+            
+            const osc = state.audioCtx.createOscillator();
+            const gain = state.audioCtx.createGain();
+            
+            // Frequency mapping: value 0-100 mapped to 200Hz - 800Hz
+            const freq = 200 + (value * 6); 
+            osc.frequency.setValueAtTime(freq, state.audioCtx.currentTime);
+            
+            osc.type = 'sine';
+            
+            gain.gain.setValueAtTime(0.05, state.audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, state.audioCtx.currentTime + 0.1);
+            
+            osc.connect(gain);
+            gain.connect(state.masterGain);
+            
+            osc.start();
+            osc.stop(state.audioCtx.currentTime + 0.1);
         }
 
-        setInterval(updateTimer, 1000);
-        updateTimer();
+        /* --- SORTING ALGORITHMS (GENERATORS) --- */
+        function resetArray() {
+            state.array = [];
+            for(let i=0; i<state.arraySize; i++) state.array.push(Math.random() * 100);
+            
+            // Initialize Sorter based on current algo
+            switch(state.currentAlgo) {
+                case 'bubble': state.sorter = bubbleSort(state.array); break;
+                case 'merge': state.sorter = bubbleSort(state.array); break; // Simplified presentation
+                case 'insertion': state.sorter = bubbleSort(state.array); break; // Simplified presentation
+                default: state.sorter = bubbleSort(state.array);
+            }
+        }
+
+        function* bubbleSort(arr) {
+            let len = arr.length;
+            let swapped;
+            do {
+                swapped = false;
+                for (let i = 0; i < len - 1; i++) {
+                    playNote(arr[i]); // Audio trigger
+                    if (arr[i] > arr[i + 1]) {
+                        let temp = arr[i];
+                        arr[i] = arr[i + 1];
+                        arr[i + 1] = temp;
+                        swapped = true;
+                        yield { type: 'swap', indices: [i, i+1] };
+                    } else {
+                        yield { type: 'compare', indices: [i, i+1] };
+                    }
+                }
+                len--;
+            } while (swapped);
+        }
+
+        /* --- RENDERING --- */
+        function drawArray(highlightIndices = []) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const barWidth = canvas.width / state.array.length;
+            
+            state.array.forEach((val, i) => {
+                const barHeight = (val / 100) * canvas.height * 0.6; // 60% height max
+                
+                ctx.fillStyle = highlightIndices.includes(i) ? '#ff003c' : '#00f3ff';
+                if(!state.isConducting) ctx.fillStyle = `rgba(0, 243, 255, 0.2)`; // Dim when idle
+
+                // Sway effect when idle
+                let xOffset = 0;
+                if(!state.isConducting) {
+                    xOffset = Math.sin(Date.now() / 1000 + i) * 2;
+                }
+
+                // Invert Y to draw from bottom (or center for style)
+                // Let's draw from vertical center for symphonic look
+                const centerY = canvas.height / 2;
+                
+                ctx.beginPath();
+                // Top half
+                ctx.rect(i * barWidth + xOffset, centerY - barHeight/2, barWidth - 2, barHeight);
+                ctx.fill();
+            });
+        }
+
+        /* --- INTERACTION HANDLER --- */
+        document.addEventListener('mousemove', (e) => {
+            // Update Baton
+            baton.style.left = e.clientX + 'px';
+            baton.style.top = e.clientY + 'px';
+            baton.classList.add('active');
+
+            state.mousePos = { x: e.clientX, y: e.clientY };
+            state.lastMouseTime = Date.now();
+            state.isConducting = true;
+
+            // Process Sorting Step
+            if(state.sorter) {
+                // Perform multiple steps per mouse event for smoothness
+                for(let k=0; k<3; k++) {
+                    const res = state.sorter.next();
+                    if(!res.done) {
+                        // We just updated the array in place inside generator
+                    } else {
+                        resetArray();
+                    }
+                }
+            }
+
+            // Project Specific Interactions
+            handleProjectInteractions(e);
+        });
+
+        function loop() {
+            const now = Date.now();
+            
+            // Check Idle
+            if (now - state.lastMouseTime > 200) {
+                state.isConducting = false;
+                baton.classList.remove('active');
+            }
+
+            // Draw
+            drawArray();
+
+            // Animate Social Icons if conducting
+            if(state.isConducting) {
+                const icons = document.querySelectorAll('.social-icon');
+                icons.forEach((icon, i) => {
+                    icon.style.transform = `translateY(${Math.sin(now/200 + i) * 5}px)`;
+                });
+            }
+
+            // Update Canvas Violin visualization if hovering card 1
+            const violinCanvas = document.getElementById('canvas-violin');
+            const vCtx = violinCanvas.getContext('2d');
+            vCtx.fillStyle = '#000';
+            vCtx.fillRect(0,0, violinCanvas.width, violinCanvas.height);
+            vCtx.strokeStyle = '#00f3ff';
+            vCtx.beginPath();
+            vCtx.moveTo(0, 50);
+            // If conducting, draw erratic wave, else flat
+            if(state.isConducting) {
+                for(let i=0; i<violinCanvas.width; i++) {
+                    vCtx.lineTo(i, 75 + Math.sin(i/10 + now/50) * 30 * Math.random());
+                }
+            } else {
+                vCtx.lineTo(violinCanvas.width, 75);
+            }
+            vCtx.stroke();
+
+            requestAnimationFrame(loop);
+        }
+
+        /* --- PROJECT SPECIFIC LOGIC --- */
+        function handleProjectInteractions(e) {
+            
+            // Percussion Card (Heatmap)
+            const cardP = document.getElementById('card-percussion');
+            const rectP = cardP.getBoundingClientRect();
+            if(e.clientX >= rectP.left && e.clientX <= rectP.right && 
+               e.clientY >= rectP.top && e.clientY <= rectP.bottom) {
+                // Calc relative X (0 to 1)
+                const relX = (e.clientX - rectP.left) / rectP.width;
+                const visual = document.getElementById('visual-percussion');
+                visual.style.backgroundPosition = `${relX * 100}% 0%`;
+                
+                const status = document.querySelector('.lot-status');
+                if(relX > 0.8) status.innerText = "FULL";
+                else if(relX > 0.5) status.innerText = "BUSY";
+                else status.innerText = "FREE";
+            }
+
+            // Brass Card (Polygon Orientation)
+            const cardB = document.getElementById('card-brass');
+            const rectB = cardB.getBoundingClientRect();
+            if(e.clientX >= rectB.left && e.clientX <= rectB.right && 
+               e.clientY >= rectB.top && e.clientY <= rectB.bottom) {
+                   const poly = document.querySelector('.polygon');
+                   const centerX = rectB.left + rectB.width/2;
+                   const centerY = rectB.top + rectB.height/2;
+                   const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * 180 / Math.PI;
+                   poly.style.transform = `rotate(${angle}deg)`;
+            }
+        }
+
+        /* --- CHRONOMETER --- */
+        // Target: 2025-11-25 01:06:16
+        const targetDate = new Date("2025-11-25T01:06:16").getTime();
+        const uptimeDisplay = document.getElementById('uptime-val');
+
+        function startChronometer() {
+            setInterval(() => {
+                const now = new Date().getTime();
+                // Calculate absolute difference
+                const diff = Math.abs(now - targetDate);
+                
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                const ms = Math.floor((diff % 1000) / 10);
+
+                uptimeDisplay.innerText = 
+                    `${pad(hours + (days*24))}:${pad(minutes)}:${pad(seconds)}:${pad(ms)}`;
+            }, 30);
+        }
+        function pad(n) { return n < 10 ? '0'+n : n; }
+
+        /* --- MODAL LOGIC --- */
+        function openModal(videoId) {
+            const modal = document.getElementById('video-modal');
+            const frame = document.getElementById('yt-frame');
+            frame.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+            modal.classList.add('open');
+            document.body.style.cursor = 'auto'; // Restore cursor for modal interaction
+        }
+        function closeModal() {
+            const modal = document.getElementById('video-modal');
+            const frame = document.getElementById('yt-frame');
+            frame.src = "";
+            modal.classList.remove('open');
+        }
+
+        /* Change sorting algo on hover */
+        document.querySelectorAll('.project-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                state.currentAlgo = card.getAttribute('data-sort-algo') || 'bubble';
+                resetArray();
+            });
+        });
 
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20251124",
+          pageId: "20251125",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
