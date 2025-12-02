@@ -2,1026 +2,1345 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - Portfolio</title>
-    <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Caveat:wght@400;700&family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&family=Special+Elite&display=swap" rel="stylesheet">
+    <title>KipperOS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=VT323&family=Space+Mono&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --burgundy: #8B1E3F;
-            --cream: #FDF6E3;
-            --charcoal: #2D3436;
-            --gold: #D4AF37;
-            --wood: #3E2723;
-            --paper-shadow: rgba(0, 0, 0, 0.15);
-        }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            user-select: none;
         }
 
-        html {
-            cursor: default;
+        :root {
+            --window-bg: rgba(30, 35, 50, 0.85);
+            --window-border: rgba(100, 120, 180, 0.3);
+            --title-bar: linear-gradient(90deg, #2a3a5a, #1a2a4a);
+            --text-primary: #e0e8ff;
+            --text-secondary: #8090b0;
+            --accent: #4a9eff;
+            --accent-glow: rgba(74, 158, 255, 0.5);
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #5D4037 0%, #3E2723 50%, #4E342E 100%);
+            font-family: 'Space Grotesk', sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #0d1a2a 50%, #000510 100%);
             min-height: 100vh;
-            overflow-x: hidden;
+            overflow: hidden;
+            color: var(--text-primary);
         }
 
-        /* Wood texture background */
-        .wood-background {
+        /* Boot Screen */
+        #boot-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
-                repeating-linear-gradient(
-                    90deg,
-                    transparent,
-                    transparent 2px,
-                    rgba(0,0,0,0.03) 2px,
-                    rgba(0,0,0,0.03) 4px
-                ),
-                repeating-linear-gradient(
-                    0deg,
-                    transparent,
-                    transparent 50px,
-                    rgba(139, 90, 43, 0.1) 50px,
-                    rgba(139, 90, 43, 0.1) 51px
-                ),
-                linear-gradient(135deg, #5D4037 0%, #3E2723 50%, #4E342E 100%);
-            z-index: -1;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
         }
 
-        /* Calendar container */
-        .calendar-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            position: relative;
+        #boot-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
 
-        /* Calendar main body */
-        .calendar {
-            background: var(--cream);
-            background-image: 
-                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
-            border-radius: 8px;
-            box-shadow: 
-                0 20px 60px rgba(0, 0, 0, 0.4),
-                0 0 0 1px rgba(0, 0, 0, 0.1);
-            position: relative;
-            margin-top: 30px;
+        #boot-log {
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+            white-space: pre;
+            line-height: 1.5;
         }
 
-        /* Spiral binding */
-        .spiral-binding {
+        /* CRT Effects */
+        #crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        #crt-overlay::before {
+            content: '';
             position: absolute;
-            top: -15px;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.1) 0px,
+                rgba(0, 0, 0, 0.1) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+        }
+
+        #crt-overlay::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.2) 100%);
+        }
+
+        /* Desktop */
+        #desktop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 60px);
+            overflow: hidden;
+        }
+
+        /* Floating Shapes */
+        #shapes-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .floating-shape {
+            position: absolute;
+            opacity: 0.08;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(30px, -30px) rotate(90deg); }
+            50% { transform: translate(-20px, 20px) rotate(180deg); }
+            75% { transform: translate(40px, 40px) rotate(270deg); }
+        }
+
+        /* Desktop Widget */
+        #desktop-widget {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            z-index: 100;
+        }
+
+        #desktop-widget h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            text-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        #desktop-widget .subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        #desktop-widget .ai-note {
+            font-size: 13px;
+            font-style: italic;
+            color: var(--text-secondary);
+            max-width: 350px;
+            animation: glitch-color 3s infinite;
+        }
+
+        @keyframes glitch-color {
+            0%, 100% { color: #8090b0; }
+            33% { color: #ff6b9d; }
+            66% { color: #4af7c3; }
+        }
+
+        /* Window System */
+        .window {
+            position: absolute;
+            min-width: 300px;
+            background: var(--window-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--window-border);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255,255,255,0.1);
+            overflow: hidden;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .window:hover {
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.6), 0 0 1px rgba(255,255,255,0.2);
+        }
+
+        .window.maximized {
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: calc(100vh - 60px) !important;
+            border-radius: 0;
+        }
+
+        .title-bar {
+            background: var(--title-bar);
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: move;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .window-btn {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .window-btn.close { background: #ff5f57; }
+        .window-btn.minimize { background: #ffbd2e; }
+        .window-btn.maximize { background: #28ca41; }
+
+        .window-btn:hover::after {
+            content: 'Nice try 😏';
+            position: absolute;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            width: 90%;
-            height: 30px;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 10;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 11px;
+            white-space: nowrap;
+            z-index: 1000;
         }
 
-        .spiral-coil {
-            width: 24px;
-            height: 24px;
-            background: linear-gradient(135deg, #E8E8E8 0%, #B0B0B0 50%, #D0D0D0 100%);
-            border-radius: 50%;
-            box-shadow: 
-                inset -2px -2px 4px rgba(255, 255, 255, 0.8),
-                inset 2px 2px 4px rgba(0, 0, 0, 0.3),
-                0 3px 6px rgba(0, 0, 0, 0.3);
+        .window-icon {
+            font-size: 16px;
+        }
+
+        .window-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .window-content {
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .window-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .window-content::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+        }
+
+        .window-content::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 4px;
+        }
+
+        /* Window-specific styles */
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--accent), #2a7ad4);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px var(--accent-glow);
+        }
+
+        .btn.secondary {
+            background: rgba(255,255,255,0.1);
+        }
+
+        /* GlglStats */
+        #glgl-window {
+            animation: pulse-border 2s infinite;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { border-color: rgba(100, 120, 180, 0.3); }
+            50% { border-color: rgba(74, 158, 255, 0.6); }
+        }
+
+        .audio-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 60px;
+            margin: 15px 0;
+        }
+
+        .audio-bar {
+            width: 8px;
+            background: linear-gradient(to top, #4a9eff, #ff6b9d);
+            border-radius: 4px;
+            animation: bar-dance 0.5s infinite ease-in-out alternate;
+        }
+
+        @keyframes bar-dance {
+            to { height: 100%; }
+        }
+
+        /* Ahuzat Dibuk */
+        .heatmap {
+            width: 100%;
+            height: 100px;
+            background: linear-gradient(90deg, #22c55e 0%, #eab308 25%, #f97316 50%, #ef4444 75%, #22c55e 100%);
+            background-size: 200% 100%;
+            animation: heatmap-shift 5s infinite linear;
+            border-radius: 8px;
+            margin: 10px 0;
             position: relative;
         }
 
-        .spiral-coil::after {
+        @keyframes heatmap-shift {
+            from { background-position: 0% 0%; }
+            to { background-position: 200% 0%; }
+        }
+
+        .mini-car {
+            position: absolute;
+            bottom: 5px;
+            font-size: 16px;
+            animation: drive 4s infinite linear;
+        }
+
+        @keyframes drive {
+            from { left: -20px; }
+            to { left: 100%; }
+        }
+
+        .news-clip {
+            display: block;
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: rgba(255,255,255,0.05);
+            border-left: 3px solid var(--accent);
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .news-clip:hover {
+            background: rgba(255,255,255,0.1);
+            border-left-color: #ff6b9d;
+        }
+
+        /* Part Orienting */
+        .terminal-style {
+            background: #0a0a0a;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Space Mono', monospace;
+            color: #00ff00;
+        }
+
+        .polygon-demo {
+            width: 80px;
+            height: 80px;
+            margin: 20px auto;
+            clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+            background: linear-gradient(45deg, #00ff00, #4a9eff);
+            animation: orient 3s infinite ease-in-out;
+        }
+
+        @keyframes orient {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        /* Turing Jest */
+        .vs-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 10px;
+        }
+
+        .fighter {
+            text-align: center;
+            padding: 10px;
+        }
+
+        .vs {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff6b9d;
+            text-shadow: 0 0 10px #ff6b9d;
+        }
+
+        .pun-bubble {
+            background: white;
+            color: #333;
+            padding: 15px;
+            border-radius: 15px;
+            margin-top: 15px;
+            position: relative;
+            font-size: 14px;
+        }
+
+        .pun-bubble::before {
             content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 10px solid transparent;
+            border-bottom-color: white;
+            border-top: none;
+        }
+
+        .laugh-emoji {
+            position: absolute;
+            font-size: 20px;
+            animation: float-up 2s infinite;
+            opacity: 0;
+        }
+
+        @keyframes float-up {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+
+        /* Rhymes */
+        .transform-demo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .before-after {
+            flex: 1;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .before {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .after {
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.2), rgba(255, 107, 157, 0.2));
+            position: relative;
+        }
+
+        .sparkle {
+            position: absolute;
+            font-size: 12px;
+            animation: sparkle 1s infinite;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+
+        /* Portfolio recursive */
+        .recursive-preview {
+            width: 200px;
+            height: 120px;
+            border: 2px solid var(--accent);
+            border-radius: 8px;
+            margin: 15px auto;
+            overflow: hidden;
+            position: relative;
+            background: linear-gradient(135deg, #0a0a1a, #0d1a2a);
+        }
+
+        .you-are-here {
+            text-align: center;
+            margin-top: 10px;
+            color: var(--accent);
+            font-size: 14px;
+        }
+
+        /* Social */
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 20px;
+        }
+
+        .social-icon {
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            font-size: 32px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .social-icon:hover {
+            transform: translateY(-5px) scale(1.1);
+            box-shadow: 0 10px 30px rgba(74, 158, 255, 0.3);
+        }
+
+        .social-icon.github:hover { background: #333; }
+        .social-icon.linkedin:hover { background: #0077b5; }
+        .social-icon.facebook:hover { background: #1877f2; }
+
+        /* Taskbar */
+        #taskbar {
+            position: fixed;
+            bottom: 30px;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(180deg, rgba(40, 50, 80, 0.95), rgba(20, 30, 50, 0.98));
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            z-index: 1000;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        #start-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: linear-gradient(180deg, #4a5a8a, #3a4a7a);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        #start-btn:hover {
+            background: linear-gradient(180deg, #5a6a9a, #4a5a8a);
+        }
+
+        .pixel-face {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #ffd89b, #f5c77e);
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .pixel-face::before {
+            content: '😊';
+            font-size: 16px;
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 10px;
-            height: 10px;
-            background: linear-gradient(135deg, #4E342E 0%, #3E2723 100%);
-            border-radius: 50%;
         }
 
-        /* Header section */
-        .header {
-            padding: 60px 40px 40px;
-            text-align: center;
-            border-bottom: 2px dashed rgba(139, 30, 63, 0.2);
-            position: relative;
+        #taskbar-clock {
+            margin-left: auto;
+            font-family: 'Space Mono', monospace;
+            font-size: 13px;
+            color: var(--text-primary);
+            padding: 0 15px;
         }
 
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 20px;
-            background: repeating-linear-gradient(
-                90deg,
-                transparent,
-                transparent 8px,
-                var(--cream) 8px,
-                var(--cream) 10px
-            );
-            border-top: 2px solid rgba(0, 0, 0, 0.1);
-        }
-
-        .name {
-            font-family: 'Playfair Display', serif;
-            font-size: 4rem;
-            color: var(--burgundy);
-            letter-spacing: 8px;
-            text-shadow: 
-                2px 2px 0 rgba(139, 30, 63, 0.1),
-                -1px -1px 0 rgba(255, 255, 255, 0.8);
-            margin-bottom: 15px;
-        }
-
-        .tagline {
-            font-family: 'Caveat', cursive;
-            font-size: 1.6rem;
-            color: var(--charcoal);
-            margin-bottom: 30px;
-        }
-
-        /* Sticky note */
-        .sticky-note {
-            display: inline-block;
-            background: linear-gradient(135deg, #FFFACD 0%, #FFF8B3 100%);
-            padding: 15px 25px;
-            transform: rotate(-2deg);
-            box-shadow: 
-                3px 3px 10px rgba(0, 0, 0, 0.2),
-                0 0 0 1px rgba(0, 0, 0, 0.05);
-            position: relative;
-        }
-
-        .sticky-note::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 40px;
-            height: 20px;
-            background: rgba(200, 200, 200, 0.5);
-        }
-
-        .sticky-note p {
-            font-family: 'Architects Daughter', cursive;
-            font-size: 1rem;
-            color: #666;
-            font-style: italic;
-        }
-
-        .sparkle {
-            display: inline-block;
-            position: relative;
-        }
-
-        .sparkle::after {
-            content: '✨';
-            position: absolute;
-            top: -10px;
-            right: -15px;
-            animation: sparkle 2s ease-in-out infinite;
-        }
-
-        @keyframes sparkle {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-        }
-
-        /* Projects grid */
-        .projects-section {
-            padding: 40px;
-        }
-
-        .projects-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
-        }
-
-        @media (max-width: 900px) {
-            .projects-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 600px) {
-            .projects-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .name {
-                font-size: 2.5rem;
-                letter-spacing: 4px;
-            }
-        }
-
-        /* Project card */
-        .project-card {
-            perspective: 1000px;
-            height: 320px;
-            cursor: pointer;
-        }
-
-        .project-card:hover {
-            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='%238B1E3F' d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E"), auto;
-        }
-
-        .card-inner {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
-            transform-style: preserve-3d;
-        }
-
-        .project-card:hover .card-inner {
-            transform: rotateY(15deg) rotateX(-5deg);
-        }
-
-        .card-front, .card-back {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .card-front {
-            background: var(--cream);
-            box-shadow: 
-                0 4px 15px rgba(0, 0, 0, 0.15),
-                0 0 0 1px rgba(0, 0, 0, 0.05);
-        }
-
-        /* Perforation edge */
-        .card-front::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 15px;
-            background: repeating-linear-gradient(
-                90deg,
-                var(--cream),
-                var(--cream) 5px,
-                transparent 5px,
-                transparent 8px
-            );
-            border-bottom: 1px dashed rgba(0, 0, 0, 0.2);
-        }
-
-        .card-back {
-            background: linear-gradient(135deg, var(--burgundy) 0%, #6B1530 100%);
-            transform: rotateY(180deg);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .card-back a {
-            color: white;
-            text-decoration: none;
-            padding: 10px 20px;
-            margin: 5px;
-            border: 2px solid white;
-            border-radius: 25px;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-        }
-
-        .card-back a:hover {
-            background: white;
-            color: var(--burgundy);
-        }
-
-        /* Month header */
-        .month-header {
-            background: var(--burgundy);
-            color: white;
-            padding: 10px 15px;
-            font-family: 'Caveat', cursive;
-            font-size: 1.4rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .date-number {
-            font-family: 'Playfair Display', serif;
-            font-size: 3rem;
-            color: var(--burgundy);
-            opacity: 0.2;
-            position: absolute;
-            bottom: 10px;
-            right: 15px;
-            line-height: 1;
-        }
-
-        .card-content {
-            padding: 20px;
-            height: calc(100% - 50px);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .card-title {
-            font-family: 'Architects Daughter', cursive;
-            font-size: 1.3rem;
-            color: var(--charcoal);
-            margin-bottom: 10px;
-        }
-
-        .card-description {
-            font-size: 0.85rem;
-            color: #666;
-            line-height: 1.5;
-        }
-
-        /* Card-specific backgrounds */
-        
-        /* GlglStats - waveform */
-        .card-glglstats .card-bg {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: repeating-linear-gradient(
-                90deg,
-                transparent,
-                transparent 3px,
-                rgba(139, 30, 63, 0.1) 3px,
-                rgba(139, 30, 63, 0.1) 4px
-            );
-            opacity: 0.5;
-        }
-
-        .play-button {
-            position: absolute;
-            bottom: 50px;
-            left: 20px;
-            width: 30px;
-            height: 30px;
-            background: var(--burgundy);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .play-button::after {
-            content: '';
-            border-left: 10px solid white;
-            border-top: 6px solid transparent;
-            border-bottom: 6px solid transparent;
-            margin-left: 3px;
-        }
-
-        /* Ahuzat Dibuk - heatmap */
-        .card-ahuzat .card-bg {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 80px;
-            background: linear-gradient(90deg, #4CAF50, #FFEB3B, #FF9800, #F44336);
-            opacity: 0.2;
-        }
-
-        .car-icon {
-            position: absolute;
-            font-size: 1.2rem;
-            opacity: 0.3;
-        }
-
-        /* 2D Orienting - rotating polygon */
-        .card-orienting .polygon {
-            position: absolute;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            border: 2px solid rgba(33, 150, 243, 0.3);
-            clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
-            animation: rotatePolygon 10s linear infinite;
-        }
-
-        @keyframes rotatePolygon {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        /* Turing Jest - speech bubbles */
-        .card-jest .bubble {
-            position: absolute;
-            background: rgba(139, 30, 63, 0.1);
-            border-radius: 20px;
-            padding: 8px 12px;
-            font-size: 0.7rem;
-            color: rgba(0, 0, 0, 0.3);
-        }
-
-        .card-jest .bubble-1 {
-            bottom: 60px;
+        /* Start Menu */
+        #start-menu {
+            position: fixed;
+            bottom: 80px;
             left: 10px;
+            width: 250px;
+            background: rgba(30, 40, 60, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px;
+            display: none;
+            z-index: 1001;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
 
-        .card-jest .bubble-2 {
-            bottom: 30px;
-            right: 50px;
+        #start-menu.show {
+            display: block;
+            animation: slideUp 0.2s ease;
         }
 
-        .jester-hat {
-            position: absolute;
-            top: 60px;
-            right: 15px;
-            font-size: 1.5rem;
-            opacity: 0.5;
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Rhymes - yearbook style */
-        .card-rhymes .grad-cap {
-            position: absolute;
-            top: 55px;
-            right: 15px;
-            font-size: 1.5rem;
-            opacity: 0.5;
-        }
-
-        .card-rhymes .rhyme-lines {
-            position: absolute;
-            bottom: 50px;
-            left: 20px;
-            right: 20px;
-        }
-
-        .rhyme-line {
-            border-bottom: 1px dashed rgba(139, 30, 63, 0.3);
-            margin: 8px 0;
-        }
-
-        /* Portfolio - recursive */
-        .card-portfolio .mini-calendar {
-            position: absolute;
-            bottom: 40px;
-            right: 20px;
-            width: 50px;
-            height: 40px;
-            background: var(--cream);
-            border: 1px solid rgba(0, 0, 0, 0.2);
-            border-radius: 3px;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 2px;
-            padding: 3px;
-        }
-
-        .mini-card {
-            background: rgba(139, 30, 63, 0.2);
-            border-radius: 1px;
-        }
-
-        .infinity {
-            position: absolute;
-            bottom: 45px;
-            left: 20px;
-            font-size: 1.5rem;
-            color: var(--gold);
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 0.5; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.1); }
-        }
-
-        /* Social section */
-        .social-section {
-            padding: 40px;
-            border-top: 2px dashed rgba(139, 30, 63, 0.2);
-            text-align: center;
-        }
-
-        .december-header {
-            font-family: 'Caveat', cursive;
-            font-size: 2.5rem;
-            color: var(--burgundy);
-            margin-bottom: 10px;
-        }
-
-        .december-date {
-            font-family: 'Playfair Display', serif;
-            font-size: 4rem;
-            color: var(--burgundy);
-            opacity: 0.3;
-            margin-bottom: 30px;
-        }
-
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            flex-wrap: wrap;
-        }
-
-        .social-seal {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
+        .start-menu-item {
+            padding: 12px 15px;
+            border-radius: 6px;
+            cursor: pointer;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            color: white;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            box-shadow: 
-                0 4px 15px rgba(0, 0, 0, 0.3),
-                inset 0 -3px 10px rgba(0, 0, 0, 0.2),
-                inset 0 3px 10px rgba(255, 255, 255, 0.2);
-            position: relative;
+            gap: 10px;
+            transition: background 0.2s ease;
         }
 
-        .social-seal::after {
-            content: '';
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            right: 5px;
-            bottom: 5px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
+        .start-menu-item:hover {
+            background: rgba(255,255,255,0.1);
         }
 
-        .social-seal:hover {
-            transform: rotate(-10deg) scale(1.1);
+        .start-menu-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
-        .social-seal.github {
-            background: linear-gradient(135deg, #333 0%, #1a1a1a 100%);
+        /* Context Menu */
+        #context-menu {
+            position: fixed;
+            width: 200px;
+            background: rgba(30, 40, 60, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 5px;
+            display: none;
+            z-index: 2000;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
 
-        .social-seal.linkedin {
-            background: linear-gradient(135deg, #0077B5 0%, #005885 100%);
-        }
-
-        .social-seal.facebook {
-            background: linear-gradient(135deg, #1877F2 0%, #0d5bbd 100%);
-        }
-
-        /* Footer */
-        .footer {
-            background: linear-gradient(to bottom, #8B7355 0%, #6B5344 100%);
-            padding: 30px 40px;
-            text-align: center;
-            border-radius: 0 0 8px 8px;
-            position: relative;
-        }
-
-        .footer::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 5px;
-            background: repeating-linear-gradient(
-                90deg,
-                #8B7355,
-                #8B7355 10px,
-                #7B6345 10px,
-                #7B6345 20px
-            );
-        }
-
-        .ai-credit {
-            font-family: 'Special Elite', cursive;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9rem;
-            margin-bottom: 20px;
-        }
-
-        /* Flip clock stopwatch */
-        .stopwatch {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .flip-unit {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .flip-display {
-            background: linear-gradient(to bottom, #1a1a1a 0%, #333 49%, #2a2a2a 50%, #1a1a1a 100%);
-            color: var(--gold);
-            font-family: 'Inter', monospace;
-            font-size: 1.8rem;
-            font-weight: 600;
+        .context-item {
             padding: 10px 15px;
             border-radius: 5px;
-            box-shadow: 
-                0 4px 10px rgba(0, 0, 0, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            min-width: 60px;
-            text-align: center;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s ease;
+        }
+
+        .context-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .context-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.1);
+            margin: 5px 0;
+        }
+
+        /* Status Bar */
+        #status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 30px;
+            background: rgba(10, 15, 25, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+            z-index: 1000;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        #uptime {
+            font-family: 'Space Mono', monospace;
+            color: #00ff00;
+            margin-left: 5px;
+        }
+
+        /* Clippy */
+        #clippy {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            display: none;
+            z-index: 500;
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .clippy-bubble {
+            background: white;
+            color: #333;
+            padding: 15px;
+            border-radius: 15px;
+            max-width: 200px;
+            font-size: 14px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
             position: relative;
         }
 
-        .flip-display::after {
-            content: '';
+        .clippy-bubble::after {
+            content: '📎';
+            font-size: 40px;
             position: absolute;
-            left: 0;
-            right: 0;
+            bottom: -35px;
+            right: 20px;
+        }
+
+        /* Toast */
+        #toast {
+            position: fixed;
             top: 50%;
-            height: 1px;
-            background: rgba(0, 0, 0, 0.5);
-        }
-
-        .flip-label {
-            font-size: 0.7rem;
-            color: rgba(255, 255, 255, 0.5);
-            margin-top: 5px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* Badges */
-        .badge {
-            display: inline-block;
-            font-size: 0.65rem;
-            padding: 3px 8px;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #000;
+            padding: 20px 40px;
             border-radius: 10px;
-            background: rgba(139, 30, 63, 0.1);
-            color: var(--burgundy);
-            margin: 2px;
+            font-weight: 600;
+            display: none;
+            z-index: 3000;
+            animation: toast-pop 0.5s ease;
         }
 
-        /* Responsive adjustments */
-        @media (max-width: 600px) {
-            .header {
-                padding: 40px 20px 30px;
-            }
-            
-            .projects-section, .social-section {
-                padding: 20px;
-            }
-            
-            .project-card {
-                height: 280px;
-            }
-            
-            .flip-display {
-                font-size: 1.4rem;
-                padding: 8px 12px;
-                min-width: 50px;
+        @keyframes toast-pop {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* Confetti */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            z-index: 4000;
+            animation: confetti-fall 3s forwards;
+        }
+
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
             }
         }
     </style>
 </head>
 <body>
-    <div class="wood-background"></div>
-    
-    <div class="calendar-container">
-        <div class="calendar">
-            <!-- Spiral Binding -->
-            <div class="spiral-binding">
-                <div class="spiral-coil"></div>
-                <div class="spiral-coil"></div>
-                <div class="spiral-coil"></div>
-                <div class="spiral-coil"></div>
-                <div class="spiral-coil"></div>
-                <div class="spiral-coil"></div>
-                <div class="spiral-coil"></div>
-                <div class="spiral-coil"></div>
-                <div class="spiral-coil"></div>
-                <div class="spiral-coil"></div>
-                <div class="spiral-coil"></div>
-                <div class="spiral-coil"></div>
-            </div>
+    <!-- Boot Screen -->
+    <div id="boot-screen">
+        <div id="boot-log"></div>
+    </div>
 
-            <!-- Header -->
-            <header class="header">
-                <h1 class="name">GEVA KIPPER</h1>
-                <p class="tagline">Software Engineer crafting intelligent systems at Google</p>
-                <div class="sticky-note">
-                    <p>This portfolio was redesigned with <span class="sparkle">AI</span> assistance ✨</p>
-                </div>
-            </header>
+    <!-- CRT Overlay -->
+    <div id="crt-overlay"></div>
 
-            <!-- Projects -->
-            <section class="projects-section">
-                <div class="projects-grid">
-                    <!-- GlglStats -->
-                    <div class="project-card card-glglstats" onclick="flipCard(this)">
-                        <div class="card-inner">
-                            <div class="card-front">
-                                <div class="month-header">
-                                    <span>January</span>
-                                    <span>2024</span>
-                                </div>
-                                <div class="card-content">
-                                    <h3 class="card-title">GlglStats</h3>
-                                    <p class="card-description">Radio analytics platform analyzing patterns in Israeli radio programming. Featured at PyData conference with a talk on LZ77 compression visualization.</p>
-                                    <div class="badge">PyData</div>
-                                    <div class="badge">Analytics</div>
-                                    <div class="card-bg"></div>
-                                    <div class="play-button"></div>
-                                    <span class="date-number">1</span>
-                                </div>
-                            </div>
-                            <div class="card-back">
-                                <a href="https://glglstats.geekip.dev" target="_blank">🌐 Visit Website</a>
-                                <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">▶️ Watch Talk</a>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Desktop -->
+    <div id="desktop">
+        <!-- Floating Shapes -->
+        <div id="shapes-container"></div>
 
-                    <!-- Ahuzat Dibuk -->
-                    <div class="project-card card-ahuzat" onclick="flipCard(this)">
-                        <div class="card-inner">
-                            <div class="card-front">
-                                <div class="month-header">
-                                    <span>March</span>
-                                    <span>2024</span>
-                                </div>
-                                <div class="card-content">
-                                    <h3 class="card-title">Ahuzat Dibuk</h3>
-                                    <p class="card-description">Real-time Tel Aviv parking availability tracker. Featured on Channel 13 and Mako news for helping drivers find parking spots.</p>
-                                    <div class="badge">Channel 13</div>
-                                    <div class="badge">Mako</div>
-                                    <div class="card-bg"></div>
-                                    <span class="car-icon" style="bottom: 70px; left: 20px;">🚗</span>
-                                    <span class="car-icon" style="bottom: 50px; right: 60px;">🚙</span>
-                                    <span class="car-icon" style="bottom: 85px; right: 30px;">🚕</span>
-                                    <span class="date-number">1</span>
-                                </div>
-                            </div>
-                            <div class="card-back">
-                                <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">📱 Original Post</a>
-                                <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">📺 Channel 13</a>
-                                <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">📰 Mako</a>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Desktop Widget -->
+        <div id="desktop-widget">
+            <h1>Geva Kipper</h1>
+            <div class="subtitle">Software Engineer @ Google</div>
+            <div class="ai-note">This portfolio is redesigned daily by AI—refresh tomorrow for a new experience.</div>
+        </div>
 
-                    <!-- 2D Part Orienting -->
-                    <div class="project-card card-orienting" onclick="flipCard(this)">
-                        <div class="card-inner">
-                            <div class="card-front">
-                                <div class="month-header">
-                                    <span>May</span>
-                                    <span>2024</span>
-                                </div>
-                                <div class="card-content">
-                                    <h3 class="card-title">2D Part Orienting</h3>
-                                    <p class="card-description">Academic research on computational geometry algorithms for orienting 2D parts. Published through Tel-Aviv University.</p>
-                                    <div class="badge">TAU</div>
-                                    <div class="badge">Research</div>
-                                    <div class="polygon"></div>
-                                    <span class="date-number">1</span>
-                                </div>
-                            </div>
-                            <div class="card-back">
-                                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">📄 View Project</a>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Windows Container -->
+        <div id="windows-container"></div>
+    </div>
 
-                    <!-- The Turing Jest -->
-                    <div class="project-card card-jest" onclick="flipCard(this)">
-                        <div class="card-inner">
-                            <div class="card-front">
-                                <div class="month-header">
-                                    <span>July</span>
-                                    <span>2024</span>
-                                </div>
-                                <div class="card-content">
-                                    <h3 class="card-title">The Turing Jest</h3>
-                                    <p class="card-description">An AI-powered comedy experiment exploring machine-generated humor. Can machines be funny? Find out!</p>
-                                    <div class="badge">AI</div>
-                                    <div class="badge">Comedy</div>
-                                    <span class="jester-hat">🃏</span>
-                                    <div class="bubble bubble-1">Ha ha!</div>
-                                    <div class="bubble bubble-2">LOL</div>
-                                    <span class="date-number">1</span>
-                                </div>
-                            </div>
-                            <div class="card-back">
-                                <a href="https://jest.geekip.dev" target="_blank">😄 Visit Site</a>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Taskbar -->
+    <div id="taskbar">
+        <button id="start-btn">
+            <div class="pixel-face"></div>
+            <span>Geva</span>
+        </button>
+        <div id="taskbar-clock"></div>
+    </div>
 
-                    <!-- Rhymes of Israel -->
-                    <div class="project-card card-rhymes" onclick="flipCard(this)">
-                        <div class="card-inner">
-                            <div class="card-front">
-                                <div class="month-header">
-                                    <span>September</span>
-                                    <span>2024</span>
-                                </div>
-                                <div class="card-content">
-                                    <h3 class="card-title">Rhymes of Israel</h3>
-                                    <p class="card-description">Chrome extension for finding Hebrew rhymes. A tool for poets, songwriters, and language enthusiasts.</p>
-                                    <div class="badge">Chrome</div>
-                                    <div class="badge">Hebrew</div>
-                                    <span class="grad-cap">🎓</span>
-                                    <div class="rhyme-lines">
-                                        <div class="rhyme-line"></div>
-                                        <div class="rhyme-line"></div>
-                                        <div class="rhyme-line"></div>
-                                    </div>
-                                    <span class="date-number">1</span>
-                                </div>
-                            </div>
-                            <div class="card-back">
-                                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank">🔗 Chrome Store</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- This Portfolio -->
-                    <div class="project-card card-portfolio" onclick="flipCard(this)">
-                        <div class="card-inner">
-                            <div class="card-front">
-                                <div class="month-header">
-                                    <span>November</span>
-                                    <span>2024</span>
-                                </div>
-                                <div class="card-content">
-                                    <h3 class="card-title">This Portfolio</h3>
-                                    <p class="card-description">A recursive meta-project: the very website you're viewing right now. Designed as a vintage calendar flip experience.</p>
-                                    <div class="badge">Meta</div>
-                                    <div class="badge">Design</div>
-                                    <span class="infinity">∞</span>
-                                    <div class="mini-calendar">
-                                        <div class="mini-card"></div>
-                                        <div class="mini-card"></div>
-                                        <div class="mini-card"></div>
-                                        <div class="mini-card"></div>
-                                        <div class="mini-card"></div>
-                                        <div class="mini-card"></div>
-                                    </div>
-                                    <span class="date-number">1</span>
-                                </div>
-                            </div>
-                            <div class="card-back">
-                                <a href="https://geekip.dev" target="_blank">🔄 You're Here!</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Social Section -->
-            <section class="social-section">
-                <h2 class="december-header">December</h2>
-                <div class="december-date">31</div>
-                <div class="social-links">
-                    <a href="https://github.com/gevak" target="_blank" class="social-seal github" title="GitHub">
-                        <span>⌘</span>
-                    </a>
-                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-seal linkedin" title="LinkedIn">
-                        <span>in</span>
-                    </a>
-                    <a href="https://facebook.com/geva.kipper" target="_blank" class="social-seal facebook" title="Facebook">
-                        <span>f</span>
-                    </a>
-                </div>
-            </section>
-
-            <!-- Footer -->
-            <footer class="footer">
-                <p class="ai-credit">MANUFACTURED WITH ASSISTANCE FROM ARTIFICIAL INTELLIGENCE • QUALITY ASSURED</p>
-                <div class="stopwatch">
-                    <div class="flip-unit">
-                        <div class="flip-display" id="days">000</div>
-                        <span class="flip-label">Days</span>
-                    </div>
-                    <div class="flip-unit">
-                        <div class="flip-display" id="hours">00</div>
-                        <span class="flip-label">Hours</span>
-                    </div>
-                    <div class="flip-unit">
-                        <div class="flip-display" id="minutes">00</div>
-                        <span class="flip-label">Minutes</span>
-                    </div>
-                    <div class="flip-unit">
-                        <div class="flip-display" id="seconds">00</div>
-                        <span class="flip-label">Seconds</span>
-                    </div>
-                </div>
-            </footer>
+    <!-- Start Menu -->
+    <div id="start-menu">
+        <div class="start-menu-item disabled">
+            <span>🃏</span> Solitaire (Coming Soon)
+        </div>
+        <div class="start-menu-item disabled">
+            <span>🌐</span> Internet Explorer (Just Kidding)
+        </div>
+        <div class="start-menu-item disabled">
+            <span>💾</span> Format C: Drive
+        </div>
+        <div class="start-menu-item" onclick="location.reload()">
+            <span>🔄</span> Restart KipperOS
         </div>
     </div>
 
+    <!-- Context Menu -->
+    <div id="context-menu">
+        <div class="context-item">📁 New Folder (Nope)</div>
+        <div class="context-item">🔄 Refresh (Maybe Later)</div>
+        <div class="context-divider"></div>
+        <div class="context-item">🎨 Change Wallpaper (TODO)</div>
+        <div class="context-item">⚙️ Settings (404)</div>
+        <div class="context-divider"></div>
+        <div class="context-item">🤖 Ask AI for Help</div>
+        <div class="context-item" onclick="window.open('https://geekip.dev')">🌐 View Source</div>
+    </div>
+
+    <!-- Status Bar -->
+    <div id="status-bar">
+        Designed by Claude (Anthropic) | System Uptime: <span id="uptime">00:00:00</span>
+    </div>
+
+    <!-- Clippy -->
+    <div id="clippy">
+        <div class="clippy-bubble">
+            It looks like you're looking for a software engineer! 
+            <br><br>
+            <small>Hint: You found one! 🎉</small>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast">🏆 Achievement Unlocked: Perfectionist!</div>
+
     <script>
-        // Flip card interaction
-        function flipCard(card) {
-            const inner = card.querySelector('.card-inner');
-            if (inner.style.transform === 'rotateY(180deg)') {
-                inner.style.transform = 'rotateY(0deg)';
+        // Boot Sequence
+        const bootMessages = [
+            "KipperOS v2.0.25 - Initializing...",
+            "",
+            "[OK] Loading kernel modules...",
+            "[OK] Mounting file systems...",
+            "[OK] Starting network services...",
+            "[OK] Loading creativity modules... FOUND",
+            "[OK] Checking for coffee... FOUND ☕",
+            "[OK] Initializing humor subsystem...",
+            "[OK] Loading portfolio data...",
+            "[WARN] Excessive awesomeness detected",
+            "[OK] Starting window manager...",
+            "",
+            "Welcome to KipperOS!",
+            "Booting into desktop environment..."
+        ];
+
+        let bootIndex = 0;
+        const bootLog = document.getElementById('boot-log');
+        const bootScreen = document.getElementById('boot-screen');
+
+        function showBootMessage() {
+            if (bootIndex < bootMessages.length) {
+                bootLog.textContent += bootMessages[bootIndex] + '\n';
+                bootIndex++;
+                setTimeout(showBootMessage, 150 + Math.random() * 100);
             } else {
-                inner.style.transform = 'rotateY(180deg)';
+                setTimeout(() => {
+                    bootScreen.classList.add('hidden');
+                    initDesktop();
+                }, 500);
             }
         }
 
-        // Stopwatch - time since a reference date (e.g., when portfolio was created)
-        const startDate = new Date('2024-01-01T00:00:00');
+        // Floating Shapes
+        function createShapes() {
+            const container = document.getElementById('shapes-container');
+            const shapes = ['△', '○', '◇', '{ }', '< >', '[ ]', '⬡', '⬢'];
+            
+            for (let i = 0; i < 20; i++) {
+                const shape = document.createElement('div');
+                shape.className = 'floating-shape';
+                shape.textContent = shapes[Math.floor(Math.random() * shapes.length)];
+                shape.style.left = Math.random() * 100 + '%';
+                shape.style.top = Math.random() * 100 + '%';
+                shape.style.fontSize = (20 + Math.random() * 40) + 'px';
+                shape.style.color = `hsl(${200 + Math.random() * 60}, 70%, 60%)`;
+                shape.style.animationDuration = (15 + Math.random() * 20) + 's';
+                shape.style.animationDelay = (-Math.random() * 20) + 's';
+                container.appendChild(shape);
+            }
+        }
 
-        function updateStopwatch() {
+        // Window definitions
+        const windows = [
+            {
+                id: 'glgl-window',
+                title: 'GlglStats.exe',
+                icon: '🎵',
+                x: 400, y: 50,
+                width: 380,
+                content: `
+                    <div style="text-align: center;">
+                        <div class="audio-bars" id="audio-bars"></div>
+                        <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 14px;">
+                            Analyzing Israeli pop song repetitiveness using LZ77 compression algorithms
+                        </p>
+                        <div>
+                            <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn">▶ Watch PyData Talk</a>
+                            <a href="https://glglstats.geekip.dev" target="_blank" class="btn secondary">🔬 Try It Live</a>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                id: 'ahuzat-window',
+                title: 'AhuzatDibuk.exe',
+                icon: '🚗',
+                x: 50, y: 200,
+                width: 340,
+                content: `
+                    <div class="heatmap">
+                        <div class="mini-car" style="animation-delay: 0s;">🚙</div>
+                        <div class="mini-car" style="animation-delay: 1.5s;">🚗</div>
+                        <div class="mini-car" style="animation-delay: 3s;">🚕</div>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">Tel Aviv parking occupancy visualization</p>
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="news-clip">📰 Channel 13 News Coverage</a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="news-clip">📰 Mako News Feature</a>
+                    <div style="margin-top: 15px; text-align: center;">
+                        <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="btn">📱 View Original Post</a>
+                    </div>
+                `
+            },
+            {
+                id: 'part-window',
+                title: 'PartOrienting.cpp',
+                icon: '🔷',
+                x: 750, y: 150,
+                width: 320,
+                content: `
+                    <div class="terminal-style">
+                        <div style="color: #888; font-size: 11px;">// Push-plan algorithm visualization</div>
+                        <div class="polygon-demo"></div>
+                        <div style="color: #00ff00; font-size: 12px; text-align: center;">
+                            > Orienting polygon...<br>
+                            > Calculating stable poses...<br>
+                            > ✓ Orientation complete
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; text-align: center;">
+                        <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn">📚 View Source & Docs</a>
+                    </div>
+                `
+            },
+            {
+                id: 'jest-window',
+                title: 'TuringJest.exe',
+                icon: '🤖',
+                x: 450, y: 300,
+                width: 350,
+                content: `
+                    <div class="vs-container" style="position: relative;">
+                        <div class="fighter">
+                            <div style="font-size: 30px;">🤖</div>
+                            <div style="font-weight: bold; margin-top: 5px;">GPT-4</div>
+                        </div>
+                        <div class="vs">VS</div>
+                        <div class="fighter">
+                            <div style="font-size: 30px;">🤖</div>
+                            <div style="font-weight: bold; margin-top: 5px;">Claude</div>
+                        </div>
+                        <span class="laugh-emoji" style="top: 10px; left: 20px;">😂</span>
+                        <span class="laugh-emoji" style="top: 5px; right: 30px; animation-delay: 0.5s;">🤣</span>
+                    </div>
+                    <div class="pun-bubble">
+                        "Why do programmers prefer dark mode? Because light attracts bugs! 🐛"
+                    </div>
+                    <div style="text-align: center; margin-top: 15px;">
+                        <a href="https://jest.geekip.dev" target="_blank" class="btn">🎭 Enter the Arena</a>
+                    </div>
+                `
+            },
+            {
+                id: 'rhymes-window',
+                title: 'RhymesOfIsrael.crx',
+                icon: '🎓',
+                x: 100, y: 380,
+                width: 360,
+                content: `
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <span style="font-size: 24px;">🌐</span> + <span style="font-size: 24px;">📝</span> = <span style="font-size: 24px;">🎵</span>
+                    </div>
+                    <div class="transform-demo">
+                        <div class="before-after before">
+                            "Breaking: PM announces new policy measures"
+                        </div>
+                        <span style="font-size: 20px;">→</span>
+                        <div class="before-after after">
+                            "Breaking news that's quite a treat,<br>PM's policy can't be beat! ✨"
+                            <span class="sparkle" style="top: 5px; right: 5px;">✨</span>
+                            <span class="sparkle" style="bottom: 5px; left: 10px; animation-delay: 0.3s;">⭐</span>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 15px;">
+                        <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn">🧩 Add to Chrome</a>
+                    </div>
+                `
+            },
+            {
+                id: 'portfolio-window',
+                title: 'Portfolio.exe',
+                icon: '♾️',
+                x: 800, y: 350,
+                width: 280,
+                content: `
+                    <div class="recursive-preview">
+                        <div style="transform: scale(0.15); transform-origin: top left; width: 666%; height: 666%;">
+                            <div style="background: linear-gradient(135deg, #0a0a1a, #0d1a2a); padding: 20px; min-height: 800px;">
+                                <div style="color: white; font-size: 80px;">Geva Kipper</div>
+                                <div style="margin-top: 50px; display: flex; flex-wrap: wrap; gap: 20px;">
+                                    <div style="width: 200px; height: 150px; background: rgba(255,255,255,0.1); border-radius: 10px;"></div>
+                                    <div style="width: 200px; height: 150px; background: rgba(255,255,255,0.1); border-radius: 10px;"></div>
+                                    <div style="width: 200px; height: 150px; background: rgba(255,255,255,0.1); border-radius: 10px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="you-are-here">↑ You are here ↑</div>
+                    <div style="text-align: center; margin-top: 15px;">
+                        <a href="javascript:location.reload()" class="btn secondary">🔄 Refresh Reality</a>
+                    </div>
+                `
+            },
+            {
+                id: 'social-window',
+                title: 'Social.lnk',
+                icon: '🔗',
+                x: 550, y: 80,
+                width: 300,
+                content: `
+                    <div class="social-icons">
+                        <a href="https://github.com/gevak" target="_blank" class="social-icon github" title="GitHub">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                        </a>
+                        <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-icon linkedin" title="LinkedIn">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                            </svg>
+                        </a>
+                        <a href="https://facebook.com/geva.kipper" target="_blank" class="social-icon facebook" title="Facebook">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
+                            </svg>
+                        </a>
+                    </div>
+                `
+            }
+        ];
+
+        // Create windows
+        let highestZ = 100;
+        let activeWindow = null;
+
+        function createWindows() {
+            const container = document.getElementById('windows-container');
+            
+            windows.forEach((win, index) => {
+                const windowEl = document.createElement('div');
+                windowEl.className = 'window';
+                windowEl.id = win.id;
+                windowEl.style.left = win.x + 'px';
+                windowEl.style.top = win.y + 'px';
+                windowEl.style.width = win.width + 'px';
+                windowEl.style.zIndex = 100 + index;
+                
+                windowEl.innerHTML = `
+                    <div class="title-bar">
+                        <div class="window-controls">
+                            <button class="window-btn close"></button>
+                            <button class="window-btn minimize"></button>
+                            <button class="window-btn maximize"></button>
+                        </div>
+                        <span class="window-icon">${win.icon}</span>
+                        <span class="window-title">${win.title}</span>
+                    </div>
+                    <div class="window-content">
+                        ${win.content}
+                    </div>
+                `;
+                
+                container.appendChild(windowEl);
+                makeWindowDraggable(windowEl);
+            });
+
+            // Create audio bars for GlglStats
+            const barsContainer = document.getElementById('audio-bars');
+            if (barsContainer) {
+                for (let i = 0; i < 20; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'audio-bar';
+                    bar.style.height = (20 + Math.random() * 40) + 'px';
+                    bar.style.animationDelay = (Math.random() * 0.5) + 's';
+                    barsContainer.appendChild(bar);
+                }
+            }
+        }
+
+        // Make windows draggable
+        function makeWindowDraggable(windowEl) {
+            const titleBar = windowEl.querySelector('.title-bar');
+            let isDragging = false;
+            let startX, startY, startLeft, startTop;
+            let velocityX = 0, velocityY = 0;
+            let lastX, lastY, lastTime;
+
+            windowEl.addEventListener('mousedown', () => {
+                highestZ++;
+                windowEl.style.zIndex = highestZ;
+            });
+
+            titleBar.addEventListener('mousedown', (e) => {
+                if (e.target.classList.contains('window-btn')) return;
+                
+                isDragging = true;
+                activeWindow = windowEl;
+                startX = e.clientX;
+                startY = e.clientY;
+                startLeft = windowEl.offsetLeft;
+                startTop = windowEl.offsetTop;
+                lastX = e.clientX;
+                lastY = e.clientY;
+                lastTime = Date.now();
+                
+                highestZ++;
+                windowEl.style.zIndex = highestZ;
+            });
+
+            titleBar.addEventListener('dblclick', (e) => {
+                if (e.target.classList.contains('window-btn')) return;
+                windowEl.classList.toggle('maximized');
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging || activeWindow !== windowEl) return;
+                
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                
+                const now = Date.now();
+                const dt = now - lastTime;
+                if (dt > 0) {
+                    velocityX = (e.clientX - lastX) / dt * 16;
+                    velocityY = (e.clientY - lastY) / dt * 16;
+                }
+                
+                windowEl.style.left = (startLeft + dx) + 'px';
+                windowEl.style.top = (startTop + dy) + 'px';
+                
+                lastX = e.clientX;
+                lastY = e.clientY;
+                lastTime = now;
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging && activeWindow === windowEl) {
+                    isDragging = false;
+                    
+                    // Momentum effect
+                    let currentLeft = windowEl.offsetLeft;
+                    let currentTop = windowEl.offsetTop;
+                    
+                    function applyMomentum() {
+                        velocityX *= 0.9;
+                        velocityY *= 0.9;
+                        
+                        currentLeft += velocityX;
+                        currentTop += velocityY;
+                        
+                        windowEl.style.left = currentLeft + 'px';
+                        windowEl.style.top = currentTop + 'px';
+                        
+                        // Check for center position
+                        const centerX = window.innerWidth / 2 - windowEl.offsetWidth / 2;
+                        const centerY = (window.innerHeight - 60) / 2 - windowEl.offsetHeight / 2;
+                        
+                        if (Math.abs(currentLeft - centerX) < 20 && Math.abs(currentTop - centerY) < 20) {
+                            showToast();
+                        }
+                        
+                        if (Math.abs(velocityX) > 0.5 || Math.abs(velocityY) > 0.5) {
+                            requestAnimationFrame(applyMomentum);
+                        }
+                    }
+                    
+                    if (Math.abs(velocityX) > 1 || Math.abs(velocityY) > 1) {
+                        applyMomentum();
+                    }
+                    
+                    activeWindow = null;
+                }
+            });
+        }
+
+        // Clock
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('taskbar-clock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        // Uptime
+        const startDate = new Date('2025-12-02T01:07:45');
+        function updateUptime() {
             const now = new Date();
             const diff = now - startDate;
-
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
             const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-            const daysEl = document.getElementById('days');
-            const hoursEl = document.getElementById('hours');
-            const minutesEl = document.getElementById('minutes');
-            const secondsEl = document.getElementById('seconds');
-
-            // Animate flip effect on change
-            if (daysEl.textContent !== String(days).padStart(3, '0')) {
-                animateFlip(daysEl, String(days).padStart(3, '0'));
-            }
-            if (hoursEl.textContent !== String(hours).padStart(2, '0')) {
-                animateFlip(hoursEl, String(hours).padStart(2, '0'));
-            }
-            if (minutesEl.textContent !== String(minutes).padStart(2, '0')) {
-                animateFlip(minutesEl, String(minutes).padStart(2, '0'));
-            }
-            if (secondsEl.textContent !== String(seconds).padStart(2, '0')) {
-                animateFlip(secondsEl, String(seconds).padStart(2, '0'));
-            }
+            
+            document.getElementById('uptime').textContent = 
+                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
 
-        function animateFlip(element, newValue) {
-            element.style.transform = 'scaleY(0.8)';
-            setTimeout(() => {
-                element.textContent = newValue;
-                element.style.transform = 'scaleY(1)';
-            }, 100);
-        }
+        // Start Menu
+        const startBtn = document.getElementById('start-btn');
+        const startMenu = document.getElementById('start-menu');
 
-        // Update every second
-        setInterval(updateStopwatch, 1000);
-        updateStopwatch();
-
-        // Parallax effect for wood background
-        document.addEventListener('scroll', () => {
-            const scrolled = window.pageYOffset;
-            document.querySelector('.wood-background').style.transform = `translateY(${scrolled * 0.3}px)`;
+        startBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            startMenu.classList.toggle('show');
         });
 
-        // Add hover sound effect (optional - uncomment to enable)
-        /*
-        const cards = document.querySelectorAll('.project-card');
-        cards.forEach(card => {
-            card.addEventListener('mouseenter', () => {
-                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp6Xj4F4cXV/jp6kpJuPgXZwd4OToqusp5yNfnNxeISWqLK0rqKUhXdxc32NnauztLCjlYZ3cHF6ipqosrOxppiJeXFxd4WTpK+zs6+impB+c3B0gI+grrOzr6OZjX1xcHSAj5+tsrOvopmNfXFwdICPn62ys6+imY19');
-                audio.volume = 0.1;
-                audio.play().catch(() => {});
+        document.addEventListener('click', () => {
+            startMenu.classList.remove('show');
+        });
+
+        // Context Menu
+        const contextMenu = document.getElementById('context-menu');
+        
+        document.getElementById('desktop').addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            contextMenu.style.display = 'block';
+            contextMenu.style.left = e.clientX + 'px';
+            contextMenu.style.top = e.clientY + 'px';
+        });
+
+        document.addEventListener('click', () => {
+            contextMenu.style.display = 'none';
+        });
+
+        // Clippy Easter Egg
+        let clickCount = 0;
+        document.getElementById('desktop').addEventListener('click', (e) => {
+            if (e.target.id === 'desktop' || e.target.id === 'shapes-container') {
+                clickCount++;
+                if (clickCount >= 10) {
+                    document.getElementById('clippy').style.display = 'block';
+                    setTimeout(() => {
+                        document.getElementById('clippy').style.display = 'none';
+                    }, 5000);
+                    clickCount = 0;
+                }
+            }
+        });
+
+        // Keyboard Easter Egg
+        let typedKeys = '';
+        document.addEventListener('keydown', (e) => {
+            typedKeys += e.key.toLowerCase();
+            if (typedKeys.includes('sudo hire geva')) {
+                createConfetti();
+                typedKeys = '';
+            }
+            if (typedKeys.length > 20) {
+                typedKeys = typedKeys.slice(-20);
+            }
+        });
+
+        function createConfetti() {
+            const colors = ['#ff6b9d', '#4a9eff', '#ffd700', '#00ff00', '#ff00ff', '#00ffff'];
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.top = '-20px';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => confetti.remove(), 4000);
+            }
+        }
+
+        // Toast
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 2000);
+        }
+
+        // Parallax effect
+        document.addEventListener('mousemove', (e) => {
+            const shapes = document.querySelectorAll('.floating-shape');
+            const x = (e.clientX - window.innerWidth / 2) / 50;
+            const y = (e.clientY - window.innerHeight / 2) / 50;
+            
+            shapes.forEach((shape, index) => {
+                const factor = (index % 3 + 1) * 0.3;
+                shape.style.transform = `translate(${-x * factor}px, ${-y * factor}px)`;
             });
         });
-        */
+
+        // Initialize desktop
+        function initDesktop() {
+            createShapes();
+            createWindows();
+            updateClock();
+            updateUptime();
+            setInterval(updateClock, 1000);
+            setInterval(updateUptime, 1000);
+        }
+
+        // Start boot sequence
+        window.addEventListener('load', () => {
+            setTimeout(showBootMessage, 500);
+        });
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20251201",
+          pageId: "20251202",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
