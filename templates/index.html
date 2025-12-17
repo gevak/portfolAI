@@ -1,1410 +1,1555 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Geva Kipper — Bug Tracker Diary</title>
   <meta name="color-scheme" content="dark" />
-  <title>Geva Kipper — AR Blueprint Desk</title>
-
   <style>
     :root{
-      --desk-0:#120c07;
-      --desk-1:#1a110b;
-      --desk-2:#24160d;
-      --ink:#e7f2ff;
-      --muted:#b8c7d8;
-      --cyan:#53e6ff;
-      --cyan-d:#2fc7df;
-      --grid:#12304a;
-      --grid2:#0f2a41;
-      --amber:#ffcf8a;
-      --glass: rgba(13, 22, 30, 0.45);
-      --glass2: rgba(10, 18, 26, 0.28);
-      --shadow: rgba(0,0,0,.55);
-      --stroke: rgba(83, 230, 255, .55);
-      --stroke-bright: rgba(140, 245, 255, .92);
+      --bg0:#0b0f14;
+      --bg1:#0f1620;
+      --bg2:#111b27;
+      --card:#0f1620cc;
+      --card2:#0f1620;
+      --stroke:rgba(255,255,255,.08);
+      --stroke2:rgba(255,255,255,.12);
+      --text:#e7edf6;
+      --muted:#9fb0c6;
+      --muted2:#7f94ad;
+      --link:#67e8d4;   /* soft teal */
+      --amber:#fbbf24;  /* in progress */
+      --violet:#a78bfa; /* AI rewrite tag */
+      --good:#34d399;   /* closed/release */
+      --bad:#fb7185;    /* incident */
+      --chip:#0b1220;
+      --shadow: 0 20px 50px rgba(0,0,0,.45);
       --radius: 18px;
-      --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
-
-      --orbit-rot: 0deg; /* updated by JS */
-      --parX: 0px;
-      --parY: 0px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
 
-    *{box-sizing:border-box}
-    html,body{height:100%}
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
     body{
       margin:0;
-      color:var(--ink);
-      font-family:var(--font-sans);
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(1200px 500px at 20% -10%, rgba(103,232,212,.08), transparent 60%),
+        radial-gradient(900px 400px at 90% 0%, rgba(167,139,250,.07), transparent 55%),
+        radial-gradient(900px 500px at 50% 120%, rgba(251,191,36,.05), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1) 45%, var(--bg0));
       overflow-x:hidden;
-      background:
-        radial-gradient(1200px 900px at 15% 12%, rgba(255, 207, 138, .22), transparent 55%),
-        radial-gradient(900px 700px at 18% 18%, rgba(255, 207, 138, .12), transparent 60%),
-        radial-gradient(1400px 1000px at 50% 50%, rgba(0,0,0,.25), transparent 65%),
-        /* walnut grain */
-        linear-gradient(180deg, var(--desk-2), var(--desk-0));
-      position:relative;
     }
 
-    /* Desk grain + vignette */
-    body::before{
-      content:"";
-      position:fixed; inset:0;
-      pointer-events:none;
-      background:
-        radial-gradient(120% 120% at 50% 45%, transparent 55%, rgba(0,0,0,.45) 100%),
-        repeating-linear-gradient( 92deg,
-          rgba(255,255,255,.02) 0px,
-          rgba(255,255,255,.02) 1px,
-          rgba(0,0,0,0) 3px,
-          rgba(0,0,0,0) 10px
-        ),
-        repeating-linear-gradient( 12deg,
-          rgba(255,255,255,.015) 0px,
-          rgba(255,255,255,.015) 1px,
-          rgba(0,0,0,0) 2px,
-          rgba(0,0,0,0) 9px
-        );
-      mix-blend-mode:soft-light;
-      opacity:.85;
+    a{ color:var(--link); text-decoration:none; }
+    a:hover{ text-decoration:underline; }
+
+    .wrap{ max-width: 980px; margin: 0 auto; padding: 0 18px 88px; }
+
+    /* Sticky tracker header */
+    header.sticky{
+      position:sticky; top:0; z-index:50;
+      background: linear-gradient(180deg, rgba(11,15,20,.88), rgba(11,15,20,.72));
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--stroke);
+    }
+    .topbar{
+      max-width: 980px; margin:0 auto;
+      padding: 14px 18px 10px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .repo{
+      display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+    }
+    .repo h1{
+      margin:0;
+      font-size: 18px;
+      letter-spacing:.2px;
+      font-weight:650;
+    }
+    .repo .sub{
+      font-family:var(--mono);
+      color:var(--muted);
+      font-size: 12px;
+      padding: 4px 10px;
+      border: 1px solid var(--stroke);
+      background: rgba(15,22,32,.65);
+      border-radius: 999px;
     }
 
-    /* Subtle animated "camera scan noise" layer */
-    .noise{
-      position:fixed; inset:0;
-      pointer-events:none;
-      opacity:.09;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
-      background-size:260px 260px;
-      mix-blend-mode:overlay;
-      animation: noiseDrift 7s linear infinite;
+    .header-actions{
+      display:flex; align-items:center; gap:10px;
+      color:var(--muted);
+      font-family:var(--mono);
+      font-size:12px;
     }
-    @keyframes noiseDrift{
-      0%{ background-position:0 0; filter:contrast(110%) brightness(95%); }
-      50%{ background-position:120px 40px; filter:contrast(120%) brightness(90%); }
-      100%{ background-position:0 0; filter:contrast(110%) brightness(95%); }
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 7px 10px;
+      border:1px solid var(--stroke);
+      border-radius: 999px;
+      background: rgba(15,22,32,.55);
     }
 
-    /* Blueprint mat (parallax) */
-    .mat{
-      position:fixed; inset:0;
-      pointer-events:none;
-      transform: translate3d(var(--parX), var(--parY), 0);
-      transition: transform 90ms linear;
+    /* Pinned announcement */
+    .pinned{
+      max-width: 980px; margin:0 auto;
+      padding: 0 18px 12px;
     }
-    .mat::before{
-      content:"";
-      position:absolute; inset:0;
-      background:
-        /* soft mat tint */
-        radial-gradient(1200px 800px at 50% 45%, rgba(12,34,54,.72), rgba(9,22,36,.78)),
-        /* major grid */
-        repeating-linear-gradient(0deg, rgba(83,230,255,.08) 0 1px, transparent 1px 64px),
-        repeating-linear-gradient(90deg, rgba(83,230,255,.08) 0 1px, transparent 1px 64px),
-        /* minor grid */
-        repeating-linear-gradient(0deg, rgba(83,230,255,.04) 0 1px, transparent 1px 16px),
-        repeating-linear-gradient(90deg, rgba(83,230,255,.04) 0 1px, transparent 1px 16px);
-      opacity:.86;
-      box-shadow: inset 0 0 0 1px rgba(83,230,255,.10);
+    .banner{
+      border:1px solid var(--stroke);
+      background: linear-gradient(90deg, rgba(103,232,212,.06), rgba(167,139,250,.04));
+      border-radius: 14px;
+      padding: 12px 14px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.22);
     }
-    .mat::after{
-      content:"";
-      position:absolute; inset:0;
-      background:
-        radial-gradient(900px 650px at 20% 15%, rgba(255, 207, 138, .12), transparent 55%),
-        radial-gradient(700px 520px at 85% 80%, rgba(83,230,255,.06), transparent 55%);
-      mix-blend-mode:screen;
-      opacity:.6;
+    .banner .left{
+      display:flex; flex-direction:column; gap:6px;
     }
-
-    /* Drafting marks / tiny annotations on mat */
-    .mat-notes{
-      position:fixed; inset:0;
-      pointer-events:none;
-      transform: translate3d(calc(var(--parX) * 1.25), calc(var(--parY) * 1.25), 0);
-      transition: transform 90ms linear;
-      font-family:var(--font-mono);
-      color:rgba(231,242,255,.55);
-      opacity:.85;
+    .banner .title{
+      font-size: 13px;
+      font-family:var(--mono);
+      color: var(--muted);
+      letter-spacing:.2px;
     }
-    .note{
-      position:absolute;
-      font-size:11px;
-      letter-spacing:.02em;
-      text-transform:uppercase;
-      text-shadow: 0 1px 0 rgba(0,0,0,.35);
+    .banner .msg{
+      font-size: 14px;
+      color: var(--text);
+      margin:0;
+    }
+    .banner .pin{
+      font-family:var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--stroke);
+      background: rgba(11,18,32,.55);
+      padding: 6px 10px;
+      border-radius: 999px;
       white-space:nowrap;
     }
-    .tick{
-      position:absolute;
-      width:84px; height:20px;
-      border-top:1px solid rgba(83,230,255,.18);
-      border-left:1px solid rgba(83,230,255,.18);
-      opacity:.8;
-    }
 
-    /* Layout shell */
-    .wrap{
-      min-height:100vh;
-      display:flex;
-      flex-direction:column;
-      position:relative;
-      z-index:1;
-    }
-
-    header{
-      padding: 32px 18px 10px;
-      display:flex;
-      justify-content:center;
-      text-align:center;
-    }
-
-    .nameplate{
-      position:relative;
-      width:min(980px, 92vw);
-      padding: 18px 18px 10px;
-      border-radius: 18px;
-      background: linear-gradient(180deg, rgba(10,18,26,.32), rgba(10,18,26,.16));
-      backdrop-filter: blur(10px);
-      box-shadow:
-        0 18px 60px rgba(0,0,0,.35),
-        0 2px 0 rgba(255,255,255,.03) inset;
-      border:1px solid rgba(83,230,255,.14);
-      overflow:hidden;
-    }
-
-    .nameplate::before{
-      content:"";
-      position:absolute; inset:-2px;
-      background:
-        radial-gradient(900px 240px at 20% 5%, rgba(255,207,138,.16), transparent 58%),
-        linear-gradient(90deg, transparent, rgba(83,230,255,.05), transparent);
-      pointer-events:none;
-    }
-
-    h1{
-      margin:0;
-      font-weight:800;
-      letter-spacing:.02em;
-      font-size: clamp(30px, 3.4vw, 44px);
-      color:rgba(235, 248, 255, .98);
-    }
-    .underline{
-      height:2px;
-      width:min(360px, 76%);
-      margin:10px auto 10px;
-      background: linear-gradient(90deg, transparent, rgba(83,230,255,.9), transparent);
-      position:relative;
-      opacity:.85;
-    }
-    .underline::after{
-      content:"";
-      position:absolute; left:0; top:0; height:100%;
-      width:100%;
-      background: linear-gradient(90deg, rgba(83,230,255,0), rgba(83,230,255,1), rgba(83,230,255,0));
-      transform-origin:left;
-      transform:scaleX(0);
-      animation: plot 900ms cubic-bezier(.22,.8,.22,1) 220ms forwards;
-    }
-    @keyframes plot{ to{ transform:scaleX(1);} }
-
-    .subtitle{
-      margin: 0 auto;
-      max-width: 82ch;
-      color: rgba(184,199,216,.92);
-      font-weight: 420;
-      line-height:1.35;
-      font-size: 15.5px;
-    }
-    .statusline{
+    /* AI daily redesign system note */
+    .sysnote{
       margin-top:10px;
-      display:flex;
-      gap:10px;
-      justify-content:center;
-      align-items:center;
-      flex-wrap:wrap;
-      color: rgba(195, 221, 240, .82);
-      font-family: var(--font-mono);
+      border:1px solid var(--stroke);
+      border-radius: 14px;
+      background: rgba(15,22,32,.45);
+      padding: 12px 14px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .sysnote .botline{
+      display:flex; align-items:center; gap:10px;
+      min-width:0;
+    }
+    .boticon{
+      width:28px; height:28px;
+      border-radius: 10px;
+      border:1px solid var(--stroke);
+      background:
+        radial-gradient(circle at 30% 30%, rgba(103,232,212,.25), transparent 55%),
+        radial-gradient(circle at 70% 70%, rgba(167,139,250,.20), transparent 60%),
+        rgba(11,18,32,.55);
+      display:grid; place-items:center;
+      flex:0 0 auto;
+    }
+    .boticon svg{ opacity:.95; }
+    .sysnote .text{
+      min-width:0;
+    }
+    .sysnote .label{
+      font-family:var(--mono);
       font-size: 12px;
-      letter-spacing:.12em;
-      text-transform:uppercase;
+      color: var(--muted);
+      margin:0 0 2px 0;
     }
-    .pulse{
-      width:9px;height:9px;border-radius:50%;
-      background: rgba(83,230,255,.9);
-      box-shadow: 0 0 0 0 rgba(83,230,255,.45);
-      animation: pulse 1.35s ease-in-out infinite;
-    }
-    @keyframes pulse{
-      0%{ box-shadow: 0 0 0 0 rgba(83,230,255,.35); opacity:.75;}
-      60%{ box-shadow: 0 0 0 10px rgba(83,230,255,0); opacity:1;}
-      100%{ box-shadow: 0 0 0 0 rgba(83,230,255,0); opacity:.8;}
-    }
-    .seed{
-      padding:4px 8px;
-      border-radius: 999px;
-      border:1px solid rgba(83,230,255,.22);
-      background: rgba(8,14,20,.28);
-      letter-spacing:.11em;
-    }
-
-    main{
-      flex:1;
-      display:flex;
-      justify-content:center;
-      padding: 12px 14px 18px;
-    }
-
-    /* Assembly canvas */
-    .assembly{
-      position:relative;
-      width:min(1100px, 94vw);
-      height: min(640px, 64vh);
-      border-radius: 26px;
-      background: linear-gradient(180deg, rgba(6,10,14,.18), rgba(6,10,14,.08));
-      border:1px solid rgba(83,230,255,.10);
-      box-shadow:
-        0 24px 90px rgba(0,0,0,.45),
-        0 2px 0 rgba(255,255,255,.03) inset;
+    .sysnote .shimmer{
+      font-size: 14px;
+      margin:0;
+      letter-spacing:.2px;
+      background: linear-gradient(110deg, rgba(231,237,246,.85) 20%, rgba(103,232,212,.95) 45%, rgba(167,139,250,.92) 65%, rgba(231,237,246,.85) 85%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      background-size: 220% 100%;
+      animation: shimmer 4.8s linear infinite;
+      text-shadow: 0 0 30px rgba(103,232,212,.10);
+      white-space:nowrap;
       overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    @keyframes shimmer{
+      0%{ background-position: 0% 50%; }
+      100%{ background-position: 200% 50%; }
+    }
+    .sysnote .right{
+      display:flex; align-items:center; gap:10px;
+      flex:0 0 auto;
+    }
+    .tag{
+      font-family:var(--mono);
+      font-size: 12px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      border:1px solid var(--stroke);
+      background: rgba(11,18,32,.55);
+      color: var(--muted);
+    }
+    .tag.ai{
+      border-color: rgba(167,139,250,.35);
+      color: rgba(205,193,255,.95);
+      background: rgba(167,139,250,.08);
     }
 
-    .assembly .rails{
-      position:absolute; inset:0;
-      pointer-events:none;
-      opacity:.6;
+    /* Decorative activity graph */
+    .activity{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0 18px 14px;
     }
-
-    .assembly .rails svg{
+    .activity .rail{
+      border: 1px solid var(--stroke);
+      border-radius: 999px;
+      height: 18px;
+      background: rgba(15,22,32,.35);
+      overflow:hidden;
+      position:relative;
+    }
+    .activity svg{
       width:100%; height:100%;
       display:block;
+      opacity:.9;
     }
 
-    .hub{
-      position:absolute;
-      left:50%; top:50%;
-      transform:translate(-50%,-50%);
-      width:72px; height:72px;
-      border-radius:50%;
-      border:1px solid rgba(83,230,255,.35);
-      box-shadow:
-        0 0 0 2px rgba(83,230,255,.08),
-        0 16px 40px rgba(0,0,0,.35);
-      background:
-        radial-gradient(circle at 50% 50%, rgba(83,230,255,.12), transparent 64%),
-        radial-gradient(circle at 50% 50%, rgba(255,207,138,.12), transparent 56%);
-      backdrop-filter: blur(6px);
+    main{ padding-top: 14px; }
+
+    /* Floating command palette hint (visual only) */
+    .cmd{
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 60;
+      pointer-events:none; /* purely visual */
+      transform: translateZ(0);
     }
-    .hub::before, .hub::after{
-      content:"";
-      position:absolute; inset:12px;
-      border-radius:50%;
-      border:1px dashed rgba(83,230,255,.35);
-      opacity:.8;
+    .cmd .hint{
+      display:flex; align-items:center; gap:10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border:1px solid var(--stroke);
+      background: rgba(15,22,32,.55);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      color: var(--muted);
+      font-family:var(--mono);
+      font-size: 12px;
     }
-    .hub::after{
-      inset: 30px;
-      border-style:solid;
-      opacity:.5;
+    .kbd{
+      display:inline-flex;
+      gap:6px;
+      align-items:center;
+      padding: 3px 8px;
+      border:1px solid var(--stroke);
+      border-bottom-color: rgba(255,255,255,.18);
+      border-radius: 10px;
+      background: rgba(11,18,32,.55);
+      color: rgba(231,237,246,.85);
     }
-    .hub .hint{
-      position:absolute;
-      left:50%; top:100%;
-      transform:translate(-50%, 8px);
-      font-family:var(--font-mono);
-      font-size:11px;
-      letter-spacing:.08em;
-      color: rgba(184,199,216,.7);
-      white-space:nowrap;
+
+    /* Issue list */
+    .issues{ display:flex; flex-direction:column; gap: 14px; margin-top: 10px; }
+
+    article.issue{
+      position:relative;
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(15,22,32,.72), rgba(15,22,32,.48));
+      box-shadow: 0 14px 40px rgba(0,0,0,.26);
+      overflow:hidden;
+    }
+    article.issue:hover{
+      border-color: rgba(255,255,255,.14);
+      box-shadow: 0 18px 60px rgba(0,0,0,.34);
+    }
+
+    .issue .head{
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      padding: 14px 16px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .issue .left{
+      display:flex; flex-direction:column; gap:10px;
+      min-width:0;
+    }
+    .row1{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    }
+    .key{
+      font-family:var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      border:1px solid var(--stroke);
+      background: rgba(11,18,32,.55);
+      padding: 5px 9px;
+      border-radius: 999px;
+    }
+    .status{
+      font-family:var(--mono);
+      font-weight: 650;
+      font-size: 12px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      background: rgba(11,18,32,.55);
+      color: var(--muted);
+      letter-spacing:.2px;
+    }
+    .status.closed{ border-color: rgba(52,211,153,.35); color: rgba(155,255,215,.95); background: rgba(52,211,153,.08); }
+    .status.incident{ border-color: rgba(251,113,133,.45); color: rgba(255,176,190,.95); background: rgba(251,113,133,.08); }
+    .status.alg{ border-color: rgba(96,165,250,.35); color: rgba(186,222,255,.95); background: rgba(96,165,250,.07); }
+    .status.ship{ border-color: rgba(251,191,36,.45); color: rgba(255,225,152,.95); background: rgba(251,191,36,.08); }
+    .status.refactor{ border-color: rgba(167,139,250,.40); color: rgba(225,216,255,.98); background: rgba(167,139,250,.08); }
+    .status.open{ border-color: rgba(255,255,255,.16); color: rgba(231,237,246,.85); background: rgba(255,255,255,.04); }
+    .status.live{
+      border-color: rgba(103,232,212,.40);
+      color: rgba(170,255,241,.98);
+      background: rgba(103,232,212,.06);
+      position:relative;
+      animation: pulseOutline 2.2s ease-in-out infinite;
+    }
+    @keyframes pulseOutline{
+      0%,100%{ box-shadow: 0 0 0 0 rgba(103,232,212,.0); }
+      50%{ box-shadow: 0 0 0 6px rgba(103,232,212,.10); }
+    }
+
+    .labels{
+      display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    }
+    .lbl{
+      font-family:var(--mono);
+      font-size: 11px;
+      color: var(--muted);
       padding: 4px 8px;
       border-radius: 999px;
-      border:1px solid rgba(83,230,255,.16);
-      background: rgba(8,14,20,.22);
+      border:1px solid var(--stroke);
+      background: rgba(11,18,32,.45);
     }
+    .lbl.release{ border-color: rgba(52,211,153,.35); background: rgba(52,211,153,.06); color: rgba(155,255,215,.95); }
+    .lbl.recursive{ border-color: rgba(167,139,250,.40); background: rgba(167,139,250,.08); color: rgba(225,216,255,.98); }
+    .lbl.civic{ border-color: rgba(251,113,133,.40); background: rgba(251,113,133,.07); color: rgba(255,176,190,.95); }
+    .lbl.ai{ border-color: rgba(167,139,250,.35); background: rgba(167,139,250,.06); color: rgba(225,216,255,.98); }
 
-    /* Module positioning uses JS-set CSS variables (x,y) */
-    .module{
-      position:absolute;
-      left:50%; top:50%;
-      transform: translate(-50%,-50%) translate(var(--mx), var(--my));
-      width: min(320px, 78vw);
-      max-width: 340px;
-      height: 210px;
-      perspective: 900px;
-      user-select:none;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .card{
-      position:relative;
-      width:100%; height:100%;
-      border-radius: var(--radius);
-      background:
-        linear-gradient(180deg, rgba(10,18,26,.52), rgba(10,18,26,.26));
-      border:1px solid rgba(83,230,255,.22);
-      box-shadow:
-        0 18px 40px rgba(0,0,0,.28),
-        0 0 0 1px rgba(255,255,255,.03) inset;
-      backdrop-filter: blur(10px);
-      overflow:hidden;
-      transform: rotateX(0deg) rotateY(0deg);
-      transition: box-shadow 220ms ease, border-color 220ms ease, transform 220ms ease;
-    }
-
-    /* Warm desk-lamp shadow bias (top-left light) */
-    .module .card{
-      box-shadow:
-        14px 18px 38px rgba(0,0,0,.35),
-        0 2px 0 rgba(255,255,255,.03) inset;
-    }
-
-    /* Blueprint edge glow */
-    .card .edgeGlow{
-      position:absolute; inset:0;
-      pointer-events:none;
-      border-radius: var(--radius);
-      box-shadow:
-        0 0 0 1px rgba(83,230,255,.15),
-        0 0 28px rgba(83,230,255,.08);
-      opacity:.95;
-      transition: box-shadow 220ms ease, opacity 220ms ease;
-    }
-
-    /* Corner brackets */
-    .brackets{
-      position:absolute; inset:10px;
-      pointer-events:none;
-      opacity:.85;
-      transition: opacity 200ms ease;
-    }
-    .brackets::before, .brackets::after{
-      content:"";
-      position:absolute; inset:0;
-      background:
-        linear-gradient(var(--stroke) 0 0) left top/16px 1px no-repeat,
-        linear-gradient(var(--stroke) 0 0) left top/1px 16px no-repeat,
-        linear-gradient(var(--stroke) 0 0) right top/16px 1px no-repeat,
-        linear-gradient(var(--stroke) 0 0) right top/1px 16px no-repeat,
-        linear-gradient(var(--stroke) 0 0) left bottom/16px 1px no-repeat,
-        linear-gradient(var(--stroke) 0 0) left bottom/1px 16px no-repeat,
-        linear-gradient(var(--stroke) 0 0) right bottom/16px 1px no-repeat,
-        linear-gradient(var(--stroke) 0 0) right bottom/1px 16px no-repeat;
-      opacity:.9;
-    }
-
-    /* Scanline (runs once when assembled) */
-    .card::before{
-      content:"";
-      position:absolute; inset:-20% -10%;
-      background: linear-gradient(180deg,
-        transparent 0%,
-        rgba(83,230,255,.08) 35%,
-        rgba(231,242,255,.12) 50%,
-        rgba(83,230,255,.08) 65%,
-        transparent 100%
-      );
-      transform: translateY(-120%);
-      opacity:0;
-      pointer-events:none;
-    }
-    .module.assembled .card::before{
-      animation: scan 520ms ease-out 1;
-    }
-    @keyframes scan{
-      0%{ transform: translateY(-120%); opacity:0; }
-      12%{ opacity:1; }
-      100%{ transform: translateY(120%); opacity:0; }
-    }
-
-    /* Title tab (drafting title block) */
-    .tab{
-      position:absolute;
-      left:14px; top:12px;
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding: 8px 10px;
-      border-radius: 12px;
-      background: rgba(6,10,14,.35);
-      border:1px solid rgba(83,230,255,.22);
-      box-shadow: 0 10px 20px rgba(0,0,0,.18);
-      transform: translateX(-10px) translateY(-6px);
-      opacity:.9;
-      transition: transform 220ms ease, opacity 220ms ease, border-color 220ms ease;
-    }
-    .tab .label{
-      font-weight: 720;
-      letter-spacing:.02em;
-      font-size: 14px;
-    }
-    .tab .badge{
-      font-family:var(--font-mono);
-      font-size: 11px;
-      letter-spacing:.06em;
-      padding: 3px 7px;
-      border-radius:999px;
-      border:1px solid rgba(83,230,255,.20);
-      background: rgba(8,14,20,.18);
-      color: rgba(195, 221, 240, .85);
-      opacity:0;
-      transform: translateX(6px);
-      transition: opacity 180ms ease, transform 180ms ease;
-      white-space:nowrap;
-    }
-    .module.assembled .tab .badge{
-      opacity:1;
-      transform: translateX(0);
-    }
-
-    /* Content */
-    .content{
-      position:absolute;
-      left:16px; right:16px;
-      top:56px; bottom:14px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
-    .desc{
-      color: rgba(231,242,255,.86);
-      font-size: 13.6px;
-      line-height: 1.35;
+    .title{
       margin:0;
-      max-width: 52ch;
-      transform: translateY(10px);
-      opacity:.86;
-      transition: transform 220ms ease, opacity 220ms ease;
+      font-size: 16px;
+      letter-spacing:.1px;
+      font-weight: 650;
+      display:flex; align-items:center; gap:10px;
+      min-width:0;
     }
-    .typed{
-      display:block;
-      min-height: 3.4em;
-    }
-
-    .tags{
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      margin-top:auto;
-      transform: translateY(8px);
-      opacity:.92;
-      transition: transform 220ms ease, opacity 220ms ease;
+    .title .muteglyph{
+      color: rgba(231,237,246,.75);
+      font-weight:600;
+      opacity:.9;
+      flex:0 0 auto;
     }
 
-    .tag{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      border:1px solid rgba(83,230,255,.26);
-      color: rgba(231,242,255,.92);
-      text-decoration:none;
+    .summary{
+      margin:0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .right{
+      display:flex; align-items:flex-start; gap:10px;
+    }
+    .chev{
+      width: 34px; height: 34px;
+      border-radius: 12px;
+      border:1px solid var(--stroke);
+      background: rgba(11,18,32,.45);
+      display:grid; place-items:center;
+      color: rgba(231,237,246,.75);
+      transition: transform .22s ease, border-color .22s ease, background .22s ease;
+    }
+    .issue:hover .chev{
+      border-color: rgba(255,255,255,.16);
+      background: rgba(11,18,32,.60);
+    }
+
+    /* Details collapsible with smooth max-height */
+    .details{
+      border-top: 1px solid var(--stroke);
+      padding: 0 16px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .35s ease;
+    }
+    .issue.open .details{ max-height: 560px; } /* big enough for all */
+    .issue.open .chev{ transform: rotate(180deg); }
+
+    .details-inner{
+      padding: 14px 0 16px;
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 14px;
+    }
+    @media (max-width: 840px){
+      .details-inner{ grid-template-columns: 1fr; }
+    }
+
+    .story{
+      margin:0;
+      color: rgba(231,237,246,.90);
+      line-height: 1.6;
+      font-size: 13.5px;
+    }
+    .meta-block{
+      border:1px solid var(--stroke);
+      border-radius: 14px;
+      background: rgba(11,18,32,.35);
+      padding: 12px;
+    }
+    .meta-block h4{
+      margin:0 0 8px;
       font-size: 12px;
-      letter-spacing:.02em;
-      background:
-        linear-gradient(180deg, rgba(10,18,26,.32), rgba(10,18,26,.16));
-      box-shadow: 0 10px 18px rgba(0,0,0,.14);
-      transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
-      position:relative;
+      color: var(--muted);
+      font-family:var(--mono);
+      font-weight: 600;
+      letter-spacing:.15px;
+      text-transform: uppercase;
     }
-    .tag::before{
-      content:"";
-      width:8px; height:8px;
-      border-radius:2px;
-      border:1px solid rgba(83,230,255,.52);
-      box-shadow: 0 0 0 2px rgba(83,230,255,.08);
-      opacity:.95;
+    .badges{
+      display:flex; flex-wrap:wrap; gap:8px;
     }
-    .tag:hover, .tag:focus-visible{
-      border-color: rgba(140,245,255,.65);
-      transform: translateY(-1px);
-      outline:none;
-      background: linear-gradient(180deg, rgba(14,26,36,.42), rgba(10,18,26,.20));
+    .badge{
+      font-family:var(--mono);
+      font-size: 11px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      border:1px solid var(--stroke);
+      background: rgba(15,22,32,.45);
+      color: rgba(231,237,246,.80);
     }
 
-    /* Dotted leader lines: show "where pieces snap" */
-    .leaders{
-      position:absolute; inset:0;
-      pointer-events:none;
-      opacity:.65;
-      transition: opacity 220ms ease;
-    }
-    .leaders::before{
-      content:"";
-      position:absolute;
-      left: 24px; top: 52px;
-      width: 86px; height: 0;
-      border-top: 1px dotted rgba(83,230,255,.55);
-      transform: rotate(10deg) translateY(0);
-    }
-    .leaders::after{
-      content:"";
-      position:absolute;
-      right: 18px; bottom: 42px;
-      width: 116px; height: 0;
-      border-top: 1px dotted rgba(83,230,255,.35);
-      transform: rotate(-8deg);
-    }
-
-    /* Schematic behind text */
-    .schematic{
-      position:absolute;
-      inset:0;
-      opacity:.28;
-      mix-blend-mode:screen;
-      pointer-events:none;
-      filter: drop-shadow(0 10px 14px rgba(0,0,0,.25));
-      transition: opacity 220ms ease;
-    }
-    .schematic svg{
-      width:100%; height:100%;
-      display:block;
-    }
-
-    /* Deconstructed (default) offsets */
-    .module:not(.assembled) .tab{ transform: translateX(-12px) translateY(-8px); opacity:.88; }
-    .module:not(.assembled) .desc{ transform: translateY(10px); opacity:.84; }
-    .module:not(.assembled) .tags{ transform: translateY(10px); opacity:.90; }
-    .module:not(.assembled) .schematic{ opacity:.22; }
-    .module:not(.assembled) .leaders{ opacity:.75; }
-
-    /* Assembled state: lock-on glow, brighter strokes, settle jitter */
-    .module.assembled .card{
-      border-color: rgba(140,245,255,.44);
-      box-shadow:
-        18px 22px 54px rgba(0,0,0,.46),
-        0 0 0 1px rgba(255,255,255,.04) inset,
-        0 0 36px rgba(83,230,255,.12);
-    }
-    .module.assembled .edgeGlow{
-      box-shadow:
-        0 0 0 1px rgba(140,245,255,.35),
-        0 0 40px rgba(83,230,255,.14);
-    }
-    .module.assembled .brackets{ opacity:1; }
-    .module.assembled .tab{
-      transform: translateX(0) translateY(0);
-      opacity:1;
-      border-color: rgba(140,245,255,.40);
-    }
-    .module.assembled .desc{
-      transform: translateY(0);
-      opacity:1;
-    }
-    .module.assembled .tags{
-      transform: translateY(0);
-      opacity:1;
-    }
-    .module.assembled .leaders{ opacity:.15; }
-    .module.assembled .schematic{ opacity:.34; }
-
-    /* calibration jitter (1–2px) then settle */
-    .module.assembled .card{
-      animation: calibrate 230ms ease-out 1;
-    }
-    @keyframes calibrate{
-      0%{ transform: translate(0,0); }
-      30%{ transform: translate(1px,-1px); }
-      55%{ transform: translate(-1px,1px); }
-      100%{ transform: translate(0,0); }
-    }
-
-    /* Focus/keyboard accessibility */
-    .module:focus-within .card{
-      border-color: rgba(140,245,255,.46);
-      box-shadow:
-        18px 22px 54px rgba(0,0,0,.46),
-        0 0 0 2px rgba(83,230,255,.18),
-        0 0 36px rgba(83,230,255,.12);
-    }
-
-    /* Social card specifics */
-    .socialRow{
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-    .iconBtn{
-      flex:1;
-      min-width: 92px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:10px;
-      padding: 12px 10px;
+    /* Attachments */
+    .attachments{
+      margin-top: 10px;
+      border:1px solid var(--stroke);
       border-radius: 14px;
-      border: 1px solid rgba(83,230,255,.24);
-      background: rgba(8,14,20,.18);
-      text-decoration:none;
-      color: rgba(231,242,255,.92);
-      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
-      position:relative;
       overflow:hidden;
+      background: rgba(11,18,32,.28);
     }
-    .iconBtn:hover, .iconBtn:focus-visible{
-      transform: translateY(-1px);
-      border-color: rgba(140,245,255,.55);
-      outline:none;
-      background: rgba(10,18,26,.26);
-    }
-    .iconBtn svg{
-      width:20px; height:20px;
-      stroke: rgba(140,245,255,.86);
-      fill: none;
-      stroke-width: 1.9;
-    }
-    .urlMono{
-      width:100%;
-      font-family:var(--font-mono);
-      font-size: 11.5px;
-      color: rgba(195, 221, 240, .85);
-      letter-spacing:.03em;
-      margin-top:10px;
-      display:none;
-      opacity:0;
-      transform: translateY(6px);
-      transition: opacity 160ms ease, transform 160ms ease;
-    }
-    .module.assembled .urlMono{
-      display:block;
-      opacity:1;
-      transform: translateY(0);
-    }
-
-    /* Tiny connector animation per social icon */
-    .iconBtn::after{
-      content:"";
-      position:absolute;
-      left:-40%;
-      top:50%;
-      width:40%;
-      height:1px;
-      background: linear-gradient(90deg, transparent, rgba(83,230,255,.7), transparent);
-      opacity:0;
-      transform: translateY(-50%);
-    }
-    .module.assembled .iconBtn::after{
-      animation: connector 320ms ease-out 1;
-    }
-    @keyframes connector{
-      0%{ left:-40%; opacity:0; }
-      20%{ opacity:1; }
-      100%{ left:100%; opacity:0; }
-    }
-
-    /* Footer drafting title block */
-    footer{
-      padding: 0 14px 18px;
-      display:flex;
-      justify-content:center;
-    }
-    .titleblock{
-      width:min(1100px, 94vw);
-      border-radius: 14px;
-      border:1px solid rgba(83,230,255,.18);
-      background: rgba(8,14,20,.28);
-      box-shadow: 0 18px 60px rgba(0,0,0,.35);
-      display:flex;
-      align-items:stretch;
-      justify-content:space-between;
-      gap:10px;
+    .att-row{
+      display:flex; align-items:center; gap:12px;
       padding: 10px 12px;
-      overflow:hidden;
-      position:relative;
+      border-top: 1px solid var(--stroke);
     }
-    .titleblock::before{
+    .att-row:first-child{ border-top:0; }
+    .att-ic{
+      width: 30px; height: 30px;
+      border-radius: 10px;
+      border:1px solid var(--stroke);
+      background: rgba(15,22,32,.45);
+      display:grid; place-items:center;
+      flex: 0 0 auto;
+      color: rgba(231,237,246,.78);
+    }
+    .att-text{
+      min-width:0;
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .att-name{
+      font-family:var(--mono);
+      font-size: 12px;
+      color: rgba(231,237,246,.92);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      display:flex; align-items:center; gap:8px;
+    }
+    .att-desc{
+      font-size: 12px;
+      color: var(--muted);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .att-go{
+      margin-left:auto;
+      color: var(--muted);
+      font-family:var(--mono);
+      font-size: 12px;
+      display:flex; align-items:center; gap:6px;
+      flex: 0 0 auto;
+    }
+    .att-row a{
+      display:flex; align-items:center; gap:12px;
+      width:100%;
+      color: inherit;
+      text-decoration:none;
+    }
+    .att-row a:hover .att-name{ text-decoration:underline; text-decoration-color: rgba(103,232,212,.55); }
+
+    /* Unique per-issue accents */
+    .accent-stripes{
+      display:flex; gap:3px; flex-direction:column;
+      padding: 10px;
+      border-radius: 14px;
+      border:1px solid var(--stroke);
+      background: rgba(11,18,32,.25);
+      height: 100%;
+    }
+    .stripe{
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(103,232,212,.10), rgba(103,232,212,.30), rgba(167,139,250,.12));
+      opacity:.9;
+    }
+    .stripe:nth-child(2){ width: 86%; opacity:.85; }
+    .stripe:nth-child(3){ width: 62%; opacity:.8; }
+    .stripe:nth-child(4){ width: 92%; opacity:.85; }
+    .stripe:nth-child(5){ width: 48%; opacity:.75; }
+    .stripe:nth-child(6){ width: 78%; opacity:.82; }
+    .stripe:nth-child(7){ width: 58%; opacity:.78; }
+    .stripe:nth-child(8){ width: 90%; opacity:.86; }
+
+    /* Incident heatmap corner highlight */
+    .issue.heatmap::before{
       content:"";
-      position:absolute; inset:0;
-      background:
-        repeating-linear-gradient(90deg, rgba(83,230,255,.05) 0 1px, transparent 1px 80px);
-      opacity:.6;
+      position:absolute; inset:auto -120px -120px auto;
+      width: 280px; height: 280px;
+      background: radial-gradient(circle at 30% 30%, rgba(251,191,36,.22), transparent 55%),
+                  radial-gradient(circle at 60% 50%, rgba(251,113,133,.20), transparent 55%),
+                  radial-gradient(circle at 40% 80%, rgba(103,232,212,.15), transparent 60%);
+      filter: blur(0px);
+      opacity:.75;
+      transform: rotate(12deg);
       pointer-events:none;
+    }
+
+    /* Geometry wireframe watermark */
+    .issue.geom::before{
+      content:"";
+      position:absolute; right:-30px; top:-20px;
+      width: 210px; height: 160px;
+      opacity:.22;
+      background-image: url('data:image/svg+xml;utf8,\
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="180" viewBox="0 0 240 180">\
+<g fill="none" stroke="rgba(231,237,246,0.8)" stroke-width="1">\
+<path d="M30,120 L85,35 L165,55 L205,120 L140,150 Z"/>\
+<path d="M85,35 L140,150"/>\
+<path d="M165,55 L30,120"/>\
+<path d="M205,120 L85,35"/>\
+<circle cx="85" cy="35" r="2" fill="rgba(103,232,212,0.9)"/>\
+<circle cx="165" cy="55" r="2" fill="rgba(167,139,250,0.9)"/>\
+<circle cx="30" cy="120" r="2" fill="rgba(96,165,250,0.9)"/>\
+</g></svg>');
+      background-size: cover;
+      pointer-events:none;
+    }
+
+    /* Arena bracket decorative glyph */
+    .arena-glyph{
+      font-family:var(--mono);
+      font-size: 12px;
+      color: rgba(231,237,246,.70);
+      padding: 3px 8px;
+      border-radius: 999px;
+      border:1px dashed rgba(255,255,255,.14);
+      background: rgba(11,18,32,.25);
+    }
+
+    /* Yearbook caption flourish */
+    .yearbook{
+      margin-top: 10px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(11,18,32,.30);
+      border-radius: 14px;
+      padding: 12px;
+      transform: rotate(-1.2deg);
+      box-shadow: 0 12px 40px rgba(0,0,0,.22);
+    }
+    .yearbook .cap{
+      font-family: var(--mono);
+      color: rgba(231,237,246,.88);
+      font-size: 12.5px;
+      line-height: 1.55;
+      margin:0;
+    }
+    .yearbook .frame{
+      margin-top:8px;
+      border:1px solid var(--stroke);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(15,22,32,.40);
+    }
+    .yearbook .headline{
+      margin:0;
+      font-weight:650;
+      letter-spacing:.2px;
+      font-size: 13px;
+      color: rgba(231,237,246,.92);
+    }
+    .yearbook .rhyme{
+      margin:6px 0 0;
+      color: var(--muted);
+      font-size: 12.5px;
+      font-family: var(--mono);
+    }
+
+    /* Infinite loop motif for meta card */
+    .loop{
+      margin-top: 10px;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: rgba(11,18,32,.25);
+      padding: 10px;
+      display:flex; align-items:center; gap:10px;
+    }
+    .loop svg{ flex:0 0 auto; opacity:.9; }
+    .loop span{
+      font-family:var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Footer */
+    footer{
+      position: fixed;
+      left:0; right:0; bottom:0;
+      border-top: 1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(11,15,20,.55), rgba(11,15,20,.88));
+      backdrop-filter: blur(10px);
+      z-index: 55;
+    }
+    .foot{
+      max-width: 980px; margin:0 auto;
+      padding: 10px 18px;
+      display:flex; justify-content:space-between; align-items:center; gap:12px;
     }
     .credit{
-      font-family:var(--font-mono);
+      font-family:var(--mono);
       font-size: 12px;
-      color: rgba(184,199,216,.85);
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding: 6px 8px;
-      border: 1px dashed rgba(83,230,255,.18);
-      border-radius: 12px;
-      background: rgba(6,10,14,.18);
-      z-index:1;
-    }
-    .instrument{
-      z-index:1;
-      display:flex;
-      gap:12px;
-      align-items:center;
-      padding: 6px 10px;
-      border-radius: 12px;
-      border:1px solid rgba(83,230,255,.20);
-      background: rgba(6,10,14,.22);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
-    }
-    .telemetry{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-      font-family:var(--font-mono);
-      text-transform:uppercase;
-      letter-spacing:.12em;
-      font-size: 10.5px;
-      color: rgba(184,199,216,.76);
+      color: var(--muted2);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
     .timer{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-variant-numeric: tabular-nums;
-      letter-spacing:.08em;
-      font-size: 22px;
-      color: rgba(231,242,255,.95);
-      padding: 8px 12px;
-      border-radius: 10px;
-      border:1px solid rgba(83,230,255,.22);
-      background:
-        linear-gradient(180deg, rgba(14, 26, 36, .45), rgba(8,14,20,.22));
-      box-shadow: 0 10px 20px rgba(0,0,0,.22);
-      min-width: 128px;
+      font-family:var(--mono);
+      font-size: 12px;
+      display:flex; align-items:center; gap:10px;
+      white-space:nowrap;
+    }
+    .timer .label{
+      color: var(--muted);
+      border: 1px solid var(--stroke);
+      background: rgba(11,18,32,.45);
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+    .timer .value{
+      font-weight: 750;
+      letter-spacing: .4px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(15,22,32,.70);
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: rgba(231,237,246,.95);
+    }
+    .blink{
+      display:inline-block;
+      width: 10px;
       text-align:center;
+      opacity: .9;
+      animation: bl 1s steps(1,end) infinite;
     }
-    .since{
-      font-family:var(--font-mono);
-      font-size: 10.5px;
-      color: rgba(184,199,216,.72);
-      letter-spacing:.06em;
-      padding-left:2px;
-    }
+    @keyframes bl{ 50%{ opacity:.15; } }
 
-    /* Mobile: stack modules vertically */
-    @media (max-width: 860px){
-      .assembly{
-        height:auto;
-        padding: 14px 12px 12px;
-      }
-      .hub, .assembly .rails{ display:none; }
-      .module{
-        position:relative;
-        left:auto; top:auto;
-        transform:none;
-        width:100%;
-        max-width:none;
-        height:auto;
-        margin: 12px 0;
-      }
-      .card{ height:auto; min-height: 210px; }
-      .content{ position:relative; left:auto; right:auto; top:auto; bottom:auto; padding: 56px 16px 14px; }
-      .tab{ position:absolute; }
-      .leaders{ display:none; }
-      .hub .hint{ display:none; }
-    }
-
-    /* Reduced motion */
-    @media (prefers-reduced-motion: reduce){
-      *{ animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
-      .mat, .mat-notes{ transition:none; }
+    /* Accessibility focus */
+    .head:focus-visible{
+      outline: 2px solid rgba(103,232,212,.55);
+      outline-offset: 2px;
+      border-radius: 14px;
     }
   </style>
 </head>
 
 <body>
-  <div class="noise" aria-hidden="true"></div>
-  <div class="mat" aria-hidden="true"></div>
+  <header class="sticky">
+    <div class="topbar">
+      <div class="repo">
+        <h1>Geva Kipper</h1>
+        <div class="sub">bug-tracker-diary · single-page backlog</div>
+      </div>
+      <div class="header-actions">
+        <span class="chip" title="Decorative; no real commands">
+          <span style="opacity:.85">hint</span>
+          <span class="kbd">⌘</span><span class="kbd">K</span>
+        </span>
+      </div>
+    </div>
 
-  <div class="mat-notes" aria-hidden="true">
-    <div class="note" style="left:7%; top:16%;">REV A · UNIT: PX · GRID: 16</div>
-    <div class="note" style="left:72%; top:14%;">CAM FEED: SYNTH · MODE: OVERLAY</div>
-    <div class="note" style="left:10%; top:76%;">MEAS TICKS · DRAFTING MARKS · AR LOCK</div>
-    <div class="note" style="left:74%; top:78%;">LAMP VECTOR: +X +Y</div>
-    <div class="tick" style="left:6%; top:22%;"></div>
-    <div class="tick" style="right:8%; top:26%; transform:scaleX(-1);"></div>
-    <div class="tick" style="left:12%; bottom:16%; transform:rotate(180deg);"></div>
-  </div>
+    <div class="pinned">
+      <div class="banner">
+        <div class="left">
+          <div class="title">Pinned announcement</div>
+          <p class="msg">Currently building software at Google.</p>
+        </div>
+        <div class="pin">📌 pinned</div>
+      </div>
+
+      <div class="sysnote" role="note" aria-label="Automated system note">
+        <div class="botline">
+          <div class="boticon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M10 4h4" stroke="rgba(231,237,246,.85)" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M12 2v2" stroke="rgba(231,237,246,.85)" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M7 9h10a4 4 0 0 1 4 4v3a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-3a4 4 0 0 1 4-4Z"
+                    stroke="rgba(231,237,246,.85)" stroke-width="1.6" />
+              <path d="M8.5 14h.01M15.5 14h.01" stroke="rgba(103,232,212,.95)" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="text">
+            <p class="label">System</p>
+            <p class="shimmer">Redesigned each day by AI—ever-changing.</p>
+          </div>
+        </div>
+        <div class="right">
+          <span class="tag ai">AI rewrite</span>
+          <span class="tag">Daily rebuild</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="activity" aria-hidden="true">
+      <div class="rail">
+        <svg viewBox="0 0 120 18" preserveAspectRatio="none">
+          <!-- subtle activity bars (decorative) -->
+          <defs>
+            <linearGradient id="g1" x1="0" x2="1">
+              <stop offset="0" stop-color="rgba(103,232,212,.15)"/>
+              <stop offset="0.55" stop-color="rgba(167,139,250,.14)"/>
+              <stop offset="1" stop-color="rgba(251,191,36,.10)"/>
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="120" height="18" fill="rgba(15,22,32,.15)"/>
+          <g fill="url(#g1)">
+            <rect x="3"  y="9" width="2" height="6" rx="1"/>
+            <rect x="8"  y="6" width="2" height="9" rx="1"/>
+            <rect x="13" y="10" width="2" height="5" rx="1"/>
+            <rect x="18" y="4" width="2" height="11" rx="1"/>
+            <rect x="23" y="11" width="2" height="4" rx="1"/>
+            <rect x="28" y="7" width="2" height="8" rx="1"/>
+            <rect x="33" y="9" width="2" height="6" rx="1"/>
+            <rect x="38" y="5" width="2" height="10" rx="1"/>
+            <rect x="43" y="12" width="2" height="3" rx="1"/>
+            <rect x="48" y="8" width="2" height="7" rx="1"/>
+            <rect x="53" y="6" width="2" height="9" rx="1"/>
+            <rect x="58" y="10" width="2" height="5" rx="1"/>
+            <rect x="63" y="4" width="2" height="11" rx="1"/>
+            <rect x="68" y="11" width="2" height="4" rx="1"/>
+            <rect x="73" y="7" width="2" height="8" rx="1"/>
+            <rect x="78" y="9" width="2" height="6" rx="1"/>
+            <rect x="83" y="5" width="2" height="10" rx="1"/>
+            <rect x="88" y="12" width="2" height="3" rx="1"/>
+            <rect x="93" y="8" width="2" height="7" rx="1"/>
+            <rect x="98" y="6" width="2" height="9" rx="1"/>
+            <rect x="103" y="10" width="2" height="5" rx="1"/>
+            <rect x="108" y="7" width="2" height="8" rx="1"/>
+            <rect x="113" y="9" width="2" height="6" rx="1"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </header>
 
   <div class="wrap">
-    <header>
-      <div class="nameplate" role="banner">
-        <h1>Geva Kipper</h1>
-        <div class="underline" aria-hidden="true"></div>
-        <p class="subtitle">
-          Software engineer at Google, currently building and improving large-scale systems that power everyday products.
-        </p>
-        <div class="statusline" aria-live="polite">
-          <span class="pulse" aria-hidden="true"></span>
-          <span>This portfolio is re-designed each day by AI, so it’s always evolving.</span>
-          <span class="seed" id="seedStamp">AI Layout Seed: YYYY-MM-DD</span>
-        </div>
-      </div>
-    </header>
-
     <main>
-      <section class="assembly" id="assembly" aria-label="Assembly canvas: projects in an exploded blueprint view">
-        <div class="rails" aria-hidden="true">
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="rail" x1="0" x2="1">
-                <stop offset="0" stop-color="rgba(83,230,255,.00)"/>
-                <stop offset=".5" stop-color="rgba(83,230,255,.22)"/>
-                <stop offset="1" stop-color="rgba(83,230,255,.00)"/>
-              </linearGradient>
-            </defs>
-            <circle cx="50" cy="50" r="26" fill="none" stroke="url(#rail)" stroke-width="0.35" stroke-dasharray="1.2 1.3"/>
-            <circle cx="50" cy="50" r="36" fill="none" stroke="rgba(83,230,255,.12)" stroke-width="0.35" stroke-dasharray="0.8 1.4"/>
-            <circle cx="50" cy="50" r="43" fill="none" stroke="rgba(83,230,255,.08)" stroke-width="0.35" />
-          </svg>
-        </div>
+      <section class="issues" aria-label="Issue backlog diary">
 
-        <div class="hub" aria-hidden="true">
-          <div class="hint" id="orbitHint">drag to orbit</div>
-        </div>
-
-        <!-- 1) GlglStats -->
-        <article class="module" data-angle="-30" data-radius="260" data-id="glglstats">
-          <div class="card">
-            <div class="edgeGlow" aria-hidden="true"></div>
-            <div class="brackets" aria-hidden="true"></div>
-            <div class="leaders" aria-hidden="true"></div>
-
-            <div class="schematic" aria-hidden="true">
-              <svg viewBox="0 0 340 210">
-                <g stroke="rgba(83,230,255,.7)" fill="none" stroke-width="1">
-                  <path d="M30 150 C60 130, 80 170, 110 150 S160 130, 190 150 240 170, 270 150 310 130, 330 150" opacity=".8"/>
-                  <path d="M30 165 C60 145, 80 185, 110 165 S160 145, 190 165 240 185, 270 165 310 145, 330 165" opacity=".45"/>
-                  <rect x="34" y="74" width="80" height="42" rx="8" opacity=".55"/>
-                  <rect x="124" y="74" width="80" height="42" rx="8" opacity=".45"/>
-                  <rect x="214" y="74" width="92" height="42" rx="8" opacity=".38"/>
-                  <path d="M114 95 L124 95" stroke-dasharray="2 3" opacity=".75"/>
-                  <path d="M204 95 L214 95" stroke-dasharray="2 3" opacity=".6"/>
-                  <text x="38" y="70" font-family="ui-monospace, Menlo, Consolas" font-size="10" fill="rgba(231,242,255,.55)">LZ77</text>
-                </g>
-              </svg>
+        <!-- ISSUE 1 -->
+        <article class="issue" data-issue>
+          <div class="head" role="button" tabindex="0" aria-expanded="false">
+            <div class="left">
+              <div class="row1">
+                <span class="status closed">CLOSED</span>
+                <span class="key">GEVA-001</span>
+                <div class="labels">
+                  <span class="lbl release">Release</span>
+                  <span class="lbl">python</span>
+                  <span class="lbl">viz</span>
+                  <span class="lbl">compression</span>
+                  <span class="lbl">music</span>
+                </div>
+              </div>
+              <h3 class="title">
+                <span class="muteglyph" aria-hidden="true">▦</span>
+                GlglStats
+              </h3>
+              <p class="summary">Diary: a curious pattern kept reappearing in the charts—so I measured “repetitiveness” and made it visible.</p>
             </div>
-
-            <div class="tab">
-              <div class="label">GlglStats</div>
-              <div class="badge">assembled ✓</div>
+            <div class="right">
+              <div class="chev" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M7 10l5 5 5-5" stroke="rgba(231,237,246,.78)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
             </div>
+          </div>
 
-            <div class="content">
-              <p class="desc"><span class="typed"
-                data-full="A Python project measuring repetitiveness of Israeli pop-chart songs using LZ77 compression. Includes visualizations of repetition patterns across tracks, highlighting where famous songs ‘reuse’ motifs and hooks."></span></p>
-              <div class="tags">
-                <a class="tag" href="https://glglstats.geekip.dev" target="_blank" rel="noopener">Site</a>
-                <a class="tag" href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" rel="noopener">PyData TLV Talk (YouTube)</a>
+          <div class="details" aria-hidden="true">
+            <div class="details-inner">
+              <div>
+                <p class="story">
+                  Observed bug/oddity: Israeli pop-chart songs felt increasingly “samey,” but intuition wasn’t proof.
+                  Investigation: built a Python pipeline that measures repetitiveness using <b>LZ77 compression</b>, then visualized
+                  repetition patterns in famous songs as compact stripes and blocks.
+                  Outcome shipped: a clean site + talk-ready visuals that turn “it sounds repetitive” into a reproducible metric.
+                </p>
+
+                <div style="display:grid; grid-template-columns: .9fr 1.1fr; gap:12px; margin-top:12px;">
+                  <div class="accent-stripes" aria-label="Decorative compression stripes">
+                    <div class="stripe"></div><div class="stripe"></div><div class="stripe"></div><div class="stripe"></div>
+                    <div class="stripe"></div><div class="stripe"></div><div class="stripe"></div><div class="stripe"></div>
+                  </div>
+
+                  <div class="meta-block">
+                    <h4>Tech stack</h4>
+                    <div class="badges">
+                      <span class="badge">Python</span>
+                      <span class="badge">LZ77-style parsing</span>
+                      <span class="badge">Data viz</span>
+                      <span class="badge">Web publishing</span>
+                    </div>
+
+                    <div class="attachments" style="margin-top:12px;">
+                      <div class="att-row">
+                        <a href="https://glglstats.geekip.dev" target="_blank" rel="noreferrer">
+                          <div class="att-ic" aria-hidden="true">
+                            <!-- link icon -->
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                              <path d="M10 14a5 5 0 0 1 0-7l1.5-1.5a5 5 0 0 1 7 7L17 14"
+                                    stroke="rgba(231,237,246,.80)" stroke-width="1.7" stroke-linecap="round"/>
+                              <path d="M14 10a5 5 0 0 1 0 7L12.5 18.5a5 5 0 0 1-7-7L7 10"
+                                    stroke="rgba(103,232,212,.85)" stroke-width="1.7" stroke-linecap="round"/>
+                            </svg>
+                          </div>
+                          <div class="att-text">
+                            <div class="att-name">glglstats.geekip.dev</div>
+                            <div class="att-desc">Attachment · project site</div>
+                          </div>
+                          <div class="att-go">↗ <span style="opacity:.7">open</span></div>
+                        </a>
+                      </div>
+
+                      <div class="att-row">
+                        <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" rel="noreferrer">
+                          <div class="att-ic" aria-hidden="true">
+                            <!-- play icon -->
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                              <path d="M9 8l8 4-8 4V8Z" fill="rgba(231,237,246,.82)"/>
+                              <path d="M4 12a8 8 0 1 0 16 0 8 8 0 0 0-16 0Z" stroke="rgba(251,191,36,.70)" stroke-width="1.6"/>
+                            </svg>
+                          </div>
+                          <div class="att-text">
+                            <div class="att-name">youtube.com/watch?v=jrKAtOsj1Lo</div>
+                            <div class="att-desc">Recorded demo · PyData TLV talk</div>
+                          </div>
+                          <div class="att-go">↗ <span style="opacity:.7">watch</span></div>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="meta-block">
+                <h4>Resolution notes</h4>
+                <div class="badges">
+                  <span class="badge">Status: Released</span>
+                  <span class="badge">Confidence: High</span>
+                  <span class="badge">Notes: repeatability & visuals</span>
+                </div>
+                <p class="story" style="margin-top:10px; color:var(--muted);">
+                  Kept the UI intentionally calm: the data should feel like a diary entry—measured, annotated, and easy to revisit.
+                </p>
               </div>
             </div>
           </div>
         </article>
 
-        <!-- 2) Ahuzat Dibuk -->
-        <article class="module" data-angle="25" data-radius="280" data-id="dibuk">
-          <div class="card">
-            <div class="edgeGlow" aria-hidden="true"></div>
-            <div class="brackets" aria-hidden="true"></div>
-            <div class="leaders" aria-hidden="true"></div>
-
-            <div class="schematic" aria-hidden="true">
-              <svg viewBox="0 0 340 210">
-                <g stroke="rgba(83,230,255,.7)" fill="none" stroke-width="1">
-                  <path d="M44 54 H296" opacity=".35"/>
-                  <path d="M44 92 H296" opacity=".35"/>
-                  <path d="M44 130 H296" opacity=".35"/>
-                  <path d="M44 168 H296" opacity=".35"/>
-                  <path d="M60 40 V184" opacity=".35"/>
-                  <path d="M110 40 V184" opacity=".35"/>
-                  <path d="M160 40 V184" opacity=".35"/>
-                  <path d="M210 40 V184" opacity=".35"/>
-                  <path d="M260 40 V184" opacity=".35"/>
-                  <g opacity=".85">
-                    <circle cx="105" cy="105" r="4"/>
-                    <circle cx="132" cy="118" r="5"/>
-                    <circle cx="182" cy="92" r="6"/>
-                    <circle cx="212" cy="138" r="4"/>
-                    <circle cx="245" cy="110" r="7"/>
-                  </g>
-                  <rect x="40" y="36" width="260" height="152" rx="12" opacity=".45"/>
-                  <text x="44" y="32" font-family="ui-monospace, Menlo, Consolas" font-size="10" fill="rgba(231,242,255,.55)">TLV GRID · OCCUPANCY</text>
-                </g>
-              </svg>
+        <!-- ISSUE 2 -->
+        <article class="issue heatmap" data-issue>
+          <div class="head" role="button" tabindex="0" aria-expanded="false">
+            <div class="left">
+              <div class="row1">
+                <span class="status incident">INCIDENT</span>
+                <span class="key">GEVA-002</span>
+                <div class="labels">
+                  <span class="lbl">python</span>
+                  <span class="lbl">scraping</span>
+                  <span class="lbl">viz</span>
+                  <span class="lbl">data</span>
+                  <span class="lbl civic">civic</span>
+                </div>
+              </div>
+              <h3 class="title">
+                <span class="muteglyph" aria-hidden="true">⟁</span>
+                Ahuzat Dibuk
+              </h3>
+              <p class="summary">Diary: parking “availability” looked random—until it became a dataset and a map.</p>
             </div>
-
-            <div class="tab">
-              <div class="label">Ahuzat Dibuk</div>
-              <div class="badge">assembled ✓</div>
+            <div class="right">
+              <div class="chev" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M7 10l5 5 5-5" stroke="rgba(231,237,246,.78)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
             </div>
+          </div>
 
-            <div class="content">
-              <p class="desc"><span class="typed"
-                data-full="A Python scraping + data visualization project collecting Tel-Aviv parking occupancy data and generating heat maps for residents. Turns scattered public signals into an at-a-glance neighborhood availability view."></span></p>
-              <div class="tags">
-                <a class="tag" href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" rel="noopener">News (13tv)</a>
-                <a class="tag" href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" rel="noopener">News (mako)</a>
-                <a class="tag" href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" rel="noopener">Original Facebook Post</a>
+          <div class="details" aria-hidden="true">
+            <div class="details-inner">
+              <div>
+                <p class="story">
+                  Observed incident: residents were guessing which Tel-Aviv parking lots were actually usable, and the “real-time” info was scattered.
+                  Investigation: built a Python scraping + data visualization flow to collect parking lot occupancy stats and transform them into
+                  resident-friendly <b>heat maps</b>.
+                  Outcome: published the maps (and methodology) in a way that could be shared, critiqued, and improved.
+                </p>
+
+                <div class="meta-block" style="margin-top:12px;">
+                  <h4>Tech stack</h4>
+                  <div class="badges">
+                    <span class="badge">Python</span>
+                    <span class="badge">Scraping / ETL</span>
+                    <span class="badge">Geo-ish viz</span>
+                    <span class="badge">Storytelling dashboards</span>
+                  </div>
+
+                  <div class="attachments" style="margin-top:12px;">
+                    <div class="att-row">
+                      <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" rel="noreferrer">
+                        <div class="att-ic" aria-hidden="true">
+                          <!-- newspaper icon -->
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M7 4h12v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" stroke="rgba(231,237,246,.8)" stroke-width="1.6"/>
+                            <path d="M8 8h8M8 12h8M8 16h6" stroke="rgba(103,232,212,.85)" stroke-width="1.6" stroke-linecap="round"/>
+                          </svg>
+                        </div>
+                        <div class="att-text">
+                          <div class="att-name">13tv.co.il · press coverage</div>
+                          <div class="att-desc">Attachment · news story</div>
+                        </div>
+                        <div class="att-go">↗ <span style="opacity:.7">open</span></div>
+                      </a>
+                    </div>
+
+                    <div class="att-row">
+                      <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" rel="noreferrer">
+                        <div class="att-ic" aria-hidden="true">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M7 4h12v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" stroke="rgba(231,237,246,.8)" stroke-width="1.6"/>
+                            <path d="M8 8h8M8 12h8M8 16h6" stroke="rgba(167,139,250,.85)" stroke-width="1.6" stroke-linecap="round"/>
+                          </svg>
+                        </div>
+                        <div class="att-text">
+                          <div class="att-name">mako.co.il · press coverage</div>
+                          <div class="att-desc">Attachment · news story</div>
+                        </div>
+                        <div class="att-go">↗ <span style="opacity:.7">open</span></div>
+                      </a>
+                    </div>
+
+                    <div class="att-row">
+                      <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" rel="noreferrer">
+                        <div class="att-ic" aria-hidden="true">
+                          <!-- facebook-ish "f" -->
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M14 8h2V5h-2c-2.2 0-4 1.8-4 4v2H8v3h2v6h3v-6h2.2l.8-3H13V9c0-.6.4-1 1-1Z"
+                                  fill="rgba(231,237,246,.82)"/>
+                          </svg>
+                        </div>
+                        <div class="att-text">
+                          <div class="att-name">facebook.com · original publication</div>
+                          <div class="att-desc">Attachment · post in Secret Tel Aviv</div>
+                        </div>
+                        <div class="att-go">↗ <span style="opacity:.7">open</span></div>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="meta-block">
+                <h4>Impact</h4>
+                <div class="badges">
+                  <span class="badge">Label: civic data</span>
+                  <span class="badge">Tone: resident-first</span>
+                  <span class="badge">Risk: source volatility</span>
+                </div>
+                <p class="story" style="margin-top:10px; color:var(--muted);">
+                  The “incident” wasn’t a crash—it was information asymmetry. Treating it like an operational problem made it solvable.
+                </p>
               </div>
             </div>
           </div>
         </article>
 
-        <!-- 3) 2D Part Orienting -->
-        <article class="module" data-angle="85" data-radius="250" data-id="orienting">
-          <div class="card">
-            <div class="edgeGlow" aria-hidden="true"></div>
-            <div class="brackets" aria-hidden="true"></div>
-            <div class="leaders" aria-hidden="true"></div>
-
-            <div class="schematic" aria-hidden="true">
-              <svg viewBox="0 0 340 210">
-                <g stroke="rgba(83,230,255,.75)" fill="none" stroke-width="1">
-                  <path d="M70 150 L105 75 L170 92 L220 60 L260 120 L210 170 Z" opacity=".7"/>
-                  <path d="M92 136 L140 108" stroke-dasharray="3 3" opacity=".6"/>
-                  <path d="M140 108 L192 98" stroke-dasharray="3 3" opacity=".55"/>
-                  <path d="M192 98 L232 96" stroke-dasharray="3 3" opacity=".5"/>
-                  <g opacity=".9">
-                    <path d="M64 160 L104 160" />
-                    <path d="M100 156 L104 160 L100 164" />
-                    <path d="M174 44 L214 44" />
-                    <path d="M210 40 L214 44 L210 48" />
-                  </g>
-                  <text x="62" y="36" font-family="ui-monospace, Menlo, Consolas" font-size="10" fill="rgba(231,242,255,.55)">PUSH VECTORS · PLAN</text>
-                </g>
-              </svg>
+        <!-- ISSUE 3 -->
+        <article class="issue geom" data-issue>
+          <div class="head" role="button" tabindex="0" aria-expanded="false">
+            <div class="left">
+              <div class="row1">
+                <span class="status alg">ALGORITHM</span>
+                <span class="key">GEVA-003</span>
+                <div class="labels">
+                  <span class="lbl">c++</span>
+                  <span class="lbl">geometry</span>
+                  <span class="lbl">performance</span>
+                  <span class="lbl">library</span>
+                </div>
+              </div>
+              <h3 class="title">
+                <span class="muteglyph" aria-hidden="true">⬠</span>
+                2D Part Orienting
+              </h3>
+              <p class="summary">Diary: a polygon refused to “settle” efficiently—so I constructed a push plan that makes it behave.</p>
             </div>
-
-            <div class="tab">
-              <div class="label">2D Part Orienting</div>
-              <div class="badge">assembled ✓</div>
+            <div class="right">
+              <div class="chev" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M7 10l5 5 5-5" stroke="rgba(231,237,246,.78)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
             </div>
+          </div>
 
-            <div class="content">
-              <p class="desc"><span class="typed"
-                data-full="A C++ implementation in an open-source computational geometry library, constructing an efficient ‘push plan’ to orient a polygon. Focused on robust geometry and practical performance for planning-like pipelines."></span></p>
-              <div class="tags">
-                <a class="tag" href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" rel="noopener">Project &amp; Code</a>
+          <div class="details" aria-hidden="true">
+            <div class="details-inner">
+              <div>
+                <p class="story">
+                  Observed constraint: orienting a polygonal part by pushing sounds simple until you care about efficiency.
+                  Investigation: implemented an efficient algorithm in C++ within an open-source computational geometry library,
+                  constructing a <b>push plan</b> that orients a polygon.
+                  Outcome: a pragmatic, library-friendly implementation you can study and reuse.
+                </p>
+
+                <div class="meta-block" style="margin-top:12px;">
+                  <h4>Tech stack</h4>
+                  <div class="badges">
+                    <span class="badge">C++</span>
+                    <span class="badge">Computational geometry</span>
+                    <span class="badge">Algorithm engineering</span>
+                    <span class="badge">Open-source library integration</span>
+                  </div>
+
+                  <div class="attachments" style="margin-top:12px;">
+                    <div class="att-row">
+                      <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" rel="noreferrer">
+                        <div class="att-ic" aria-hidden="true">
+                          <!-- code icon -->
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 18 3 12l6-6" stroke="rgba(231,237,246,.82)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M15 6l6 6-6 6" stroke="rgba(96,165,250,.88)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                        </div>
+                        <div class="att-text">
+                          <div class="att-name">cgl.cs.tau.ac.il/projects/2d-part-orienting/</div>
+                          <div class="att-desc">Attachment · additional info and code</div>
+                        </div>
+                        <div class="att-go">↗ <span style="opacity:.7">open</span></div>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="meta-block">
+                <h4>Notes</h4>
+                <div class="badges">
+                  <span class="badge">Goal: efficient construction</span>
+                  <span class="badge">Deliverable: reusable implementation</span>
+                </div>
+                <p class="story" style="margin-top:10px; color:var(--muted);">
+                  The watermark is a reminder: geometry work is half proof, half “does it break on the weird cases?”
+                </p>
               </div>
             </div>
           </div>
         </article>
 
-        <!-- 4) The Turing Jest -->
-        <article class="module" data-angle="150" data-radius="275" data-id="jest">
-          <div class="card">
-            <div class="edgeGlow" aria-hidden="true"></div>
-            <div class="brackets" aria-hidden="true"></div>
-            <div class="leaders" aria-hidden="true"></div>
-
-            <div class="schematic" aria-hidden="true">
-              <svg viewBox="0 0 340 210">
-                <g stroke="rgba(83,230,255,.75)" fill="none" stroke-width="1">
-                  <path d="M70 52 H140 V92 H70 Z" opacity=".55"/>
-                  <path d="M200 52 H270 V92 H200 Z" opacity=".55"/>
-                  <path d="M120 92 C140 112, 160 112, 180 92" stroke-dasharray="3 3" opacity=".75"/>
-                  <path d="M220 92 C205 112, 190 112, 180 92" stroke-dasharray="3 3" opacity=".75"/>
-
-                  <path d="M150 132 H210 V172 H150 Z" opacity=".50"/>
-                  <path d="M180 92 V132" stroke-dasharray="2 4" opacity=".6"/>
-
-                  <path d="M40 150 C46 138, 62 134, 74 140 C86 146, 86 164, 70 170 C64 172, 58 172, 54 170 L44 176 V166 C40 160, 38 156, 40 150 Z" opacity=".45"/>
-                  <path d="M292 140 C300 132, 314 134, 318 144 C322 154, 318 166, 306 170 C300 172, 294 170, 290 168 L280 174 V164 C276 156, 284 146, 292 140 Z" opacity=".45"/>
-
-                  <text x="54" y="40" font-family="ui-monospace, Menlo, Consolas" font-size="10" fill="rgba(231,242,255,.55)">ARENA BRACKET</text>
-                </g>
-              </svg>
+        <!-- ISSUE 4 -->
+        <article class="issue" data-issue>
+          <div class="head" role="button" tabindex="0" aria-expanded="false">
+            <div class="left">
+              <div class="row1">
+                <span class="status live">LIVE</span>
+                <span class="key">GEVA-004</span>
+                <div class="labels">
+                  <span class="lbl">llm</span>
+                  <span class="lbl">llm-arena</span>
+                  <span class="lbl">humor</span>
+                  <span class="lbl ai">AI rewrite</span>
+                  <span class="arena-glyph" aria-hidden="true">⟦ arena ⟧</span>
+                </div>
+              </div>
+              <h3 class="title">
+                <span class="muteglyph" aria-hidden="true">⎔</span>
+                The Turing Jest
+              </h3>
+              <p class="summary">Diary: models can talk—can they joke? I made them compete, and let humans be the referee.</p>
             </div>
-
-            <div class="tab">
-              <div class="label">The Turing Jest</div>
-              <div class="badge">assembled ✓</div>
+            <div class="right">
+              <div class="chev" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M7 10l5 5 5-5" stroke="rgba(231,237,246,.78)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
             </div>
+          </div>
 
-            <div class="content">
-              <p class="desc"><span class="typed"
-                data-full="An LMSYS-like arena where LLMs compete at making and explaining puns, rated by users. Built to make evaluation playful while still producing useful preference data."></span></p>
-              <div class="tags">
-                <a class="tag" href="https://jest.geekip.dev" target="_blank" rel="noopener">Visit</a>
+          <div class="details" aria-hidden="true">
+            <div class="details-inner">
+              <div>
+                <p class="story">
+                  Observed behavior: LLMs can be fluent without being funny.
+                  Investigation: built an LMSYS-like arena where LLMs compete at making and explaining puns; users rate answers.
+                  Outcome: a live experiment that treats humor as a measurable interaction, not a vibe.
+                </p>
+
+                <div class="meta-block" style="margin-top:12px;">
+                  <h4>Tech stack</h4>
+                  <div class="badges">
+                    <span class="badge">LLM arena UI</span>
+                    <span class="badge">Pairwise voting</span>
+                    <span class="badge">Prompting</span>
+                    <span class="badge">Lightweight telemetry</span>
+                  </div>
+
+                  <div class="attachments" style="margin-top:12px;">
+                    <div class="att-row">
+                      <a href="https://jest.geekip.dev" target="_blank" rel="noreferrer">
+                        <div class="att-ic" aria-hidden="true">
+                          <!-- spark icon -->
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2l1.2 6.1L20 12l-6.8 3.9L12 22l-1.2-6.1L4 12l6.8-3.9L12 2Z"
+                                  stroke="rgba(103,232,212,.88)" stroke-width="1.6" fill="rgba(103,232,212,.12)"/>
+                          </svg>
+                        </div>
+                        <div class="att-text">
+                          <div class="att-name">jest.geekip.dev</div>
+                          <div class="att-desc">Attachment · live arena</div>
+                        </div>
+                        <div class="att-go">↗ <span style="opacity:.7">open</span></div>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="meta-block">
+                <h4>Experiment state</h4>
+                <div class="badges">
+                  <span class="badge">Status: ongoing</span>
+                  <span class="badge">Signal: human ratings</span>
+                  <span class="badge">Goal: comparative humor</span>
+                </div>
+                <p class="story" style="margin-top:10px; color:var(--muted);">
+                  “LIVE” stays pulsing on purpose: this issue is intentionally never “done.”
+                </p>
               </div>
             </div>
           </div>
         </article>
 
-        <!-- 5) Rhymes of Israel -->
-        <article class="module" data-angle="210" data-radius="260" data-id="rhymes">
-          <div class="card">
-            <div class="edgeGlow" aria-hidden="true"></div>
-            <div class="brackets" aria-hidden="true"></div>
-            <div class="leaders" aria-hidden="true"></div>
-
-            <div class="schematic" aria-hidden="true">
-              <svg viewBox="0 0 340 210">
-                <g stroke="rgba(83,230,255,.75)" fill="none" stroke-width="1">
-                  <rect x="44" y="46" width="120" height="64" rx="10" opacity=".55"/>
-                  <path d="M58 66 H152" opacity=".55"/>
-                  <path d="M58 82 H142" opacity=".45"/>
-                  <path d="M58 98 H132" opacity=".35"/>
-
-                  <path d="M172 78 H206" stroke-dasharray="3 3" opacity=".8"/>
-                  <path d="M198 70 L206 78 L198 86" opacity=".85"/>
-
-                  <rect x="212" y="46" width="84" height="64" rx="10" opacity=".45"/>
-                  <path d="M222 66 H286" opacity=".55"/>
-                  <path d="M222 86 H274" opacity=".55"/>
-                  <path d="M222 98 H280" opacity=".35"/>
-
-                  <path d="M64 150 C92 132, 120 170, 148 150" opacity=".55"/>
-                  <path d="M160 150 C188 132, 216 170, 244 150" opacity=".45"/>
-                  <text x="44" y="38" font-family="ui-monospace, Menlo, Consolas" font-size="10" fill="rgba(231,242,255,.55)">HEADLINE → RHYME</text>
-                </g>
-              </svg>
+        <!-- ISSUE 5 -->
+        <article class="issue" data-issue>
+          <div class="head" role="button" tabindex="0" aria-expanded="false">
+            <div class="left">
+              <div class="row1">
+                <span class="status ship">SHIPPING</span>
+                <span class="key">GEVA-005</span>
+                <div class="labels">
+                  <span class="lbl">chrome-extension</span>
+                  <span class="lbl">llm</span>
+                  <span class="lbl">product</span>
+                  <span class="lbl">writing</span>
+                </div>
+              </div>
+              <h3 class="title">
+                <span class="muteglyph" aria-hidden="true">✎</span>
+                Rhymes of Israel
+              </h3>
+              <p class="summary">Diary: headlines felt too serious—so I rewrote them into yearbook-style rhymes, right in the browser.</p>
             </div>
-
-            <div class="tab">
-              <div class="label">Rhymes of Israel</div>
-              <div class="badge">assembled ✓</div>
+            <div class="right">
+              <div class="chev" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M7 10l5 5 5-5" stroke="rgba(231,237,246,.78)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
             </div>
+          </div>
 
-            <div class="content">
-              <p class="desc"><span class="typed"
-                data-full="A Chrome extension using an LLM to rewrite Israeli news headlines into comedic rhymes in the style of a high-school yearbook. Designed to be lightweight, fast, and shareable."></span></p>
-              <div class="tags">
-                <a class="tag" href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" rel="noopener">Install on Chrome Web Store</a>
+          <div class="details" aria-hidden="true">
+            <div class="details-inner">
+              <div>
+                <p class="story">
+                  Observed friction: reading the news can be heavy, and the tone rarely changes.
+                  Investigation: shipped a Chrome extension that rewrites Israeli news headlines into comedic rhymes in the style of a high school yearbook,
+                  using an LLM to generate playful but readable lines.
+                  Outcome: installable, shareable, and intentionally light-touch.
+                </p>
+
+                <div class="yearbook" aria-label="Decorative yearbook caption example">
+                  <p class="cap"><b>Example (stylized):</b> the headline becomes a caption you’d find under a slightly blurry class photo.</p>
+                  <div class="frame">
+                    <p class="headline">[Placeholder] “City announces new policy…”</p>
+                    <p class="rhyme">→ “Policy dropped, the crowd went ‘wow’—we’ll figure out the details… somehow.”</p>
+                  </div>
+                </div>
+
+                <div class="meta-block" style="margin-top:12px;">
+                  <h4>Tech stack</h4>
+                  <div class="badges">
+                    <span class="badge">Chrome Extension</span>
+                    <span class="badge">LLM rewriting</span>
+                    <span class="badge">Content script</span>
+                    <span class="badge">UI injection</span>
+                  </div>
+
+                  <div class="attachments" style="margin-top:12px;">
+                    <div class="att-row">
+                      <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" rel="noreferrer">
+                        <div class="att-ic" aria-hidden="true">
+                          <!-- puzzle icon -->
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M10 4h4v3a2 2 0 1 1 0 4v3h-4v-3a2 2 0 1 1 0-4V4Z"
+                                  stroke="rgba(231,237,246,.82)" stroke-width="1.6" fill="rgba(251,191,36,.10)"/>
+                            <path d="M6 10H4v8h8v-2" stroke="rgba(231,237,246,.78)" stroke-width="1.6" stroke-linecap="round"/>
+                          </svg>
+                        </div>
+                        <div class="att-text">
+                          <div class="att-name">chromewebstore.google.com · install</div>
+                          <div class="att-desc">Attachment · Chrome Web Store listing</div>
+                        </div>
+                        <div class="att-go">↗ <span style="opacity:.7">install</span></div>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="meta-block">
+                <h4>Shipping notes</h4>
+                <div class="badges">
+                  <span class="badge">Goal: effortless delight</span>
+                  <span class="badge">Constraint: keep it restrained</span>
+                  <span class="badge">Risk: headline variance</span>
+                </div>
+                <p class="story" style="margin-top:10px; color:var(--muted);">
+                  The best extensions feel like they were always there—until you notice you’re smiling.
+                </p>
               </div>
             </div>
           </div>
         </article>
 
-        <!-- 6) Portfolio (Meta) -->
-        <article class="module" data-angle="265" data-radius="290" data-id="portfolio">
-          <div class="card">
-            <div class="edgeGlow" aria-hidden="true"></div>
-            <div class="brackets" aria-hidden="true"></div>
-            <div class="leaders" aria-hidden="true"></div>
-
-            <div class="schematic" aria-hidden="true">
-              <svg viewBox="0 0 340 210">
-                <g stroke="rgba(83,230,255,.75)" fill="none" stroke-width="1">
-                  <rect x="56" y="46" width="228" height="128" rx="14" opacity=".55"/>
-                  <rect x="76" y="64" width="188" height="92" rx="12" opacity=".45"/>
-                  <rect x="94" y="80" width="152" height="60" rx="10" opacity=".38"/>
-                  <path d="M104 94 H196" opacity=".45"/>
-                  <path d="M104 110 H224" opacity=".35"/>
-                  <path d="M104 126 H176" opacity=".28"/>
-                  <path d="M60 176 H280" stroke-dasharray="2 4" opacity=".55"/>
-                  <text x="56" y="38" font-family="ui-monospace, Menlo, Consolas" font-size="10" fill="rgba(231,242,255,.55)">RECURSIVE FRAME · META</text>
-                </g>
-              </svg>
+        <!-- ISSUE 6 -->
+        <article class="issue" data-issue>
+          <div class="head" role="button" tabindex="0" aria-expanded="false">
+            <div class="left">
+              <div class="row1">
+                <span class="status refactor">REFACTOR</span>
+                <span class="key">GEVA-006</span>
+                <div class="labels">
+                  <span class="lbl">meta</span>
+                  <span class="lbl recursive">Recursive</span>
+                  <span class="lbl">frontend</span>
+                  <span class="lbl ai">AI rewrite</span>
+                </div>
+              </div>
+              <h3 class="title">
+                <span class="muteglyph" aria-hidden="true">⟲</span>
+                Portfolio Website (Meta)
+              </h3>
+              <p class="summary">Diary: building a portfolio entry… for the portfolio itself (how meta).</p>
             </div>
-
-            <div class="tab">
-              <div class="label">Portfolio (Meta)</div>
-              <div class="badge">assembled ✓</div>
-            </div>
-
-            <div class="content">
-              <p class="desc"><span class="typed"
-                data-full="The portfolio website project itself: a self-referential build with a daily AI redesign concept. The interface is treated like an engineered system—assembled, inspected, and iterated."></span></p>
-              <div class="tags">
-                <a class="tag" href="https://geekip.dev" target="_blank" rel="noopener">Home</a>
+            <div class="right">
+              <div class="chev" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M7 10l5 5 5-5" stroke="rgba(231,237,246,.78)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
               </div>
             </div>
           </div>
-        </article>
 
-        <!-- 7) Connect -->
-        <article class="module" data-angle="330" data-radius="235" data-id="connect">
-          <div class="card">
-            <div class="edgeGlow" aria-hidden="true"></div>
-            <div class="brackets" aria-hidden="true"></div>
-            <div class="leaders" aria-hidden="true"></div>
+          <div class="details" aria-hidden="true">
+            <div class="details-inner">
+              <div>
+                <p class="story">
+                  Observed loop: the site needed to communicate the work, but also be part of the work.
+                  Investigation: iterated on a single-page design that reads like a continuously scrolling backlog—clean, calm, and technical.
+                  Outcome: this entry documents the portfolio website project… inside the portfolio website project (how meta).
+                </p>
 
-            <div class="schematic" aria-hidden="true">
-              <svg viewBox="0 0 340 210">
-                <g stroke="rgba(83,230,255,.75)" fill="none" stroke-width="1">
-                  <circle cx="78" cy="106" r="22" opacity=".45"/>
-                  <circle cx="170" cy="76" r="18" opacity=".35"/>
-                  <circle cx="252" cy="122" r="20" opacity=".40"/>
-                  <path d="M98 106 L152 84" stroke-dasharray="3 3" opacity=".55"/>
-                  <path d="M188 84 L232 112" stroke-dasharray="3 3" opacity=".55"/>
-                  <text x="42" y="38" font-family="ui-monospace, Menlo, Consolas" font-size="10" fill="rgba(231,242,255,.55)">CONNECTORS</text>
-                </g>
-              </svg>
-            </div>
-
-            <div class="tab">
-              <div class="label">Connect</div>
-              <div class="badge">assembled ✓</div>
-            </div>
-
-            <div class="content">
-              <div class="socialRow" role="group" aria-label="Social links">
-                <a class="iconBtn" href="https://github.com/gevak" target="_blank" rel="noopener" aria-label="GitHub: github.com/gevak">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M9 19c-4 1.5-4-2.5-5-3m10 6v-3.2c0-.9.3-1.6.8-2-2.7-.3-5.6-1.3-5.6-5.9 0-1.3.5-2.4 1.3-3.2-.1-.3-.6-1.5.1-3.1 0 0 1-.3 3.4 1.2a11.6 11.6 0 0 1 6.2 0C18.8 3.3 19.8 3.6 19.8 3.6c.7 1.6.2 2.8.1 3.1.8.8 1.3 1.9 1.3 3.2 0 4.6-2.9 5.6-5.7 5.9.5.4.9 1.2.9 2.3V22"/>
+                <div class="loop" aria-label="Decorative infinite loop motif">
+                  <svg width="52" height="22" viewBox="0 0 52 22" fill="none">
+                    <path d="M16 11c0-4 3-7 7-7 6 0 7 14 13 14 4 0 7-3 7-7s-3-7-7-7c-6 0-7 14-13 14-4 0-7-3-7-7Z"
+                          stroke="rgba(167,139,250,.85)" stroke-width="1.7" />
+                    <path d="M10 11c0-4 3-7 7-7" stroke="rgba(103,232,212,.75)" stroke-width="1.7" stroke-linecap="round"/>
                   </svg>
-                  <span>GitHub</span>
-                </a>
+                  <span>∞ recursive note: UI as logbook, logbook as UI</span>
+                </div>
 
-                <a class="iconBtn" href="https://linkedin.com/in/gevakip" target="_blank" rel="noopener" aria-label="LinkedIn: linkedin.com/in/gevakip">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6.5 9.5V20M6.5 6.2a1.7 1.7 0 1 1 0 3.4 1.7 1.7 0 0 1 0-3.4Z"/>
-                    <path d="M10.5 20v-6.1c0-2.3 1.2-3.6 3.2-3.6 1.8 0 2.8 1.2 2.8 3.6V20"/>
-                    <path d="M10.5 13.4c0-2.1 1.3-3.2 3.2-3.2 1.4 0 2.1.6 2.5 1.3"/>
-                  </svg>
-                  <span>LinkedIn</span>
-                </a>
+                <div class="meta-block" style="margin-top:12px;">
+                  <h4>Tech stack</h4>
+                  <div class="badges">
+                    <span class="badge">Modern HTML</span>
+                    <span class="badge">CSS (dark theme)</span>
+                    <span class="badge">Vanilla JS</span>
+                    <span class="badge">Micro-interactions</span>
+                  </div>
 
-                <a class="iconBtn" href="https://facebook.com/geva.kipper" target="_blank" rel="noopener" aria-label="Facebook: facebook.com/geva.kipper">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M14 8h2.5V5.6c0-1.2-1-2.1-2.2-2.1H12c-2 0-3.5 1.6-3.5 3.5V8H6v3h2.5v9H12v-9h3l.7-3H12V7.1c0-.6.5-1.1 1.1-1.1H14Z"/>
-                  </svg>
-                  <span>Facebook</span>
-                </a>
+                  <div class="attachments" style="margin-top:12px;">
+                    <div class="att-row">
+                      <a href="https://geekip.dev" target="_blank" rel="noreferrer">
+                        <div class="att-ic" aria-hidden="true">
+                          <!-- home icon -->
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M4 11 12 4l8 7v9a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9Z"
+                                  stroke="rgba(231,237,246,.82)" stroke-width="1.6" fill="rgba(103,232,212,.08)"/>
+                          </svg>
+                        </div>
+                        <div class="att-text">
+                          <div class="att-name">geekip.dev</div>
+                          <div class="att-desc">Attachment · self-link (meta)</div>
+                        </div>
+                        <div class="att-go">↗ <span style="opacity:.7">open</span></div>
+                      </a>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div class="urlMono" id="connectUrls">
-                github.com/gevak · linkedin.com/in/gevakip · facebook.com/geva.kipper
+              <div class="meta-block">
+                <h4>Refactor intent</h4>
+                <div class="badges">
+                  <span class="badge">Make it readable</span>
+                  <span class="badge">Make it calm</span>
+                  <span class="badge">Make it “tracker-real”</span>
+                </div>
+                <p class="story" style="margin-top:10px; color:var(--muted);">
+                  A portfolio shouldn’t feel like marketing copy; it should feel like engineering notes that happen to be public.
+                </p>
               </div>
             </div>
           </div>
         </article>
+
+        <!-- ISSUE 7 -->
+        <article class="issue" data-issue>
+          <div class="head" role="button" tabindex="0" aria-expanded="false">
+            <div class="left">
+              <div class="row1">
+                <span class="status open">OPEN</span>
+                <span class="key">GEVA-007</span>
+                <div class="labels">
+                  <span class="lbl">contact</span>
+                  <span class="lbl">profiles</span>
+                  <span class="lbl">collaboration</span>
+                </div>
+              </div>
+              <h3 class="title">
+                <span class="muteglyph" aria-hidden="true">◎</span>
+                Contact / Profiles
+              </h3>
+              <p class="summary">Diary: leaving this ticket open—awaiting collaboration, questions, and good problems.</p>
+            </div>
+            <div class="right">
+              <div class="chev" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M7 10l5 5 5-5" stroke="rgba(231,237,246,.78)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="details" aria-hidden="true">
+            <div class="details-inner">
+              <div>
+                <p class="story">
+                  If you want to discuss a project, share feedback, or propose a collaboration—pick a channel below.
+                  (This issue stays open by design.)
+                </p>
+
+                <div class="meta-block" style="margin-top:12px;">
+                  <h4>Attachments</h4>
+                  <div class="attachments" style="margin-top:0;">
+                    <div class="att-row">
+                      <a href="https://github.com/gevak" target="_blank" rel="noreferrer">
+                        <div class="att-ic" aria-hidden="true">
+                          <!-- GitHub mark (minimal) -->
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.8c-3 .7-3.6-1.3-3.6-1.3-.5-1.1-1.2-1.4-1.2-1.4-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 .1.6 2 2.8 1.4.1-.7.4-1.2.7-1.5-2.4-.3-4.9-1.2-4.9-5.3 0-1.2.4-2.2 1.1-3-.1-.3-.5-1.4.1-2.9 0 0 .9-.3 3 .9a10.3 10.3 0 0 1 5.4 0c2.1-1.2 3-.9 3-.9.6 1.5.2 2.6.1 2.9.7.8 1.1 1.8 1.1 3 0 4.1-2.5 5-4.9 5.3.4.3.7 1 .7 2v2.9c0 .3.2.6.7.5A10 10 0 0 0 12 2Z"
+                                  fill="rgba(231,237,246,.82)"/>
+                          </svg>
+                        </div>
+                        <div class="att-text">
+                          <div class="att-name">github.com/gevak</div>
+                          <div class="att-desc">Attachment · code & repos</div>
+                        </div>
+                        <div class="att-go">↗ <span style="opacity:.7">open</span></div>
+                      </a>
+                    </div>
+
+                    <div class="att-row">
+                      <a href="https://linkedin.com/in/gevakip" target="_blank" rel="noreferrer">
+                        <div class="att-ic" aria-hidden="true">
+                          <!-- LinkedIn-ish -->
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M6 9H3v12h3V9Z" fill="rgba(231,237,246,.82)"/>
+                            <path d="M4.5 3.5a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5Z" fill="rgba(103,232,212,.85)"/>
+                            <path d="M21 21h-3v-6.5c0-1.6-.6-2.7-2.1-2.7-1.1 0-1.8.7-2.1 1.4-.1.3-.1.7-.1 1.1V21h-3V9h3v1.6c.4-.7 1.3-1.8 3.2-1.8 2.4 0 4.1 1.6 4.1 5V21Z"
+                                  fill="rgba(231,237,246,.82)"/>
+                          </svg>
+                        </div>
+                        <div class="att-text">
+                          <div class="att-name">
+                            linkedin.com/in/gevakip <span title="Preferred channel" style="color:rgba(251,191,36,.95)">★</span>
+                          </div>
+                          <div class="att-desc">Attachment · preferred channel</div>
+                        </div>
+                        <div class="att-go">↗ <span style="opacity:.7">open</span></div>
+                      </a>
+                    </div>
+
+                    <div class="att-row">
+                      <a href="https://facebook.com/geva.kipper" target="_blank" rel="noreferrer">
+                        <div class="att-ic" aria-hidden="true">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M14 8h2V5h-2c-2.2 0-4 1.8-4 4v2H8v3h2v6h3v-6h2.2l.8-3H13V9c0-.6.4-1 1-1Z"
+                                  fill="rgba(231,237,246,.82)"/>
+                          </svg>
+                        </div>
+                        <div class="att-text">
+                          <div class="att-name">facebook.com/geva.kipper</div>
+                          <div class="att-desc">Attachment · profile</div>
+                        </div>
+                        <div class="att-go">↗ <span style="opacity:.7">open</span></div>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="meta-block">
+                <h4>Collab note</h4>
+                <div class="badges">
+                  <span class="badge">Interested in: data, viz, LLM UX</span>
+                  <span class="badge">Also: algorithms & geometry</span>
+                </div>
+                <p class="story" style="margin-top:10px; color:var(--muted);">
+                  Leave a trail of context (links + intent) and I’ll reply faster than a flaky CI run.
+                </p>
+              </div>
+            </div>
+          </div>
+        </article>
+
       </section>
     </main>
-
-    <footer>
-      <div class="titleblock" role="contentinfo">
-        <div class="credit">
-          <span>Generated by OpenAI’s ChatGPT</span>
-          <span style="opacity:.7">· AI design draft</span>
-        </div>
-
-        <div class="instrument" aria-label="Stopwatch: time elapsed since seed timestamp">
-          <div class="telemetry">
-            <div>elapsed</div>
-            <div>since seed timestamp</div>
-          </div>
-          <div>
-            <div class="timer" id="timer">00:00:00</div>
-            <div class="since" id="sinceStamp">since 2025-12-16 01:13:48</div>
-          </div>
-        </div>
-      </div>
-    </footer>
   </div>
 
+  <!-- purely visual floating hint -->
+  <div class="cmd" aria-hidden="true">
+    <div class="hint">
+      <span style="opacity:.85">Command palette</span>
+      <span class="kbd">⌘ K</span>
+      <span style="opacity:.7">/</span>
+      <span style="opacity:.85">Search issues</span>
+    </div>
+  </div>
+
+  <footer>
+    <div class="foot">
+      <div class="credit">System comment · Created by the AI model (ChatGPT) on 2025-12-17</div>
+      <div class="timer" aria-label="Stopwatch since 2025-12-17 01:06:19">
+        <span class="label">Stopwatch since 2025-12-17 01:06:19</span>
+        <span class="value" id="timerValue">00<span class="blink">:</span>00<span class="blink">:</span>00</span>
+      </div>
+    </div>
+  </footer>
+
   <script>
-    (() => {
-      const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // --- Expand/collapse issues (click or keyboard) ---
+    const issues = [...document.querySelectorAll("[data-issue]")];
 
-      // Seed stamp: YYYY-MM-DD
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth()+1).padStart(2,'0');
-      const dd = String(today.getDate()).padStart(2,'0');
-      const seedStr = `${yyyy}-${mm}-${dd}`;
-      const seedEl = document.getElementById('seedStamp');
-      if (seedEl) seedEl.textContent = `AI Layout Seed: ${seedStr}`;
+    function setExpanded(issue, expanded){
+      issue.classList.toggle("open", expanded);
+      const head = issue.querySelector(".head");
+      const details = issue.querySelector(".details");
+      head?.setAttribute("aria-expanded", expanded ? "true" : "false");
+      details?.setAttribute("aria-hidden", expanded ? "false" : "true");
+    }
 
-      // Parallax for blueprint mat/notes
-      let lastPar = {x: 0, y: 0};
-      window.addEventListener('pointermove', (e) => {
-        const w = window.innerWidth, h = window.innerHeight;
-        const nx = (e.clientX / w) * 2 - 1;
-        const ny = (e.clientY / h) * 2 - 1;
-        const x = Math.max(-10, Math.min(10, nx * 8));
-        const y = Math.max(-10, Math.min(10, ny * 8));
-        if (Math.abs(x - lastPar.x) + Math.abs(y - lastPar.y) < 0.2) return;
-        lastPar = {x,y};
-        document.documentElement.style.setProperty('--parX', `${x}px`);
-        document.documentElement.style.setProperty('--parY', `${y}px`);
-      }, {passive:true});
+    issues.forEach((issue) => {
+      const head = issue.querySelector(".head");
+      const toggle = () => setExpanded(issue, !issue.classList.contains("open"));
 
-      // Typing effect for descriptions on assemble
-      const typeState = new Map(); // moduleEl -> {raf, idx}
-      function startTyping(moduleEl) {
-        const typed = moduleEl.querySelector('.typed');
-        if (!typed) return;
-        const full = typed.getAttribute('data-full') || '';
-        // If already complete, do nothing
-        if (typed.textContent === full) return;
-
-        // Cancel any previous loop
-        stopTyping(moduleEl);
-
-        typed.textContent = '';
-        let i = 0;
-        const speed = prefersReduced ? 0 : 10; // ms-ish via RAF pacing
-        let last = performance.now();
-
-        const tick = (t) => {
-          // Abort if module deconstructed
-          if (!moduleEl.classList.contains('assembled')) return;
-
-          if (prefersReduced) {
-            typed.textContent = full;
-            return;
-          }
-          const dt = t - last;
-          if (dt >= speed) {
-            const step = Math.max(1, Math.floor(dt / speed));
-            i = Math.min(full.length, i + step);
-            typed.textContent = full.slice(0, i);
-            last = t;
-          }
-          if (i < full.length) {
-            const raf = requestAnimationFrame(tick);
-            typeState.set(moduleEl, { raf });
-          } else {
-            typeState.delete(moduleEl);
-          }
-        };
-
-        const raf = requestAnimationFrame(tick);
-        typeState.set(moduleEl, { raf });
-      }
-
-      function stopTyping(moduleEl) {
-        const st = typeState.get(moduleEl);
-        if (st && st.raf) cancelAnimationFrame(st.raf);
-        typeState.delete(moduleEl);
-      }
-
-      // Module assemble/deconstruct interactions
-      const modules = [...document.querySelectorAll('.module')];
-
-      function setAssembled(moduleEl, on) {
-        if (on) {
-          moduleEl.classList.add('assembled');
-          startTyping(moduleEl);
-        } else {
-          moduleEl.classList.remove('assembled');
-          stopTyping(moduleEl);
-          // Restore to deconstructed empty-ish but readable: keep 1st sentence quickly.
-          const typed = moduleEl.querySelector('.typed');
-          if (typed) {
-            const full = typed.getAttribute('data-full') || '';
-            // keep a short snippet so it's not "blank" on hover-out
-            const snippet = full.split('. ').slice(0,1).join('. ') + (full.includes('.') ? '.' : '');
-            typed.textContent = snippet.trim();
-          }
-        }
-      }
-
-      // Initialize snippets (deconstructed state still readable)
-      modules.forEach(m => setAssembled(m, false));
-
-      const isMobileStack = () => window.matchMedia('(max-width: 860px)').matches;
-
-      modules.forEach((m) => {
-        // Hover/focus (desktop)
-        m.addEventListener('mouseenter', () => { if (!isMobileStack()) setAssembled(m, true); });
-        m.addEventListener('mouseleave', () => { if (!isMobileStack()) setAssembled(m, false); });
-
-        // Keyboard focus within card
-        m.addEventListener('focusin', () => { if (!isMobileStack()) setAssembled(m, true); });
-        m.addEventListener('focusout', (e) => {
-          if (!isMobileStack()) {
-            // If focus moved outside module
-            if (!m.contains(e.relatedTarget)) setAssembled(m, false);
-          }
-        });
-
-        // Tap/click (mobile): toggle assemble unless clicking a link
-        m.addEventListener('click', (e) => {
-          const a = e.target.closest('a');
-          if (a) return; // let links work
-          if (!isMobileStack()) return; // desktop click doesn't toggle
-          setAssembled(m, !m.classList.contains('assembled'));
-        });
+      head.addEventListener("click", (e) => {
+        // If user clicks on a link inside header (unlikely), don't toggle.
+        if (e.target.closest("a")) return;
+        toggle();
       });
 
-      // Orbit layout (desktop): place modules around hub, allow drag to rotate
-      const assembly = document.getElementById('assembly');
-      let orbitRot = 0; // degrees
-      let dragging = false;
-      let dragStartX = 0;
-      let orbitStart = 0;
+      head.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggle();
+        }
+      });
+    });
 
-      function layoutOrbit() {
-        if (!assembly) return;
+    // --- Stopwatch (CI-like duration) ---
+    // Start time from spec (interpreted as local time).
+    const start = new Date("2025-12-17T01:06:19");
+    const el = document.getElementById("timerValue");
 
-        const rect = assembly.getBoundingClientRect();
-        const minDim = Math.min(rect.width, rect.height);
-        const base = Math.max(190, Math.min(320, minDim * 0.40));
+    function pad2(n){ return String(n).padStart(2, "0"); }
+    function formatHHMMSS(ms){
+      const total = Math.max(0, Math.floor(ms / 1000));
+      const h = Math.floor(total / 3600);
+      const m = Math.floor((total % 3600) / 60);
+      const s = total % 60;
+      // Keep HH unbounded but padded to 2 for a “timer chip” feel.
+      const HH = h < 100 ? pad2(h) : String(h);
+      return `${HH}<span class="blink">:</span>${pad2(m)}<span class="blink">:</span>${pad2(s)}`;
+    }
+    function tick(){
+      const now = new Date();
+      el.innerHTML = formatHHMMSS(now - start);
+    }
+    tick();
+    setInterval(tick, 1000);
 
-        modules.forEach((m) => {
-          const a0 = parseFloat(m.dataset.angle || '0');
-          const r0 = parseFloat(m.dataset.radius || '260');
-
-          // Normalize radius relative to container size
-          const r = base * (r0 / 260);
-
-          const ang = (a0 + orbitRot) * (Math.PI / 180);
-          const x = Math.cos(ang) * r;
-          const y = Math.sin(ang) * (r * 0.82);
-
-          m.style.setProperty('--mx', `${x.toFixed(2)}px`);
-          m.style.setProperty('--my', `${y.toFixed(2)}px`);
-        });
-
-        // Hint visibility
-        const hint = document.getElementById('orbitHint');
-        if (hint) hint.style.display = isMobileStack() ? 'none' : 'block';
-      }
-
-      layoutOrbit();
-      window.addEventListener('resize', layoutOrbit, {passive:true});
-
-      if (assembly) {
-        assembly.addEventListener('pointerdown', (e) => {
-          if (isMobileStack()) return;
-          // avoid starting a drag when pressing a link/tag inside a card
-          if (e.target.closest('a')) return;
-          dragging = true;
-          dragStartX = e.clientX;
-          orbitStart = orbitRot;
-          assembly.setPointerCapture?.(e.pointerId);
-        });
-
-        assembly.addEventListener('pointermove', (e) => {
-          if (!dragging || isMobileStack()) return;
-          const dx = e.clientX - dragStartX;
-          orbitRot = orbitStart + dx * 0.15; // degrees per px
-          layoutOrbit();
-        }, {passive:true});
-
-        const stopDrag = () => { dragging = false; };
-        assembly.addEventListener('pointerup', stopDrag, {passive:true});
-        assembly.addEventListener('pointercancel', stopDrag, {passive:true});
-        assembly.addEventListener('mouseleave', stopDrag, {passive:true});
-      }
-
-      // Stopwatch since 2025-12-16 01:13:48 (local time interpretation)
-      const sinceStr = '2025-12-16T01:13:48';
-      const since = new Date(sinceStr);
-      const timerEl = document.getElementById('timer');
-
-      function pad2(n){ return String(n).padStart(2,'0'); }
-      function tickTimer(){
-        if (!timerEl) return;
-        const now = new Date();
-        let sec = Math.floor((now - since) / 1000);
-        if (isNaN(sec)) sec = 0;
-        if (sec < 0) sec = 0;
-        const h = Math.floor(sec / 3600);
-        const m = Math.floor((sec % 3600) / 60);
-        const s = sec % 60;
-        timerEl.textContent = `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
-      }
-      tickTimer();
-      setInterval(tickTimer, 1000);
-    })();
+    // Optional: open first issue if URL hash matches (tiny convenience, no complexity).
+    // e.g., #GEVA-004
+    const hash = (location.hash || "").replace("#", "").trim().toUpperCase();
+    if (hash) {
+      const found = issues.find(i => (i.querySelector(".key")?.textContent || "").trim().toUpperCase() === hash);
+      if (found) setExpanded(found, true);
+    }
   </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20251216",
+          pageId: "20251217",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
