@@ -2,2146 +2,1152 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GKV Admin Console — Geva Kipper</title>
-  <meta name="color-scheme" content="dark" />
+  <title>Geva Kipper — Winter Solstice</title>
+  <meta name="description" content="A single-page Winter Solstice portfolio: darkest-to-brightest timeline." />
   <style>
     :root{
-      --bg0:#07090d;
-      --bg1:#0a0e16;
-      --panel: rgba(255,255,255,.06);
-      --panel2: rgba(255,255,255,.045);
-      --stroke: rgba(255,255,255,.10);
-      --stroke2: rgba(255,255,255,.14);
-      --text:#e9edf5;
-      --muted:#a9b3c6;
-      --muted2:#7f8aa3;
-      --shadow: 0 18px 45px rgba(0,0,0,.55);
-      --shadow2: 0 10px 30px rgba(0,0,0,.45);
+      /* Scroll progress 0..1 set by JS */
+      --p: 0;
+
+      /* Dynamic sky colors set by JS */
+      --sky0: #070814; /* deep indigo */
+      --sky1: #071b3a; /* midnight blue */
+      --sky2: #2b3a50; /* slate */
+      --sky3: #a9d4ff; /* icy blue */
+      --sky4: #f7fbff; /* winter white */
+
+      --text-dark: rgba(8,10,20,.92);
+      --text-light: rgba(244,248,255,.92);
+
+      --glass: rgba(255,255,255,.08);
+      --glass-2: rgba(255,255,255,.12);
+      --hairline: rgba(255,255,255,.18);
+
+      --axis-x: 50%;
+      --axis-glow: calc(10px + 28px * var(--p));
+      --axis-alpha: calc(.20 + .80 * var(--p));
+
       --radius: 18px;
-      --radius2: 14px;
+      --card-max: 560px;
+      --grid-gap: clamp(18px, 2.6vw, 34px);
 
-      /* set by JS daily */
-      --accent: #4fd1c5;     /* teal default */
-      --accent2:#8ff3ea;
-      --accent3:#2ea89e;
-      --seed: "8F3A";
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+      --shadow-soft: 0 16px 44px rgba(0,0,0,.22);
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
 
-    *{ box-sizing:border-box; }
-    html,body{ height:100%; }
-    html{ scroll-behavior:smooth; }
+    *{ box-sizing: border-box; }
+    html, body { height: 100%; }
     body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      color:var(--text);
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--text-light);
+      background: #060712;
+      overflow-x: hidden;
+    }
+
+    /* Fixed animated sky layer (colors are updated by JS as you scroll) */
+    .sky{
+      position: fixed;
+      inset: 0;
+      z-index: -3;
       background:
-        radial-gradient(1200px 900px at 70% 10%, rgba(79,209,197,.18), transparent 60%),
-        radial-gradient(1100px 900px at 20% 20%, rgba(160,120,255,.12), transparent 55%),
-        linear-gradient(180deg, var(--bg0), var(--bg1) 60%, #05060a);
-      overflow-x:hidden;
+        radial-gradient(1200px 900px at 20% 20%, color-mix(in oklab, var(--sky1), transparent 40%), transparent 60%),
+        radial-gradient(1000px 700px at 80% 30%, color-mix(in oklab, var(--sky2), transparent 55%), transparent 65%),
+        radial-gradient(900px 800px at 55% 85%, color-mix(in oklab, var(--sky3), transparent 70%), transparent 70%),
+        linear-gradient(180deg, var(--sky0) 0%, var(--sky1) 30%, var(--sky2) 55%, var(--sky3) 78%, var(--sky4) 100%);
+      background-size: 140% 140%, 160% 160%, 160% 160%, 100% 100%;
+      background-position: 0% 0%, 80% 10%, 20% 90%, 0% 0%;
+      animation: skyDrift 16s ease-in-out infinite alternate;
+      filter: saturate(calc(.92 + .16 * var(--p)));
     }
 
-    /* subtle texture */
-    body:before{
-      content:"";
-      position:fixed; inset:0;
-      background:
-        linear-gradient(transparent 0 70%, rgba(255,255,255,.02) 70% 71%, transparent 71% 100%),
-        radial-gradient(circle at 20% 30%, rgba(255,255,255,.03), transparent 35%),
-        radial-gradient(circle at 80% 20%, rgba(255,255,255,.02), transparent 32%);
-      mix-blend-mode: overlay;
-      opacity:.55;
-      pointer-events:none;
+    @keyframes skyDrift{
+      from { background-position: 0% 0%, 85% 10%, 15% 90%, 0% 0%; }
+      to   { background-position: 8% 4%, 75% 18%, 30% 84%, 0% 0%; }
     }
 
-    /* animated network traces */
-    #net{
-      position:fixed; inset:0;
-      width:100%; height:100%;
-      z-index:0;
-      opacity:.45;
-      filter: saturate(1.05) contrast(1.05);
-      pointer-events:none;
+    /* Snow dust canvas */
+    #snow{
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      opacity: .55;
+      mix-blend-mode: screen;
+      filter: blur(.15px);
     }
 
-    .stage{
-      position:relative;
-      z-index:1;
-      min-height:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:44px 16px;
-    }
-
-    /* Router viewport frame */
-    .router{
-      width:min(1180px, 100%);
-      min-height: min(850px, 92vh);
-      border-radius: 26px;
-      position:relative;
-      padding:14px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+    /* Center meridian axis (glows more as you scroll) */
+    .axis{
+      position: fixed;
+      top: 0; bottom: 0;
+      left: var(--axis-x);
+      width: 1px;
+      transform: translateX(-.5px);
+      background: linear-gradient(
+        180deg,
+        rgba(255,255,255,.05),
+        rgba(190,220,255,var(--axis-alpha)),
+        rgba(255,255,255,.25)
+      );
       box-shadow:
-        0 0 0 1px rgba(255,255,255,.10) inset,
-        0 35px 80px rgba(0,0,0,.7);
-      overflow:hidden;
+        0 0 var(--axis-glow) rgba(170,210,255, calc(.12 + .42 * var(--p))),
+        0 0 calc(var(--axis-glow) * 1.8) rgba(255,255,255, calc(.05 + .20 * var(--p)));
+      z-index: 1;
+      pointer-events: none;
     }
 
-    /* faint bezel */
-    .router:before{
-      content:"";
-      position:absolute; inset:8px;
-      border-radius:22px;
-      box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset;
-      pointer-events:none;
-    }
-
-    /* ventilation slits along top edge */
-    .slits{
-      position:absolute; left:26px; right:70px; top:10px;
-      height:10px; display:flex; gap:8px;
-      opacity:.55;
-      pointer-events:none;
-    }
-    .slits span{
-      flex:1;
-      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
-      border-radius: 6px;
-      box-shadow: 0 1px 0 rgba(0,0,0,.3) inset;
-      height: 6px;
-      transform: translateY(2px);
-    }
-
-    /* status LED glow in upper-right */
-    .led{
-      position:absolute; top:12px; right:14px;
-      width:12px; height:12px;
-      border-radius:999px;
-      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.85), rgba(255,255,255,.15) 35%, rgba(0,0,0,.0) 62%),
-                  radial-gradient(circle, rgba(79,209,197,1), rgba(79,209,197,.25) 60%, rgba(79,209,197,0) 75%);
-      filter: drop-shadow(0 0 10px rgba(79,209,197,.45)) drop-shadow(0 0 20px rgba(79,209,197,.25));
-      opacity:.95;
-      animation: ledPulse 3.6s ease-in-out infinite;
-      pointer-events:none;
-    }
-    @keyframes ledPulse{
-      0%,100%{ transform:translateY(0); filter: drop-shadow(0 0 10px rgba(79,209,197,.42)) drop-shadow(0 0 18px rgba(79,209,197,.20)); }
-      50%{ transform:translateY(.2px); filter: drop-shadow(0 0 12px rgba(79,209,197,.55)) drop-shadow(0 0 26px rgba(79,209,197,.26)); }
-    }
-
-    /* inner viewport content */
-    .viewport{
-      position:relative;
-      border-radius: 20px;
-      background:
-        radial-gradient(1400px 900px at 60% 10%, rgba(255,255,255,.06), transparent 60%),
-        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-      box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset;
-      overflow:hidden;
-      min-height: calc(92vh - 90px);
-    }
-
-    .layout{
-      display:grid;
-      grid-template-columns: 250px 1fr;
-      min-height: calc(92vh - 90px);
-    }
-
-    /* Sidebar */
-    aside{
-      border-right:1px solid rgba(255,255,255,.08);
-      background: linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.06));
-      padding:18px 14px 18px 14px;
-    }
-
-    .sideTop{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:10px 10px 14px 10px;
-    }
-    .badge{
-      width:34px; height:34px; border-radius: 11px;
-      background: linear-gradient(135deg, rgba(79,209,197,.25), rgba(255,255,255,.08));
-      box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset, 0 10px 30px rgba(0,0,0,.25);
-      display:grid; place-items:center;
-    }
-    .badge svg{ opacity:.95; }
-    .sideTop .title{
-      display:flex; flex-direction:column; line-height:1.1;
-    }
-    .sideTop .title strong{
-      font-size:13px; letter-spacing:.08em; text-transform:uppercase;
-      color:rgba(233,237,245,.92);
-    }
-    .sideTop .title span{
-      font-size:12px; color:var(--muted2);
-    }
-
-    nav{
-      margin-top:6px;
-    }
-    .navGroup{
-      margin:14px 0 10px;
-      padding:0 8px;
-      font-size:11px;
-      color: rgba(169,179,198,.8);
-      text-transform:uppercase;
-      letter-spacing:.12em;
-    }
-    .navList{
-      list-style:none; padding:0; margin:0;
-      display:flex; flex-direction:column;
-      gap:4px;
-    }
-    .navList a{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding:10px 10px;
-      border-radius: 12px;
-      text-decoration:none;
-      color: rgba(233,237,245,.88);
-      background: transparent;
-      border:1px solid transparent;
-      transition: background .15s ease, border-color .15s ease, transform .15s ease;
-      font-size:13px;
-    }
-    .navList a:hover{
-      background: rgba(255,255,255,.05);
-      border-color: rgba(255,255,255,.08);
-      transform: translateY(-1px);
-    }
-    .navList a.active{
-      background: linear-gradient(135deg, rgba(79,209,197,.18), rgba(255,255,255,.05));
-      border-color: rgba(79,209,197,.35);
-      box-shadow: 0 0 0 1px rgba(79,209,197,.10) inset;
-    }
-    .chip{
-      font-size:11px;
-      color: rgba(233,237,245,.82);
-      padding: 2px 8px;
-      border-radius:999px;
-      background: rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.10);
-    }
-
-    /* Main */
+    /* Content scaffold */
     main{
-      padding: 18px 18px 0 18px;
-      position:relative;
+      position: relative;
+      z-index: 2;
+      padding: 0 clamp(16px, 4vw, 56px);
     }
 
-    /* Header bar */
-    .topbar{
-      position:sticky;
-      top:0;
-      z-index:10;
-      display:grid;
-      grid-template-columns: 1.1fr 1fr 1.2fr;
-      align-items:center;
-      gap:12px;
-      padding: 12px 14px;
-      border-radius: 16px;
-      background: rgba(10,12,18,.55);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border:1px solid rgba(255,255,255,.09);
-      box-shadow: 0 16px 40px rgba(0,0,0,.35);
-    }
-    .brand{
-      display:flex; align-items:baseline; gap:10px;
-      min-width:0;
-    }
-    .brand .name{
-      font-weight:700;
-      letter-spacing:.01em;
-      white-space:nowrap;
-    }
-    .brand .sub{
-      font-size:12px;
-      color:var(--muted2);
-      white-space:nowrap;
-    }
-    .crumb{
-      text-align:center;
-      font-size:12px;
-      color: rgba(233,237,245,.78);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .actions{
-      display:flex;
-      justify-content:flex-end;
-      align-items:center;
-      gap:10px;
-      min-width:0;
+    /* Hero */
+    .hero{
+      min-height: 92vh;
+      display: grid;
+      place-items: center;
+      padding: 10vh 0 8vh;
     }
 
-    .iconRow{ display:flex; gap:8px; align-items:center; }
-    .iconBtn{
-      width:34px; height:34px;
-      border-radius: 12px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.05);
-      color: rgba(233,237,245,.9);
-      display:grid; place-items:center;
-      cursor:pointer;
-      transition: transform .15s ease, border-color .15s ease, background .15s ease;
-      position:relative;
+    .hero-inner{
+      width: min(980px, 100%);
+      text-align: center;
     }
-    .iconBtn:hover{
-      transform: translateY(-1px);
-      border-color: rgba(255,255,255,.16);
-      background: rgba(255,255,255,.07);
-    }
-    .iconBtn:active{ transform: translateY(0px) scale(.99); }
 
-    .tooltip{
-      position:absolute;
-      right:0;
-      top:calc(100% + 8px);
-      background: rgba(10,12,18,.85);
-      border: 1px solid rgba(255,255,255,.10);
-      color: rgba(233,237,245,.92);
-      padding: 8px 10px;
-      border-radius: 12px;
-      font-size: 12px;
-      width:max-content;
-      max-width:240px;
-      box-shadow: var(--shadow2);
-      opacity:0;
-      transform: translateY(-6px);
-      pointer-events:none;
-      transition: opacity .14s ease, transform .14s ease;
+    .name{
+      font-size: clamp(40px, 6vw, 76px);
+      letter-spacing: .02em;
+      line-height: 1.03;
+      font-weight: 560;
+      color: rgba(248,252,255,.96);
+      text-shadow:
+        0 0 24px rgba(120,190,255,.20),
+        0 0 52px rgba(110,210,255,.12),
+        0 0 80px rgba(90,255,190,.06); /* faint aurora */
+    }
+
+    .tagline{
+      margin: 18px auto 0;
+      max-width: 60ch;
+      font-size: clamp(16px, 1.7vw, 20px);
+      line-height: 1.55;
+      color: rgba(238,245,255,.86);
+    }
+
+    .subtitle{
+      margin: 10px auto 0;
+      max-width: 70ch;
+      font-size: 14px;
+      letter-spacing: .01em;
+      color: rgba(230,240,255,.70);
+      font-weight: 360;
+    }
+
+    .meta-row{
+      margin-top: 18px;
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .badge{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.14);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      z-index:20;
-    }
-    .iconBtn:hover .tooltip,
-    .hint:hover .tooltip{
-      opacity:1;
-      transform: translateY(0);
-    }
-
-    .firmware{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding: 8px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: linear-gradient(135deg, rgba(79,209,197,.14), rgba(255,255,255,.05));
-      white-space:nowrap;
-      min-width:0;
-      max-width: 360px;
-    }
-    .firmware strong{
-      font-size:12px;
-      letter-spacing:.02em;
-    }
-    .firmware span{
-      font-size:12px;
-      color: rgba(233,237,245,.78);
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    .logline{
-      margin: 10px 2px 0;
-      padding: 0 4px;
-      font-size: 12px;
-      color: rgba(169,179,198,.85);
-      display:flex; align-items:center; gap:8px;
-    }
-    .logDot{
-      width:7px; height:7px; border-radius:999px;
-      background: var(--accent);
-      box-shadow: 0 0 0 1px rgba(255,255,255,.10), 0 0 18px rgba(79,209,197,.28);
-      opacity:.95;
-    }
-    .logMono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-
-    /* Hero / Overview */
-    section{ scroll-margin-top: 86px; }
-
-    .hero{
-      margin-top: 14px;
-      border-radius: 18px;
-      border:1px solid rgba(255,255,255,.10);
-      background: linear-gradient(135deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
-      box-shadow: var(--shadow2);
-      padding: 18px 18px 16px;
-      position:relative;
-      overflow:hidden;
-    }
-    .hero:before{
-      content:"";
-      position:absolute; inset:-60px -80px auto auto;
-      width:240px; height:240px;
-      background: radial-gradient(circle at 30% 30%, rgba(79,209,197,.25), transparent 60%);
-      filter: blur(2px);
-      opacity:.8;
-      pointer-events:none;
-    }
-
-    .heroTop{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:14px;
-      margin-bottom: 12px;
-    }
-    .hero h1{
-      margin:0;
-      font-size: 30px;
+      box-shadow: 0 10px 34px rgba(0,0,0,.25);
+      color: rgba(245,250,255,.88);
+      font-size: 12.5px;
       letter-spacing: .01em;
     }
-    .hero p{
-      margin: 6px 0 0;
-      color: rgba(233,237,245,.84);
-      line-height:1.35;
-      max-width: 62ch;
-    }
-    .help{
-      margin-top: 8px;
-      font-size: 12px;
-      color: rgba(169,179,198,.88);
+    .badge::before{
+      content:"";
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.95), rgba(160,210,255,.35) 40%, rgba(255,255,255,.08) 70%);
+      box-shadow: 0 0 14px rgba(200,230,255,.25);
     }
 
-    .tiles{
-      margin-top: 14px;
-      display:grid;
-      grid-template-columns: repeat(4, minmax(0,1fr));
+    .scrollcue{
+      margin: 28px auto 0;
+      display: inline-flex;
+      align-items: center;
       gap: 10px;
+      color: rgba(230,240,255,.72);
+      font-size: 12.5px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      user-select: none;
     }
-    .tile{
-      border-radius: 14px;
-      border:1px solid rgba(255,255,255,.09);
-      background: rgba(255,255,255,.04);
-      padding: 10px 10px;
-      min-height: 62px;
-      position:relative;
-      overflow:hidden;
-    }
-    .tile:after{
-      content:"";
-      position:absolute; inset:auto -20px -24px auto;
-      width:120px; height:120px;
-      background: radial-gradient(circle at 20% 20%, rgba(79,209,197,.16), transparent 65%);
-      opacity:.55;
-      pointer-events:none;
-    }
-    .tile .k{
-      font-size:11px; letter-spacing:.12em; text-transform:uppercase;
-      color: rgba(169,179,198,.9);
-    }
-    .tile .v{
-      margin-top:6px;
-      font-weight: 650;
-      font-size: 13px;
-      color: rgba(233,237,245,.92);
-      display:flex; align-items:center; gap:8px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .pulse{
-      width:8px; height:8px; border-radius:999px;
-      background: var(--accent);
-      box-shadow: 0 0 18px rgba(79,209,197,.35);
+    .scrollcue svg{
+      width: 22px; height: 22px;
+      filter: drop-shadow(0 0 10px rgba(170,220,255,.15));
+      transform-origin: 50% 55%;
+      transform: rotate(calc(-12deg + 40deg * var(--p)));
+      transition: transform 120ms linear;
+      opacity: .92;
     }
 
-    /* Modules grid */
-    .modulesHeader{
-      display:flex; align-items:baseline; justify-content:space-between;
-      gap:10px;
-      margin: 18px 2px 10px;
-    }
-    .modulesHeader h2{
-      margin:0;
-      font-size: 14px;
-      letter-spacing:.14em;
-      text-transform:uppercase;
-      color: rgba(233,237,245,.78);
-    }
-    .modulesHeader .note{
-      font-size:12px; color: rgba(169,179,198,.85);
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap: 12px;
-      padding-bottom: 14px;
-    }
-
-    .card{
-      border-radius: 18px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      box-shadow: 0 10px 26px rgba(0,0,0,.25);
-      overflow:hidden;
-      position:relative;
-    }
-    .card.featured{
-      grid-column: 1 / -1;
-      background: linear-gradient(135deg, rgba(79,209,197,.10), rgba(255,255,255,.04));
-      border-color: rgba(79,209,197,.22);
-      box-shadow: 0 18px 45px rgba(0,0,0,.35);
-    }
-
-    .cardHead{
-      width:100%;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding: 14px 14px;
-      background: linear-gradient(180deg, rgba(255,255,255,.04), transparent);
-      border:0;
-      color:inherit;
-      cursor:pointer;
-      text-align:left;
-    }
-
-    .left{
-      display:flex; align-items:center; gap:12px;
-      min-width:0;
-    }
-    .icon{
-      width:38px; height:38px;
-      border-radius: 14px;
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.10);
-      display:grid; place-items:center;
-      flex:0 0 auto;
-      box-shadow: 0 0 0 1px rgba(0,0,0,.25) inset;
-    }
-    .icon svg{ opacity:.95; }
-
-    .meta{
-      min-width:0;
-    }
-    .meta .title{
-      font-weight:700;
-      letter-spacing:.01em;
-      display:flex; align-items:center; gap:8px;
-      min-width:0;
-    }
-    .meta .subtitle{
-      margin-top:2px;
-      font-size:12px;
-      color: rgba(169,179,198,.92);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .tag{
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.05);
-      color: rgba(233,237,245,.78);
-      flex:0 0 auto;
-    }
-
-    .right{
-      display:flex; align-items:center; gap:10px;
-      flex:0 0 auto;
-    }
-
-    /* Fake toggle */
-    .toggle{
-      display:flex; align-items:center; gap:10px;
-      color: rgba(233,237,245,.78);
-      font-size:12px;
-    }
-    .switch{
-      width:44px; height:24px;
-      border-radius:999px;
-      background: rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.10);
-      position:relative;
-      box-shadow: 0 0 0 1px rgba(0,0,0,.22) inset;
-      transition: border-color .16s ease, background .16s ease;
-    }
-    .switch:before{
-      content:"";
-      position:absolute; top:50%; left:4px;
-      width:18px; height:18px;
-      transform: translateY(-50%);
-      border-radius:999px;
-      background: rgba(233,237,245,.88);
-      box-shadow: 0 8px 16px rgba(0,0,0,.35);
-      transition: left .18s ease, background .18s ease, transform .18s ease;
-    }
-    .card[data-state="open"] .switch{
-      background: rgba(79,209,197,.20);
-      border-color: rgba(79,209,197,.32);
-    }
-    .card[data-state="open"] .switch:before{
-      left:22px;
-      background: rgba(255,255,255,.92);
-    }
-
-    .hint{
-      width:28px; height:28px;
-      border-radius:10px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      display:grid; place-items:center;
-      position:relative;
-    }
-
-    /* Drawer */
-    .drawer{
-      border-top:1px solid rgba(255,255,255,.08);
-      max-height:0;
-      overflow:hidden;
-      transition: max-height .34s ease;
-      background: rgba(0,0,0,.10);
-    }
-    .card[data-state="open"] .drawer{
-      max-height: 1200px; /* enough */
-    }
-
-    .applyBarWrap{
-      padding: 10px 14px 0;
-      display:none;
-    }
-    .card.loading .applyBarWrap{ display:block; }
-    .applyLabel{
-      display:flex; justify-content:space-between; align-items:center;
-      font-size:12px; color: rgba(169,179,198,.92);
-      margin-bottom:6px;
-    }
-    .applyLabel .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; color: rgba(233,237,245,.72); }
-    .applyBar{
-      height: 8px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.09);
-      overflow:hidden;
-    }
-    .applyBar > i{
-      display:block;
-      height:100%;
-      width: 0%;
-      background: linear-gradient(90deg, rgba(79,209,197,.35), rgba(79,209,197,.85), rgba(255,255,255,.25));
-      border-radius:999px;
-      box-shadow: 0 0 22px rgba(79,209,197,.25);
-    }
-
-    .drawerInner{
-      padding: 12px 14px 14px;
-      display:none;
-    }
-    .card[data-state="open"] .drawerInner{ display:block; }
-    .card.loading .drawerInner{ display:none; }
-
-    .tabs{
-      display:flex; gap:6px; flex-wrap:wrap;
-      margin-bottom:10px;
-    }
-    .tab{
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      color: rgba(233,237,245,.82);
-      padding: 7px 10px;
-      border-radius: 12px;
-      font-size:12px;
-      cursor:pointer;
-      transition: background .15s ease, border-color .15s ease, transform .15s ease;
-    }
-    .tab:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.16); }
-    .tab.active{
-      background: rgba(79,209,197,.14);
-      border-color: rgba(79,209,197,.28);
-      color: rgba(233,237,245,.92);
-      box-shadow: 0 0 0 1px rgba(79,209,197,.10) inset;
-    }
-
-    .panel{
-      display:none;
-      border-radius: 14px;
-      border:1px solid rgba(255,255,255,.09);
-      background: rgba(255,255,255,.03);
-      padding: 12px 12px;
-    }
-    .panel.active{ display:block; }
-
-    .p{
-      margin: 0;
-      color: rgba(233,237,245,.84);
-      line-height:1.5;
-      font-size:13px;
+    /* Timeline layout: 3 columns (left / axis gap / right) */
+    .timeline{
+      width: min(1100px, 100%);
+      margin: 0 auto;
+      padding-bottom: 34px;
     }
 
     .row{
-      display:flex; gap:10px; flex-wrap:wrap;
-      margin-top: 10px;
-    }
-    .btn{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      text-decoration:none;
-      color: rgba(233,237,245,.90);
-      font-size:13px;
-      font-weight:650;
-      transition: transform .15s ease, background .15s ease, border-color .15s ease;
-    }
-    .btn:hover{
-      transform: translateY(-1px);
-      background: rgba(255,255,255,.08);
-      border-color: rgba(255,255,255,.16);
-    }
-    .btn.primary{
-      background: linear-gradient(135deg, rgba(79,209,197,.20), rgba(255,255,255,.05));
-      border-color: rgba(79,209,197,.28);
+      display: grid;
+      grid-template-columns: 1fr 56px 1fr;
+      gap: var(--grid-gap);
+      align-items: start;
+      padding: 22px 0;
     }
 
-    .ext{
-      width:14px; height:14px; opacity:.92;
+    @media (max-width: 860px){
+      .row{
+        grid-template-columns: 1fr;
+        gap: 14px;
+        padding: 18px 0;
+      }
+      .axis{ display: none; } /* keep clean on mobile */
     }
 
-    /* Link rows (news mentions / accounts) */
-    .linkList{
-      display:flex; flex-direction:column; gap:8px;
-      margin-top: 10px;
-    }
-    .linkRow{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding: 10px 10px;
-      border-radius: 14px;
-      border:1px solid rgba(255,255,255,.09);
-      background: rgba(255,255,255,.03);
-    }
-    .linkRow .l{
-      min-width:0;
-      display:flex; align-items:center; gap:10px;
-      color: rgba(233,237,245,.85);
-      text-decoration:none;
-    }
-    .linkRow .l span{
-      min-width:0;
-      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-      font-size:13px;
-    }
-    .linkRow .small{
-      font-size:12px; color: rgba(169,179,198,.88);
-    }
-    .openBtn{
-      padding: 8px 10px;
-      border-radius: 12px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      color: rgba(233,237,245,.9);
-      text-decoration:none;
-      font-size:12px;
-      font-weight:700;
-      white-space:nowrap;
-      transition: transform .15s ease, background .15s ease;
-    }
-    .openBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.07); }
-
-    /* GlglStats "Traffic Analysis" mini chart header */
-    .chartHead{
-      display:flex; align-items:center; justify-content:space-between;
-      padding: 10px 10px;
-      border-radius: 14px;
-      border:1px solid rgba(255,255,255,.09);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      margin-bottom: 10px;
-    }
-    .chartHead .label{
-      display:flex; align-items:center; gap:10px;
-      font-size:12px;
-      color: rgba(233,237,245,.82);
-    }
-    .spark{
-      width:120px; height:16px; opacity:.9;
-      background:
-        linear-gradient(90deg, rgba(79,209,197,.0), rgba(79,209,197,.30), rgba(79,209,197,.0)),
-        linear-gradient(180deg, rgba(255,255,255,.04), transparent);
-      border-radius: 999px;
-      position:relative;
-      overflow:hidden;
-      border:1px solid rgba(255,255,255,.08);
-    }
-    .spark:before{
-      content:"";
-      position:absolute; inset:0;
-      background:
-        repeating-linear-gradient(90deg, rgba(255,255,255,.10) 0 1px, transparent 1px 14px);
-      opacity:.18;
-      mix-blend-mode: overlay;
-    }
-    .spark:after{
-      content:"";
-      position:absolute; left:-40%;
-      top:0; bottom:0;
-      width:40%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
-      animation: scan 2.2s linear infinite;
-      opacity:.75;
-    }
-    @keyframes scan{
-      from{ transform: translateX(0); }
-      to{ transform: translateX(360%); }
-    }
-
-    /* "Camera feed" tile */
-    .cam{
-      border-radius: 16px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.25);
-      overflow:hidden;
-      position:relative;
-      min-height: 210px;
-    }
-    .cam .thumb{
-      position:absolute; inset:0;
-      background-size:cover;
-      background-position:center;
-      filter: saturate(1.05) contrast(1.05);
-      opacity:.88;
-      transform: scale(1.02);
-    }
-    .cam:before{
-      content:"";
-      position:absolute; inset:0;
-      background:
-        radial-gradient(600px 240px at 30% 20%, rgba(79,209,197,.20), transparent 60%),
-        linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.45));
-      pointer-events:none;
-    }
-    .cam .bar{
-      position:absolute; left:10px; right:10px; top:10px;
-      display:flex; justify-content:space-between; align-items:center;
-      padding: 8px 10px;
-      border-radius: 14px;
-      background: rgba(10,12,18,.55);
-      border:1px solid rgba(255,255,255,.10);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      font-size:12px;
-      color: rgba(233,237,245,.86);
-    }
-    .cam .bar .dot{
-      width:8px; height:8px; border-radius:999px;
-      background: #ff4d6d;
-      box-shadow: 0 0 16px rgba(255,77,109,.35);
-    }
-    .cam .play{
-      position:absolute; inset:auto 12px 12px auto;
-      display:flex; align-items:center; gap:8px;
-      padding: 10px 12px;
-      border-radius: 999px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(10,12,18,.55);
-      color: rgba(233,237,245,.92);
-      cursor:pointer;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      transition: transform .15s ease, background .15s ease;
-    }
-    .cam .play:hover{ transform: translateY(-1px); background: rgba(10,12,18,.68); }
-
-    /* polygon motif */
-    .polyWrap{
-      position:relative;
-    }
-    .poly{
-      position:absolute;
-      right:10px;
-      top:10px;
-      width:120px; height:120px;
-      opacity:.85;
-      pointer-events:none;
-      filter: drop-shadow(0 10px 22px rgba(0,0,0,.35));
-    }
-
-    /* scoreboard mock */
-    .score{
-      margin-top: 10px;
-      border-radius: 16px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.03);
-      overflow:hidden;
-    }
-    .score .head{
-      display:flex; justify-content:space-between; align-items:center;
-      padding: 10px 12px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      background: rgba(255,255,255,.03);
-      font-size:12px;
-      color: rgba(233,237,245,.80);
-    }
-    .score .body{
-      padding: 10px 12px;
-      display:grid;
-      grid-template-columns: 1fr auto;
-      row-gap: 8px;
-      column-gap: 12px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size:12px;
-      color: rgba(233,237,245,.84);
-    }
-    .score .dim{ color: rgba(169,179,198,.85); }
-    .qos{
-      padding: 2px 8px;
-      border-radius:999px;
-      border:1px solid rgba(79,209,197,.26);
-      background: rgba(79,209,197,.12);
-      color: rgba(233,237,245,.86);
-      font-family:inherit;
-      font-size:12px;
-      white-space:nowrap;
-    }
-
-    /* diff box for headlines */
-    .diff{
-      margin-top: 10px;
-      border-radius: 16px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.22);
-      overflow:hidden;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size:12px;
-    }
-    .diff .line{
-      display:flex; gap:10px;
-      padding: 10px 12px;
-      border-top:1px solid rgba(255,255,255,.06);
-      background:
-        repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 1px, transparent 1px 36px);
-    }
-    .diff .line:first-child{ border-top:0; }
-    .diff .mark{
-      width: 22px; flex:0 0 auto;
-      color: rgba(169,179,198,.9);
-    }
-    .diff .before{ color: rgba(233,237,245,.78); }
-    .diff .after{ color: rgba(233,237,245,.90); }
-    .diff .mark.minus{ color: rgba(255,138,164,.95); }
-    .diff .mark.plus{ color: rgba(125,250,220,.90); }
-
-    /* Footer (system strip) */
-    .footer{
-      position: sticky;
-      bottom: 0;
-      z-index: 12;
-      margin-top: 16px;
-      padding: 12px 0 14px;
-      background: linear-gradient(180deg, transparent, rgba(10,12,18,.62) 15%, rgba(10,12,18,.82));
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border-top: 1px solid rgba(255,255,255,.08);
-      transform: translateY(52%);
+    /* Cards */
+    .card{
+      position: relative;
+      width: min(var(--card-max), 100%);
+      border-radius: var(--radius);
+      background: color-mix(in oklab, rgba(255,255,255,.10), rgba(10,14,30,.20) calc(60% - 40%*var(--t)));
+      border: 1px solid color-mix(in oklab, rgba(255,255,255,.14), rgba(160,220,255,.26) calc(20% + 60%*var(--t)));
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+      transform: translateY(14px);
       opacity: 0;
-      transition: transform .35s ease, opacity .35s ease;
+      transition: opacity 700ms ease, transform 800ms cubic-bezier(.2,.9,.2,1);
+      color: color-mix(in oklab, rgba(245,250,255,.92), rgba(10,14,24,.92) calc(78%*var(--t)));
     }
-    .footer.show{
+    .card.in{
       transform: translateY(0);
       opacity: 1;
     }
-    .footerInner{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      padding: 0 8px;
-    }
-    .credit{
-      font-size:12px;
-      color: rgba(169,179,198,.90);
-    }
-    .uptimePill{
-      display:flex; align-items:center; gap:10px;
-      padding: 10px 12px;
-      border-radius: 999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: linear-gradient(135deg, rgba(79,209,197,.12), rgba(255,255,255,.04));
-      box-shadow: 0 16px 35px rgba(0,0,0,.32);
-    }
-    .uptimePill svg{ opacity:.92; }
-    .uptimeLabel{
-      font-size:12px; color: rgba(233,237,245,.84);
-      margin-right:6px;
-      white-space:nowrap;
-    }
-    .uptimeValue{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 13px;
-      color: rgba(233,237,245,.92);
-      text-shadow: 0 0 18px rgba(79,209,197,.20);
-      white-space:nowrap;
+
+    /* Rim light intensifies down the page */
+    .card::after{
+      content:"";
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius);
+      pointer-events: none;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255, calc(.10 + .22*var(--t))),
+        inset 0 -1px 0 rgba(255,255,255, calc(.04 + .16*var(--t))),
+        0 0 calc(12px + 34px*var(--t)) rgba(190,230,255, calc(.06 + .18*var(--t)));
+      opacity: .95;
     }
 
-    /* Responsive */
-    @media (max-width: 980px){
-      .layout{ grid-template-columns: 1fr; }
-      aside{
-        border-right:0;
-        border-bottom: 1px solid rgba(255,255,255,.08);
-      }
-      .grid{ grid-template-columns: 1fr; }
-      .topbar{ grid-template-columns: 1fr; gap:10px; }
-      .crumb{ text-align:left; }
-      .actions{ justify-content:flex-start; flex-wrap:wrap; }
-      .tiles{ grid-template-columns: repeat(2, minmax(0,1fr)); }
-      .footer{ position:sticky; }
+    .card .inner{
+      padding: 18px 18px 14px;
     }
+
+    .title{
+      margin: 10px 0 8px;
+      font-size: 20px;
+      letter-spacing: .01em;
+      font-weight: 620;
+    }
+    .desc{
+      margin: 0;
+      font-size: 14.5px;
+      line-height: 1.58;
+      color: color-mix(in oklab, rgba(234,244,255,.86), rgba(12,14,22,.88) calc(70%*var(--t)));
+    }
+
+    .links{
+      margin-top: 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 12px 14px;
+      border-top: 1px solid color-mix(in oklab, rgba(255,255,255,.12), rgba(170,220,255,.20) calc(35%*var(--t)));
+      background: color-mix(in oklab, rgba(255,255,255,.06), rgba(255,255,255,.14) calc(35%*var(--t)));
+    }
+
+    .link{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: inherit;
+      text-decoration: none;
+      font-size: 12.5px;
+      letter-spacing: .01em;
+      transition: transform 120ms ease, background 140ms ease, border-color 140ms ease;
+    }
+    .link:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.10);
+      border-color: rgba(210,235,255,.24);
+    }
+    .link svg{ width: 14px; height: 14px; opacity: .85; }
+
+    /* Special link treatments */
+    .lantern{
+      border-color: rgba(255,210,130,.26);
+      background: rgba(255,210,130,.08);
+      box-shadow: 0 0 20px rgba(255,190,90,.14);
+    }
+    .lantern:hover{
+      background: rgba(255,210,130,.12);
+      box-shadow: 0 0 26px rgba(255,190,90,.22);
+    }
+
+    .snowgloss{
+      background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.06));
+      border-color: rgba(210,235,255,.28);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
+    }
+
+    /* Constellation header (SVG) */
+    .constellation{
+      height: 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      opacity: .95;
+    }
+    .constellation svg{ width: 120px; height: 28px; }
+    .constellation .label{
+      font-size: 11px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: color-mix(in oklab, rgba(224,236,255,.72), rgba(20,25,40,.72) calc(70%*var(--t)));
+      user-select: none;
+    }
+
+    /* Stars -> crystalline evolution */
+    .constellation .line{
+      stroke: color-mix(in oklab, rgba(210,232,255,.36), rgba(40,60,90,.35) calc(40%*var(--t)));
+      stroke-width: 1.15;
+      opacity: calc(.70 - .18*var(--t));
+    }
+    .constellation .dot{
+      fill: color-mix(in oklab, rgba(245,252,255,.86), rgba(170,230,255,.92) calc(35% + 45%*var(--t)));
+      opacity: calc(.92 - .20*var(--t));
+      filter: drop-shadow(0 0 calc(10px - 8px*var(--t)) rgba(180,220,255, calc(.34 - .26*var(--t))));
+    }
+    .constellation .facet{
+      fill: none;
+      stroke: rgba(200,235,255, calc(.12 + .45*var(--t)));
+      stroke-width: 1;
+      opacity: calc(.08 + .55*var(--t));
+    }
+
+    /* Side placement */
+    .left  { grid-column: 1; justify-self: end; }
+    .right { grid-column: 3; justify-self: start; }
+
+    @media (max-width: 860px){
+      .left, .right{ grid-column: 1; justify-self: center; }
+    }
+
+    /* Connector from card toward axis (desktop) */
+    @media (min-width: 861px){
+      .card.connect-left::before,
+      .card.connect-right::before{
+        content:"";
+        position: absolute;
+        top: 34px;
+        width: calc(56px + var(--grid-gap));
+        height: 1px;
+        background: linear-gradient(90deg,
+          rgba(255,255,255,0),
+          rgba(190,220,255, calc(.15 + .45*var(--t))),
+          rgba(255,255,255,0)
+        );
+        opacity: calc(.40 + .35*var(--t));
+      }
+      .card.connect-left::before{
+        right: -1px;
+        transform: translateX(calc(56px + var(--grid-gap))) scaleX(-1);
+      }
+      .card.connect-right::before{
+        left: -1px;
+        transform: translateX(calc(-56px - var(--grid-gap)));
+      }
+    }
+
+    /* Motifs per-card via overlay pseudo-element */
+    .card .motif{
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: .22;
+      mix-blend-mode: overlay;
+    }
+
+    /* 1) GlglStats — compression ribbon */
+    .motif.glgl{
+      background:
+        linear-gradient(90deg, rgba(120,170,255,.12), rgba(255,255,255,0) 40%),
+        repeating-linear-gradient(
+          15deg,
+          rgba(255,255,255,.05) 0px,
+          rgba(255,255,255,.05) 6px,
+          rgba(255,255,255,0) 6px,
+          rgba(255,255,255,0) 15px
+        ),
+        radial-gradient(800px 160px at 35% 55%, rgba(120,170,255,.24), transparent 65%),
+        radial-gradient(600px 120px at 70% 45%, rgba(160,210,255,.18), transparent 70%);
+      transform: translateY(-4px);
+      filter: contrast(1.05) saturate(.9);
+    }
+
+    /* 2) Ahuzat Dibuk — city grid + heat pulses */
+    .motif.ahuzat{
+      background:
+        linear-gradient(0deg, rgba(255,120,80,.12), rgba(255,255,255,0) 55%),
+        linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(255,255,255,.06) 1px, transparent 1px),
+        radial-gradient(220px 220px at 35% 55%, rgba(255,110,80,.20), transparent 65%),
+        radial-gradient(180px 180px at 70% 40%, rgba(255,140,90,.14), transparent 65%);
+      background-size: auto, 28px 28px, 28px 28px, auto, auto;
+      animation: heatPulse 6.5s ease-in-out infinite;
+      opacity: .18;
+    }
+    @keyframes heatPulse{
+      0%,100%{ filter: saturate(.95) blur(.0px); }
+      50%{ filter: saturate(1.10) blur(.25px); }
+    }
+
+    /* 3) 2D Part Orienting — chalk geometry */
+    .motif.orient{
+      background:
+        repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0, rgba(255,255,255,.05) 1px, transparent 1px, transparent 22px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0, rgba(255,255,255,.04) 1px, transparent 1px, transparent 26px),
+        linear-gradient(140deg, rgba(190,230,255,.18), transparent 55%),
+        radial-gradient(420px 180px at 58% 58%, rgba(255,255,255,.10), transparent 70%);
+      opacity: .16;
+    }
+    .orient-arrows{
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: .20;
+    }
+    .orient-arrows svg{ width: 100%; height: 100%; }
+
+    /* 4) The Turing Jest — theater face + snowflake bubbles */
+    .motif.jest{
+      background:
+        radial-gradient(260px 220px at 32% 52%, rgba(255,255,255,.11), transparent 70%),
+        radial-gradient(240px 240px at 72% 46%, rgba(180,230,255,.12), transparent 70%);
+      opacity: .18;
+    }
+    .jest-mask{
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: .22;
+    }
+    .jest-mask svg{ width: 100%; height: 100%; }
+
+    /* 5) Rhymes of Israel — browser tab + headline strips */
+    .motif.rhymes{
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,0) 55%),
+        linear-gradient(0deg, rgba(255,255,255,.06) 1px, transparent 1px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0, rgba(255,255,255,.03) 10px, transparent 10px, transparent 20px);
+      background-size: auto, 14px 14px, auto;
+      opacity: .16;
+    }
+    .rhymes-tab{
+      position: absolute;
+      top: 18px; left: 18px;
+      width: 140px; height: 26px;
+      border-radius: 12px 12px 8px 8px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      opacity: .18;
+      pointer-events: none;
+    }
+
+    /* 6) Portfolio meta — recursion rectangles */
+    .motif.meta{
+      background:
+        radial-gradient(420px 200px at 50% 35%, rgba(255,255,255,.12), transparent 70%),
+        radial-gradient(520px 240px at 50% 80%, rgba(170,220,255,.12), transparent 72%);
+      opacity: .14;
+    }
+    .meta-recursion{
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: .30;
+    }
+
+    /* 7) Links postcard feel */
+    .postcard{
+      background: rgba(255,255,255,.16);
+      color: rgba(10,12,20,.92);
+      border-color: rgba(160,200,230,.38);
+      box-shadow: 0 16px 46px rgba(0,0,0,.18);
+    }
+    .postcard .desc{ color: rgba(10,12,20,.78); }
+    .postcard .links{
+      background: rgba(255,255,255,.32);
+      border-top-color: rgba(120,160,190,.30);
+    }
+    .postcard .link{
+      background: rgba(255,255,255,.56);
+      border-color: rgba(120,160,190,.26);
+      color: rgba(10,12,18,.92);
+    }
+    .postcard .link:hover{ background: rgba(255,255,255,.70); }
+
+    /* “Sunrise pin” at the end of the meridian */
+    .axis-end{
+      position: relative;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      margin: 12px 0 34px;
+    }
+    .pin{
+      width: 12px; height: 12px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #fff, #cfe7ff 35%, rgba(255,210,120,.30) 62%, rgba(255,255,255,.08) 75%);
+      box-shadow:
+        0 0 22px rgba(200,235,255,.45),
+        0 0 44px rgba(255,205,130,.20);
+    }
+    .pin::after{
+      content:"";
+      position: absolute;
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 1px solid rgba(190,220,255,.32);
+      opacity: .35;
+      transform: translate(-14px, -14px);
+    }
+
+    /* Footer */
+    footer{
+      margin-top: 40px;
+      padding: 18px 0 26px;
+      color: rgba(10,12,20,.78);
+    }
+    .footer-inner{
+      width: min(1100px, 100%);
+      margin: 0 auto;
+      padding: 16px 0 0;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(120,160,190,.28);
+    }
+    .credit{
+      font-size: 12.5px;
+      letter-spacing: .01em;
+    }
+    .stopwatch{
+      display: inline-flex;
+      align-items: baseline;
+      gap: 10px;
+      font-size: 12.5px;
+      letter-spacing: .01em;
+      white-space: nowrap;
+    }
+    .stopwatch .label{ opacity: .85; }
+    .stopwatch .time{
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(120,160,190,.28);
+      background: rgba(255,255,255,.35);
+      color: rgba(10,12,20,.92);
+    }
+
+    /* Reduced motion */
     @media (prefers-reduced-motion: reduce){
-      *{ animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+      .sky{ animation: none; }
+      .card{ transition: none; }
+      .motif.ahuzat{ animation: none; }
     }
   </style>
 </head>
 
 <body>
-  <canvas id="net" aria-hidden="true"></canvas>
-
-  <div class="stage">
-    <div class="router" role="application" aria-label="Home Router Admin interface">
-      <div class="slits" aria-hidden="true">
-        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-      </div>
-      <div class="led" aria-hidden="true"></div>
-
-      <div class="viewport">
-        <div class="layout">
-          <aside>
-            <div class="sideTop">
-              <div class="badge" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path d="M4 7.5C6.8 5.2 9.4 4 12 4s5.2 1.2 8 3.5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                  <path d="M7 11c1.7-1.4 3.3-2 5-2s3.3.6 5 2" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round" opacity=".9"/>
-                  <path d="M10.5 14.5c.6-.5 1.1-.7 1.5-.7s.9.2 1.5.7" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round" opacity=".85"/>
-                  <circle cx="12" cy="18" r="1.8" fill="var(--accent)"/>
-                </svg>
-              </div>
-              <div class="title">
-                <strong>Router UI</strong>
-                <span>AI-reconfigured daily</span>
-              </div>
-            </div>
-
-            <nav aria-label="Navigation">
-              <div class="navGroup">Status</div>
-              <ul class="navList">
-                <li><a href="#overview" data-breadcrumb="Status / Overview"><span>Overview</span><span class="chip">SYS</span></a></li>
-              </ul>
-
-              <div class="navGroup">Modules</div>
-              <ul class="navList" id="navModules">
-                <li><a href="#glglstats" data-breadcrumb="Monitoring / GlglStats"><span>GlglStats</span><span class="chip">MON</span></a></li>
-                <li><a href="#ahuzat" data-breadcrumb="Services / Ahuzat Dibuk"><span>Ahuzat Dibuk</span><span class="chip">MAP</span></a></li>
-                <li><a href="#orienting" data-breadcrumb="Routing / 2D Part Orienting"><span>2D Part Orienting</span><span class="chip">ALG</span></a></li>
-                <li><a href="#jest" data-breadcrumb="QoS / The Turing Jest"><span>The Turing Jest</span><span class="chip">LLM</span></a></li>
-                <li><a href="#rhymes" data-breadcrumb="Filters / Rhymes of Israel"><span>Rhymes of Israel</span><span class="chip">EXT</span></a></li>
-                <li><a href="#meta" data-breadcrumb="UI / Firmware Skin"><span>Portfolio Website</span><span class="chip">UI</span></a></li>
-                <li><a href="#links" data-breadcrumb="System / Accounts"><span>Links</span><span class="chip">ACC</span></a></li>
-              </ul>
-
-              <div class="navGroup">System</div>
-              <ul class="navList">
-                <li><a href="#system-footer" data-breadcrumb="System / Footer"><span>System Footer</span><span class="chip">UP</span></a></li>
-              </ul>
-            </nav>
-          </aside>
-
-          <main>
-            <div class="topbar" role="banner">
-              <div class="brand">
-                <div class="name">GKV Admin Console</div>
-                <div class="sub">premium firmware skin</div>
-              </div>
-
-              <div class="crumb" id="breadcrumb">Status / Overview</div>
-
-              <div class="actions">
-                <div class="iconRow" aria-label="Quick controls">
-                  <button class="iconBtn" type="button" aria-label="Wi‑Fi">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <path d="M4 8c4.8-4 11.2-4 16 0" stroke="rgba(233,237,245,.9)" stroke-width="2" stroke-linecap="round"/>
-                      <path d="M7 11.5c3.1-2.6 6.9-2.6 10 0" stroke="rgba(233,237,245,.9)" stroke-width="2" stroke-linecap="round" opacity=".9"/>
-                      <path d="M10.2 15c1.2-1 2.4-1 3.6 0" stroke="rgba(233,237,245,.9)" stroke-width="2" stroke-linecap="round" opacity=".85"/>
-                      <circle cx="12" cy="18" r="1.6" fill="var(--accent)"/>
-                    </svg>
-                    <div class="tooltip">Wi‑Fi: SSID broadcast is decorative.</div>
-                  </button>
-
-                  <button class="iconBtn" type="button" aria-label="LAN">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <path d="M7 7h10v4H7V7Z" stroke="rgba(233,237,245,.9)" stroke-width="2" />
-                      <path d="M10 11v4m4-4v4" stroke="rgba(233,237,245,.9)" stroke-width="2" stroke-linecap="round"/>
-                      <path d="M6 19h12" stroke="rgba(233,237,245,.8)" stroke-width="2" stroke-linecap="round" opacity=".9"/>
-                    </svg>
-                    <div class="tooltip">LAN: Hint — this module exposes public endpoints.</div>
-                  </button>
-
-                  <button class="iconBtn" type="button" aria-label="Shield">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 3l7 4v6c0 5-3 8-7 8s-7-3-7-8V7l7-4Z" stroke="rgba(233,237,245,.9)" stroke-width="2" />
-                      <path d="M9.6 12.1l1.6 1.7 3.3-3.5" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    <div class="tooltip">Shield: Non-blocking. Purely vibes.</div>
-                  </button>
-
-                  <button class="iconBtn" type="button" aria-label="Logs">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <path d="M7 7h10M7 12h10M7 17h7" stroke="rgba(233,237,245,.9)" stroke-width="2" stroke-linecap="round"/>
-                      <path d="M5 4h14v16H5V4Z" stroke="rgba(233,237,245,.55)" stroke-width="2" opacity=".75"/>
-                    </svg>
-                    <div class="tooltip">Logs: “AI theme daemon” writes one line per day.</div>
-                  </button>
-                </div>
-
-                <div class="firmware" aria-label="Firmware build">
-                  <strong>Firmware</strong>
-                  <span id="fwText">AI Build: — • Theme Seed: —</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="logline" aria-live="polite">
-              <span class="logDot" aria-hidden="true"></span>
-              <span class="logMono" id="daemonLine">AI theme daemon: re-skin scheduled daily at 02:00</span>
-            </div>
-
-            <section class="hero" id="overview" data-title="Overview" data-breadcrumb="Status / Overview">
-              <div class="heroTop">
-                <div>
-                  <h1>Geva Kipper</h1>
-                  <p>Software engineer at Google, building and improving large-scale systems.</p>
-                  <div class="help">This admin UI is re-designed every day by AI—an ever-changing firmware skin.</div>
-                </div>
-              </div>
-
-              <div class="tiles" aria-label="Decorative status tiles">
-                <div class="tile">
-                  <div class="k">Uptime</div>
-                  <div class="v"><span class="pulse" aria-hidden="true"></span>Always Shipping</div>
-                </div>
-                <div class="tile">
-                  <div class="k">WAN</div>
-                  <div class="v"><span class="pulse" aria-hidden="true"></span>Curious</div>
-                </div>
-                <div class="tile">
-                  <div class="k">CPU</div>
-                  <div class="v"><span class="pulse" aria-hidden="true"></span>Ideas</div>
-                </div>
-                <div class="tile">
-                  <div class="k">Memory</div>
-                  <div class="v"><span class="pulse" aria-hidden="true"></span>Projects</div>
-                </div>
-              </div>
-            </section>
-
-            <div class="modulesHeader" id="modules">
-              <h2>Config Modules</h2>
-              <div class="note">Tip: click a module → fake “Applying…” → tabs (Overview / Links / Media / Notes).</div>
-            </div>
-
-            <section class="grid" aria-label="Portfolio modules">
-              <!-- 1) GlglStats -->
-              <article class="card" id="glglstats" data-title="GlglStats" data-breadcrumb="Monitoring / GlglStats" data-state="closed">
-                <button class="cardHead" type="button" aria-expanded="false">
-                  <div class="left">
-                    <div class="icon" aria-hidden="true">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M4 18V8" stroke="rgba(233,237,245,.9)" stroke-width="2" stroke-linecap="round"/>
-                        <path d="M8 18V6" stroke="rgba(233,237,245,.9)" stroke-width="2" stroke-linecap="round" opacity=".9"/>
-                        <path d="M12 18V10" stroke="rgba(233,237,245,.9)" stroke-width="2" stroke-linecap="round" opacity=".85"/>
-                        <path d="M16 18V4" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round"/>
-                        <path d="M20 18V12" stroke="rgba(233,237,245,.9)" stroke-width="2" stroke-linecap="round" opacity=".85"/>
-                      </svg>
-                    </div>
-                    <div class="meta">
-                      <div class="title">GlglStats <span class="tag">Monitoring</span></div>
-                      <div class="subtitle">Audio Repetition Analyzer (LZ77)</div>
-                    </div>
-                  </div>
-                  <div class="right">
-                    <div class="toggle" aria-hidden="true">
-                      <span>Monitoring</span>
-                      <span class="switch"></span>
-                    </div>
-                    <div class="hint" aria-hidden="true">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 17h.01M12 14c0-2 3-1.8 3-5a3 3 0 10-6 0" stroke="rgba(233,237,245,.85)" stroke-width="2" stroke-linecap="round"/>
-                      </svg>
-                      <div class="tooltip">Hint: traffic patterns may be musical.</div>
-                    </div>
-                  </div>
-                </button>
-
-                <div class="drawer" role="region" aria-label="GlglStats drawer">
-                  <div class="applyBarWrap">
-                    <div class="applyLabel"><span>Applying…</span><span class="mono">commit: daily-seed</span></div>
-                    <div class="applyBar"><i></i></div>
-                  </div>
-
-                  <div class="drawerInner">
-                    <div class="tabs" role="tablist" aria-label="GlglStats tabs">
-                      <button class="tab active" type="button" role="tab" aria-selected="true" data-tab="ov">Overview</button>
-                      <button class="tab" type="button" role="tab" aria-selected="false" data-tab="ln">Links</button>
-                      <button class="tab" type="button" role="tab" aria-selected="false" data-tab="md">Media</button>
-                      <button class="tab" type="button" role="tab" aria-selected="false" data-tab="nt">Notes</button>
-                    </div>
-
-                    <div class="panel active" data-panel="ov">
-                      <div class="chartHead" aria-label="Traffic Analysis header">
-                        <div class="label">
-                          <span class="chip">Traffic Analysis</span>
-                          <span style="color:rgba(169,179,198,.9); font-size:12px;">LZ77 repetitiveness probe</span>
-                        </div>
-                        <div class="spark" aria-hidden="true"></div>
-                      </div>
-                      <p class="p">
-                        Python project measuring repetitiveness of Israeli pop-chart songs using LZ77 compression, plus visualizations of repetition patterns across famous tracks.
-                      </p>
-                    </div>
-
-                    <div class="panel" data-panel="ln">
-                      <div class="row">
-                        <a class="btn primary" href="https://glglstats.geekip.dev" target="_blank" rel="noopener">
-                          Open Dashboard
-                          <svg class="ext" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M14 5h5v5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                            <path d="M10 14L19 5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                            <path d="M19 14v5H5V5h5" stroke="rgba(233,237,245,.55)" stroke-width="2" stroke-linecap="round"/>
-                          </svg>
-                        </a>
-                        <a class="btn" href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" rel="noopener">
-                          Watch PyData TLV Talk
-                          <svg class="ext" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M14 5h5v5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                            <path d="M10 14L19 5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                            <path d="M19 14v5H5V5h5" stroke="rgba(233,237,245,.55)" stroke-width="2" stroke-linecap="round"/>
-                          </svg>
-                        </a>
-                      </div>
-                    </div>
-
-                    <div class="panel" data-panel="md">
-                      <div class="cam" aria-label="Video preview tile">
-                        <div class="thumb" style="background-image:url('https://img.youtube.com/vi/jrKAtOsj1Lo/maxresdefault.jpg');"></div>
-                        <div class="bar">
-                          <span style="display:flex; align-items:center; gap:8px;">
-                            <span class="dot" aria-hidden="true"></span>
-                            Camera Feed: PyData TLV
-                          </span>
-                          <span class="small">preview</span>
-                        </div>
-                        <button class="play" type="button" data-open-video="jrKAtOsj1Lo">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M10 8l8 4-8 4V8Z" fill="rgba(233,237,245,.92)"/>
-                          </svg>
-                          Play
-                        </button>
-                      </div>
-                      <div id="videoMount-jrKAtOsj1Lo" style="margin-top:10px; display:none;">
-                        <div class="panel active" style="padding:0; overflow:hidden;">
-                          <iframe width="100%" height="315" style="display:block; border:0;"
-                            src="https://www.youtube.com/embed/jrKAtOsj1Lo?rel=0"
-                            title="PyData TLV Talk" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>
-                          </iframe>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="panel" data-panel="nt">
-                      <p class="p">
-                        Admin note: module runs in “observe-only” mode. No settings are actually persisted—this is a portfolio UI dressed as firmware.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </article>
-
-              <!-- 2) Ahuzat Dibuk -->
-              <article class="card" id="ahuzat" data-title="Ahuzat Dibuk" data-breadcrumb="Services / Ahuzat Dibuk" data-state="closed">
-                <button class="cardHead" type="button" aria-expanded="false">
-                  <div class="left">
-                    <div class="icon" aria-hidden="true">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 21s7-5.2 7-12a7 7 0 10-14 0c0 6.8 7 12 7 12Z" stroke="rgba(233,237,245,.9)" stroke-width="2"/>
-                        <circle cx="12" cy="9" r="2.3" fill="var(--accent)"/>
-                      </svg>
-                    </div>
-                    <div class="meta">
-                      <div class="title">Ahuzat Dibuk <span class="tag">Service</span></div>
-                      <div class="subtitle">Parking Occupancy Heatmap Service</div>
-                    </div>
-                  </div>
-                  <div class="right">
-                    <div class="toggle" aria-hidden="true">
-                      <span>Public</span>
-                      <span class="switch"></span>
-                    </div>
-                    <div class="hint" aria-hidden="true">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 17h.01M12 14c0-2 3-1.8 3-5a3 3 0 10-6 0" stroke="rgba(233,237,245,.85)" stroke-width="2" stroke-linecap="round"/>
-                      </svg>
-                      <div class="tooltip">Hint: scheduled scraping + map output.</div>
-                    </div>
-                  </div>
-                </button>
-
-                <div class="drawer" role="region" aria-label="Ahuzat Dibuk drawer">
-                  <div class="applyBarWrap">
-                    <div class="applyLabel"><span>Applying…</span><span class="mono">task: cron</span></div>
-                    <div class="applyBar"><i></i></div>
-                  </div>
-
-                  <div class="drawerInner">
-                    <div class="tabs" role="tablist" aria-label="Ahuzat Dibuk tabs">
-                      <button class="tab active" type="button" data-tab="ov">Overview</button>
-                      <button class="tab" type="button" data-tab="ln">Links</button>
-                      <button class="tab" type="button" data-tab="md">Media</button>
-                      <button class="tab" type="button" data-tab="nt">Notes</button>
-                    </div>
-
-                    <div class="panel active" data-panel="ov">
-                      <p class="p">
-                        Python scraping and data visualization project collecting Tel‑Aviv parking lot occupancy and generating resident-friendly heatmaps.
-                      </p>
-                      <div class="score" style="margin-top:10px;">
-                        <div class="head">
-                          <span>Scheduled Tasks</span>
-                          <span class="qos">MAP_OUTPUT: OK</span>
-                        </div>
-                        <div class="body">
-                          <span class="dim">scrape_lots()</span><span>every 10m</span>
-                          <span class="dim">normalize()</span><span>daily</span>
-                          <span class="dim">render_heatmap()</span><span>on update</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="panel" data-panel="ln">
-                      <div class="linkList" aria-label="News mentions">
-                        <div class="linkRow">
-                          <a class="l" href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" rel="noopener">
-                            <svg class="ext" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                              <path d="M14 5h5v5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                              <path d="M10 14L19 5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                              <path d="M19 14v5H5V5h5" stroke="rgba(233,237,245,.55)" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                            <span>13tv — News mention</span>
-                          </a>
-                          <a class="openBtn" href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" rel="noopener">Open</a>
-                        </div>
-
-                        <div class="linkRow">
-                          <a class="l" href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" rel="noopener">
-                            <svg class="ext" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                              <path d="M14 5h5v5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                              <path d="M10 14L19 5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                              <path d="M19 14v5H5V5h5" stroke="rgba(233,237,245,.55)" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                            <span>Mako — Nexter coverage</span>
-                          </a>
-                          <a class="openBtn" href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" rel="noopener">Open</a>
-                        </div>
-
-                        <div class="linkRow">
-                          <a class="l" href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" rel="noopener">
-                            <svg class="ext" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                              <path d="M14 5h5v5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                              <path d="M10 14L19 5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                              <path d="M19 14v5H5V5h5" stroke="rgba(233,237,245,.55)" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                            <span>Original Facebook Publication</span>
-                          </a>
-                          <a class="openBtn" href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" rel="noopener">Open</a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="panel" data-panel="md">
-                      <p class="p">
-                        Media mock: heatmaps exported as “router map output” overlays (static concept here).
-                      </p>
-                      <div class="diff" aria-label="Map output sample (mock)">
-                        <div class="line"><span class="mark">↳</span><span class="before">overlay: occupancy_density.tlv — palette: accent</span></div>
-                        <div class="line"><span class="mark">↳</span><span class="after">export: heatmap_residents.png — status: success</span></div>
-                      </div>
-                    </div>
-
-                    <div class="panel" data-panel="nt">
-                      <p class="p">
-                        Admin note: Designed to be resident-friendly—turning scattered occupancy signals into a readable, actionable visualization.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </article>
-
-              <!-- 3) 2D Part Orienting -->
-              <article class="card" id="orienting" data-title="2D Part Orienting" data-breadcrumb="Routing / 2D Part Orienting" data-state="closed">
-                <button class="cardHead" type="button" aria-expanded="false">
-                  <div class="left">
-                    <div class="icon" aria-hidden="true">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M5 7h14M7 11h10M9 15h6" stroke="rgba(233,237,245,.75)" stroke-width="2" stroke-linecap="round"/>
-                        <path d="M6 19l4-9 4 5 4-8" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                    </div>
-                    <div class="meta">
-                      <div class="title">2D Part Orienting <span class="tag">Advanced</span></div>
-                      <div class="subtitle">Advanced Routing Algorithm module</div>
-                    </div>
-                  </div>
-                  <div class="right">
-                    <div class="toggle" aria-hidden="true">
-                      <span>Enabled</span>
-                      <span class="switch"></span>
-                    </div>
-                    <div class="hint" aria-hidden="true">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 17h.01M12 14c0-2 3-1.8 3-5a3 3 0 10-6 0" stroke="rgba(233,237,245,.85)" stroke-width="2" stroke-linecap="round"/>
-                      </svg>
-                      <div class="tooltip">Hint: geometry packets may self-orient.</div>
-                    </div>
-                  </div>
-                </button>
-
-                <div class="drawer" role="region" aria-label="2D Part Orienting drawer">
-                  <div class="applyBarWrap">
-                    <div class="applyLabel"><span>Applying…</span><span class="mono">mode: push-plan</span></div>
-                    <div class="applyBar"><i></i></div>
-                  </div>
-
-                  <div class="drawerInner polyWrap">
-                    <svg class="poly" viewBox="0 0 120 120" fill="none" aria-hidden="true">
-                      <path d="M16 30 L52 18 L92 34 L102 72 L70 100 L28 86 Z"
-                            stroke="rgba(233,237,245,.55)" stroke-width="2" />
-                      <path d="M20 56 L52 30 L80 50 L70 86 L38 76 Z"
-                            stroke="var(--accent)" stroke-width="2.2" opacity=".9"/>
-                      <circle cx="52" cy="30" r="2.5" fill="var(--accent)"/>
-                      <circle cx="80" cy="50" r="2.5" fill="rgba(233,237,245,.85)"/>
-                    </svg>
-
-                    <div class="tabs" role="tablist" aria-label="2D Part Orienting tabs">
-                      <button class="tab active" type="button" data-tab="ov">Overview</button>
-                      <button class="tab" type="button" data-tab="ln">Links</button>
-                      <button class="tab" type="button" data-tab="md">Media</button>
-                      <button class="tab" type="button" data-tab="nt">Notes</button>
-                    </div>
-
-                    <div class="panel active" data-panel="ov">
-                      <p class="p">
-                        C++ implementation in an open-source computational geometry library of an efficient algorithm for constructing a push plan to orient a given polygon.
-                      </p>
-                    </div>
-
-                    <div class="panel" data-panel="ln">
-                      <div class="row">
-                        <a class="btn primary" href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" rel="noopener">
-                          Docs + Code
-                          <svg class="ext" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M14 5h5v5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                            <path d="M10 14L19 5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                            <path d="M19 14v5H5V5h5" stroke="rgba(233,237,245,.55)" stroke-width="2" stroke-linecap="round"/>
-                          </svg>
-                        </a>
-                      </div>
-                    </div>
-
-                    <div class="panel" data-panel="md">
-                      <p class="p">
-                        Visual motif: a thin-line polygon diagram, like a topology icon, representing push-plan construction and constraint propagation.
-                      </p>
-                    </div>
-
-                    <div class="panel" data-panel="nt">
-                      <p class="p">
-                        Admin note: engineered for clarity and efficiency—clean geometry in, deterministic plan out.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </article>
-
-              <!-- 4) The Turing Jest -->
-              <article class="card" id="jest" data-title="The Turing Jest" data-breadcrumb="QoS / The Turing Jest" data-state="closed">
-                <button class="cardHead" type="button" aria-expanded="false">
-                  <div class="left">
-                    <div class="icon" aria-hidden="true">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M7 8h10v8H7V8Z" stroke="rgba(233,237,245,.85)" stroke-width="2"/>
-                        <path d="M9 6v2M15 6v2" stroke="rgba(233,237,245,.75)" stroke-width="2" stroke-linecap="round"/>
-                        <path d="M9 18h6" stroke="rgba(233,237,245,.75)" stroke-width="2" stroke-linecap="round"/>
-                        <path d="M10 12h4" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round"/>
-                      </svg>
-                    </div>
-                    <div class="meta">
-                      <div class="title">The Turing Jest <span class="tag">QoS</span></div>
-                      <div class="subtitle">LLM Arena / Quality-of-Service for Puns</div>
-                    </div>
-                  </div>
-                  <div class="right">
-                    <div class="toggle" aria-hidden="true">
-                      <span>Enabled</span>
-                      <span class="switch"></span>
-                    </div>
-                    <div class="hint" aria-hidden="true">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 17h.01M12 14c0-2 3-1.8 3-5a3 3 0 10-6 0" stroke="rgba(233,237,245,.85)" stroke-width="2" stroke-linecap="round"/>
-                      </svg>
-                      <div class="tooltip">Hint: clients compete; you rate latency-of-laughter.</div>
-                    </div>
-                  </div>
-                </button>
-
-                <div class="drawer" role="region" aria-label="The Turing Jest drawer">
-                  <div class="applyBarWrap">
-                    <div class="applyLabel"><span>Applying…</span><span class="mono">qos: pun</span></div>
-                    <div class="applyBar"><i></i></div>
-                  </div>
-
-                  <div class="drawerInner">
-                    <div class="tabs" role="tablist" aria-label="The Turing Jest tabs">
-                      <button class="tab active" type="button" data-tab="ov">Overview</button>
-                      <button class="tab" type="button" data-tab="ln">Links</button>
-                      <button class="tab" type="button" data-tab="md">Media</button>
-                      <button class="tab" type="button" data-tab="nt">Notes</button>
-                    </div>
-
-                    <div class="panel active" data-panel="ov">
-                      <p class="p">
-                        An LMSYS-like arena where LLMs compete at making and explaining puns—rated by users.
-                      </p>
-
-                      <div class="score" aria-label="Live scoreboard mock">
-                        <div class="head">
-                          <span>Live Scoreboard (mock)</span>
-                          <span class="qos">QOS: STABLE</span>
-                        </div>
-                        <div class="body">
-                          <span>client: model_A</span><span>puns: 42</span>
-                          <span>client: model_B</span><span>puns: 41</span>
-                          <span>client: model_C</span><span>puns: 39</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="panel" data-panel="ln">
-                      <div class="row">
-                        <a class="btn primary" href="https://jest.geekip.dev" target="_blank" rel="noopener">
-                          Launch Arena
-                          <svg class="ext" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M14 5h5v5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                            <path d="M10 14L19 5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                            <path d="M19 14v5H5V5h5" stroke="rgba(233,237,245,.55)" stroke-width="2" stroke-linecap="round"/>
-                          </svg>
-                        </a>
-                      </div>
-                    </div>
-
-                    <div class="panel" data-panel="md">
-                      <p class="p">
-                        Media mock: “client devices competing” UI elements rendered as router device rows + QoS badges.
-                      </p>
-                    </div>
-
-                    <div class="panel" data-panel="nt">
-                      <p class="p">
-                        Admin note: the joke is the interface—serious routing metaphors for unserious content.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </article>
-
-              <!-- 5) Rhymes of Israel -->
-              <article class="card" id="rhymes" data-title="Rhymes of Israel" data-breadcrumb="Filters / Rhymes of Israel" data-state="closed">
-                <button class="cardHead" type="button" aria-expanded="false">
-                  <div class="left">
-                    <div class="icon" aria-hidden="true">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M6 7h12v12H6V7Z" stroke="rgba(233,237,245,.85)" stroke-width="2"/>
-                        <path d="M8 10h8M8 13h6M8 16h7" stroke="rgba(233,237,245,.75)" stroke-width="2" stroke-linecap="round"/>
-                        <path d="M16.5 10.2c1.4.3 2.3 1.3 2.5 2.8" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round"/>
-                      </svg>
-                    </div>
-                    <div class="meta">
-                      <div class="title">Rhymes of Israel <span class="tag">Filter</span></div>
-                      <div class="subtitle">Browser Plugin / Content Filter (Comedy Mode)</div>
-                    </div>
-                  </div>
-                  <div class="right">
-                    <div class="toggle" aria-hidden="true">
-                      <span>Enabled</span>
-                      <span class="switch"></span>
-                    </div>
-                    <div class="hint" aria-hidden="true">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 17h.01M12 14c0-2 3-1.8 3-5a3 3 0 10-6 0" stroke="rgba(233,237,245,.85)" stroke-width="2" stroke-linecap="round"/>
-                      </svg>
-                      <div class="tooltip">Hint: transforms headlines; does not block traffic.</div>
-                    </div>
-                  </div>
-                </button>
-
-                <div class="drawer" role="region" aria-label="Rhymes of Israel drawer">
-                  <div class="applyBarWrap">
-                    <div class="applyLabel"><span>Applying…</span><span class="mono">filter: comedy</span></div>
-                    <div class="applyBar"><i></i></div>
-                  </div>
-
-                  <div class="drawerInner">
-                    <div class="tabs" role="tablist" aria-label="Rhymes of Israel tabs">
-                      <button class="tab active" type="button" data-tab="ov">Overview</button>
-                      <button class="tab" type="button" data-tab="ln">Links</button>
-                      <button class="tab" type="button" data-tab="md">Media</button>
-                      <button class="tab" type="button" data-tab="nt">Notes</button>
-                    </div>
-
-                    <div class="panel active" data-panel="ov">
-                      <p class="p">
-                        Chrome extension using an LLM to rewrite Israeli news headlines into comedic rhymes in the style of a high-school yearbook.
-                      </p>
-
-                      <div class="diff" aria-label="Before and after (sample)">
-                        <div class="line">
-                          <span class="mark minus">-</span>
-                          <span class="before">Before: “Government announces new policy amid debate”</span>
-                        </div>
-                        <div class="line">
-                          <span class="mark plus">+</span>
-                          <span class="after">After: “Policy drops with a splash and a grin—let the debate begin!”</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="panel" data-panel="ln">
-                      <div class="row">
-                        <a class="btn primary" href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" rel="noopener">
-                          Install from Chrome Web Store
-                          <svg class="ext" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M14 5h5v5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                            <path d="M10 14L19 5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                            <path d="M19 14v5H5V5h5" stroke="rgba(233,237,245,.55)" stroke-width="2" stroke-linecap="round"/>
-                          </svg>
-                        </a>
-                      </div>
-                    </div>
-
-                    <div class="panel" data-panel="md">
-                      <p class="p">
-                        Media mock: inline “diff-style” overlay in the page DOM; rendered with monospace and faint grid.
-                      </p>
-                    </div>
-
-                    <div class="panel" data-panel="nt">
-                      <p class="p">
-                        Admin note: best enjoyed with “Comedy Mode” enabled and expectations set to whimsical.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </article>
-
-              <!-- 6) Portfolio Website (meta) -->
-              <article class="card" id="meta" data-title="Portfolio Website" data-breadcrumb="UI / Firmware Skin" data-state="closed">
-                <button class="cardHead" type="button" aria-expanded="false">
-                  <div class="left">
-                    <div class="icon" aria-hidden="true">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M7 7h10v10H7V7Z" stroke="rgba(233,237,245,.85)" stroke-width="2"/>
-                        <path d="M9 9h6v2H9V9Z" fill="var(--accent)" opacity=".85"/>
-                        <path d="M10 15h4" stroke="rgba(233,237,245,.8)" stroke-width="2" stroke-linecap="round"/>
-                        <path d="M6 12c0-3.3 2.7-6 6-6m6 6c0 3.3-2.7 6-6 6" stroke="rgba(233,237,245,.55)" stroke-width="2" stroke-linecap="round"/>
-                      </svg>
-                    </div>
-                    <div class="meta">
-                      <div class="title">Portfolio Website <span class="tag">localhost</span></div>
-                      <div class="subtitle">Web UI / Firmware Skin Project</div>
-                    </div>
-                  </div>
-                  <div class="right">
-                    <div class="toggle" aria-hidden="true">
-                      <span>Loopback</span>
-                      <span class="switch"></span>
-                    </div>
-                    <div class="hint" aria-hidden="true">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 17h.01M12 14c0-2 3-1.8 3-5a3 3 0 10-6 0" stroke="rgba(233,237,245,.85)" stroke-width="2" stroke-linecap="round"/>
-                      </svg>
-                      <div class="tooltip">Hint: self-referential route to geekip.dev.</div>
-                    </div>
-                  </div>
-                </button>
-
-                <div class="drawer" role="region" aria-label="Portfolio Website drawer">
-                  <div class="applyBarWrap">
-                    <div class="applyLabel"><span>Applying…</span><span class="mono">skin: daily</span></div>
-                    <div class="applyBar"><i></i></div>
-                  </div>
-
-                  <div class="drawerInner">
-                    <div class="tabs" role="tablist" aria-label="Portfolio Website tabs">
-                      <button class="tab active" type="button" data-tab="ov">Overview</button>
-                      <button class="tab" type="button" data-tab="ln">Links</button>
-                      <button class="tab" type="button" data-tab="md">Media</button>
-                      <button class="tab" type="button" data-tab="nt">Notes</button>
-                    </div>
-
-                    <div class="panel active" data-panel="ov">
-                      <p class="p">
-                        A portfolio presented as a router admin console—settings pages as projects; redesigned daily by AI.
-                      </p>
-                      <div class="diff" aria-label="Loopback note">
-                        <div class="line"><span class="mark">↻</span><span>route: <span class="logMono">localhost → https://geekip.dev</span></span></div>
-                        <div class="line"><span class="mark">↳</span><span>intent: “premium firmware, playful truth.”</span></div>
-                      </div>
-                    </div>
-
-                    <div class="panel" data-panel="ln">
-                      <div class="row">
-                        <a class="btn primary" href="https://geekip.dev" target="_blank" rel="noopener">
-                          Self Link
-                          <svg class="ext" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M14 5h5v5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                            <path d="M10 14L19 5" stroke="rgba(233,237,245,.92)" stroke-width="2" stroke-linecap="round"/>
-                            <path d="M19 14v5H5V5h5" stroke="rgba(233,237,245,.55)" stroke-width="2" stroke-linecap="round"/>
-                          </svg>
-                        </a>
-                      </div>
-                    </div>
-
-                    <div class="panel" data-panel="md">
-                      <p class="p">
-                        Media mock: “firmware skin” includes a shifting accent palette and one featured module that changes with the daily seed.
-                      </p>
-                    </div>
-
-                    <div class="panel" data-panel="nt">
-                      <p class="p">
-                        Admin note: all toggles and indicators are intentionally non-deceptive—no real settings, just interface craft.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </article>
-
-              <!-- 7) Links -->
-              <article class="card" id="links" data-title="Links" data-breadcrumb="System / Accounts" data-state="closed">
-                <button class="cardHead" type="button" aria-expanded="false">
-                  <div class="left">
-                    <div class="icon" aria-hidden="true">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M8 12a4 4 0 014-4h2" stroke="rgba(233,237,245,.85)" stroke-width="2" stroke-linecap="round"/>
-                        <path d="M16 12a4 4 0 01-4 4h-2" stroke="rgba(233,237,245,.85)" stroke-width="2" stroke-linecap="round"/>
-                        <path d="M10 12h4" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round"/>
-                      </svg>
-                    </div>
-                    <div class="meta">
-                      <div class="title">Links <span class="tag">Accounts</span></div>
-                      <div class="subtitle">System / Accounts</div>
-                    </div>
-                  </div>
-                  <div class="right">
-                    <div class="toggle" aria-hidden="true">
-                      <span>Public</span>
-                      <span class="switch"></span>
-                    </div>
-                    <div class="hint" aria-hidden="true">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 17h.01M12 14c0-2 3-1.8 3-5a3 3 0 10-6 0" stroke="rgba(233,237,245,.85)" stroke-width="2" stroke-linecap="round"/>
-                      </svg>
-                      <div class="tooltip">Hint: external links open new tabs.</div>
-                    </div>
-                  </div>
-                </button>
-
-                <div class="drawer" role="region" aria-label="Links drawer">
-                  <div class="applyBarWrap">
-                    <div class="applyLabel"><span>Applying…</span><span class="mono">auth: none</span></div>
-                    <div class="applyBar"><i></i></div>
-                  </div>
-
-                  <div class="drawerInner">
-                    <div class="tabs" role="tablist" aria-label="Links tabs">
-                      <button class="tab active" type="button" data-tab="ov">Overview</button>
-                      <button class="tab" type="button" data-tab="ln">Links</button>
-                      <button class="tab" type="button" data-tab="md">Media</button>
-                      <button class="tab" type="button" data-tab="nt">Notes</button>
-                    </div>
-
-                    <div class="panel active" data-panel="ov">
-                      <p class="p">Platform endpoints registered for this device profile.</p>
-                    </div>
-
-                    <div class="panel" data-panel="ln">
-                      <div class="linkList" aria-label="Account links">
-                        <div class="linkRow">
-                          <a class="l" href="https://github.com/gevak" target="_blank" rel="noopener">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                              <path d="M12 2c5.5 0 10 4.5 10 10 0 4.4-2.9 8.1-6.9 9.4-.5.1-.7-.2-.7-.5v-2c0-.7-.3-1.2-.6-1.5 2.1-.2 4.3-1 4.3-4.7 0-1-.4-1.8-1-2.5.1-.2.4-1.2-.1-2.4 0 0-.8-.2-2.6 1a8.8 8.8 0 00-4.8 0c-1.8-1.2-2.6-1-2.6-1-.5 1.2-.2 2.2-.1 2.4-.6.7-1 1.5-1 2.5 0 3.7 2.2 4.5 4.3 4.7-.2.2-.4.5-.5.9-.5.2-1.9.6-2.8-.7-.2-.4-.8-.8-1.3-.8-.5 0-.2.3 0 .4.4.2.8.8.9 1.1.2.6.6 1.5 3.1 1.1V20c0 .3-.2.6-.7.5C4.9 20.1 2 16.4 2 12 2 6.5 6.5 2 12 2Z" fill="rgba(233,237,245,.85)"/>
-                            </svg>
-                            <span>github.com/gevak</span>
-                          </a>
-                          <a class="openBtn" href="https://github.com/gevak" target="_blank" rel="noopener">Open</a>
-                        </div>
-
-                        <div class="linkRow">
-                          <a class="l" href="https://linkedin.com/in/gevakip" target="_blank" rel="noopener">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                              <path d="M6.5 9.5H3.5V20.5H6.5V9.5Z" fill="rgba(233,237,245,.85)"/>
-                              <path d="M5 3.5a1.8 1.8 0 100 3.6 1.8 1.8 0 000-3.6Z" fill="var(--accent)"/>
-                              <path d="M10 9.5h2.8v1.5h.1c.4-.8 1.5-1.7 3.1-1.7 3.3 0 3.9 2.2 3.9 5v6.2h-3V15c0-1.3 0-3-1.8-3s-2.1 1.4-2.1 2.9v5.6h-3V9.5Z" fill="rgba(233,237,245,.85)"/>
-                            </svg>
-                            <span>linkedin.com/in/gevakip</span>
-                          </a>
-                          <a class="openBtn" href="https://linkedin.com/in/gevakip" target="_blank" rel="noopener">Open</a>
-                        </div>
-
-                        <div class="linkRow">
-                          <a class="l" href="https://facebook.com/geva.kipper" target="_blank" rel="noopener">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                              <path d="M13.7 8.7V7.2c0-.7.5-1 1-1H16V3.5h-2.1c-2.7 0-3.7 1.9-3.7 3.6v1.6H8v2.9h2.2v8.9h3.5v-8.9H16l.5-2.9h-2.8Z" fill="rgba(233,237,245,.85)"/>
-                            </svg>
-                            <span>facebook.com/geva.kipper</span>
-                          </a>
-                          <a class="openBtn" href="https://facebook.com/geva.kipper" target="_blank" rel="noopener">Open</a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="panel" data-panel="md">
-                      <p class="p">Media: N/A (accounts module).</p>
-                    </div>
-
-                    <div class="panel" data-panel="nt">
-                      <p class="p">Admin note: these endpoints are intentionally plain—clean URLs, no tracking parameters.</p>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            </section>
-
-            <!-- Sentinel for footer reveal -->
-            <div id="footerSentinel" style="height:1px;"></div>
-
-            <footer class="footer" id="system-footer" aria-label="System Footer">
-              <div class="footerInner">
-                <div class="credit">Generated by ChatGPT (OpenAI)</div>
-                <div class="uptimePill" aria-label="Time since 2025-12-21 01:15:20">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M12 22a9 9 0 110-18 9 9 0 010 18Z" stroke="rgba(233,237,245,.75)" stroke-width="2"/>
-                    <path d="M12 7v5l3 2" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span class="uptimeLabel">Time since 2025-12-21 01:15:20</span>
-                  <span class="uptimeValue" id="uptime">00:00:00</span>
-                </div>
-              </div>
-            </footer>
-
-            <div style="height:18px;"></div>
-          </main>
+  <div class="sky" aria-hidden="true"></div>
+  <canvas id="snow" aria-hidden="true"></canvas>
+  <div class="axis" aria-hidden="true"></div>
+
+  <main>
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="name">Geva Kipper</div>
+        <p class="tagline">Software engineer at Google, currently building and shipping production systems at scale.</p>
+        <p class="subtitle">This portfolio is re-designed each day by AI—an ever-changing solstice.</p>
+
+        <div class="meta-row">
+          <span class="badge">today’s variation</span>
+        </div>
+
+        <div class="scrollcue" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <!-- crescent + sun hybrid -->
+            <path d="M14.8 3.8c-3.7 1-6.1 4.8-5.1 8.5s4.8 6.1 8.5 5.1c-1.9 1.9-4.7 2.8-7.4 2.1C6.4 18.4 4 14 5 10.3 6 6.6 10.3 4.2 14 5.2c.3-.5.6-1 .8-1.4z"
+                  stroke="rgba(230,245,255,.85)" stroke-width="1.4" />
+            <circle cx="18.2" cy="7.6" r="2.0" stroke="rgba(255,230,170,.75)" stroke-width="1.2"/>
+          </svg>
+          <span>scroll to sunrise</span>
         </div>
       </div>
+    </section>
+
+    <div class="timeline" id="timeline">
+      <!-- 1 -->
+      <section class="row">
+        <article class="card left connect-left" data-t="0.05">
+          <div class="motif glgl" aria-hidden="true"></div>
+
+          <div class="inner">
+            <div class="constellation">
+              <svg viewBox="0 0 120 28" aria-hidden="true">
+                <path class="line" d="M10 18 L28 10 L44 16 L60 8 L76 14 L98 6" />
+                <circle class="dot" cx="10" cy="18" r="2.2"/>
+                <circle class="dot" cx="28" cy="10" r="1.9"/>
+                <circle class="dot" cx="44" cy="16" r="2.1"/>
+                <circle class="dot" cx="60" cy="8"  r="1.8"/>
+                <circle class="dot" cx="76" cy="14" r="2.0"/>
+                <circle class="dot" cx="98" cy="6"  r="2.2"/>
+                <!-- crystalline facets that emerge later -->
+                <path class="facet" d="M28 10 l3 2 l-3 2 l-3-2z"/>
+                <path class="facet" d="M60 8 l3 2 l-3 2 l-3-2z"/>
+                <path class="facet" d="M98 6 l3 2 l-3 2 l-3-2z"/>
+              </svg>
+              <span class="label">constellation 01</span>
+            </div>
+
+            <h3 class="title">GlglStats</h3>
+            <p class="desc">
+              GlglStats — Python project measuring repetitiveness of Israeli pop-chart songs using LZ77 compression, with visualizations of repetition patterns across famous songs.
+            </p>
+
+            <div class="links">
+              <a class="link" href="https://glglstats.geekip.dev" target="_blank" rel="noreferrer">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M10 14a5 5 0 0 1 0-7l1.5-1.5a5 5 0 0 1 7 7L17 14" stroke="currentColor" stroke-width="1.6"/><path d="M14 10a5 5 0 0 1 0 7L12.5 18.5a5 5 0 0 1-7-7L7 10" stroke="currentColor" stroke-width="1.6"/></svg>
+                Site
+              </a>
+              <a class="link lantern" href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" rel="noreferrer">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M10 8l6 4-6 4V8z" fill="currentColor" opacity=".85"/><rect x="3.5" y="6.5" width="17" height="11" rx="2.2" stroke="currentColor" stroke-width="1.4"/></svg>
+                PyData TLV talk video
+              </a>
+            </div>
+          </div>
+        </article>
+        <div></div>
+        <div></div>
+      </section>
+
+      <!-- 2 -->
+      <section class="row">
+        <div></div><div></div>
+        <article class="card right connect-right" data-t="0.18">
+          <div class="motif ahuzat" aria-hidden="true"></div>
+
+          <div class="inner">
+            <div class="constellation">
+              <svg viewBox="0 0 120 28" aria-hidden="true">
+                <path class="line" d="M12 8 L32 14 L50 8 L70 18 L92 12 L108 18" />
+                <circle class="dot" cx="12" cy="8" r="2.1"/>
+                <circle class="dot" cx="32" cy="14" r="1.9"/>
+                <circle class="dot" cx="50" cy="8" r="2.0"/>
+                <circle class="dot" cx="70" cy="18" r="2.2"/>
+                <circle class="dot" cx="92" cy="12" r="2.0"/>
+                <circle class="dot" cx="108" cy="18" r="1.9"/>
+                <path class="facet" d="M70 18 l3 2 l-3 2 l-3-2z"/>
+                <path class="facet" d="M32 14 l3 2 l-3 2 l-3-2z"/>
+              </svg>
+              <span class="label">constellation 02</span>
+            </div>
+
+            <h3 class="title">Ahuzat Dibuk</h3>
+            <p class="desc">
+              Ahuzat Dibuk — Python scraping + data visualization project collecting Tel-Aviv parking lot occupancy and generating resident-friendly heat-maps.
+            </p>
+
+            <div class="links">
+              <a class="link" href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" rel="noreferrer">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M4.5 6.5h15v11h-15z" stroke="currentColor" stroke-width="1.6"/><path d="M7 9h10M7 12h7M7 15h9" stroke="currentColor" stroke-width="1.6" opacity=".85"/></svg>
+                13tv
+              </a>
+              <a class="link" href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" rel="noreferrer">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M6 4.5h12v15H6z" stroke="currentColor" stroke-width="1.6"/><path d="M8.5 8h7M8.5 11h7M8.5 14h5.5" stroke="currentColor" stroke-width="1.6" opacity=".85"/></svg>
+                mako
+              </a>
+              <a class="link" href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" rel="noreferrer">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M14 9h3V6h-3c-2.2 0-4 1.8-4 4v3H7v3h3v5h3v-5h3l1-3h-4v-3c0-.6.4-1 1-1z" fill="currentColor" opacity=".85"/></svg>
+                Facebook post
+              </a>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- 3 -->
+      <section class="row">
+        <article class="card left connect-left" data-t="0.35">
+          <div class="motif orient" aria-hidden="true"></div>
+          <div class="orient-arrows" aria-hidden="true">
+            <svg viewBox="0 0 600 360" fill="none">
+              <path d="M80 260 L170 150 L260 210 L210 290 Z" stroke="rgba(240,250,255,.35)" stroke-width="2"/>
+              <path d="M320 110 L460 90 L520 170 L410 240 L300 180 Z" stroke="rgba(240,250,255,.28)" stroke-width="2"/>
+              <path d="M120 110 C200 80, 260 140, 310 120" stroke="rgba(190,230,255,.30)" stroke-width="2" stroke-dasharray="6 8"/>
+              <path d="M310 120 l-10 -6 M310 120 l-2 -11" stroke="rgba(190,230,255,.30)" stroke-width="2"/>
+            </svg>
+          </div>
+
+          <div class="inner">
+            <div class="constellation">
+              <svg viewBox="0 0 120 28" aria-hidden="true">
+                <path class="line" d="M14 20 L34 16 L52 6 L74 10 L92 22" />
+                <circle class="dot" cx="14" cy="20" r="2.0"/>
+                <circle class="dot" cx="34" cy="16" r="1.9"/>
+                <circle class="dot" cx="52" cy="6"  r="2.2"/>
+                <circle class="dot" cx="74" cy="10" r="1.9"/>
+                <circle class="dot" cx="92" cy="22" r="2.1"/>
+                <path class="facet" d="M52 6 l3 2 l-3 2 l-3-2z"/>
+                <path class="facet" d="M92 22 l3 2 l-3 2 l-3-2z"/>
+              </svg>
+              <span class="label">constellation 03</span>
+            </div>
+
+            <h3 class="title">2D Part Orienting</h3>
+            <p class="desc">
+              2D Part Orienting — C++ contribution to an open-source computational geometry library, implementing an efficient algorithm for constructing a “push plan” to orient a given polygon.
+            </p>
+
+            <div class="links">
+              <a class="link" href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" rel="noreferrer">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M10 14a5 5 0 0 1 0-7l1.5-1.5a5 5 0 0 1 7 7L17 14" stroke="currentColor" stroke-width="1.6"/><path d="M14 10a5 5 0 0 1 0 7L12.5 18.5a5 5 0 0 1-7-7L7 10" stroke="currentColor" stroke-width="1.6"/></svg>
+                Project page
+              </a>
+            </div>
+          </div>
+        </article>
+        <div></div><div></div>
+      </section>
+
+      <!-- 4 -->
+      <section class="row">
+        <div></div><div></div>
+        <article class="card right connect-right" data-t="0.55">
+          <div class="motif jest" aria-hidden="true"></div>
+          <div class="jest-mask" aria-hidden="true">
+            <svg viewBox="0 0 600 360" fill="none">
+              <!-- minimal split-mask face -->
+              <path d="M300 70 C230 70, 180 125, 180 195 C180 270, 245 305, 300 305"
+                    stroke="rgba(240,250,255,.33)" stroke-width="2.2"/>
+              <path d="M300 70 C370 70, 420 125, 420 195 C420 270, 355 305, 300 305"
+                    stroke="rgba(190,230,255,.28)" stroke-width="2.2"/>
+              <path d="M240 190 C255 178, 270 178, 285 190" stroke="rgba(240,250,255,.30)" stroke-width="2"/>
+              <path d="M315 210 C330 226, 355 226, 370 210" stroke="rgba(240,250,255,.30)" stroke-width="2"/>
+              <!-- tiny speech bubble snowflakes -->
+              <path d="M120 120 l10 0 l-5 8 z" fill="rgba(240,250,255,.25)"/>
+              <path d="M480 140 l12 0 l-6 9 z" fill="rgba(240,250,255,.18)"/>
+              <circle cx="140" cy="100" r="4" fill="rgba(240,250,255,.22)"/>
+              <circle cx="500" cy="120" r="3" fill="rgba(240,250,255,.18)"/>
+            </svg>
+          </div>
+
+          <div class="inner">
+            <div class="constellation">
+              <svg viewBox="0 0 120 28" aria-hidden="true">
+                <path class="line" d="M12 14 L30 6 L48 12 L66 6 L84 12 L104 8" />
+                <circle class="dot" cx="12" cy="14" r="2.0"/>
+                <circle class="dot" cx="30" cy="6"  r="2.2"/>
+                <circle class="dot" cx="48" cy="12" r="1.9"/>
+                <circle class="dot" cx="66" cy="6"  r="2.2"/>
+                <circle class="dot" cx="84" cy="12" r="2.0"/>
+                <circle class="dot" cx="104" cy="8" r="1.9"/>
+                <path class="facet" d="M30 6 l3 2 l-3 2 l-3-2z"/>
+                <path class="facet" d="M66 6 l3 2 l-3 2 l-3-2z"/>
+              </svg>
+              <span class="label">constellation 04</span>
+            </div>
+
+            <h3 class="title">The Turing Jest</h3>
+            <p class="desc">
+              The Turing Jest — an LMSYS-like arena where LLMs compete at making and explaining puns, rated by users.
+            </p>
+
+            <div class="links">
+              <a class="link" href="https://jest.geekip.dev" target="_blank" rel="noreferrer">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M10 14a5 5 0 0 1 0-7l1.5-1.5a5 5 0 0 1 7 7L17 14" stroke="currentColor" stroke-width="1.6"/><path d="M14 10a5 5 0 0 1 0 7L12.5 18.5a5 5 0 0 1-7-7L7 10" stroke="currentColor" stroke-width="1.6"/></svg>
+                Site
+              </a>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- 5 -->
+      <section class="row">
+        <article class="card left connect-left" data-t="0.72">
+          <div class="motif rhymes" aria-hidden="true"></div>
+          <div class="rhymes-tab" aria-hidden="true"></div>
+
+          <div class="inner">
+            <div class="constellation">
+              <svg viewBox="0 0 120 28" aria-hidden="true">
+                <path class="line" d="M14 8 L36 12 L52 22 L76 16 L100 18" />
+                <circle class="dot" cx="14" cy="8" r="2.2"/>
+                <circle class="dot" cx="36" cy="12" r="1.9"/>
+                <circle class="dot" cx="52" cy="22" r="2.1"/>
+                <circle class="dot" cx="76" cy="16" r="2.0"/>
+                <circle class="dot" cx="100" cy="18" r="1.9"/>
+                <path class="facet" d="M52 22 l3 2 l-3 2 l-3-2z"/>
+                <path class="facet" d="M14 8 l3 2 l-3 2 l-3-2z"/>
+              </svg>
+              <span class="label">constellation 05</span>
+            </div>
+
+            <h3 class="title">Rhymes of Israel</h3>
+            <p class="desc">
+              Rhymes of Israel — a Chrome extension using an LLM to rewrite Israeli news headlines into comedic rhymes in the style of a highschool yearbook.
+            </p>
+
+            <div class="links">
+              <a class="link snowgloss" href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" rel="noreferrer">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2.8a9.2 9.2 0 1 0 0 18.4 9.2 9.2 0 0 0 0-18.4z" stroke="currentColor" stroke-width="1.5" opacity=".85"/>
+                  <path d="M12 7.2a4.8 4.8 0 1 0 0 9.6 4.8 4.8 0 0 0 0-9.6z" fill="currentColor" opacity=".20"/>
+                  <path d="M12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6z" fill="currentColor" opacity=".55"/>
+                </svg>
+                Chrome Web Store
+              </a>
+            </div>
+          </div>
+        </article>
+        <div></div><div></div>
+      </section>
+
+      <!-- 6 -->
+      <section class="row">
+        <div></div><div></div>
+        <article class="card right connect-right" data-t="0.86">
+          <div class="motif meta" aria-hidden="true"></div>
+          <div class="meta-recursion" aria-hidden="true">
+            <svg viewBox="0 0 600 360" fill="none">
+              <rect x="130" y="90" width="340" height="180" rx="18" stroke="rgba(240,250,255,.25)" stroke-width="2"/>
+              <rect x="160" y="110" width="280" height="140" rx="16" stroke="rgba(200,235,255,.20)" stroke-width="2"/>
+              <rect x="190" y="130" width="220" height="100" rx="14" stroke="rgba(180,230,255,.16)" stroke-width="2"/>
+              <rect x="218" y="148" width="164" height="64" rx="12" stroke="rgba(255,255,255,.13)" stroke-width="2"/>
+            </svg>
+          </div>
+
+          <div class="inner">
+            <div class="constellation">
+              <svg viewBox="0 0 120 28" aria-hidden="true">
+                <path class="line" d="M14 18 L40 6 L60 10 L84 6 L104 18" />
+                <circle class="dot" cx="14" cy="18" r="2.0"/>
+                <circle class="dot" cx="40" cy="6"  r="2.2"/>
+                <circle class="dot" cx="60" cy="10" r="1.9"/>
+                <circle class="dot" cx="84" cy="6"  r="2.2"/>
+                <circle class="dot" cx="104" cy="18" r="2.0"/>
+                <path class="facet" d="M40 6 l3 2 l-3 2 l-3-2z"/>
+                <path class="facet" d="M84 6 l3 2 l-3 2 l-3-2z"/>
+              </svg>
+              <span class="label">constellation 06</span>
+            </div>
+
+            <h3 class="title">Portfolio Website (meta)</h3>
+            <p class="desc">
+              Portfolio Website — a living single-page experiment (how meta) that keeps evolving.
+            </p>
+
+            <div class="links">
+              <a class="link" href="https://geekip.dev" target="_blank" rel="noreferrer">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M10 14a5 5 0 0 1 0-7l1.5-1.5a5 5 0 0 1 7 7L17 14" stroke="currentColor" stroke-width="1.6"/><path d="M14 10a5 5 0 0 1 0 7L12.5 18.5a5 5 0 0 1-7-7L7 10" stroke="currentColor" stroke-width="1.6"/></svg>
+                geekip.dev
+              </a>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- 7 -->
+      <section class="row">
+        <article class="card left connect-left postcard" data-t="0.99">
+          <div class="inner">
+            <div class="constellation">
+              <svg viewBox="0 0 120 28" aria-hidden="true">
+                <path class="line" d="M16 18 L36 10 L58 14 L80 8 L104 14" />
+                <circle class="dot" cx="16" cy="18" r="2.0"/>
+                <circle class="dot" cx="36" cy="10" r="2.0"/>
+                <circle class="dot" cx="58" cy="14" r="2.0"/>
+                <circle class="dot" cx="80" cy="8"  r="2.0"/>
+                <circle class="dot" cx="104" cy="14" r="2.0"/>
+                <path class="facet" d="M80 8 l3 2 l-3 2 l-3-2z"/>
+              </svg>
+              <span class="label">contact</span>
+            </div>
+
+            <h3 class="title">Links / Contact</h3>
+            <p class="desc">A winter postcard, sent from the brightest edge of the timeline.</p>
+
+            <div class="links">
+              <a class="link" href="https://github.com/gevak" target="_blank" rel="noreferrer">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2.8a9.4 9.4 0 0 0-3 18.3c.5.1.7-.2.7-.5v-1.7c-2.9.6-3.5-1.2-3.5-1.2-.5-1.1-1.1-1.4-1.1-1.4-.9-.6.1-.6.1-.6 1 0 1.6 1 1.6 1 .9 1.6 2.4 1.1 3 .8.1-.7.4-1.1.7-1.3-2.3-.3-4.8-1.1-4.8-5a3.9 3.9 0 0 1 1-2.7 3.6 3.6 0 0 1 .1-2.7s.8-.2 2.7 1a9.3 9.3 0 0 1 4.9 0c1.9-1.2 2.7-1 2.7-1a3.6 3.6 0 0 1 .1 2.7 3.9 3.9 0 0 1 1 2.7c0 3.9-2.5 4.7-4.8 5 .4.3.7.9.7 1.8v2.7c0 .3.2.6.7.5A9.4 9.4 0 0 0 12 2.8z"
+                        fill="currentColor" opacity=".88"/>
+                </svg>
+                GitHub: github.com/gevak
+              </a>
+              <a class="link" href="https://linkedin.com/in/gevakip" target="_blank" rel="noreferrer">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M6.7 9.2H4.3V20h2.4V9.2zM5.5 4.2a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8zM20 20h-2.4v-5.5c0-1.3 0-3-1.8-3s-2.1 1.4-2.1 2.9V20H11.3V9.2h2.3v1.5h.1c.3-.6 1.2-1.8 3-1.8 3.2 0 3.8 2.1 3.8 4.8V20z"
+                        fill="currentColor" opacity=".88"/>
+                </svg>
+                LinkedIn: linkedin.com/in/gevakip
+              </a>
+              <a class="link" href="https://facebook.com/geva.kipper" target="_blank" rel="noreferrer">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M14 9h3V6h-3c-2.2 0-4 1.8-4 4v3H7v3h3v5h3v-5h3l1-3h-4v-3c0-.6.4-1 1-1z"
+                        fill="currentColor" opacity=".88"/>
+                </svg>
+                Facebook: facebook.com/geva.kipper
+              </a>
+            </div>
+          </div>
+        </article>
+        <div></div><div></div>
+      </section>
+
+      <div class="axis-end" aria-hidden="true">
+        <div class="pin" title="solstice marker"></div>
+      </div>
     </div>
-  </div>
+
+    <footer>
+      <div class="footer-inner">
+        <div class="credit">Designed by an AI model (ChatGPT) on 2025-12-22.</div>
+        <div class="stopwatch">
+          <span class="label">Time since 2025-12-22 01:14:05</span>
+          <span class="time" id="since">00:00:00</span>
+        </div>
+      </div>
+    </footer>
+  </main>
 
   <script>
-    // ---------- Daily theme (accent + featured card + AI build ID) ----------
-    const $ = (sel, root=document) => root.querySelector(sel);
-    const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
-
-    function pad2(n){ return String(n).padStart(2,'0'); }
-    function fmtDate(d){
-      return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-    }
-
-    // Deterministic seed from YYYY-MM-DD
-    function hashToSeed(str){
-      // FNV-1a-ish 32-bit
-      let h = 0x811c9dc5;
-      for (let i=0;i<str.length;i++){
-        h ^= str.charCodeAt(i);
-        h = (h + ((h<<1) + (h<<4) + (h<<7) + (h<<8) + (h<<24))) >>> 0;
-      }
-      const seed = (h >>> 0).toString(16).toUpperCase().padStart(8,'0');
-      return seed.slice(0,4);
-    }
-
-    const today = new Date();
-    const buildDate = fmtDate(today);
-    const themeSeed = hashToSeed(buildDate);
-
-    const palettes = [
-      { name: "Teal",   a:"#4fd1c5", b:"#8ff3ea", c:"#2ea89e" },
-      { name: "Violet", a:"#a78bfa", b:"#d6bcff", c:"#7c5ce2" },
-      { name: "Amber",  a:"#f59e0b", b:"#ffd38a", c:"#c97a00" },
-    ];
-    const paletteIndex = parseInt(themeSeed, 16) % palettes.length;
-    const pal = palettes[paletteIndex];
-
-    document.documentElement.style.setProperty('--accent', pal.a);
-    document.documentElement.style.setProperty('--accent2', pal.b);
-    document.documentElement.style.setProperty('--accent3', pal.c);
-    document.documentElement.style.setProperty('--seed', `"${themeSeed}"`);
-
-    $("#fwText").textContent = `AI Build: ${buildDate} • Theme Seed: ${themeSeed}`;
-
-    // Featured card (subtle day-to-day change)
-    const cards = $$(".card");
-    const featuredIndex = parseInt(themeSeed.slice(0,2), 16) % cards.length;
-    cards[featuredIndex].classList.add('featured');
-
-    // Update log line with palette name (still router-ish)
-    $("#daemonLine").textContent = `AI theme daemon: re-skin scheduled daily at 02:00 • profile=${pal.name.toLowerCase()} • seed=${themeSeed}`;
-
-    // ---------- Accordion + fake applying bar ----------
-    function setCardState(card, open){
-      const head = $(".cardHead", card);
-      card.dataset.state = open ? "open" : "closed";
-      head.setAttribute("aria-expanded", open ? "true" : "false");
-    }
-
-    function startApplying(card){
-      card.classList.add("loading");
-      const bar = $(".applyBar > i", card);
-      bar.style.width = "0%";
-      // next frame to animate width
-      requestAnimationFrame(() => {
-        bar.style.transition = "width 320ms ease";
-        bar.style.width = "100%";
-      });
-      setTimeout(() => {
-        card.classList.remove("loading");
-        bar.style.transition = "";
-      }, 330);
-    }
-
-    // Click handler
-    $$(".card").forEach(card => {
-      const head = $(".cardHead", card);
-      head.addEventListener("click", () => {
-        const isOpen = card.dataset.state === "open";
-        // Close others for admin-console feel (optional but clean)
-        $$(".card").forEach(c => {
-          if (c !== card && c.dataset.state === "open") setCardState(c, false);
-          c.classList.remove("loading");
-        });
-
-        if (isOpen){
-          setCardState(card, false);
-          return;
-        }
-        setCardState(card, true);
-        startApplying(card);
-      });
-    });
-
-    // Tabs (event delegation per card)
-    $$(".card .drawerInner").forEach(inner => {
-      inner.addEventListener("click", (e) => {
-        const btn = e.target.closest(".tab");
-        if (!btn) return;
-        const card = e.target.closest(".card");
-        const tabKey = btn.dataset.tab;
-        const tabs = $$(".tab", inner);
-        const panels = $$(".panel", inner);
-
-        tabs.forEach(t => t.classList.toggle("active", t === btn));
-        panels.forEach(p => p.classList.toggle("active", p.dataset.panel === tabKey));
-      });
-    });
-
-    // "Camera feed" play buttons
-    $$("[data-open-video]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-open-video");
-        const mount = document.getElementById("videoMount-" + id);
-        if (!mount) return;
-        mount.style.display = mount.style.display === "none" ? "block" : "none";
-        btn.textContent = mount.style.display === "none" ? "Play" : "Hide";
-        btn.prepend(Object.assign(document.createElementNS("http://www.w3.org/2000/svg","svg"), {
-          outerHTML: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="${mount.style.display === "none" ? "M10 8l8 4-8 4V8Z" : "M7 7h10v10H7V7Z"}"
-              fill="rgba(233,237,245,.92)"/>
-          </svg>`
-        }));
-      });
-    });
-
-    // ---------- Active section highlight + breadcrumb ----------
-    const navLinks = $$("aside nav a");
-    const crumb = $("#breadcrumb");
-
-    function setActiveById(id){
-      navLinks.forEach(a => a.classList.toggle("active", a.getAttribute("href") === "#" + id));
-      const active = navLinks.find(a => a.getAttribute("href") === "#" + id);
-      if (active) crumb.textContent = active.dataset.breadcrumb || "Status / Overview";
-    }
-
-    const observedSections = [
-      $("#overview"),
-      ...$$(".card"),
-      $("#system-footer")
-    ].filter(Boolean);
-
-    const io = new IntersectionObserver((entries) => {
-      // choose the most visible entry
-      const visible = entries
-        .filter(e => e.isIntersecting)
-        .sort((a,b) => (b.intersectionRatio - a.intersectionRatio))[0];
-      if (!visible) return;
-      setActiveById(visible.target.id);
-    }, { root: null, threshold: [0.15, 0.35, 0.55] });
-
-    observedSections.forEach(s => io.observe(s));
-    setActiveById("overview");
-
-    // ---------- Footer reveal when nearing bottom ----------
-    const footer = $("#system-footer");
-    const footerWrap = footer; // sticky element itself
-    const footerSentinel = $("#footerSentinel");
-
-    const footerIO = new IntersectionObserver((entries) => {
-      const e = entries[0];
-      if (e && e.isIntersecting) footerWrap.classList.add("show");
-      else footerWrap.classList.remove("show");
-    }, { threshold: 0.01 });
-
-    footerIO.observe(footerSentinel);
-
-    // ---------- Uptime counter since 2025-12-21 01:15:20 ----------
-    const base = new Date("2025-12-21T01:15:20");
-    function tick(){
-      const now = new Date();
-      let s = Math.max(0, Math.floor((now - base)/1000));
-      const hh = Math.floor(s/3600); s %= 3600;
-      const mm = Math.floor(s/60);   s %= 60;
-      $("#uptime").textContent = `${pad2(hh)}:${pad2(mm)}:${pad2(s)}`;
-    }
-    tick();
-    setInterval(tick, 1000);
-
-    // ---------- Animated network-line traces canvas ----------
-    const canvas = document.getElementById("net");
-    const ctx = canvas.getContext("2d", { alpha:true });
-
-    function resize(){
-      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-      canvas.width = Math.floor(innerWidth * dpr);
-      canvas.height = Math.floor(innerHeight * dpr);
-      canvas.style.width = innerWidth + "px";
-      canvas.style.height = innerHeight + "px";
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-    }
-    window.addEventListener("resize", resize, { passive:true });
-    resize();
-
-    // Nodes and drifting
-    const N = 34;
-    const nodes = Array.from({length:N}, () => ({
-      x: Math.random()*innerWidth,
-      y: Math.random()*innerHeight,
-      vx: (Math.random()-.5)*0.22,
-      vy: (Math.random()-.5)*0.22,
-      r: 1 + Math.random()*1.5
-    }));
+    // ---------- Utilities ----------
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const lerp = (a, b, t) => a + (b - a) * t;
 
     function hexToRgb(hex){
-      const m = hex.replace('#','');
-      const bigint = parseInt(m,16);
-      return { r:(bigint>>16)&255, g:(bigint>>8)&255, b:bigint&255 };
+      const h = hex.replace('#','').trim();
+      const n = parseInt(h.length === 3 ? h.split('').map(c=>c+c).join('') : h, 16);
+      return { r: (n>>16)&255, g: (n>>8)&255, b: n&255 };
     }
-    const accRGB = hexToRgb(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#4fd1c5");
+    function rgbToHex({r,g,b}){
+      const to = x => x.toString(16).padStart(2,'0');
+      return `#${to(r)}${to(g)}${to(b)}`;
+    }
+    function mixHex(a, b, t){
+      const A = hexToRgb(a), B = hexToRgb(b);
+      return rgbToHex({
+        r: Math.round(lerp(A.r, B.r, t)),
+        g: Math.round(lerp(A.g, B.g, t)),
+        b: Math.round(lerp(A.b, B.b, t)),
+      });
+    }
 
-    let t = 0;
-    function frame(){
-      t += 1;
+    // ---------- Scroll progress drives the solstice ----------
+    const root = document.documentElement;
 
-      ctx.clearRect(0,0,innerWidth,innerHeight);
+    // Key colors: deep indigo → midnight blue → slate → icy blue → winter white
+    const stops = [
+      { t: 0.00, c: "#070814" },
+      { t: 0.28, c: "#071b3a" },
+      { t: 0.52, c: "#2b3a50" },
+      { t: 0.78, c: "#a9d4ff" },
+      { t: 1.00, c: "#f7fbff" }
+    ];
 
-      // dark veil to keep it subtle
-      ctx.fillStyle = "rgba(0,0,0,0.10)";
-      ctx.fillRect(0,0,innerWidth,innerHeight);
-
-      // move nodes
-      for (const p of nodes){
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < -50) p.x = innerWidth + 50;
-        if (p.x > innerWidth + 50) p.x = -50;
-        if (p.y < -50) p.y = innerHeight + 50;
-        if (p.y > innerHeight + 50) p.y = -50;
-      }
-
-      // draw connections
-      for (let i=0;i<nodes.length;i++){
-        for (let j=i+1;j<nodes.length;j++){
-          const a = nodes[i], b = nodes[j];
-          const dx = a.x-b.x, dy = a.y-b.y;
-          const d2 = dx*dx + dy*dy;
-          const max = 220*220;
-          if (d2 > max) continue;
-          const d = Math.sqrt(d2);
-          const alpha = (1 - d/220) * 0.22;
-          ctx.strokeStyle = `rgba(${accRGB.r},${accRGB.g},${accRGB.b},${alpha})`;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(a.x,a.y);
-          ctx.lineTo(b.x,b.y);
-          ctx.stroke();
+    function colorAt(p){
+      p = clamp(p, 0, 1);
+      for(let i=0; i<stops.length-1; i++){
+        const a = stops[i], b = stops[i+1];
+        if(p >= a.t && p <= b.t){
+          const tt = (p - a.t) / (b.t - a.t);
+          return mixHex(a.c, b.c, tt);
         }
       }
+      return stops[stops.length-1].c;
+    }
 
-      // nodes
-      for (const p of nodes){
-        const a = 0.35;
-        ctx.fillStyle = `rgba(${accRGB.r},${accRGB.g},${accRGB.b},${a})`;
+    function updateProgress(){
+      const max = Math.max(1, (root.scrollHeight - innerHeight));
+      const p = clamp(scrollY / max, 0, 1);
+      root.style.setProperty('--p', p.toFixed(4));
+
+      // Slightly different shades for depth
+      root.style.setProperty('--sky0', colorAt(Math.max(0, p - 0.18)));
+      root.style.setProperty('--sky1', colorAt(Math.max(0, p - 0.05)));
+      root.style.setProperty('--sky2', colorAt(p));
+      root.style.setProperty('--sky3', colorAt(Math.min(1, p + 0.10)));
+      root.style.setProperty('--sky4', colorAt(Math.min(1, p + 0.26)));
+    }
+
+    addEventListener('scroll', updateProgress, { passive: true });
+    addEventListener('resize', () => { measureCards(); updateProgress(); }, { passive: true });
+
+    // ---------- Card "t" (position along timeline) & reveal ----------
+    const cards = Array.from(document.querySelectorAll('.card'));
+
+    function measureCards(){
+      const docH = Math.max(1, root.scrollHeight - innerHeight);
+      for(const el of cards){
+        // Prefer provided data-t; still compute a consistent fallback based on layout.
+        let t = parseFloat(el.getAttribute('data-t'));
+        if(!Number.isFinite(t)){
+          const rect = el.getBoundingClientRect();
+          const mid = (rect.top + scrollY) + rect.height * 0.35;
+          t = clamp(mid / Math.max(1, root.scrollHeight), 0, 1);
+        }
+        el.style.setProperty('--t', clamp(t, 0, 1).toFixed(3));
+      }
+    }
+
+    const io = new IntersectionObserver((entries)=>{
+      for(const e of entries){
+        if(e.isIntersecting) e.target.classList.add('in');
+      }
+    }, { threshold: 0.18 });
+
+    cards.forEach(c => io.observe(c));
+
+    // ---------- Snow dust (low opacity, slow drift) ----------
+    const canvas = document.getElementById('snow');
+    const ctx = canvas.getContext('2d', { alpha: true });
+
+    let DPR = Math.max(1, Math.min(2, devicePixelRatio || 1));
+    let W = 0, H = 0;
+    const flakes = [];
+    const FLAKE_COUNT = 84;
+
+    function resizeCanvas(){
+      DPR = Math.max(1, Math.min(2, devicePixelRatio || 1));
+      W = Math.floor(innerWidth * DPR);
+      H = Math.floor(innerHeight * DPR);
+      canvas.width = W;
+      canvas.height = H;
+      canvas.style.width = innerWidth + "px";
+      canvas.style.height = innerHeight + "px";
+    }
+
+    function seedFlakes(){
+      flakes.length = 0;
+      for(let i=0;i<FLAKE_COUNT;i++){
+        flakes.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          r: (Math.random() * 1.7 + 0.35) * DPR,
+          vx: (Math.random() * 0.18 + 0.02) * DPR,
+          vy: (Math.random() * 0.30 + 0.05) * DPR,
+          a: Math.random() * 0.08 + 0.02, // very low opacity
+          w: Math.random() * 0.9 + 0.1,   // wobble
+          ph: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
+    let last = performance.now();
+    function tick(now){
+      const dt = Math.min(40, now - last);
+      last = now;
+
+      ctx.clearRect(0,0,W,H);
+
+      // As page gets brighter, snow becomes slightly less noticeable.
+      const p = parseFloat(getComputedStyle(root).getPropertyValue('--p')) || 0;
+      const globalFade = lerp(1.0, 0.70, clamp(p,0,1));
+
+      for(const f of flakes){
+        f.ph += 0.0013 * dt;
+        f.x += (f.vx + Math.sin(f.ph) * 0.05 * DPR * f.w) * dt;
+        f.y += f.vy * dt;
+
+        if(f.x > W + 40*DPR) f.x = -40*DPR;
+        if(f.y > H + 40*DPR) f.y = -40*DPR;
+
+        const alpha = f.a * globalFade;
+        ctx.fillStyle = `rgba(235,245,255,${alpha.toFixed(4)})`;
         ctx.beginPath();
-        ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
         ctx.fill();
       }
 
-      // occasional scanline pulses
-      const y = (t*0.35) % (innerHeight+180) - 90;
-      const g = ctx.createLinearGradient(0,y-30,0,y+30);
-      g.addColorStop(0, "rgba(255,255,255,0)");
-      g.addColorStop(0.5, `rgba(${accRGB.r},${accRGB.g},${accRGB.b},0.08)`);
-      g.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = g;
-      ctx.fillRect(0, y-30, innerWidth, 60);
-
-      requestAnimationFrame(frame);
+      requestAnimationFrame(tick);
     }
-    frame();
 
-    // Small UX: if user navigates via sidebar, ensure crumb updates immediately
-    navLinks.forEach(a => a.addEventListener("click", () => {
-      const id = a.getAttribute("href").slice(1);
-      setActiveById(id);
-    }));
+    // ---------- Stopwatch (time since fixed moment) ----------
+    const sinceEl = document.getElementById('since');
+    const start = new Date('2025-12-22T01:14:05'); // local interpretation; matches requested label
+
+    function pad2(n){ return String(n).padStart(2,'0'); }
+    function updateStopwatch(){
+      const now = new Date();
+      let diff = Math.max(0, now - start);
+      const s = Math.floor(diff / 1000);
+      const hh = Math.floor(s / 3600);
+      const mm = Math.floor((s % 3600) / 60);
+      const ss = s % 60;
+      sinceEl.textContent = `${pad2(hh)}:${pad2(mm)}:${pad2(ss)}`;
+    }
+
+    // ---------- Init ----------
+    resizeCanvas();
+    seedFlakes();
+    measureCards();
+    updateProgress();
+    updateStopwatch();
+
+    requestAnimationFrame(tick);
+    setInterval(updateStopwatch, 1000);
+
+    addEventListener('resize', () => {
+      resizeCanvas();
+      seedFlakes();
+    }, { passive: true });
   </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20251221",
+          pageId: "20251222",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
