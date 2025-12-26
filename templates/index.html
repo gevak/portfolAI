@@ -2,1744 +2,1887 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Geva Kipper — Brain-Scan Console</title>
-
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+  <title>Geva Kipper — Neural Network Visualizer</title>
+  <meta name="description" content="A single-page portfolio that behaves like a living neural network training on Geva Kipper." />
   <style>
     :root{
-      --bg0:#0b0f12;
-      --bg1:#0f151a;
-      --ink:#e8f1f4;
-      --muted:#b6c4cb;
-      --grid: rgba(255,255,255,.06);
-      --glass: rgba(18, 26, 32, .52);
-      --glass2: rgba(10, 14, 18, .38);
-      --border: rgba(165, 235, 255, .18);
-
-      --teal: hsl(187 90% 56%);
-      --cyan: hsl(172 88% 56%);
-      --violet: hsl(269 92% 70%);
-      --amber: hsl(36 90% 60%);
-
-      /* daily-variant controlled parameters (set by JS) */
-      --signal: var(--teal);
-      --signal2: var(--cyan);
-      --signalGlow: rgba(90, 245, 255, .38);
-      --brainShiftX: 0px;
-      --brainShiftY: 0px;
-      --noiseOpacity: .22;
-      --regionJitter: 0px;
-      --dockWidth: 370px;
-
-      --hudH: 82px;
-      --footerH: 44px;
-      --r: 14px;
-
+      --bg0:#090A0F;
+      --bg1:#0D0F1A;
+      --bg2:#0A0B12;
+      --ink:#EAF0FF;
+      --muted:#B7C0D8;
+      --subtle:#7F8AA6;
+      --panel: rgba(18, 22, 36, 0.58);
+      --panel2: rgba(18, 22, 36, 0.40);
+      --border: rgba(180, 200, 255, 0.16);
+      --border2: rgba(180, 200, 255, 0.10);
+      --glow: rgba(160, 190, 255, 0.18);
+      --shadow: 0 24px 80px rgba(0,0,0,0.55);
+      --radius: 18px;
+      --accent: #6EE7E0; /* rotated daily */
+      --accent2: #8B5CF6;
+      --accent3: #FBBF24;
+      --focus: rgba(110, 231, 224, 0.55);
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      --display: "Space Grotesk", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
 
+    @media (prefers-color-scheme: dark) { :root{ color-scheme: dark; } }
+
     *{ box-sizing:border-box; }
-    html, body { height: 100%; }
-    html { scroll-behavior:smooth; }
+    html,body{ height:100%; }
     body{
       margin:0;
-      color: var(--ink);
       font-family: var(--sans);
-      background:
-        radial-gradient(1100px 700px at 50% 40%, rgba(56, 190, 210, .08), transparent 60%),
-        radial-gradient(900px 600px at 65% 55%, rgba(170, 110, 255, .08), transparent 62%),
-        linear-gradient(180deg, var(--bg0), var(--bg1));
+      color: var(--ink);
+      background: radial-gradient(1200px 800px at 20% 10%, rgba(88, 124, 255, 0.14), transparent 60%),
+                  radial-gradient(900px 700px at 85% 30%, rgba(110, 231, 224, 0.12), transparent 62%),
+                  linear-gradient(180deg, #070810 0%, #070810 45%, #05060B 100%);
       overflow-x:hidden;
     }
 
-    /* subtle scan vignette */
-    body::before{
-      content:"";
-      position:fixed;
-      inset:0;
-      pointer-events:none;
-      background:
-        radial-gradient(1200px 900px at 50% 45%, transparent 35%, rgba(0,0,0,.55) 78%),
-        linear-gradient(180deg, rgba(0,0,0,.38), transparent 35%, rgba(0,0,0,.52));
-      mix-blend-mode: multiply;
-      z-index: 1;
-    }
-
-    /* animated noise canvas */
-    #noiseWrap{
-      position:fixed;
-      inset:0;
-      z-index: 0;
-      pointer-events:none;
-      opacity: var(--noiseOpacity);
-      mix-blend-mode: overlay;
-      filter: contrast(105%) brightness(110%);
-    }
-    #noise{
-      width:100%;
-      height:100%;
-      display:block;
-    }
-
-    /* Header HUD */
-    header.hud{
-      position:fixed;
-      top:0; left:0; right:0;
-      height: var(--hudH);
-      z-index: 10;
-      display:grid;
-      grid-template-columns: 1fr minmax(240px, 420px) 1fr;
-      gap: 16px;
-      padding: 14px 18px;
-      align-items:center;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      background: linear-gradient(180deg, rgba(9,12,15,.76), rgba(9,12,15,.34));
-      border-bottom: 1px solid rgba(255,255,255,.06);
-    }
-
-    .hud-left{
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      min-width: 260px;
-    }
-    .hud-left .nameRow{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      font-family: var(--display);
-      letter-spacing:.3px;
-    }
-    .name{
-      font-weight:700;
-      font-size: 17px;
-      line-height:1;
-    }
-    .statusDot{
-      width: 9px; height: 9px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 30% 30%, #fff, var(--signal));
-      box-shadow: 0 0 16px rgba(90,245,255,.55);
-      position:relative;
-    }
-    .statusDot::after{
-      content:"";
-      position:absolute;
-      inset:-8px;
-      border-radius:50%;
-      border:1px solid rgba(90,245,255,.20);
-      animation: pulse 2.6s ease-in-out infinite;
-    }
-    @keyframes pulse{
-      0%,100%{ transform:scale(.86); opacity:.35; }
-      50%{ transform:scale(1.12); opacity:.65; }
-    }
-    .role{
-      font-size: 12.5px;
-      color: rgba(232,241,244,.78);
-      line-height:1.25;
-    }
-
-    .hud-right{
-      justify-self:end;
-      text-align:right;
-      color: rgba(232,241,244,.68);
-      font-size: 12.5px;
-      font-style: italic;
-      max-width: 380px;
-    }
-
-    #eeg{
-      width: 100%;
-      height: 36px;
+    a{ color: inherit; text-decoration: none; }
+    a:focus-visible, button:focus-visible{
+      outline: 2px solid var(--focus);
+      outline-offset: 3px;
       border-radius: 10px;
-      background:
-        linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.01)),
-        linear-gradient(0deg, rgba(255,255,255,.04), transparent 50%, rgba(255,255,255,.03));
-      border: 1px solid rgba(255,255,255,.06);
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.20);
     }
 
-    /* Main console */
-    main{
-      position:relative;
-      z-index: 2;
-      padding-top: calc(var(--hudH) + 10px);
-      padding-bottom: calc(var(--footerH) + 18px);
-      min-height: 100vh;
-    }
-
-    .console{
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 18px 16px 26px;
-    }
-
-    .neuralLayout{
-      position:relative;
-      display:grid;
-      grid-template-columns: 1fr var(--dockWidth);
-      gap: 16px;
-      align-items: stretch;
-      min-height: calc(100vh - var(--hudH) - var(--footerH) - 60px);
-    }
-
-    .map{
-      position:relative;
-      border-radius: 18px;
-      overflow:hidden;
-      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.06));
-      border: 1px solid rgba(255,255,255,.06);
-      box-shadow:
-        0 18px 50px rgba(0,0,0,.35),
-        inset 0 0 0 1px rgba(0,0,0,.25);
-    }
-
-    /* micro-grid in map */
-    .map::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-      background:
-        linear-gradient(to right, rgba(255,255,255,.05) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);
-      background-size: 36px 36px;
-      opacity: .08;
-      mask-image: radial-gradient(700px 480px at 50% 48%, rgba(0,0,0,1), rgba(0,0,0,.1) 70%, transparent 85%);
-      -webkit-mask-image: radial-gradient(700px 480px at 50% 48%, rgba(0,0,0,1), rgba(0,0,0,.1) 70%, transparent 85%);
-    }
-
-    .mapInner{
-      position:absolute;
-      inset:0;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding: 12px;
-    }
-
-    /* Brain SVG */
-    #brain{
-      width: min(820px, 96%);
-      height: auto;
-      display:block;
-      transform: translate(var(--brainShiftX), var(--brainShiftY));
-      filter: drop-shadow(0 0 18px rgba(90,245,255,.08));
-      transition: transform .18s ease-out;
-    }
-
-    .brainContours{
-      opacity: .95;
-    }
-
-    .contour{
-      fill:none;
-      stroke: var(--signal);
-      stroke-width: 2.2;
-      opacity:.80;
-      filter: url(#glow);
-    }
-    .contour.soft{
-      stroke: var(--signal2);
-      stroke-width: 1.6;
-      opacity:.55;
-    }
-    .contour.thin{
-      stroke: rgba(165,235,255,.42);
-      stroke-width: 1.1;
-      opacity:.45;
-    }
-
-    /* gentle contour pulse */
-    .brainContours{
-      animation: contourPulse 4.8s ease-in-out infinite;
-      transform-origin: 50% 50%;
-    }
-    @keyframes contourPulse{
-      0%,100%{ opacity:.86; }
-      50%{ opacity:1; }
-    }
-
-    /* Regions */
-    .regions .region{
-      cursor: pointer;
-      user-select:none;
-      outline: none;
-    }
-
-    .regions .hit{
-      fill: rgba(0,0,0,0);
-      stroke: rgba(255,255,255,0);
-      stroke-width: 26;
-      pointer-events: stroke;
-    }
-
-    .regions .dot{
-      fill: rgba(232,241,244,.88);
-      opacity: .8;
-    }
-
-    .regions .label{
-      font-family: var(--display);
-      font-size: 12px;
-      letter-spacing: .55px;
-      fill: rgba(232,241,244,.78);
-      paint-order: stroke;
-      stroke: rgba(0,0,0,.55);
-      stroke-width: 3px;
-      opacity: .86;
-    }
-
-    .regionHint{
-      fill: none;
-      stroke: rgba(90,245,255,.40);
-      stroke-width: 1.2;
-      opacity: 0;
-      transition: opacity .15s ease-out, r .15s ease-out;
-      filter: url(#glow2);
-    }
-
-    .regionsDim .region:not(.active){
-      opacity: .30;
-      filter: saturate(.8);
-    }
-
-    .region.active .dot{
-      fill: var(--signal);
-      opacity: 1;
-      filter: url(#glow2);
-    }
-    .region.active .label{
-      fill: rgba(232,241,244,.92);
-    }
-
-    /* synaptic line */
-    .synapse{
-      fill:none;
-      stroke: rgba(90,245,255,.55);
-      stroke-width: 2.0;
-      stroke-linecap: round;
-      stroke-dasharray: 7 7;
-      opacity: 0;
-      filter: url(#glow2);
-      transition: opacity .18s ease;
-    }
-
-    /* Dock panel */
-    aside.dock{
-      position:relative;
-      border-radius: 18px;
-      overflow:hidden;
-      border: 1px solid rgba(255,255,255,.06);
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.10));
-      box-shadow:
-        0 18px 50px rgba(0,0,0,.30),
-        inset 0 0 0 1px rgba(0,0,0,.25);
-      min-height: 520px;
-    }
-
-    .dock::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-      background:
-        radial-gradient(420px 260px at 20% 10%, rgba(90,245,255,.09), transparent 60%),
-        radial-gradient(460px 280px at 80% 20%, rgba(170,110,255,.08), transparent 55%),
-        linear-gradient(to right, rgba(255,255,255,.06) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);
-      background-size: auto, auto, 28px 28px, 28px 28px;
-      opacity: .85;
-    }
-
-    .panel{
-      position:absolute;
+    /* Fixed living canvas behind everything */
+    #bgCanvas{
+      position: fixed;
       inset: 0;
-      padding: 14px 14px 12px;
-      display:flex;
-      flex-direction:column;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      background: linear-gradient(135deg, #0A0B10 0%, #0A0B12 35%, #0A0A14 60%, #08091A 100%);
+    }
+
+    /* Overall layout */
+    .app{
+      position: relative;
+      z-index: 1;
+      min-height: 100%;
+    }
+
+    .topbar{
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 12px;
-    }
-
-    .panelCard{
-      border-radius: 16px;
-      background: rgba(14, 20, 25, .55);
-      border: 1px solid var(--border);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      padding: 14px 14px 12px;
-      box-shadow:
-        0 18px 45px rgba(0,0,0,.28),
-        inset 0 0 0 1px rgba(0,0,0,.25);
-      position:relative;
-      overflow:hidden;
-    }
-
-    /* micro-grid texture in cards */
-    .panelCard::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-      background:
-        linear-gradient(to right, rgba(255,255,255,.06) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);
-      background-size: 22px 22px;
-      opacity: .09;
-      mask-image: radial-gradient(420px 240px at 15% 0%, rgba(0,0,0,1), transparent 70%);
-      -webkit-mask-image: radial-gradient(420px 240px at 15% 0%, rgba(0,0,0,1), transparent 70%);
-    }
-
-    .panelMeta{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:12px;
-      position:relative;
-      z-index:1;
-    }
-
-    .panelTitle{
-      font-family: var(--display);
-      font-weight: 700;
-      letter-spacing: .6px;
-      font-size: 18px;
-      margin:0;
-      line-height:1.1;
-    }
-
-    .panelKicker{
-      font-family: var(--mono);
-      font-size: 11.5px;
-      letter-spacing: .14em;
-      color: rgba(232,241,244,.62);
-      text-transform: uppercase;
-      margin-top: 2px;
-    }
-
-    .panelSummary{
-      color: rgba(232,241,244,.82);
-      font-size: 13px;
-      line-height:1.35;
-      margin: 8px 0 0 0;
-      position:relative;
-      z-index:1;
-    }
-
-    .tags{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-top: 10px;
-      position:relative;
-      z-index:1;
-    }
-    .tag{
-      font-family: var(--mono);
-      font-size: 11px;
-      color: rgba(232,241,244,.78);
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 999px;
-      padding: 5px 9px;
-      background: rgba(0,0,0,.14);
-      backdrop-filter: blur(6px);
-    }
-
-    .actions{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-top: 12px;
-      position:relative;
-      z-index:1;
+      pointer-events: none;
     }
 
     .pill{
+      pointer-events: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(10, 12, 20, 0.52);
+      border: 1px solid rgba(200, 220, 255, 0.16);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+      color: rgba(235, 242, 255, 0.92);
+      font-size: 12.5px;
+      letter-spacing: 0.2px;
+      user-select: none;
+    }
+    .pill .dot{
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(110,231,224,0.12), 0 0 16px rgba(110,231,224,0.35);
+    }
+
+    .toggle{
+      pointer-events:auto;
       display:inline-flex;
       align-items:center;
-      gap:8px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(165,235,255,.22);
-      background: rgba(12, 18, 22, .35);
-      color: rgba(232,241,244,.92);
-      text-decoration:none;
-      font-size: 12.5px;
-      transition: transform .12s ease, border-color .12s ease, background .12s ease;
-      white-space:nowrap;
-    }
-    .pill:hover{
-      transform: translateY(-1px);
-      border-color: rgba(90,245,255,.42);
-      background: rgba(12, 18, 22, .50);
-    }
-    .pill.primary{
-      border-color: rgba(90,245,255,.45);
-      box-shadow: 0 0 0 1px rgba(90,245,255,.15), 0 10px 22px rgba(0,0,0,.25);
-    }
-    .pill.violet{
-      border-color: rgba(170,110,255,.35);
-    }
-    .pill.amber{
-      border-color: rgba(255,198,105,.30);
-      color: rgba(255, 232, 200, .92);
-    }
-
-    /* panel state (preview vs pinned) */
-    .isPreview .panelCard{
-      filter: blur(1.2px) saturate(.95);
-      opacity: .86;
-      transform: translateY(2px) scale(.995);
-      transition: opacity .12s ease, filter .12s ease, transform .12s ease;
-    }
-    .isPinned .panelCard{
-      opacity: 1;
-      filter: none;
-      transform: none;
-    }
-    .panelNotice{
-      font-size: 11.5px;
-      color: rgba(232,241,244,.60);
+      gap:10px;
       padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px dashed rgba(255,255,255,.10);
-      background: rgba(0,0,0,.08);
-      position:relative;
-      z-index:1;
-    }
-
-    /* MOTIFS (unique per region) */
-    .motif{
-      position:absolute;
-      inset:-40px -40px auto auto;
-      width: 320px;
-      height: 220px;
-      pointer-events:none;
-      opacity:.85;
-      filter: saturate(1.05);
-      z-index:0;
-    }
-
-    /* waveform */
-    .motif-wave path{
-      stroke: rgba(90,245,255,.25);
-      stroke-width: 2;
-      fill:none;
-    }
-
-    /* heatmap */
-    .heatmap{
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-      opacity:.55;
-      z-index:0;
-      background:
-        radial-gradient(180px 120px at 20% 35%, rgba(90,245,255,.26), transparent 65%),
-        radial-gradient(220px 160px at 70% 30%, rgba(170,110,255,.22), transparent 60%),
-        radial-gradient(220px 160px at 55% 75%, rgba(255,198,105,.18), transparent 60%);
-      filter: blur(10px) saturate(1.08);
-      animation: heatShift 10.5s ease-in-out infinite;
-    }
-    @keyframes heatShift{
-      0%,100%{ transform: translate3d(-6px, 2px, 0) scale(1.03); }
-      50%{ transform: translate3d(9px, -4px, 0) scale(1.08); }
-    }
-
-    /* polygon + arrow */
-    .polyWrap{
-      position:absolute;
-      right:-8px; top:-10px;
-      width: 230px; height: 230px;
-      opacity:.7;
-      z-index:0;
-      pointer-events:none;
-    }
-    .polyWrap svg{
-      width:100%; height:100%;
-      animation: polySpin 14s linear infinite;
-      transform-origin: 50% 50%;
-      filter: drop-shadow(0 0 12px rgba(90,245,255,.10));
-    }
-    @keyframes polySpin{ to{ transform: rotate(360deg); } }
-    .arrowPath{
-      stroke: rgba(90,245,255,.30);
-      stroke-width: 2;
-      fill:none;
-      stroke-dasharray: 6 10;
-      animation: dash 6s linear infinite;
-    }
-    @keyframes dash{
-      to{ stroke-dashoffset: -64; }
-    }
-
-    /* speech bubble + rating bar */
-    .bubble{
-      position:absolute;
-      right: 14px;
-      top: 12px;
-      width: 160px;
-      height: 110px;
-      opacity:.72;
-      z-index:0;
-      pointer-events:none;
-    }
-    .rating{
-      height: 10px;
       border-radius: 999px;
-      overflow:hidden;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.18);
-      position:relative;
-      margin-top: 12px;
+      border: 1px solid rgba(200, 220, 255, 0.16);
+      background: rgba(10, 12, 20, 0.52);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+      color: rgba(235, 242, 255, 0.92);
+      font-size: 12.5px;
+      cursor: pointer;
     }
-    .rating::before{
+    .switch{
+      width: 42px;
+      height: 22px;
+      border-radius: 999px;
+      background: rgba(210, 225, 255, 0.12);
+      border: 1px solid rgba(200, 220, 255, 0.18);
+      position: relative;
+    }
+    .knob{
+      position:absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(235, 242, 255, 0.92);
+      box-shadow: 0 10px 18px rgba(0,0,0,0.35);
+      transition: transform 240ms ease;
+    }
+    .reduced .knob{ transform: translateX(20px); }
+    .toggle .label{ color: rgba(235,242,255,0.88); }
+
+    /* HERO */
+    header.hero{
+      min-height: 100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 120px 18px 64px;
+      position: relative;
+    }
+
+    .heroInner{
+      width: min(1000px, 94vw);
+      text-align: center;
+      padding: 28px 18px;
+    }
+
+    .name{
+      font-weight: 650;
+      font-size: clamp(44px, 7vw, 78px);
+      line-height: 1.02;
+      letter-spacing: -0.03em;
+      margin: 0;
+      text-shadow: 0 22px 70px rgba(0,0,0,0.55);
+    }
+
+    .tagline{
+      margin: 14px auto 0;
+      width: min(820px, 100%);
+      font-size: clamp(16px, 2.1vw, 20px);
+      line-height: 1.55;
+      color: rgba(234, 240, 255, 0.90);
+    }
+    .tagline strong{
+      font-weight: 650;
+      color: rgba(234, 240, 255, 0.98);
+    }
+
+    .subtitle{
+      margin: 12px auto 0;
+      width: min(820px, 100%);
+      font-size: 14.5px;
+      line-height: 1.6;
+      color: rgba(183, 192, 216, 0.92);
+    }
+
+    .heroHint{
+      margin-top: 26px;
+      display:flex;
+      justify-content:center;
+    }
+    .scrollHint{
+      display:inline-flex;
+      align-items:center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(12, 14, 24, 0.44);
+      border: 1px solid rgba(200, 220, 255, 0.14);
+      backdrop-filter: blur(10px);
+      color: rgba(235, 242, 255, 0.84);
+      font-size: 13px;
+    }
+    .scrollHint .arrow{
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      border: 1px solid rgba(200, 220, 255, 0.18);
+      display:grid; place-items:center;
+      background: rgba(210,225,255,0.06);
+    }
+
+    /* CONTENT */
+    main{
+      padding: 10px 18px 72px;
+    }
+
+    .sectionTitle{
+      width: min(1100px, 96vw);
+      margin: 0 auto;
+      padding: 22px 8px 14px;
+      display:flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .sectionTitle h2{
+      margin: 0;
+      font-size: 16px;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: rgba(234,240,255,0.82);
+    }
+    .sectionTitle p{
+      margin: 0;
+      color: rgba(183,192,216,0.86);
+      font-size: 13.5px;
+      line-height: 1.4;
+    }
+
+    .grid{
+      width: min(1100px, 96vw);
+      margin: 0 auto;
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: repeat(6, 1fr); }
+    }
+    @media (max-width: 620px){
+      .grid{ grid-template-columns: repeat(1, 1fr); }
+      .sectionTitle{ flex-direction: column; align-items:flex-start; }
+    }
+
+    /* Glass card with noise */
+    .card{
+      grid-column: span 6;
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(16, 18, 30, 0.70), rgba(12, 14, 22, 0.42));
+      border: 1px solid var(--border2);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      transform: translateZ(0);
+      transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+      min-height: 220px;
+    }
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background-image:
+        radial-gradient(500px 260px at 10% 20%, rgba(110, 231, 224, 0.12), transparent 60%),
+        radial-gradient(380px 240px at 90% 10%, rgba(139, 92, 246, 0.10), transparent 60%),
+        radial-gradient(600px 420px at 50% 120%, rgba(251, 191, 36, 0.08), transparent 60%);
+      opacity: 0.9;
+      pointer-events:none;
+      z-index: 0;
+    }
+    .card::after{
+      /* subtle noise */
       content:"";
       position:absolute;
       inset:0;
-      width: 62%;
-      background: linear-gradient(90deg, rgba(90,245,255,.0), rgba(90,245,255,.35), rgba(170,110,255,.28));
-      animation: rateGlow 3.4s ease-in-out infinite;
-    }
-    @keyframes rateGlow{
-      0%,100%{ transform: translateX(-8%); opacity:.65; }
-      50%{ transform: translateX(10%); opacity:.95; }
+      pointer-events:none;
+      z-index: 1;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='280' height='280' filter='url(%23n)' opacity='.28'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+      opacity: 0.14;
     }
 
-    /* rhymes slanted lines */
-    .rhymesLines{
-      position:absolute;
-      inset: -20px -30px auto auto;
-      width: 320px;
-      height: 220px;
-      opacity:.55;
-      pointer-events:none;
-      z-index:0;
-      background:
-        repeating-linear-gradient( -14deg,
-          rgba(90,245,255,.0) 0px,
-          rgba(90,245,255,.0) 10px,
-          rgba(90,245,255,.20) 10px,
-          rgba(90,245,255,.20) 11px
-        );
-      mask-image: radial-gradient(240px 170px at 55% 45%, rgba(0,0,0,1), transparent 75%);
-      -webkit-mask-image: radial-gradient(240px 170px at 55% 45%, rgba(0,0,0,1), transparent 75%);
-      animation: rhymeDrift 9.5s ease-in-out infinite;
+    .card[data-span="12"]{ grid-column: span 12; }
+    @media (max-width: 980px){ .card{ grid-column: span 6; } .card[data-span="12"]{ grid-column: span 6; } }
+    @media (max-width: 620px){ .card, .card[data-span="12"]{ grid-column: span 1; } }
+
+    .card:hover{
+      transform: translateY(-2px);
+      border-color: rgba(210, 225, 255, 0.22);
+      box-shadow: 0 26px 90px rgba(0,0,0,0.60);
     }
-    @keyframes rhymeDrift{
-      0%,100%{ transform: translate3d(4px, 3px, 0); opacity:.52; }
-      50%{ transform: translate3d(-7px, -5px, 0); opacity:.66; }
+    .card.active{
+      border-color: color-mix(in oklab, var(--accent) 42%, rgba(210,225,255,0.26));
+      box-shadow: 0 28px 100px rgba(0,0,0,0.62);
     }
 
-    /* recursive card */
-    .recursive{
-      position:absolute;
-      right: 12px;
-      top: 10px;
-      width: 170px;
-      height: 120px;
-      opacity:.85;
-      z-index:0;
-      pointer-events:none;
-    }
-    .recursive .frame{
-      position:absolute;
-      inset: 0;
-      border-radius: 14px;
-      border: 1px solid rgba(90,245,255,.18);
-      background: rgba(0,0,0,.10);
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
-    }
-    .recursive .frame:nth-child(2){
-      inset: 14px 16px 16px 14px;
-      border-color: rgba(170,110,255,.20);
-      background: rgba(0,0,0,.14);
-      transform: rotate(-1deg);
-    }
-    .recursive .frame:nth-child(3){
-      inset: 32px 34px 32px 32px;
-      border-color: rgba(90,245,255,.18);
-      background: rgba(0,0,0,.16);
-      transform: rotate(1.5deg);
-    }
-
-    /* connectome */
-    .connectome{
-      position:absolute;
-      right: 6px;
-      top: 6px;
-      width: 220px;
-      height: 160px;
-      opacity:.82;
-      z-index:0;
-      pointer-events:none;
-    }
-    .connectBtnRow{
-      display:grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-      margin-top: 12px;
+    .cardInner{
       position:relative;
-      z-index:1;
-    }
-    .iconBtn{
+      z-index: 2;
+      padding: 14px 14px 16px;
       display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      text-decoration:none;
-      color: rgba(232,241,244,.92);
-      padding: 10px 8px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.14);
-      transition: transform .12s ease, border-color .12s ease;
-      min-height: 78px;
-    }
-    .iconBtn:hover{
-      transform: translateY(-1px);
-      border-color: rgba(90,245,255,.35);
-    }
-    .icon{
-      width: 24px; height: 24px;
-      opacity: .9;
-      filter: drop-shadow(0 0 10px rgba(90,245,255,.10));
-    }
-    .iconLabel{
-      font-size: 12px;
-      color: rgba(232,241,244,.78);
-      font-family: var(--display);
-      letter-spacing: .2px;
+      flex-direction: column;
+      gap: 12px;
     }
 
-    /* Footer Diagnostics */
-    footer.diag{
-      position:fixed;
-      bottom:0; left:0; right:0;
-      height: var(--footerH);
-      z-index: 9;
+    .cardHeader{
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      border: 1px solid rgba(200, 220, 255, 0.12);
+      height: 88px;
+      overflow:hidden;
+      position: relative;
+    }
+
+    .cardTitleRow{
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .cardTitle{
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+      font-weight: 680;
+    }
+    .confidence{
+      min-width: 144px;
+      display:flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items:flex-end;
+      text-align:right;
+      user-select:none;
+    }
+    .confidence label{
+      font-size: 11.5px;
+      color: rgba(183,192,216,0.88);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .meter{
+      width: 144px;
+      height: 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(200, 220, 255, 0.16);
+      background: rgba(210,225,255,0.08);
+      overflow:hidden;
+      position: relative;
+    }
+    .meterFill{
+      height: 100%;
+      width: 62%;
+      background: linear-gradient(90deg,
+        color-mix(in oklab, var(--accent) 88%, white 0%),
+        rgba(210,225,255,0.78)
+      );
+      border-radius: 999px;
+      box-shadow: 0 0 18px rgba(110,231,224,0.20);
+      transition: width 340ms ease;
+    }
+    .meterValue{
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: rgba(234,240,255,0.92);
+    }
+
+    .summary{
+      margin: 0;
+      color: rgba(234, 240, 255, 0.88);
+      line-height: 1.55;
+      font-size: 14.5px;
+    }
+
+    .artifacts{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .chip{
+      display:inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(200, 220, 255, 0.16);
+      background: rgba(12, 14, 24, 0.35);
+      color: rgba(235, 242, 255, 0.92);
+      font-size: 13px;
+      transition: transform 160ms ease, border-color 200ms ease, background 200ms ease;
+      cursor: pointer;
+    }
+    .chip:hover{
+      transform: translateY(-1px);
+      border-color: color-mix(in oklab, var(--accent) 55%, rgba(200,220,255,0.16));
+      background: rgba(14, 16, 28, 0.46);
+    }
+    .chip svg{ width: 16px; height: 16px; opacity: 0.92; }
+
+    /* Card header motifs */
+    .viz{
+      position:absolute; inset:0;
+      display:block;
+    }
+
+    /* 1) LZ ribbon */
+    .lz{
+      position:absolute; inset: 0;
+      display:flex;
+      gap: 8px;
+      padding: 14px;
+      align-items:center;
+      opacity: 0.95;
+    }
+    .lz .track{
+      flex: 1;
+      height: 100%;
       display:flex;
       align-items:center;
-      justify-content:space-between;
-      padding: 0 14px;
-      background: linear-gradient(0deg, rgba(9,12,15,.82), rgba(9,12,15,.30));
-      border-top: 1px solid rgba(255,255,255,.06);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      font-size: 11.5px;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      color: rgba(232,241,244,.62);
+      gap: 6px;
+      filter: drop-shadow(0 10px 24px rgba(0,0,0,0.40));
     }
-    .diag .left{
+    .block{
+      height: 18px;
+      border-radius: 6px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02));
+      border: 1px solid rgba(200, 220, 255, 0.12);
+      position: relative;
+      overflow:hidden;
+    }
+    .block::after{
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(90deg,
+        transparent,
+        rgba(255,255,255,0.14),
+        transparent
+      );
+      transform: translateX(-120%);
+      opacity: 0.55;
+    }
+    .card:hover .block::after{ animation: sheen 1200ms linear infinite; }
+    @keyframes sheen{ to{ transform: translateX(120%); } }
+
+    .card[data-theme="lz"] .lz .block:nth-child(1){ width: 22%; }
+    .card[data-theme="lz"] .lz .block:nth-child(2){ width: 12%; transform: translateX(6px); }
+    .card[data-theme="lz"] .lz .block:nth-child(3){ width: 22%; }
+    .card[data-theme="lz"] .lz .block:nth-child(4){ width: 8%; transform: translateX(10px); }
+    .card[data-theme="lz"] .lz .block:nth-child(5){ width: 22%; }
+    .card[data-theme="lz"] .lz .block:nth-child(6){ width: 10%; transform: translateX(4px); }
+
+    .compressAnim{
+      position:absolute; inset:0;
+      opacity: 0;
+      transition: opacity 240ms ease;
+    }
+    .card:hover .compressAnim{ opacity: 1; }
+    .compressAnim .bar{
+      position:absolute;
+      bottom: 10px;
+      height: 8px;
+      width: 120px;
+      border-radius: 999px;
+      left: 14px;
+      background: linear-gradient(90deg,
+        color-mix(in oklab, var(--accent) 75%, white 0%),
+        rgba(210,225,255,0.55)
+      );
+      filter: blur(0.0px);
+      animation: compress 1200ms ease-in-out infinite;
+    }
+    .compressAnim .bar:nth-child(2){ left: 150px; animation-delay: 120ms; opacity: 0.78; }
+    .compressAnim .bar:nth-child(3){ left: 260px; animation-delay: 240ms; opacity: 0.58; }
+    @keyframes compress{
+      0%,100%{ transform: scaleX(1.0); opacity: 0.6; }
+      50%{ transform: scaleX(0.55); opacity: 0.95; }
+    }
+
+    /* 2) Heat map / city grid */
+    .city{
+      position:absolute; inset:0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)),
+        repeating-linear-gradient(90deg, rgba(200,220,255,0.06) 0 1px, transparent 1px 22px),
+        repeating-linear-gradient(0deg, rgba(200,220,255,0.05) 0 1px, transparent 1px 18px);
+      opacity: 0.85;
+      mask-image: radial-gradient(180px 100px at 30% 40%, black 30%, transparent 70%);
+    }
+    .thermal{
+      position:absolute; inset:-40px;
+      background: conic-gradient(from 180deg at 50% 60%,
+        rgba(251,191,36,0.00),
+        rgba(251,191,36,0.24),
+        rgba(239,68,68,0.16),
+        rgba(110,231,224,0.12),
+        rgba(251,191,36,0.00)
+      );
+      filter: blur(16px);
+      opacity: 0.65;
+      transform: translateX(-14%);
+      transition: opacity 240ms ease;
+      animation: drift 4600ms ease-in-out infinite;
+    }
+    @keyframes drift{
+      0%,100%{ transform: translateX(-14%) translateY(0); }
+      50%{ transform: translateX(8%) translateY(6px); }
+    }
+    .card:hover .thermal{
+      opacity: 0.92;
+      filter: blur(14px);
+    }
+
+    /* 3) Polygon / blueprint */
+    .blueprint{
+      position:absolute; inset:0;
+      opacity: 0.96;
+    }
+    .blueprint svg{ width:100%; height:100%; display:block; }
+    .stepPoly{
+      transform-origin: 54px 44px;
+      transition: transform 120ms steps(1,end);
+    }
+    .card:hover .step1{ transform: rotate(18deg); }
+    .card:hover .step2{ transform: rotate(46deg); transition-delay: 120ms;}
+    .card:hover .step3{ transform: rotate(78deg); transition-delay: 240ms;}
+    .pushArrow{ opacity: 0.86; }
+    .card:hover .pushArrow{ opacity: 1; }
+
+    /* 4) Arena / duel */
+    .arena{
+      position:absolute; inset:0;
+      display:flex;
+      align-items:center;
+      justify-content: center;
+      padding: 10px 14px;
+      gap: 10px;
+    }
+    .bubble{
+      flex: 1;
+      height: 58px;
+      border-radius: 14px;
+      border: 1px solid rgba(200,220,255,0.14);
+      background: rgba(210,225,255,0.06);
+      position: relative;
+      overflow:hidden;
+    }
+    .bubble::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+      transform: translateX(-120%);
+      opacity: 0.5;
+    }
+    .card:hover .bubble::after{ animation: sheen 1000ms linear infinite; }
+    .vs{
+      font-family: var(--mono);
+      letter-spacing: 0.18em;
+      font-size: 12px;
+      color: rgba(183,192,216,0.86);
+      text-transform: uppercase;
+    }
+    .score{
+      position:absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 10px;
+      height: 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(200,220,255,0.16);
+      background: rgba(210,225,255,0.07);
+      overflow:hidden;
+    }
+    .scoreFill{
+      height:100%;
+      width: 52%;
+      background: linear-gradient(90deg, rgba(139,92,246,0.65), rgba(110,231,224,0.72));
+      transition: width 220ms ease;
+    }
+    .card:hover .scoreFill{
+      width: 57%;
+      animation: flicker 340ms ease-in-out 1;
+    }
+    @keyframes flicker{
+      0%{ filter: brightness(1); }
+      50%{ filter: brightness(1.25); }
+      100%{ filter: brightness(1); }
+    }
+    .punct{
+      position:absolute;
+      top: 10px;
+      right: 12px;
+      font-size: 30px;
+      font-weight: 720;
+      color: rgba(235,242,255,0.16);
+      transform: rotate(-8deg);
+      letter-spacing: -0.08em;
+      user-select:none;
+    }
+
+    /* 5) Headline-to-rhyme */
+    .headline{
+      position:absolute; inset:0;
+      padding: 12px 14px;
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .tabs{
+      display:flex; gap: 8px;
+      opacity: 0.9;
+    }
+    .tab{
+      width: 56px; height: 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(200,220,255,0.14);
+      background: rgba(210,225,255,0.06);
+    }
+    .line{
+      font-size: 13px;
+      color: rgba(234,240,255,0.86);
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      padding-right: 16px;
+    }
+    .rewrite{
+      position: relative;
+      display:inline-block;
+      padding-bottom: 6px;
+    }
+    .rewrite::after{
+      content:"";
+      position:absolute;
+      left:0; right:0;
+      height: 2px;
+      bottom: 2px;
+      background: linear-gradient(90deg, rgba(110,231,224,0.0), rgba(110,231,224,0.7), rgba(139,92,246,0.6), rgba(110,231,224,0.0));
+      opacity: 0.45;
+      transform: translateX(-20%);
+    }
+    .card:hover .rewrite::after{
+      animation: underlineScan 900ms ease-in-out infinite;
+      opacity: 0.85;
+    }
+    @keyframes underlineScan{
+      0%,100%{ transform: translateX(-18%); }
+      50%{ transform: translateX(18%); }
+    }
+    .tokenJitter span{
+      display:inline-block;
+      transition: transform 120ms steps(1,end);
+    }
+    .card:hover .tokenJitter span:nth-child(2){ transform: translateY(-1px); }
+    .card:hover .tokenJitter span:nth-child(4){ transform: translateY(1px); }
+    .card:hover .tokenJitter span:nth-child(7){ transform: translateY(-1px); }
+    .card:hover .tokenJitter span:nth-child(9){ transform: translateY(1px); }
+
+    /* 6) Meta mini-network */
+    .miniNet{
+      position:absolute; inset:0;
+    }
+
+    /* 7) Links/output layer */
+    .linksCard .cardInner{ gap: 14px; }
+    .linkRows{
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-top: 2px;
+    }
+    .linkRow{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(200,220,255,0.14);
+      background: rgba(12, 14, 24, 0.28);
+      transition: border-color 220ms ease, transform 180ms ease, background 220ms ease;
+    }
+    .linkRow:hover{
+      transform: translateY(-1px);
+      border-color: color-mix(in oklab, var(--accent) 45%, rgba(200,220,255,0.14));
+      background: rgba(12, 14, 24, 0.38);
+    }
+    .linkRow .left{
       display:flex;
       align-items:center;
       gap: 10px;
-      white-space:nowrap;
+      font-size: 15px;
+      font-weight: 620;
+      letter-spacing: -0.01em;
     }
-    .divider{
-      width: 34px;
-      height: 1px;
-      background: rgba(255,255,255,.14);
-    }
-    .uptime{
+    .linkRow .hint{
       font-family: var(--mono);
       font-size: 12px;
-      letter-spacing: .10em;
-      color: rgba(232,241,244,.76);
-      text-transform:none;
-      text-shadow: 0 0 18px rgba(90,245,255,.12);
-      white-space:nowrap;
+      color: rgba(183,192,216,0.86);
+      font-weight: 520;
     }
-
-    /* Mobile bottom sheet */
-    .sheet{
-      display:none;
-      position:fixed;
-      left: 10px;
-      right: 10px;
-      bottom: calc(var(--footerH) + 10px);
-      z-index: 11;
-      border-radius: 18px;
-      overflow:hidden;
-      transform: translateY(120%);
-      transition: transform .22s ease;
-      border: 1px solid rgba(255,255,255,.08);
-      background: rgba(12, 17, 21, .40);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 20px 60px rgba(0,0,0,.50);
-    }
-    .sheet.open{ transform: translateY(0); }
-    .sheetTop{
-      display:flex;
+    .linkRow .go{
+      display:inline-flex;
       align-items:center;
-      justify-content:space-between;
-      padding: 10px 12px;
-      border-bottom: 1px solid rgba(255,255,255,.06);
-      background: rgba(0,0,0,.12);
+      gap: 8px;
+      color: rgba(234,240,255,0.86);
     }
-    .grab{
-      width: 44px;
-      height: 4px;
-      border-radius:999px;
-      background: rgba(255,255,255,.18);
+    .linkRow svg{ width: 18px; height: 18px; opacity: 0.92; }
+
+    /* Scanline border for meta hover */
+    .scanline{
+      position:absolute;
+      inset:0;
+      border-radius: var(--radius);
+      pointer-events:none;
+      opacity: 0;
+      transition: opacity 200ms ease;
+      z-index: 3;
+    }
+    .card[data-theme="meta"]:hover .scanline{ opacity: 1; }
+    .scanline::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      border-radius: inherit;
+      background:
+        linear-gradient(135deg,
+          transparent 0%,
+          rgba(110,231,224,0.00) 35%,
+          rgba(110,231,224,0.22) 50%,
+          rgba(110,231,224,0.00) 65%,
+          transparent 100%
+        );
+      transform: translate(-45%, -45%);
+      animation: scan 1300ms linear infinite;
+      mix-blend-mode: screen;
+    }
+    @keyframes scan{
+      to{ transform: translate(45%, 45%); }
+    }
+
+    /* Footer */
+    footer{
+      width: min(1100px, 96vw);
       margin: 0 auto;
+      padding: 22px 8px 28px;
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      border-top: 1px solid rgba(200, 220, 255, 0.12);
+      color: rgba(183,192,216,0.88);
+      font-size: 13px;
     }
-    .sheetClose{
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(0,0,0,.10);
-      color: rgba(232,241,244,.80);
-      border-radius: 12px;
-      padding: 6px 10px;
-      font-family: var(--display);
-      font-size: 12px;
-      cursor:pointer;
+    @media (max-width: 620px){
+      footer{ flex-direction: column; align-items:flex-start; }
     }
-    .sheetBody{
-      padding: 10px 10px 12px;
+    .stopwatch{
+      display:flex;
+      align-items: baseline;
+      gap: 10px;
     }
-
-    /* helper */
-    .kbd{
+    .stopwatch .label{
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-size: 11.5px;
+      color: rgba(183,192,216,0.86);
+    }
+    .stopwatch .time{
       font-family: var(--mono);
-      font-size: 11px;
-      border:1px solid rgba(255,255,255,.12);
-      padding: 1px 6px;
-      border-radius: 8px;
-      background: rgba(0,0,0,.12);
-      color: rgba(232,241,244,.70);
+      font-size: 15px;
+      color: rgba(234,240,255,0.92);
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(200,220,255,0.16);
+      background: rgba(10, 12, 20, 0.42);
+      box-shadow: 0 0 0 4px rgba(110,231,224,0.06), 0 14px 40px rgba(0,0,0,0.45);
+      text-shadow: 0 0 18px rgba(110,231,224,0.20);
     }
 
-    /* Responsive */
-    @media (max-width: 900px){
-      :root{ --dockWidth: 340px; }
-      header.hud{ grid-template-columns: 1fr minmax(200px, 320px) 1fr; }
-      .hud-right{ max-width: 260px; }
+    /* Reduced motion */
+    .reduced *{
+      scroll-behavior: auto !important;
     }
-    @media (max-width: 820px){
-      .neuralLayout{
-        grid-template-columns: 1fr;
-      }
-      aside.dock{ display:none; }
-      .sheet{ display:block; }
-      header.hud{ grid-template-columns: 1fr; height: auto; padding: 12px 14px; gap: 10px; }
-      .hud-right{ justify-self:start; text-align:left; }
-      #eeg{ height: 28px; }
-      :root{ --hudH: 124px; }
+    .reduced .thermal,
+    .reduced .card:hover .rewrite::after,
+    .reduced .compressAnim .bar,
+    .reduced .scanline::before,
+    .reduced .card:hover .block::after,
+    .reduced .card:hover .bubble::after{
+      animation: none !important;
+      transition: none !important;
     }
   </style>
 </head>
 
 <body>
-  <div id="noiseWrap"><canvas id="noise"></canvas></div>
+  <canvas id="bgCanvas" aria-hidden="true"></canvas>
 
-  <header class="hud" aria-label="Header HUD">
-    <div class="hud-left">
-      <div class="nameRow">
-        <div class="name">Geva Kipper</div>
-        <div class="statusDot" aria-hidden="true"></div>
+  <div class="app" id="app">
+    <div class="topbar" aria-hidden="false">
+      <div class="pill" id="seedPill" title="Date-based seed for today’s layout variant">
+        <span class="dot" aria-hidden="true"></span>
+        <span><span style="opacity:.80">Daily seed</span> <span id="dailySeed" style="font-family:var(--mono);opacity:.95"></span></span>
       </div>
-      <div class="role">Software engineer at Google, currently building and scaling production systems.</div>
+
+      <button class="toggle" id="motionToggle" type="button" aria-pressed="false" title="Toggle reduced motion">
+        <span class="label">Reduce motion</span>
+        <span class="switch" aria-hidden="true"><span class="knob"></span></span>
+      </button>
     </div>
 
-    <canvas id="eeg" width="820" height="72" aria-hidden="true"></canvas>
-
-    <div class="hud-right">
-      This portfolio is re-designed each day by AI—an ever-changing interface.
-    </div>
-  </header>
-
-  <main>
-    <div class="console">
-      <div class="neuralLayout">
-        <section class="map" aria-label="Neural Map">
-          <div class="mapInner">
-            <svg id="brain" viewBox="0 0 900 600" role="img" aria-label="Brain scan neural map">
-              <defs>
-                <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
-                  <feGaussianBlur stdDeviation="3.4" result="b"/>
-                  <feColorMatrix in="b" type="matrix" values="
-                    1 0 0 0 0
-                    0 1 0 0 0
-                    0 0 1 0 0
-                    0 0 0 .55 0" result="g"/>
-                  <feMerge>
-                    <feMergeNode in="g"/>
-                    <feMergeNode in="SourceGraphic"/>
-                  </feMerge>
-                </filter>
-                <filter id="glow2" x="-40%" y="-40%" width="180%" height="180%">
-                  <feGaussianBlur stdDeviation="2.0" result="b"/>
-                  <feMerge>
-                    <feMergeNode in="b"/>
-                    <feMergeNode in="SourceGraphic"/>
-                  </feMerge>
-                </filter>
-              </defs>
-
-              <!-- synaptic connection line -->
-              <path id="synapsePath" class="synapse" d=""></path>
-
-              <!-- brain contours (stylized silhouette + inner sulci) -->
-              <g class="brainContours" id="brainContours">
-                <!-- outer silhouette (stylized brain-like outline) -->
-                <path class="contour" d="
-                  M 265 325
-                  C 240 285, 245 230, 285 195
-                  C 320 165, 365 155, 405 168
-                  C 425 130, 490 118, 545 140
-                  C 590 158, 620 192, 632 238
-                  C 675 260, 690 315, 665 355
-                  C 688 420, 645 470, 585 477
-                  C 555 508, 505 520, 465 505
-                  C 420 530, 360 525, 328 490
-                  C 275 480, 245 430, 264 382
-                  C 238 365, 238 342, 265 325
-                  Z" />
-
-                <!-- inner contours -->
-                <path class="contour soft" d="
-                  M 315 255
-                  C 340 230, 380 224, 414 236
-                  C 452 250, 470 280, 466 310
-                  C 460 350, 415 372, 382 358
-                  C 342 342, 305 295, 315 255 Z" />
-
-                <path class="contour thin" d="
-                  M 470 205
-                  C 500 190, 545 198, 566 225
-                  C 592 255, 582 296, 552 312
-                  C 522 328, 480 320, 466 292
-                  C 454 268, 446 218, 470 205 Z" />
-
-                <path class="contour thin" d="
-                  M 340 405
-                  C 370 380, 420 380, 455 402
-                  C 490 424, 498 456, 478 476
-                  C 450 505, 392 500, 360 476
-                  C 330 454, 320 430, 340 405 Z" />
-
-                <path class="contour soft" d="
-                  M 525 360
-                  C 555 340, 595 342, 610 372
-                  C 625 400, 602 430, 572 438
-                  C 542 446, 515 430, 510 405
-                  C 505 382, 510 370, 525 360 Z" />
-              </g>
-
-              <!-- Regions (positions slightly jittered daily by JS) -->
-              <g class="regions" id="regions">
-                <!-- Auditory Cortex -> GlglStats -->
-                <g class="region" data-id="glgl" tabindex="0" role="button" aria-label="Auditory Cortex — GlglStats">
-                  <circle class="hit" cx="630" cy="240" r="20"></circle>
-                  <circle class="dot" cx="630" cy="240" r="3.6"></circle>
-                  <text class="label" x="650" y="235">AUDITORY</text>
-                </g>
-
-                <!-- Spatial/Navigation -> Ahuzat Dibuk -->
-                <g class="region" data-id="parking" tabindex="0" role="button" aria-label="Spatial navigation — Ahuzat Dibuk">
-                  <circle class="hit" cx="600" cy="410" r="20"></circle>
-                  <circle class="dot" cx="600" cy="410" r="3.6"></circle>
-                  <text class="label" x="622" y="414">SPATIAL</text>
-                </g>
-
-                <!-- Motor Planning -> 2D Part Orienting -->
-                <g class="region" data-id="orient" tabindex="0" role="button" aria-label="Motor planning — 2D Part Orienting">
-                  <circle class="hit" cx="470" cy="495" r="20"></circle>
-                  <circle class="dot" cx="470" cy="495" r="3.6"></circle>
-                  <text class="label" x="492" y="500">MOTOR</text>
-                </g>
-
-                <!-- Language & Humor -> The Turing Jest -->
-                <g class="region" data-id="jest" tabindex="0" role="button" aria-label="Language and humor — The Turing Jest">
-                  <circle class="hit" cx="330" cy="250" r="20"></circle>
-                  <circle class="dot" cx="330" cy="250" r="3.6"></circle>
-                  <text class="label" x="205" y="250">LANG / HUMOR</text>
-                </g>
-
-                <!-- Creative Rewrite -> Rhymes of Israel -->
-                <g class="region" data-id="rhymes" tabindex="0" role="button" aria-label="Creative rewrite — Rhymes of Israel">
-                  <circle class="hit" cx="300" cy="390" r="20"></circle>
-                  <circle class="dot" cx="300" cy="390" r="3.6"></circle>
-                  <text class="label" x="176" y="394">REWRITE</text>
-                </g>
-
-                <!-- Self-Model/Meta -> portfolio -->
-                <g class="region" data-id="meta" tabindex="0" role="button" aria-label="Self model meta — Portfolio">
-                  <circle class="hit" cx="455" cy="330" r="22"></circle>
-                  <circle class="dot" cx="455" cy="330" r="4.0"></circle>
-                  <text class="label" x="470" y="322">META</text>
-                </g>
-
-                <!-- Connectome -> Links -->
-                <g class="region" data-id="connect" tabindex="0" role="button" aria-label="Connectome — social links">
-                  <circle class="hit" cx="690" cy="315" r="20"></circle>
-                  <circle class="dot" cx="690" cy="315" r="3.6"></circle>
-                  <text class="label" x="714" y="320">CONNECTOME</text>
-                </g>
-
-                <circle id="regionHint" class="regionHint" cx="0" cy="0" r="16"></circle>
-              </g>
-            </svg>
+    <header class="hero" id="hero">
+      <div class="heroInner">
+        <h1 class="name">Geva Kipper</h1>
+        <p class="tagline">
+          <strong>Software engineer at Google</strong>, currently building and scaling data-driven systems.
+        </p>
+        <p class="subtitle">
+          Re-designed each day by AI — an ever-changing layout generated from today’s “training run”.
+        </p>
+        <div class="heroHint" aria-hidden="true">
+          <div class="scrollHint">
+            <span class="arrow">↓</span>
+            <span>Scroll to view learned memories</span>
           </div>
-        </section>
-
-        <aside class="dock" aria-label="Docked region report panel">
-          <div class="panel" id="dockPanel">
-            <!-- populated by JS -->
-          </div>
-        </aside>
+        </div>
       </div>
-    </div>
-  </main>
+    </header>
 
-  <!-- Mobile bottom sheet -->
-  <div class="sheet" id="sheet" aria-label="Region report bottom sheet">
-    <div class="sheetTop">
-      <div style="display:flex;align-items:center;gap:10px;min-width:72px;">
-        <div class="grab" aria-hidden="true"></div>
+    <main id="content" aria-label="Portfolio content">
+      <div class="sectionTitle">
+        <h2>Learned memories</h2>
+        <p>Hover a card to send an activation wave through the network and “lock” the path that led here.</p>
       </div>
-      <button class="sheetClose" id="sheetClose" type="button">Close</button>
-    </div>
-    <div class="sheetBody" id="sheetBody"></div>
+
+      <section class="grid" id="grid" aria-label="Projects grid"></section>
+    </main>
+
+    <footer>
+      <div>Generated by an AI model (ChatGPT) — design authored on request.</div>
+      <div class="stopwatch" aria-label="Time since genesis">
+        <div class="label">Time since genesis</div>
+        <div class="time" id="stopwatch" role="timer" aria-live="polite">00:00:00</div>
+      </div>
+    </footer>
   </div>
 
-  <footer class="diag" aria-label="Footer diagnostics">
-    <div class="left">
-      <span>Generated by: ChatGPT (AI model)</span>
-      <span class="divider" aria-hidden="true"></span>
-      <span style="color: rgba(255,198,105,.72); letter-spacing:.14em;">DIAGNOSTICS</span>
-    </div>
-    <div class="uptime" id="uptime">Uptime Since Scan Start: 00:00:00</div>
-  </footer>
-
   <script>
-    /***********************
-     * Seeded daily variation
-     ************************/
-    function xmur3(str){
-      let h = 1779033703 ^ str.length;
-      for (let i = 0; i < str.length; i++) {
-        h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
-        h = (h << 13) | (h >>> 19);
+    (() => {
+      /* -----------------------------
+         Helpers: seeded RNG (daily)
+      ------------------------------*/
+      function xmur3(str){
+        let h = 1779033703 ^ str.length;
+        for (let i = 0; i < str.length; i++) {
+          h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+          h = (h << 13) | (h >>> 19);
+        }
+        return function(){
+          h = Math.imul(h ^ (h >>> 16), 2246822507);
+          h = Math.imul(h ^ (h >>> 13), 3266489909);
+          h ^= h >>> 16;
+          return h >>> 0;
+        }
       }
-      return function() {
-        h = Math.imul(h ^ (h >>> 16), 2246822507);
-        h = Math.imul(h ^ (h >>> 13), 3266489909);
-        return (h ^= (h >>> 16)) >>> 0;
-      };
-    }
-    function mulberry32(a){
-      return function(){
-        let t = a += 0x6D2B79F5;
-        t = Math.imul(t ^ (t >>> 15), t | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      };
-    }
-
-    const now = new Date();
-    const dayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-    const seed = xmur3("geekip-brainscan-"+dayKey)();
-    const rnd = mulberry32(seed);
-
-    // Controlled color shift within teal/cyan/violet family
-    const hueBase = 178 + Math.round((rnd() - 0.5) * 20); // 168..188
-    const hue2 = 188 + Math.round((rnd() - 0.5) * 18);   // 179..197
-    const sat = 90;
-    const lit = 56 + Math.round((rnd() - 0.5) * 6);
-    const signal = `hsl(${hueBase} ${sat}% ${lit}%)`;
-    const signal2 = `hsl(${hue2} ${Math.max(78, sat-8)}% ${Math.min(62, lit+2)}%)`;
-
-    const root = document.documentElement;
-    root.style.setProperty('--signal', signal);
-    root.style.setProperty('--signal2', signal2);
-    root.style.setProperty('--signalGlow', 'rgba(90,245,255,.34)');
-    root.style.setProperty('--noiseOpacity', (0.18 + rnd() * 0.10).toFixed(2));
-
-    /***********************
-     * Data: region cards
-     ************************/
-    const REGIONS = {
-      glgl: {
-        title: "GlglStats",
-        kicker: "Auditory Cortex • Region Report",
-        summary: "Python project measuring repetitiveness of Israeli pop-chart songs using LZ77 compression; visualizes repetition patterns across famous songs.",
-        tags: ["Python", "LZ77", "Data Viz"],
-        links: [
-          {label:"Visit", href:"https://glglstats.geekip.dev", cls:"primary"},
-          {label:"PyData TLV Talk (Video)", href:"https://www.youtube.com/watch?v=jrKAtOsj1Lo", cls:"violet"}
-        ],
-        motif: "wave"
-      },
-      parking: {
-        title: "Ahuzat Dibuk",
-        kicker: "Spatial / Navigation • Region Report",
-        summary: "Python scraping + data visualization: Tel-Aviv parking lot occupancy statistics and resident-friendly heat-maps.",
-        tags: ["Python", "Scraping", "Heat-maps"],
-        links: [
-          {label:"13tv Story", href:"https://13tv.co.il/item/news/domestic/internal/parking-902956407/", cls:"primary"},
-          {label:"mako Story", href:"https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm", cls:"violet"},
-          {label:"Original Facebook Post", href:"https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/", cls:"amber"}
-        ],
-        motif: "heat"
-      },
-      orient: {
-        title: "2D Part Orienting",
-        kicker: "Motor Planning • Region Report",
-        summary: "C++ implementation in an open-source computational geometry library: efficient construction of a ‘push plan’ to orient a given polygon.",
-        tags: ["C++", "Computational Geometry", "Algorithms"],
-        links: [
-          {label:"Details & Code", href:"https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/", cls:"primary"}
-        ],
-        motif: "poly"
-      },
-      jest: {
-        title: "The Turing Jest",
-        kicker: "Language & Humor • Region Report",
-        summary: "An LMSYS-like arena where LLMs compete at making and explaining puns; users rate the results.",
-        tags: ["LLMs", "Web", "Evaluation Arena"],
-        links: [
-          {label:"Open Arena", href:"https://jest.geekip.dev", cls:"primary"}
-        ],
-        motif: "bubble"
-      },
-      rhymes: {
-        title: "Rhymes of Israel",
-        kicker: "Creative Rewrite • Region Report",
-        summary: "Chrome extension using an LLM to rewrite Israeli news headlines into comedic rhymes, like a high-school yearbook.",
-        tags: ["Chrome Extension", "LLM", "NLP"],
-        links: [
-          {label:"Install Extension", href:"https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb", cls:"primary"}
-        ],
-        motif: "rhymes"
-      },
-      meta: {
-        title: "Portfolio (Meta)",
-        kicker: "Self-Model / Meta • Region Report",
-        summary: "A portfolio website project—this very brain-scan interface.",
-        tags: ["UI Systems", "Web", "Interaction Design"],
-        links: [
-          {label:"Self Reference", href:"https://geekip.dev", cls:"primary"}
-        ],
-        motif: "recursive"
-      },
-      connect: {
-        title: "Connect",
-        kicker: "Connectome • Region Report",
-        summary: "A clean social hub: code, career, and public presence — connected as a small graph.",
-        tags: ["GitHub", "LinkedIn", "Facebook"],
-        links: [
-          {label:"GitHub", href:"https://github.com/gevak", cls:"primary"},
-          {label:"LinkedIn", href:"https://linkedin.com/in/gevakip", cls:"violet"},
-          {label:"Facebook", href:"https://facebook.com/geva.kipper", cls:"amber"}
-        ],
-        motif: "connectome",
-        isConnect: true
+      function mulberry32(a){
+        return function(){
+          let t = a += 0x6D2B79F5;
+          t = Math.imul(t ^ (t >>> 15), t | 1);
+          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        }
       }
-    };
 
-    /***********************
-     * Panel rendering (dock/sheet)
-     ************************/
-    function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+      const today = new Date();
+      const seedStr = today.toISOString().slice(0,10); // YYYY-MM-DD
+      document.getElementById('dailySeed').textContent = seedStr;
 
-    function motifMarkup(motif){
-      if (motif === "wave"){
+      const seedFn = xmur3("geekip.daily." + seedStr);
+      const rng = mulberry32(seedFn());
+
+      const palette = [
+        { name: "teal",   hex: "#6EE7E0" },
+        { name: "violet", hex: "#8B5CF6" },
+        { name: "amber",  hex: "#FBBF24" }
+      ];
+      const accent = palette[Math.floor(rng() * palette.length)].hex;
+      document.documentElement.style.setProperty('--accent', accent);
+
+      /* -----------------------------
+         Reduced motion toggle
+      ------------------------------*/
+      const app = document.getElementById('app');
+      const motionToggle = document.getElementById('motionToggle');
+
+      const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let reducedMotion = prefersReduced;
+
+      function setReducedMotion(on){
+        reducedMotion = !!on;
+        app.classList.toggle('reduced', reducedMotion);
+        motionToggle.setAttribute('aria-pressed', String(reducedMotion));
+      }
+      setReducedMotion(prefersReduced);
+
+      motionToggle.addEventListener('click', () => {
+        setReducedMotion(!reducedMotion);
+        // if user reduces motion, also trigger a subtle static redraw
+        net.requestPulse('toggle');
+      });
+
+      /* -----------------------------
+         Data: 7 cards (memories)
+      ------------------------------*/
+      const cardsData = [
+        {
+          id: "glglstats",
+          theme: "lz",
+          title: "GlglStats",
+          summary: "Python project measuring repetitiveness of Israeli pop-chart songs via LZ77 compression, plus repetition-pattern visualizations of famous tracks.",
+          artifacts: [
+            { label: "Live site", href: "https://glglstats.geekip.dev", icon: "link" },
+            { label: "PyData TLV talk (video)", href: "https://www.youtube.com/watch?v=jrKAtOsj1Lo", icon: "video" },
+          ],
+          span: 6
+        },
+        {
+          id: "ahuzat-dibuk",
+          theme: "heat",
+          title: "Ahuzat Dibuk",
+          summary: "Python scraping + data visualization project collecting Tel-Aviv parking lot occupancy and generating resident-friendly heat-maps.",
+          artifacts: [
+            { label: "News story (13tv)", href: "https://13tv.co.il/item/news/domestic/internal/parking-902956407/", icon: "news" },
+            { label: "News story (mako)", href: "https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm", icon: "news" },
+            { label: "Original Facebook post", href: "https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/", icon: "post" },
+          ],
+          span: 6
+        },
+        {
+          id: "2d-part-orienting",
+          theme: "geom",
+          title: "2D Part Orienting",
+          summary: "C++ implementation in an open-source computational geometry library: an efficient algorithm constructing a push plan to orient a polygon.",
+          artifacts: [
+            { label: "Additional info + code", href: "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/", icon: "code" },
+          ],
+          span: 6
+        },
+        {
+          id: "turing-jest",
+          theme: "arena",
+          title: "The Turing Jest",
+          summary: "An LMSYS-like arena where LLMs compete at making and explaining puns, rated by users.",
+          artifacts: [
+            { label: "Live site", href: "https://jest.geekip.dev", icon: "link" },
+          ],
+          span: 6
+        },
+        {
+          id: "rhymes-of-israel",
+          theme: "rhyme",
+          title: "Rhymes of Israel",
+          summary: "Chrome extension that uses an LLM to rewrite Israeli news headlines into comedic rhymes, high-school yearbook style.",
+          artifacts: [
+            { label: "Install on Chrome Web Store", href: "https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb", icon: "install" },
+          ],
+          span: 6
+        },
+        {
+          id: "portfolio-meta",
+          theme: "meta",
+          title: "Portfolio website (meta)",
+          summary: "A portfolio website project (how meta): the site you’re currently exploring.",
+          artifacts: [
+            { label: "Self-reference", href: "https://geekip.dev", icon: "link" },
+          ],
+          span: 6
+        },
+        {
+          id: "links",
+          theme: "links",
+          title: "Links / presence",
+          summary: "A clean output layer: the model’s most confident external pointers.",
+          artifacts: [],
+          span: 12
+        }
+      ];
+
+      // Slight daily shuffle: do a few adjacent swaps (stable usability, small variation).
+      const shuffled = cardsData.slice();
+      const swapCount = 2 + Math.floor(rng() * 3); // 2..4 swaps
+      for (let s=0; s<swapCount; s++){
+        const i = Math.floor(rng() * (shuffled.length - 2)) + 1; // avoid always moving first item too much
+        const j = i + (rng() < 0.65 ? 1 : -1);
+        if (j >= 0 && j < shuffled.length){
+          const tmp = shuffled[i]; shuffled[i] = shuffled[j]; shuffled[j] = tmp;
+        }
+      }
+      // Keep links as last to preserve "output layer" affordance.
+      const linksIdx = shuffled.findIndex(c => c.id === "links");
+      if (linksIdx !== -1 && linksIdx !== shuffled.length - 1){
+        const [links] = shuffled.splice(linksIdx, 1);
+        shuffled.push(links);
+      }
+
+      // Accent rotation per-card (tasteful)
+      const accents = [accent, "#8B5CF6", "#FBBF24"];
+      function accentFor(i){
+        return accents[i % accents.length];
+      }
+
+      /* -----------------------------
+         Icons
+      ------------------------------*/
+      function iconSVG(name){
+        const common = 'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
+        switch(name){
+          case "link": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M10 13a5 5 0 0 0 7.07 0l1.41-1.41a5 5 0 0 0 0-7.07 5 5 0 0 0-7.07 0L10.5 5.5"/><path ${common} d="M14 11a5 5 0 0 0-7.07 0L5.5 12.41a5 5 0 0 0 0 7.07 5 5 0 0 0 7.07 0L13.5 18.5"/></svg>`;
+          case "video": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M14 7H6a3 3 0 0 0-3 3v4a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-4a3 3 0 0 0-3-3Z"/><path ${common} d="M21 8.5l-4 2.5v2l4 2.5Z"/></svg>`;
+          case "code": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M16 18l6-6-6-6"/><path ${common} d="M8 6l-6 6 6 6"/><path ${common} d="M14 4l-4 16"/></svg>`;
+          case "install": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M12 3v10"/><path ${common} d="M8 9l4 4 4-4"/><path ${common} d="M5 21h14"/></svg>`;
+          case "news": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M4 4h14v16H4z"/><path ${common} d="M8 8h6"/><path ${common} d="M8 12h8"/><path ${common} d="M8 16h8"/><path ${common} d="M18 8h2v12a1 1 0 0 1-1 1h-1"/></svg>`;
+          case "post": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path ${common} d="M8 8h8"/><path ${common} d="M8 12h6"/></svg>`;
+          case "github": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.72c-2.77.6-3.36-1.17-3.36-1.17-.45-1.14-1.1-1.44-1.1-1.44-.9-.62.07-.61.07-.61 1 .07 1.52 1.03 1.52 1.03.9 1.54 2.36 1.1 2.94.84.09-.65.35-1.1.63-1.35-2.21-.25-4.54-1.1-4.54-4.91 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02A9.6 9.6 0 0 1 12 6.8c.85 0 1.71.12 2.51.35 1.9-1.29 2.74-1.02 2.74-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.68 0 3.82-2.34 4.66-4.57 4.9.36.31.68.92.68 1.86v2.76c0 .27.18.58.69.48A10 10 0 0 0 12 2Z" fill="currentColor" opacity="0.92"/></svg>`;
+          case "linkedin": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.94 6.5A2.44 2.44 0 1 1 7 1.63a2.44 2.44 0 0 1-.06 4.87ZM2.5 22h4.9V8.5H2.5V22ZM9.3 8.5h4.7v1.85h.07c.65-1.23 2.25-2.52 4.63-2.52 4.95 0 5.87 3.26 5.87 7.5V22h-4.9v-5.97c0-1.42-.03-3.25-1.98-3.25-1.98 0-2.28 1.55-2.28 3.15V22H9.3V8.5Z" fill="currentColor" opacity="0.92"/></svg>`;
+          case "facebook": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 22v-8h2.6l.4-3h-3V9.1c0-.87.24-1.46 1.5-1.46h1.6V5c-.28-.04-1.23-.12-2.34-.12-2.31 0-3.89 1.41-3.89 4V11H8v3h2.4v8h3.1Z" fill="currentColor" opacity="0.92"/></svg>`;
+          case "arrow": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M7 17L17 7"/><path ${common} d="M9 7h8v8"/></svg>`;
+          default: return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M12 5v14"/><path ${common} d="M5 12h14"/></svg>`;
+        }
+      }
+
+      /* -----------------------------
+         Render cards
+      ------------------------------*/
+      const grid = document.getElementById('grid');
+
+      function makeArtifacts(artifacts){
+        if (!artifacts || !artifacts.length) return '';
         return `
-          <svg class="motif motif-wave" viewBox="0 0 320 220" aria-hidden="true">
-            <path d="M10 90 C35 60, 55 120, 80 90 S130 120, 160 90 S210 60, 240 90 S285 120, 310 90" />
-            <path d="M10 120 C35 90, 55 150, 80 120 S130 150, 160 120 S210 90, 240 120 S285 150, 310 120" opacity=".75"/>
-            <path d="M10 150 C35 120, 55 180, 80 150 S130 180, 160 150 S210 120, 240 150 S285 180, 310 150" opacity=".5"/>
-          </svg>`;
-      }
-      if (motif === "heat"){
-        return `<div class="heatmap" aria-hidden="true"></div>`;
-      }
-      if (motif === "poly"){
-        return `
-          <div class="polyWrap" aria-hidden="true">
-            <svg viewBox="0 0 240 240">
-              <polygon points="120,30 200,80 182,170 120,208 55,170 40,92"
-                fill="none" stroke="rgba(90,245,255,.28)" stroke-width="2"/>
-              <polygon points="120,50 176,88 165,155 120,185 70,155 58,98"
-                fill="none" stroke="rgba(170,110,255,.22)" stroke-width="2"/>
-              <path class="arrowPath" d="M40 190 C70 160, 110 150, 132 128 C152 108, 170 82, 205 64" />
-              <path d="M205 64 L190 66 L199 78 Z" fill="rgba(90,245,255,.28)"/>
-            </svg>
+          <div class="artifacts" aria-label="Artifacts">
+            ${artifacts.map(a => `
+              <a class="chip" href="${a.href}" target="_blank" rel="noopener noreferrer">
+                ${iconSVG(a.icon)}
+                <span>${a.label}</span>
+              </a>
+            `).join('')}
           </div>`;
       }
-      if (motif === "bubble"){
-        return `
-          <svg class="bubble" viewBox="0 0 200 140" aria-hidden="true">
-            <path d="M32 26
-                     Q32 14 44 14
-                     H156
-                     Q168 14 168 26
-                     V86
-                     Q168 98 156 98
-                     H98
-                     L76 118
-                     L78 98
-                     H44
-                     Q32 98 32 86
-                     Z"
-              fill="none" stroke="rgba(90,245,255,.26)" stroke-width="2"/>
-            <path d="M60 48 H140" stroke="rgba(170,110,255,.20)" stroke-width="2" stroke-linecap="round"/>
-            <path d="M60 66 H120" stroke="rgba(90,245,255,.20)" stroke-width="2" stroke-linecap="round"/>
-          </svg>`;
-      }
-      if (motif === "rhymes"){
-        return `<div class="rhymesLines" aria-hidden="true"></div>`;
-      }
-      if (motif === "recursive"){
-        return `
-          <div class="recursive" aria-hidden="true">
-            <div class="frame"></div>
-            <div class="frame"></div>
-            <div class="frame"></div>
-          </div>`;
-      }
-      if (motif === "connectome"){
-        return `
-          <svg class="connectome" viewBox="0 0 240 170" aria-hidden="true">
-            <defs>
-              <linearGradient id="cgrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="rgba(90,245,255,.34)"/>
-                <stop offset="1" stop-color="rgba(170,110,255,.26)"/>
-              </linearGradient>
-            </defs>
-            <path id="cpath1" d="M50 40 C90 30, 120 40, 150 66" stroke="url(#cgrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-dasharray="2 8"/>
-            <path id="cpath2" d="M60 120 C95 95, 130 92, 170 70" stroke="url(#cgrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-dasharray="2 8"/>
-            <path id="cpath3" d="M60 120 C92 132, 132 132, 182 120" stroke="rgba(255,198,105,.20)" stroke-width="2" fill="none" stroke-linecap="round" stroke-dasharray="2 8"/>
-            <circle cx="50" cy="40" r="6" fill="rgba(90,245,255,.42)"/>
-            <circle cx="60" cy="120" r="6" fill="rgba(170,110,255,.34)"/>
-            <circle cx="182" cy="120" r="6" fill="rgba(255,198,105,.26)"/>
-          </svg>`;
-      }
-      return "";
-    }
 
-    function renderPanelHTML(id, mode /* "preview" | "pinned" */){
-      const r = REGIONS[id];
-      if (!r) return "";
-
-      const modeCls = (mode === "pinned") ? "isPinned" : "isPreview";
-      const linksHtml = (r.isConnect)
-        ? "" // custom connect layout below
-        : `<div class="actions">${
-            r.links.map(l => `<a class="pill ${esc(l.cls||'')}" target="_blank" rel="noreferrer" href="${esc(l.href)}">${esc(l.label)}</a>`).join("")
-          }</div>`;
-
-      const connectButtons = r.isConnect ? `
-        <div class="connectBtnRow">
-          <a class="iconBtn" target="_blank" rel="noreferrer" href="https://github.com/gevak" data-social="github">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="rgba(232,241,244,.85)" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.69c-2.77.6-3.35-1.17-3.35-1.17-.45-1.15-1.11-1.46-1.11-1.46-.9-.62.07-.61.07-.61 1 .07 1.52 1.03 1.52 1.03.89 1.52 2.34 1.08 2.91.83.09-.64.35-1.08.63-1.33-2.21-.25-4.54-1.1-4.54-4.9 0-1.08.39-1.96 1.03-2.65-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.6 9.6 0 0 1 12 6.8c.85 0 1.7.11 2.5.33 1.9-1.29 2.74-1.02 2.74-1.02.55 1.37.2 2.39.1 2.64.64.69 1.03 1.57 1.03 2.65 0 3.81-2.34 4.65-4.57 4.89.36.31.68.92.68 1.85v2.74c0 .26.18.58.69.48A10 10 0 0 0 12 2z"/></svg>
-            <div class="iconLabel">GitHub</div>
-          </a>
-          <a class="iconBtn" target="_blank" rel="noreferrer" href="https://linkedin.com/in/gevakip" data-social="linkedin">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="rgba(232,241,244,.85)" d="M4.98 3.5A2.5 2.5 0 0 1 7.5 6a2.5 2.5 0 0 1-2.52 2.5A2.5 2.5 0 0 1 2.5 6 2.5 2.5 0 0 1 4.98 3.5zM3 9h4v12H3V9zm7 0h3.8v1.64h.05c.53-1 1.83-2.05 3.76-2.05 4.02 0 4.77 2.65 4.77 6.09V21h-4v-5.41c0-1.29-.02-2.95-1.8-2.95-1.8 0-2.08 1.4-2.08 2.86V21h-4V9z"/></svg>
-            <div class="iconLabel">LinkedIn</div>
-          </a>
-          <a class="iconBtn" target="_blank" rel="noreferrer" href="https://facebook.com/geva.kipper" data-social="facebook">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="rgba(232,241,244,.85)" d="M22 12a10 10 0 1 0-11.56 9.87v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.23.2 2.23.2v2.46h-1.26c-1.24 0-1.62.77-1.62 1.56V12h2.76l-.44 2.88h-2.32v6.99A10 10 0 0 0 22 12z"/></svg>
-            <div class="iconLabel">Facebook</div>
-          </a>
-        </div>
-        <div class="actions" style="margin-top:12px">
-          <a class="pill primary" target="_blank" rel="noreferrer" href="https://github.com/gevak">github.com/gevak</a>
-          <a class="pill violet" target="_blank" rel="noreferrer" href="https://linkedin.com/in/gevakip">linkedin.com/in/gevakip</a>
-          <a class="pill amber" target="_blank" rel="noreferrer" href="https://facebook.com/geva.kipper">facebook.com/geva.kipper</a>
-        </div>
-      ` : "";
-
-      const tags = `<div class="tags">${r.tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div>`;
-
-      // Notice text differs between preview/pinned
-      const hint = (mode === "pinned")
-        ? `<div class="panelNotice">Pinned selection. Hover other regions to preview; click a new region to pin it. <span class="kbd">Esc</span> clears.</div>`
-        : `<div class="panelNotice">Hover to preview. Click to pin and expand actions.</div>`;
-
-      return `
-        <div class="${modeCls}">
-          <div class="panelCard">
-            ${motifMarkup(r.motif)}
-            <div class="panelMeta">
-              <div>
-                <h2 class="panelTitle">${esc(r.title)}</h2>
-                <div class="panelKicker">${esc(r.kicker)}</div>
-              </div>
-              <div style="text-align:right; min-width: 120px;">
-                <div class="panelKicker" style="color: rgba(255,198,105,.70);">Signal</div>
-                <div style="font-family:var(--mono); font-size:12px; letter-spacing:.08em; color: rgba(232,241,244,.72);">
-                  ${(0.62 + rnd()*0.30).toFixed(2)} kHz
+      function headerMarkup(theme){
+        if (theme === "lz"){
+          return `
+            <div class="cardHeader" aria-hidden="true">
+              <div class="lz">
+                <div class="track">
+                  <div class="block"></div>
+                  <div class="block"></div>
+                  <div class="block"></div>
+                  <div class="block"></div>
+                  <div class="block"></div>
+                  <div class="block"></div>
                 </div>
               </div>
-            </div>
-
-            <p class="panelSummary">${esc(r.summary)}</p>
-
-            ${tags}
-
-            ${r.isConnect ? connectButtons : (mode === "pinned" ? linksHtml : "")}
-
-            ${r.motif === "bubble" ? (mode === "pinned" ? `<div class="rating" aria-hidden="true"></div>` : ``) : ``}
-          </div>
-
-          ${hint}
-        </div>
-      `;
-    }
-
-    /***********************
-     * Interaction: regions -> dock + synapse
-     ************************/
-    const svg = document.getElementById('brain');
-    const regionsG = document.getElementById('regions');
-    const hintCircle = document.getElementById('regionHint');
-    const synapsePath = document.getElementById('synapsePath');
-    const contours = document.getElementById('brainContours');
-
-    const dockPanel = document.getElementById('dockPanel');
-    const sheet = document.getElementById('sheet');
-    const sheetBody = document.getElementById('sheetBody');
-    const sheetClose = document.getElementById('sheetClose');
-
-    let hoveredId = null;
-    let pinnedId = "meta"; // default center
-    let pointerInMap = false;
-    let lastNearest = null;
-
-    function isMobile(){
-      return window.matchMedia("(max-width: 820px)").matches;
-    }
-
-    function clearRegionsActive(){
-      [...regionsG.querySelectorAll('.region')].forEach(el => el.classList.remove('active'));
-    }
-
-    function setRegionsDim(dim){
-      if (dim) regionsG.classList.add('regionsDim');
-      else regionsG.classList.remove('regionsDim');
-    }
-
-    function setActiveRegion(id){
-      clearRegionsActive();
-      const el = regionsG.querySelector(`.region[data-id="${id}"]`);
-      if (el) el.classList.add('active');
-    }
-
-    function getRegionCenter(el){
-      // Use the dot as a stable anchor
-      const dot = el.querySelector('.dot');
-      const cx = parseFloat(dot.getAttribute('cx'));
-      const cy = parseFloat(dot.getAttribute('cy'));
-      return {cx, cy};
-    }
-
-    function mapPointToViewport(x, y){
-      const pt = svg.createSVGPoint();
-      pt.x = x; pt.y = y;
-      const screen = pt.matrixTransform(svg.getScreenCTM());
-      return {x: screen.x, y: screen.y};
-    }
-
-    function computeSynapsePath(fromCx, fromCy){
-      // Target: dock (desktop) or bottom sheet (mobile)
-      const from = mapPointToViewport(fromCx, fromCy);
-
-      let to;
-      if (!isMobile()){
-        const dockRect = document.querySelector('aside.dock')?.getBoundingClientRect();
-        to = { x: dockRect.left + 18, y: dockRect.top + Math.min(220, dockRect.height * 0.32) };
-      } else {
-        const sheetRect = sheet.getBoundingClientRect();
-        const y = sheet.classList.contains('open') ? (sheetRect.top + 30) : (window.innerHeight - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--footerH')) || 44) - 26);
-        to = { x: window.innerWidth * 0.62, y };
-      }
-
-      // Convert viewport target back into SVG coords
-      const inv = svg.getScreenCTM().inverse();
-      const pt = svg.createSVGPoint();
-      pt.x = to.x; pt.y = to.y;
-      const toSvg = pt.matrixTransform(inv);
-
-      const dx = (toSvg.x - fromCx);
-      const c1 = { x: fromCx + dx * 0.35, y: fromCy - 50 };
-      const c2 = { x: fromCx + dx * 0.70, y: toSvg.y + 30 };
-
-      return `M ${fromCx} ${fromCy} C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${toSvg.x} ${toSvg.y}`;
-    }
-
-    function animateSynapse(fromEl){
-      if (!fromEl) return;
-      const {cx, cy} = getRegionCenter(fromEl);
-      const d = computeSynapsePath(cx, cy);
-      synapsePath.setAttribute('d', d);
-      synapsePath.style.opacity = "1";
-
-      // restart dash animation
-      const len = synapsePath.getTotalLength();
-      synapsePath.style.transition = "none";
-      synapsePath.style.strokeDasharray = "7 7";
-      synapsePath.style.strokeDashoffset = String(len);
-      // force reflow
-      synapsePath.getBoundingClientRect();
-      synapsePath.style.transition = "stroke-dashoffset .55s ease, opacity .18s ease";
-      synapsePath.style.strokeDashoffset = "0";
-    }
-
-    function hideSynapse(){
-      synapsePath.style.opacity = "0";
-    }
-
-    function showPanel(id, mode){
-      const html = renderPanelHTML(id, mode);
-      if (!isMobile()){
-        dockPanel.innerHTML = html;
-      } else {
-        sheetBody.innerHTML = html;
-        if (mode === "pinned"){
-          sheet.classList.add('open');
+              <div class="compressAnim" aria-hidden="true">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+              </div>
+            </div>`;
         }
+        if (theme === "heat"){
+          return `
+            <div class="cardHeader" aria-hidden="true">
+              <div class="city"></div>
+              <div class="thermal"></div>
+            </div>`;
+        }
+        if (theme === "geom"){
+          return `
+            <div class="cardHeader blueprint" aria-hidden="true">
+              <svg viewBox="0 0 320 140" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="bp" x1="0" x2="1">
+                    <stop offset="0" stop-color="rgba(110,231,224,0.55)"/>
+                    <stop offset="1" stop-color="rgba(210,225,255,0.35)"/>
+                  </linearGradient>
+                </defs>
+                <g opacity="0.95">
+                  <path d="M20 22H300" stroke="rgba(200,220,255,0.10)" stroke-width="2"/>
+                  <path d="M20 118H300" stroke="rgba(200,220,255,0.10)" stroke-width="2"/>
+                  <g class="stepPoly step1">
+                    <path d="M78 44 L130 26 L186 44 L170 96 L104 106 Z"
+                      fill="rgba(210,225,255,0.04)"
+                      stroke="url(#bp)" stroke-width="2.2"/>
+                    <path d="M104 106 L130 26" stroke="rgba(200,220,255,0.16)" stroke-width="1.4" stroke-dasharray="4 5"/>
+                  </g>
+                  <g class="stepPoly step2">
+                    <path d="M198 38 L254 44 L268 90 L214 104 L188 74 Z"
+                      fill="rgba(210,225,255,0.03)"
+                      stroke="rgba(139,92,246,0.45)" stroke-width="2.1"/>
+                  </g>
+                  <g class="stepPoly step3">
+                    <path d="M44 62 L62 36 L88 52 L78 86 L50 88 Z"
+                      fill="rgba(210,225,255,0.03)"
+                      stroke="rgba(251,191,36,0.44)" stroke-width="2.1"/>
+                  </g>
+
+                  <g class="pushArrow" opacity="0.86">
+                    <path d="M152 68h80" stroke="rgba(234,240,255,0.32)" stroke-width="2"/>
+                    <path d="M232 68l-10-7m10 7l-10 7" stroke="rgba(234,240,255,0.32)" stroke-width="2" fill="none"/>
+                    <text x="152" y="60" fill="rgba(183,192,216,0.75)" font-family="ui-monospace" font-size="11">push plan</text>
+                  </g>
+                </g>
+              </svg>
+            </div>`;
+        }
+        if (theme === "arena"){
+          return `
+            <div class="cardHeader" aria-hidden="true">
+              <div class="arena">
+                <div class="bubble"></div>
+                <div class="vs">vs</div>
+                <div class="bubble"></div>
+              </div>
+              <div class="punct">?!</div>
+              <div class="score"><div class="scoreFill"></div></div>
+            </div>`;
+        }
+        if (theme === "rhyme"){
+          return `
+            <div class="cardHeader" aria-hidden="true">
+              <div class="headline">
+                <div class="tabs">
+                  <div class="tab"></div><div class="tab" style="width:40px;opacity:.75"></div><div class="tab" style="width:32px;opacity:.55"></div>
+                </div>
+                <div class="line rewrite tokenJitter" data-a="Breaking: coalition debates budget…" data-b="Budget? We fudge it — then we judge it.">
+                  <span>B</span><span>r</span><span>e</span><span>a</span><span>k</span><span>i</span><span>n</span><span>g</span><span>:</span>
+                  <span>&nbsp;</span><span>h</span><span>e</span><span>a</span><span>d</span><span>l</span><span>i</span><span>n</span><span>e</span><span>s</span><span>&nbsp;</span><span>→</span><span>&nbsp;</span><span>r</span><span>h</span><span>y</span><span>m</span><span>e</span>
+                </div>
+                <div class="line" style="color:rgba(183,192,216,0.88)">tokens decode with just enough mischief</div>
+              </div>
+            </div>`;
+        }
+        if (theme === "meta"){
+          return `
+            <div class="cardHeader" aria-hidden="true">
+              <canvas class="miniNet viz"></canvas>
+            </div>`;
+        }
+        if (theme === "links"){
+          return `
+            <div class="cardHeader" aria-hidden="true">
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+                <div style="text-align:center;">
+                  <div style="font-family:var(--mono);letter-spacing:.18em;text-transform:uppercase;font-size:12px;color:rgba(183,192,216,.78);">
+                    output layer
+                  </div>
+                  <div style="margin-top:6px;font-size:13.5px;color:rgba(234,240,255,.78);">
+                    select a final pointer
+                  </div>
+                </div>
+              </div>
+            </div>`;
+        }
+        return `<div class="cardHeader" aria-hidden="true"></div>`;
       }
-    }
 
-    function setHover(id){
-      hoveredId = id;
-      const el = regionsG.querySelector(`.region[data-id="${id}"]`);
-      if (!el) return;
+      function cardMarkup(card, index){
+        const a = accentFor(index);
+        const confBase = 0.60 + rng() * 0.09; // ~0.60..0.69 initial
+        const confHi   = 0.88 + rng() * 0.05; // ~0.88..0.93 on hover
+        const span = card.span === 12 ? 'data-span="12"' : '';
+        const isLinks = card.theme === "links";
+        return `
+          <article class="card ${isLinks ? 'linksCard' : ''}"
+            data-id="${card.id}"
+            data-theme="${card.theme}"
+            data-accent="${a}"
+            data-confbase="${confBase.toFixed(2)}"
+            data-confhi="${confHi.toFixed(2)}"
+            ${span}
+          >
+            <div class="scanline" aria-hidden="true"></div>
+            <div class="cardInner">
+              ${headerMarkup(card.theme)}
+              <div class="cardTitleRow">
+                <div>
+                  <h3 class="cardTitle">${card.title}</h3>
+                </div>
+                <div class="confidence" aria-label="Confidence meter">
+                  <label>confidence</label>
+                  <div class="meter" aria-hidden="true"><div class="meterFill"></div></div>
+                  <div class="meterValue">${confBase.toFixed(2)}</div>
+                </div>
+              </div>
 
-      // Dim others unless nothing pinned? keep pinned dimming on hover too.
-      setRegionsDim(true);
-      setActiveRegion(pinnedId);
+              <p class="summary">${card.summary}</p>
 
-      // preview in dock/sheet
-      if (id !== pinnedId){
-        showPanel(id, "preview");
-      } else {
-        showPanel(id, "pinned");
+              ${card.theme !== "links" ? makeArtifacts(card.artifacts) : `
+                <div class="linkRows" aria-label="Presence links">
+                  <a class="linkRow" href="https://github.com/gevak" target="_blank" rel="noopener noreferrer" data-row="github">
+                    <div class="left">${iconSVG('github')} <span>GitHub</span></div>
+                    <div class="go"><span class="hint">github.com/gevak</span> ${iconSVG('arrow')}</div>
+                  </a>
+                  <a class="linkRow" href="https://linkedin.com/in/gevakip" target="_blank" rel="noopener noreferrer" data-row="linkedin">
+                    <div class="left">${iconSVG('linkedin')} <span>LinkedIn</span></div>
+                    <div class="go"><span class="hint">linkedin.com/in/gevakip</span> ${iconSVG('arrow')}</div>
+                  </a>
+                  <a class="linkRow" href="https://facebook.com/geva.kipper" target="_blank" rel="noopener noreferrer" data-row="facebook">
+                    <div class="left">${iconSVG('facebook')} <span>Facebook</span></div>
+                    <div class="go"><span class="hint">facebook.com/geva.kipper</span> ${iconSVG('arrow')}</div>
+                  </a>
+                </div>
+              `}
+            </div>
+          </article>
+        `;
       }
 
-      animateSynapse(el);
-    }
+      grid.innerHTML = shuffled.map((c, i) => cardMarkup(c, i)).join('');
 
-    function setPinned(id){
-      pinnedId = id;
-      setActiveRegion(id);
-      setRegionsDim(true);
-      showPanel(id, "pinned");
+      // Apply per-card accent (border glow + meter color) via inline CSS vars
+      const cardEls = Array.from(document.querySelectorAll('.card'));
+      cardEls.forEach((el) => {
+        el.style.setProperty('--accent', el.dataset.accent);
+        // set initial confidence width
+        const base = parseFloat(el.dataset.confbase || "0.62");
+        const fill = el.querySelector('.meterFill');
+        const val  = el.querySelector('.meterValue');
+        if (fill) fill.style.width = Math.round(base * 100) + "%";
+        if (val)  val.textContent = base.toFixed(2);
+      });
 
-      const el = regionsG.querySelector(`.region[data-id="${id}"]`);
-      animateSynapse(el);
-    }
+      /* -----------------------------
+         Rhyme header text morph (lightweight)
+      ------------------------------*/
+      function setRewriteLine(el, text){
+        // token-ish rendering: wrap chars in spans for subtle "decode" feel
+        el.innerHTML = [...text].map(ch => `<span>${ch === ' ' ? '&nbsp;' : ch.replace(/</g,'&lt;')}</span>`).join('');
+      }
+      document.querySelectorAll('.rewrite').forEach(line => {
+        const a = line.getAttribute('data-a');
+        if (a) setRewriteLine(line, a);
+      });
+      // On hover swap to rhyming line and back
+      cardEls.forEach(card => {
+        if (card.dataset.theme !== "rhyme") return;
+        const line = card.querySelector('.rewrite');
+        const a = line?.getAttribute('data-a') || '';
+        const b = line?.getAttribute('data-b') || '';
+        if (!line) return;
+        card.addEventListener('mouseenter', () => setRewriteLine(line, b));
+        card.addEventListener('mouseleave', () => setRewriteLine(line, a));
+      });
 
-    // Default panel
-    setPinned(pinnedId);
+      /* -----------------------------
+         Mini network canvas for meta card
+      ------------------------------*/
+      function drawMiniNetwork(canvas, t, accentHex){
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        const w = canvas.clientWidth, h = canvas.clientHeight;
+        if (!w || !h) return;
+        if (canvas.width !== Math.floor(w*dpr) || canvas.height !== Math.floor(h*dpr)){
+          canvas.width = Math.floor(w*dpr); canvas.height = Math.floor(h*dpr);
+        }
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+        ctx.clearRect(0,0,w,h);
 
-    // Daily subtle region rebalancing (jitter)
-    (function applyDailyJitter(){
-      const regions = [...regionsG.querySelectorAll('.region')];
-      const magnitude = 8 + Math.round(rnd()*8); // 8..16 px
-      regions.forEach((g, i) => {
-        const jx = Math.round((rnd() - .5) * magnitude);
-        const jy = Math.round((rnd() - .5) * magnitude);
-        // apply to dot, hit, label
-        g.querySelectorAll('circle, text').forEach(node => {
-          const tag = node.tagName.toLowerCase();
-          if (tag === 'text') {
-            node.setAttribute('x', (parseFloat(node.getAttribute('x')) + jx).toString());
-            node.setAttribute('y', (parseFloat(node.getAttribute('y')) + jy).toString());
-          } else {
-            const cx = parseFloat(node.getAttribute('cx'));
-            const cy = parseFloat(node.getAttribute('cy'));
-            if (!Number.isNaN(cx) && !Number.isNaN(cy)) {
-              node.setAttribute('cx', (cx + jx).toString());
-              node.setAttribute('cy', (cy + jy).toString());
-            }
+        // background vignette
+        const g = ctx.createRadialGradient(w*0.35, h*0.35, 10, w*0.5, h*0.6, Math.max(w,h));
+        g.addColorStop(0, "rgba(255,255,255,0.06)");
+        g.addColorStop(1, "rgba(255,255,255,0.00)");
+        ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+
+        const nodes = [
+          {x:w*0.22,y:h*0.55},{x:w*0.34,y:h*0.30},{x:w*0.42,y:h*0.60},
+          {x:w*0.56,y:h*0.38},{x:w*0.70,y:h*0.56},{x:w*0.78,y:h*0.32},
+        ];
+        const edges = [[0,1],[0,2],[1,3],[2,3],[3,4],[4,5],[3,5]];
+        ctx.lineWidth = 1.1;
+
+        edges.forEach(([a,b], idx) => {
+          const A = nodes[a], B = nodes[b];
+          const pulse = 0.5 + 0.5*Math.sin(t*2.1 + idx*1.2);
+          ctx.strokeStyle = `rgba(200,220,255,${0.10 + 0.10*pulse})`;
+          ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y); ctx.stroke();
+          // traveling signal
+          if (!reducedMotion){
+            const tt = (t*0.18 + idx*0.11) % 1;
+            const x = A.x + (B.x-A.x)*tt;
+            const y = A.y + (B.y-A.y)*tt;
+            ctx.fillStyle = `rgba(110,231,224,${0.18 + 0.35*pulse})`;
+            ctx.beginPath(); ctx.arc(x,y, 1.8, 0, Math.PI*2); ctx.fill();
           }
         });
-      });
-    })();
 
-    // Pointer interactions
-    function onRegionEnter(e){
-      const g = e.currentTarget;
-      setHover(g.dataset.id);
-    }
-    function onRegionLeave(){
-      hoveredId = null;
-      hideSynapse();
-      // return to pinned panel
-      showPanel(pinnedId, "pinned");
-      setActiveRegion(pinnedId);
-      setRegionsDim(true);
-    }
-    function onRegionClick(e){
-      const g = e.currentTarget;
-      setPinned(g.dataset.id);
-      if (isMobile()) sheet.classList.add('open');
-    }
-    function onRegionKey(e){
-      if (e.key === "Enter" || e.key === " "){
-        e.preventDefault();
-        setPinned(e.currentTarget.dataset.id);
-        if (isMobile()) sheet.classList.add('open');
+        nodes.forEach((p, i) => {
+          const ph = 0.5 + 0.5*Math.sin(t*1.8 + i);
+          ctx.fillStyle = `rgba(234,240,255,${0.32 + 0.18*ph})`;
+          ctx.beginPath(); ctx.arc(p.x, p.y, 3.2, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = accentHex ? accentHex : "rgba(110,231,224,0.7)";
+          ctx.globalAlpha = 0.12 + 0.10*ph;
+          ctx.beginPath(); ctx.arc(p.x, p.y, 9.5, 0, Math.PI*2); ctx.fill();
+          ctx.globalAlpha = 1;
+        });
+
+        // recursion hint: tiny "card" rectangle
+        ctx.strokeStyle = "rgba(200,220,255,0.16)";
+        ctx.fillStyle = "rgba(12,14,24,0.22)";
+        ctx.lineWidth = 1;
+        const rx = w*0.60, ry = h*0.62, rw = w*0.28, rh = h*0.22;
+        ctx.beginPath();
+        ctx.roundRect(rx, ry, rw, rh, 10);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "rgba(234,240,255,0.66)";
+        ctx.font = "12px " + getComputedStyle(document.documentElement).getPropertyValue('--mono');
+        ctx.fillText("…learning…", rx+10, ry+rh/2+4);
       }
-    }
 
-    [...regionsG.querySelectorAll('.region')].forEach(g => {
-      g.addEventListener('pointerenter', onRegionEnter);
-      g.addEventListener('pointerleave', onRegionLeave);
-      g.addEventListener('click', onRegionClick);
-      g.addEventListener('keydown', onRegionKey);
-    });
+      /* -----------------------------
+         Global "living model" network
+      ------------------------------*/
+      const canvas = document.getElementById('bgCanvas');
+      const ctx = canvas.getContext('2d');
 
-    // Mobile sheet close
-    sheetClose.addEventListener('click', () => sheet.classList.remove('open'));
-
-    // ESC clears pin (returns to meta)
-    window.addEventListener('keydown', (e) => {
-      if (e.key === "Escape"){
-        sheet.classList.remove('open');
-        setPinned("meta");
-      }
-    });
-
-    // Ring highlight near cursor + micro-parallax
-    const mapEl = document.querySelector('.map');
-    mapEl.addEventListener('pointerenter', () => { pointerInMap = true; });
-    mapEl.addEventListener('pointerleave', () => {
-      pointerInMap = false;
-      hintCircle.style.opacity = "0";
-      contours.style.transform = "translate(0px, 0px)";
-    });
-
-    function nearestRegionToSvgPoint(x, y){
-      const regs = [...regionsG.querySelectorAll('.region')];
-      let best = null;
-      let bestD = Infinity;
-      for (const r of regs){
-        const {cx, cy} = getRegionCenter(r);
-        const dx = cx - x;
-        const dy = cy - y;
-        const d = Math.hypot(dx, dy);
-        if (d < bestD){ bestD = d; best = r; }
-      }
-      return {best, bestD};
-    }
-
-    mapEl.addEventListener('pointermove', (ev) => {
-      if (!pointerInMap) return;
-
-      // micro-parallax on contours
-      const rect = mapEl.getBoundingClientRect();
-      const nx = (ev.clientX - (rect.left + rect.width/2)) / rect.width;
-      const ny = (ev.clientY - (rect.top + rect.height/2)) / rect.height;
-      const tx = Math.max(-1, Math.min(1, nx)) * 8;
-      const ty = Math.max(-1, Math.min(1, ny)) * 7;
-      contours.style.transform = `translate(${tx}px, ${ty}px)`;
-
-      // ring highlight: find nearest region in SVG coords
-      const inv = svg.getScreenCTM().inverse();
-      const pt = svg.createSVGPoint();
-      pt.x = ev.clientX; pt.y = ev.clientY;
-      const p = pt.matrixTransform(inv);
-
-      const {best, bestD} = nearestRegionToSvgPoint(p.x, p.y);
-      const threshold = 62;
-      if (best && bestD < threshold){
-        const {cx, cy} = getRegionCenter(best);
-        hintCircle.setAttribute('cx', cx);
-        hintCircle.setAttribute('cy', cy);
-        hintCircle.setAttribute('r', (18 + (1 - bestD/threshold) * 10).toFixed(1));
-        hintCircle.style.opacity = String(0.25 + (1 - bestD/threshold) * 0.55);
-
-        if (lastNearest !== best){
-          lastNearest = best;
+      const net = {
+        dpr: 1,
+        w: 0,
+        h: 0,
+        nodes: [],
+        edges: [],
+        particles: [],
+        hoveredCard: null,
+        hoveredRow: null, // for links/output
+        pulse: { active:false, t0:0, reason:"" },
+        lastNow: performance.now(),
+        clusterTargets: [],
+        requestPulse(reason="scroll"){
+          if (reducedMotion) return;
+          this.pulse = { active:true, t0: performance.now(), reason };
         }
-      } else {
-        hintCircle.style.opacity = "0";
-        lastNearest = null;
+      };
+
+      function resize(){
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        net.dpr = dpr;
+        net.w = canvas.width = Math.floor(innerWidth * dpr);
+        net.h = canvas.height = Math.floor(innerHeight * dpr);
+        canvas.style.width = innerWidth + "px";
+        canvas.style.height = innerHeight + "px";
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+
+        // build nodes (seeded stable-ish)
+        buildNetwork();
       }
-    });
+      window.addEventListener('resize', resize);
 
-    // Keep synapse target updated on resize (dock/sheet changes)
-    window.addEventListener('resize', () => {
-      const el = regionsG.querySelector(`.region[data-id="${hoveredId || pinnedId}"]`);
-      if (el) animateSynapse(el);
-    });
-    window.addEventListener('scroll', () => {
-      const el = regionsG.querySelector(`.region[data-id="${hoveredId || pinnedId}"]`);
-      if (el) animateSynapse(el);
-    }, {passive:true});
+      function buildNetwork(){
+        // Node field: 3 clusters + some outliers; clusters drift over time.
+        const w = innerWidth, h = innerHeight;
 
-    /***********************
-     * EEG strip animation (aesthetic; reacts to scroll + hover intensity)
-     ************************/
-    const eeg = document.getElementById('eeg');
-    const eegCtx = eeg.getContext('2d');
-    function resizeEEG(){
-      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-      const rect = eeg.getBoundingClientRect();
-      eeg.width = Math.round(rect.width * dpr);
-      eeg.height = Math.round(rect.height * dpr);
-      eegCtx.setTransform(dpr,0,0,dpr,0,0);
-    }
-    resizeEEG();
-    window.addEventListener('resize', resizeEEG);
+        const clusters = [
+          { cx: 0.30 + (rng()-0.5)*0.08, cy: 0.35 + (rng()-0.5)*0.06, r: 0.16 },
+          { cx: 0.62 + (rng()-0.5)*0.08, cy: 0.40 + (rng()-0.5)*0.06, r: 0.18 },
+          { cx: 0.48 + (rng()-0.5)*0.08, cy: 0.68 + (rng()-0.5)*0.06, r: 0.20 },
+        ];
 
-    let eegT = 0;
-    let scrollV = 0;
-    let lastScrollY = window.scrollY;
+        const N = 58;
+        const nodes = [];
+        for (let i=0;i<N;i++){
+          const c = clusters[Math.floor(rng()*clusters.length)];
+          const ang = rng()*Math.PI*2;
+          const rad = (0.12 + rng()*0.88) * c.r;
+          const x = c.cx + Math.cos(ang)*rad + (rng()-0.5)*0.02;
+          const y = c.cy + Math.sin(ang)*rad + (rng()-0.5)*0.02;
 
-    window.addEventListener('scroll', () => {
-      const y = window.scrollY;
-      scrollV = (y - lastScrollY);
-      lastScrollY = y;
-    }, {passive:true});
+          nodes.push({
+            x, y,
+            vx: 0, vy: 0,
+            baseX: x, baseY: y,
+            glow: 0.0,
+            phase: rng()*Math.PI*2
+          });
+        }
 
-    function drawEEG(){
-      const w = eeg.getBoundingClientRect().width;
-      const h = eeg.getBoundingClientRect().height;
-      eegCtx.clearRect(0,0,w,h);
+        // Add a "hero center" anchor node
+        nodes.unshift({
+          x: 0.50, y: 0.42,
+          vx: 0, vy: 0,
+          baseX: 0.50, baseY: 0.42,
+          glow: 0.35,
+          phase: 0
+        });
 
-      // baseline grid
-      eegCtx.globalAlpha = 1;
-      eegCtx.strokeStyle = "rgba(255,255,255,.07)";
-      eegCtx.lineWidth = 1;
-      eegCtx.beginPath();
-      for (let x=0; x<=w; x+=28){
-        eegCtx.moveTo(x, 0);
-        eegCtx.lineTo(x, h);
+        // Edges: k-nearest
+        const edges = [];
+        const k = 3;
+        for (let i=0;i<nodes.length;i++){
+          const dists = [];
+          for (let j=0;j<nodes.length;j++){
+            if (i===j) continue;
+            const dx = nodes[i].x - nodes[j].x;
+            const dy = nodes[i].y - nodes[j].y;
+            const d2 = dx*dx + dy*dy;
+            dists.push({ j, d2 });
+          }
+          dists.sort((a,b)=>a.d2-b.d2);
+          for (let m=0;m<k;m++){
+            const j = dists[m].j;
+            const a = Math.min(i,j), b = Math.max(i,j);
+            const key = a + "-" + b;
+            if (!edges.some(e => e.key === key)){
+              edges.push({ a, b, key, strength: 0 });
+            }
+          }
+        }
+
+        // Particles: one per edge to feel alive (moderate count)
+        const particles = [];
+        for (let i=0;i<edges.length;i++){
+          if (rng() < 0.65){
+            particles.push({ e: i, t: rng(), speed: 0.10 + rng()*0.16 });
+          }
+        }
+
+        net.nodes = nodes;
+        net.edges = edges;
+        net.particles = particles;
+
+        // Drift targets (clusters "learning")
+        net.clusterTargets = clusters.map(c => ({
+          cx: c.cx + (rng()-0.5)*0.10,
+          cy: c.cy + (rng()-0.5)*0.10
+        }));
       }
-      eegCtx.stroke();
 
-      // waveform
-      const amp = 3.5 + Math.min(10, Math.abs(scrollV)*0.18) + (pointerInMap ? 5.2 : 0.0);
-      const base = h * 0.52;
-
-      // gradient stroke
-      const grad = eegCtx.createLinearGradient(0,0,w,0);
-      grad.addColorStop(0, "rgba(90,245,255,.25)");
-      grad.addColorStop(0.5, "rgba(90,245,255,.65)");
-      grad.addColorStop(1, "rgba(170,110,255,.32)");
-
-      eegCtx.strokeStyle = grad;
-      eegCtx.lineWidth = 2;
-      eegCtx.beginPath();
-      for (let x=0; x<=w; x++){
-        const t = eegT + x * 0.018;
-        const y = base
-          + Math.sin(t) * amp
-          + Math.sin(t*2.2 + 1.3) * (amp*0.35)
-          + Math.sin(t*0.52 + 2.0) * (amp*0.55);
-        if (x === 0) eegCtx.moveTo(x, y);
-        else eegCtx.lineTo(x, y);
+      // Compute a card anchor point in viewport -> normalized canvas coords
+      function elementAnchor(el){
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        const x = Math.max(0, Math.min(innerWidth,  r.left + r.width*0.5));
+        const y = Math.max(0, Math.min(innerHeight, r.top + Math.min(80, r.height*0.22))); // toward header
+        return { x: x / innerWidth, y: y / innerHeight };
       }
-      eegCtx.stroke();
 
-      // mild decay of scroll velocity
-      scrollV *= 0.90;
-      eegT += 0.06;
-      requestAnimationFrame(drawEEG);
-    }
-    requestAnimationFrame(drawEEG);
+      // Highlight path from hero center to card anchor: choose closest nodes along a direction.
+      function computePathTo(target){
+        if (!target) return [];
+        const nodes = net.nodes;
+        const start = 0; // hero center node index
+        const tx = target.x, ty = target.y;
 
-    /***********************
-     * Noise canvas (subtle, animated)
-     ************************/
-    const noiseCanvas = document.getElementById('noise');
-    const nctx = noiseCanvas.getContext('2d', { alpha: true });
-    let nW=0, nH=0, nImg=null;
-    function resizeNoise(){
-      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-      nW = Math.floor(innerWidth * dpr);
-      nH = Math.floor(innerHeight * dpr);
-      noiseCanvas.width = nW;
-      noiseCanvas.height = nH;
-      noiseCanvas.style.width = innerWidth + "px";
-      noiseCanvas.style.height = innerHeight + "px";
-      nImg = nctx.createImageData(nW, nH);
-    }
-    resizeNoise();
-    window.addEventListener('resize', resizeNoise);
+        // Greedy stepping: repeatedly choose neighbor that reduces distance to target.
+        const neighbors = new Map();
+        net.edges.forEach((e, idx) => {
+          if (!neighbors.has(e.a)) neighbors.set(e.a, []);
+          if (!neighbors.has(e.b)) neighbors.set(e.b, []);
+          neighbors.get(e.a).push(e.b);
+          neighbors.get(e.b).push(e.a);
+        });
 
-    // Daily noise "pattern change": use seeded RNG with some time drift
-    let noiseTick = 0;
-    function paintNoise(){
-      if (!nImg) return;
-      const data = nImg.data;
-      // keep it light: sample every few pixels
-      const stride = 4;
-      const t = noiseTick++;
-      for (let i=0; i<data.length; i+=4*stride){
-        const v = (rnd() * 255) | 0;
-        data[i] = v;
-        data[i+1] = v;
-        data[i+2] = v;
-        data[i+3] = 22 + ((v + t) % 28); // alpha
+        const visited = new Set([start]);
+        const path = [start];
+        let cur = start;
+
+        for (let step=0; step<10; step++){
+          const nbs = neighbors.get(cur) || [];
+          let best = null;
+          let bestD = Infinity;
+          for (const j of nbs){
+            if (visited.has(j)) continue;
+            const dx = nodes[j].x - tx;
+            const dy = nodes[j].y - ty;
+            const d = dx*dx + dy*dy;
+            if (d < bestD){
+              bestD = d; best = j;
+            }
+          }
+          if (best == null) break;
+          visited.add(best);
+          path.push(best);
+          cur = best;
+          if (bestD < 0.003) break;
+        }
+        return path;
       }
-      nctx.putImageData(nImg, 0, 0);
-    }
-    // ~12fps
-    setInterval(paintNoise, 84);
 
-    /***********************
-     * Footer uptime stopwatch
-     * hours:minutes:seconds since 2025-12-25 01:10:39 (local time)
-     ************************/
-    const start = new Date(2025, 11, 25, 1, 10, 39); // month is 0-based
-    const uptimeEl = document.getElementById('uptime');
+      function draw(now){
+        const w = innerWidth, h = innerHeight;
+        ctx.clearRect(0,0,w,h);
 
-    function pad2(n){ return String(n).padStart(2,'0'); }
-    function updateUptime(){
-      const diff = Math.max(0, Date.now() - start.getTime());
-      const totalSec = Math.floor(diff/1000);
-      const hh = Math.floor(totalSec/3600);
-      const mm = Math.floor((totalSec%3600)/60);
-      const ss = totalSec%60;
-      uptimeEl.textContent = `Uptime Since Scan Start: ${pad2(hh)}:${pad2(mm)}:${pad2(ss)}`;
-    }
-    updateUptime();
-    setInterval(updateUptime, 1000);
+        // background soft gradient overlay (canvas side)
+        const bg = ctx.createLinearGradient(0, 0, w, h);
+        bg.addColorStop(0, "rgba(7, 8, 16, 0.0)");
+        bg.addColorStop(1, "rgba(11, 12, 26, 0.55)");
+        ctx.fillStyle = bg;
+        ctx.fillRect(0,0,w,h);
 
-    /***********************
-     * Gentle "AI daily redesign" polish:
-     * small global brain shift + contour hue drift (already set)
-     ************************/
-    const shiftX = Math.round((rnd() - 0.5) * 8);
-    const shiftY = Math.round((rnd() - 0.5) * 6);
-    root.style.setProperty('--brainShiftX', shiftX + "px");
-    root.style.setProperty('--brainShiftY', shiftY + "px");
+        const dt = Math.min(0.05, (now - net.lastNow) / 1000);
+        net.lastNow = now;
 
-    // Keep map selection sensible on first paint
-    setActiveRegion(pinnedId);
-    setRegionsDim(true);
+        // "learning": gentle drift + spring back to base
+        const t = now / 1000;
+        const drift = reducedMotion ? 0 : 0.55;
 
-    // If user taps the map background on mobile, close sheet
-    mapEl.addEventListener('click', (e) => {
-      if (!isMobile()) return;
-      if (e.target.closest('.region')) return;
-      sheet.classList.remove('open');
-    });
+        // create mild wandering targets (update occasionally)
+        if (!reducedMotion && Math.floor(t) % 7 === 0 && Math.floor((t-dt)) % 7 !== 0){
+          // nudge base positions slightly, but keep stable
+          for (let i=1; i<net.nodes.length; i++){
+            const n = net.nodes[i];
+            const jitter = (rng() - 0.5) * 0.016;
+            n.baseX = Math.max(0.06, Math.min(0.94, n.baseX + jitter));
+            n.baseY = Math.max(0.06, Math.min(0.94, n.baseY + jitter*0.8));
+          }
+        }
 
+        for (let i=0;i<net.nodes.length;i++){
+          const n = net.nodes[i];
+          const nx = n.baseX + (Math.sin(t*0.6 + n.phase) * 0.012) * drift;
+          const ny = n.baseY + (Math.cos(t*0.7 + n.phase) * 0.010) * drift;
+
+          // simple spring
+          const ax = (nx - n.x) * (reducedMotion ? 0.08 : 0.18);
+          const ay = (ny - n.y) * (reducedMotion ? 0.08 : 0.18);
+          n.vx = (n.vx + ax) * (reducedMotion ? 0.78 : 0.86);
+          n.vy = (n.vy + ay) * (reducedMotion ? 0.78 : 0.86);
+          n.x += n.vx * dt * 60;
+          n.y += n.vy * dt * 60;
+
+          // decay glow
+          n.glow *= (reducedMotion ? 0.92 : 0.90);
+        }
+
+        // Pulse wave (scroll/hover)
+        let wave = null;
+        if (net.pulse.active){
+          const age = (now - net.pulse.t0) / 1000;
+          if (age > 1.25) net.pulse.active = false;
+          else wave = { r: age * 0.55, band: 0.07, strength: 1.0 - age/1.25 };
+        }
+
+        // Hover path target
+        let target = null;
+        if (net.hoveredCard){
+          target = elementAnchor(net.hoveredCard);
+        } else if (net.hoveredRow){
+          target = elementAnchor(net.hoveredRow);
+        }
+        const path = target ? computePathTo(target) : [];
+
+        // Map nodes to pixels
+        function pxX(u){ return u * w; }
+        function pxY(v){ return v * h; }
+
+        // Edges
+        ctx.lineWidth = 1;
+        net.edges.forEach((e, idx) => {
+          const A = net.nodes[e.a], B = net.nodes[e.b];
+          const ax = pxX(A.x), ay = pxY(A.y);
+          const bx = pxX(B.x), by = pxY(B.y);
+
+          const baseAlpha = 0.08;
+          let alpha = baseAlpha;
+
+          // wave highlight
+          if (wave){
+            const mx = (A.x + B.x) * 0.5;
+            const my = (A.y + B.y) * 0.5;
+            const d = Math.hypot(mx - 0.50, my - 0.42);
+            const band = Math.abs(d - wave.r);
+            if (band < wave.band){
+              alpha += (0.18 * (1 - band/wave.band)) * wave.strength;
+            }
+          }
+
+          // path highlight
+          if (path.length){
+            for (let i=0; i<path.length-1; i++){
+              const pa = path[i], pb = path[i+1];
+              if ((e.a===pa && e.b===pb) || (e.a===pb && e.b===pa)){
+                alpha += 0.32;
+                break;
+              }
+            }
+          }
+
+          const accentCol = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#6EE7E0";
+          const stroke = (path.length && alpha > 0.25)
+            ? `rgba(110,231,224,${Math.min(0.55, alpha)})`
+            : `rgba(200,220,255,${Math.min(0.26, alpha)})`;
+
+          ctx.strokeStyle = stroke;
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(bx, by);
+          ctx.stroke();
+        });
+
+        // Traveling signals on edges
+        if (!reducedMotion){
+          for (const p of net.particles){
+            p.t = (p.t + dt * p.speed) % 1;
+            const e = net.edges[p.e];
+            const A = net.nodes[e.a], B = net.nodes[e.b];
+
+            const x = pxX(A.x + (B.x - A.x) * p.t);
+            const y = pxY(A.y + (B.y - A.y) * p.t);
+
+            // brighten if on the highlighted path
+            let boost = 0;
+            if (path.length){
+              for (let i=0; i<path.length-1; i++){
+                const pa = path[i], pb = path[i+1];
+                if ((e.a===pa && e.b===pb) || (e.a===pb && e.b===pa)){
+                  boost = 1;
+                  break;
+                }
+              }
+            }
+
+            ctx.fillStyle = `rgba(110,231,224,${0.10 + 0.22*boost})`;
+            ctx.beginPath();
+            ctx.arc(x, y, 1.35 + 0.6*boost, 0, Math.PI*2);
+            ctx.fill();
+          }
+        }
+
+        // Nodes
+        for (let i=0;i<net.nodes.length;i++){
+          const n = net.nodes[i];
+          const x = pxX(n.x), y = pxY(n.y);
+          const pulse = 0.5 + 0.5*Math.sin(t*1.4 + n.phase);
+          let glow = n.glow;
+
+          // wave increases glow
+          if (wave){
+            const d = Math.hypot(n.x - 0.50, n.y - 0.42);
+            const band = Math.abs(d - wave.r);
+            if (band < wave.band) glow += (0.55 * (1 - band/wave.band)) * wave.strength;
+          }
+
+          // path increases glow
+          if (path.includes(i)) glow += 0.70;
+
+          // halo
+          const haloR = 10 + 10*pulse + 18*glow;
+          const g = ctx.createRadialGradient(x,y,0, x,y, haloR);
+          g.addColorStop(0, `rgba(110,231,224,${0.06 + 0.14*glow})`);
+          g.addColorStop(1, `rgba(110,231,224,0)`);
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(x,y, haloR, 0, Math.PI*2);
+          ctx.fill();
+
+          // core
+          const coreA = 0.22 + 0.14*pulse + 0.26*glow;
+          ctx.fillStyle = `rgba(234,240,255,${Math.min(0.92, coreA)})`;
+          ctx.beginPath();
+          ctx.arc(x,y, 2.0 + 0.6*glow, 0, Math.PI*2);
+          ctx.fill();
+        }
+
+        // A subtle "beam" to hovered card anchor
+        if (target){
+          const sx = pxX(net.nodes[0].x), sy = pxY(net.nodes[0].y);
+          const tx = target.x * w, ty = target.y * h;
+
+          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = `rgba(110,231,224,0.18)`;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          const cx1 = sx + (tx - sx) * 0.35;
+          const cy1 = sy + (ty - sy) * 0.05;
+          const cx2 = sx + (tx - sx) * 0.65;
+          const cy2 = sy + (ty - sy) * 0.95;
+          ctx.bezierCurveTo(cx1,cy1,cx2,cy2,tx,ty);
+          ctx.stroke();
+
+          if (!reducedMotion){
+            const tt = ((t * 0.45) % 1);
+            // point on bezier (approx)
+            function bezier(p0,p1,p2,p3,t){
+              const u=1-t;
+              return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3;
+            }
+            const bx = bezier(sx, cx1, cx2, tx, tt);
+            const by = bezier(sy, cy1, cy2, ty, tt);
+            ctx.fillStyle = "rgba(110,231,224,0.35)";
+            ctx.beginPath();
+            ctx.arc(bx, by, 2.2, 0, Math.PI*2);
+            ctx.fill();
+          }
+        }
+      }
+
+      function loop(now){
+        draw(now);
+
+        // meta mini network redraw
+        const meta = document.querySelector('.card[data-theme="meta"] canvas.miniNet');
+        if (meta){
+          drawMiniNetwork(meta, now/1000, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+        }
+
+        if (!reducedMotion){
+          requestAnimationFrame(loop);
+        }
+      }
+
+      // Reduced-motion mode: redraw at low rate
+      let reducedTimer = null;
+      function startRender(){
+        if (reducedTimer) { clearInterval(reducedTimer); reducedTimer = null; }
+        if (reducedMotion){
+          reducedTimer = setInterval(() => {
+            draw(performance.now());
+            const meta = document.querySelector('.card[data-theme="meta"] canvas.miniNet');
+            if (meta) drawMiniNetwork(meta, performance.now()/1000, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+          }, 180);
+        } else {
+          requestAnimationFrame(loop);
+        }
+      }
+
+      // Re-start rendering when toggle changes
+      const observer = new MutationObserver(() => startRender());
+      observer.observe(app, { attributes:true, attributeFilter:['class'] });
+
+      // Activation on scroll (brief)
+      let lastScrollY = window.scrollY;
+      window.addEventListener('scroll', () => {
+        const dy = Math.abs(window.scrollY - lastScrollY);
+        lastScrollY = window.scrollY;
+        if (dy > 8) net.requestPulse('scroll');
+      }, { passive:true });
+
+      // Hover interactions: card -> path highlight + confidence meter
+      function animateConfidence(card, toHigh){
+        const base = parseFloat(card.dataset.confbase || "0.62");
+        const hi   = parseFloat(card.dataset.confhi || "0.90");
+        const fill = card.querySelector('.meterFill');
+        const val  = card.querySelector('.meterValue');
+        const target = toHigh ? hi : base;
+
+        if (fill) fill.style.width = Math.round(target * 100) + "%";
+
+        // Animate number (small, playful, but restrained)
+        if (!val) return;
+        const start = parseFloat(val.textContent || base);
+        const t0 = performance.now();
+        const dur = reducedMotion ? 0 : 320;
+        if (dur === 0){ val.textContent = target.toFixed(2); return; }
+
+        function step(now){
+          const k = Math.min(1, (now - t0) / dur);
+          const ease = 1 - Math.pow(1-k, 3);
+          const cur = start + (target - start) * ease;
+          val.textContent = cur.toFixed(2);
+          if (k < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      }
+
+      cardEls.forEach(card => {
+        card.addEventListener('mouseenter', () => {
+          net.hoveredCard = card;
+          card.classList.add('active');
+          animateConfidence(card, true);
+          if (!reducedMotion){
+            // brighten nodes along path
+            const target = elementAnchor(card);
+            const path = computePathTo(target);
+            path.forEach(i => { if (net.nodes[i]) net.nodes[i].glow = Math.max(net.nodes[i].glow, 0.8); });
+            net.requestPulse('hover');
+          }
+        });
+        card.addEventListener('mouseleave', () => {
+          if (net.hoveredCard === card) net.hoveredCard = null;
+          card.classList.remove('active');
+          animateConfidence(card, false);
+        });
+      });
+
+      // Links rows: hover should target the row specifically (output selection)
+      document.querySelectorAll('.linkRow').forEach(row => {
+        row.addEventListener('mouseenter', () => {
+          net.hoveredRow = row;
+          net.requestPulse('output');
+        });
+        row.addEventListener('mouseleave', () => {
+          if (net.hoveredRow === row) net.hoveredRow = null;
+        });
+      });
+
+      /* -----------------------------
+         Stopwatch: time since genesis
+      ------------------------------*/
+      const genesis = new Date("2025-12-26T01:10:34");
+      const swEl = document.getElementById('stopwatch');
+
+      function pad2(n){ return String(n).padStart(2,'0'); }
+      function updateStopwatch(){
+        const now = new Date();
+        let diff = Math.max(0, Math.floor((now - genesis) / 1000));
+        const hours = Math.floor(diff / 3600);
+        diff -= hours * 3600;
+        const mins = Math.floor(diff / 60);
+        const secs = diff - mins * 60;
+        swEl.textContent = `${pad2(hours)}:${pad2(mins)}:${pad2(secs)}`;
+      }
+      updateStopwatch();
+      setInterval(updateStopwatch, 1000);
+
+      /* -----------------------------
+         Start
+      ------------------------------*/
+      resize();
+      startRender();
+
+      /* -----------------------------
+         Tiny progressive enhancement:
+         Keyboard focus should also activate path
+      ------------------------------*/
+      document.addEventListener('focusin', (e) => {
+        const card = e.target.closest?.('.card');
+        const row  = e.target.closest?.('.linkRow');
+        if (row){
+          net.hoveredRow = row;
+          net.requestPulse('focus');
+          return;
+        }
+        if (card){
+          net.hoveredCard = card;
+          card.classList.add('active');
+          animateConfidence(card, true);
+          net.requestPulse('focus');
+        }
+      });
+      document.addEventListener('focusout', (e) => {
+        // Clear only if focus moved outside the previously-focused elements
+        if (e.target.closest?.('.linkRow')) net.hoveredRow = null;
+        const card = e.target.closest?.('.card');
+        if (card){
+          card.classList.remove('active');
+          animateConfidence(card, false);
+          if (net.hoveredCard === card) net.hoveredCard = null;
+        }
+      });
+
+      // If the browser doesn't support roundRect
+      if (!CanvasRenderingContext2D.prototype.roundRect) {
+        CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+          r = Math.min(r, w/2, h/2);
+          this.beginPath();
+          this.moveTo(x+r, y);
+          this.arcTo(x+w, y, x+w, y+h, r);
+          this.arcTo(x+w, y+h, x, y+h, r);
+          this.arcTo(x, y+h, x, y, r);
+          this.arcTo(x, y, x+w, y, r);
+          this.closePath();
+          return this;
+        };
+      }
+    })();
   </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20251225",
+          pageId: "20251226",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
