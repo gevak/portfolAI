@@ -2,1887 +2,1500 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Geva Kipper — Neural Network Visualizer</title>
-  <meta name="description" content="A single-page portfolio that behaves like a living neural network training on Geva Kipper." />
+  <meta name="color-scheme" content="dark" />
+  <title>Geva Kipper — Living Unit-Test Portfolio</title>
   <style>
     :root{
-      --bg0:#090A0F;
-      --bg1:#0D0F1A;
-      --bg2:#0A0B12;
-      --ink:#EAF0FF;
-      --muted:#B7C0D8;
-      --subtle:#7F8AA6;
-      --panel: rgba(18, 22, 36, 0.58);
-      --panel2: rgba(18, 22, 36, 0.40);
-      --border: rgba(180, 200, 255, 0.16);
-      --border2: rgba(180, 200, 255, 0.10);
-      --glow: rgba(160, 190, 255, 0.18);
-      --shadow: 0 24px 80px rgba(0,0,0,0.55);
-      --radius: 18px;
-      --accent: #6EE7E0; /* rotated daily */
-      --accent2: #8B5CF6;
-      --accent3: #FBBF24;
-      --focus: rgba(110, 231, 224, 0.55);
+      --bg0:#070a0f;
+      --bg1:#0b101a;
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.09);
+      --border: rgba(255,255,255,.12);
+      --border2: rgba(255,255,255,.18);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.62);
+      --muted2: rgba(255,255,255,.45);
+      --blue: #7db2ff;
+      --green: #32d583; /* signature CI green */
+      --amber: #fbbf24;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      --radius: 16px;
+      --radius2: 22px;
+      --max: 1040px;
+
+      --spineX: 26px;
+      --markerSize: 14px;
     }
 
-    @media (prefers-color-scheme: dark) { :root{ color-scheme: dark; } }
-
-    *{ box-sizing:border-box; }
+    *{ box-sizing: border-box; }
     html,body{ height:100%; }
     body{
       margin:0;
+      color:var(--text);
       font-family: var(--sans);
-      color: var(--ink);
-      background: radial-gradient(1200px 800px at 20% 10%, rgba(88, 124, 255, 0.14), transparent 60%),
-                  radial-gradient(900px 700px at 85% 30%, rgba(110, 231, 224, 0.12), transparent 62%),
-                  linear-gradient(180deg, #070810 0%, #070810 45%, #05060B 100%);
+      background:
+        radial-gradient(1200px 900px at 20% -10%, rgba(125,178,255,.14), transparent 60%),
+        radial-gradient(1000px 700px at 90% 10%, rgba(50,213,131,.10), transparent 60%),
+        radial-gradient(900px 600px at 40% 110%, rgba(251,191,36,.06), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
       overflow-x:hidden;
     }
 
-    a{ color: inherit; text-decoration: none; }
-    a:focus-visible, button:focus-visible{
-      outline: 2px solid var(--focus);
-      outline-offset: 3px;
-      border-radius: 10px;
+    /* subtle grid + noise */
+    body:before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px) 0 0/ 42px 42px,
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px) 0 0/ 42px 42px,
+        radial-gradient(circle at 30% 20%, rgba(255,255,255,.05), transparent 40%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+      opacity:.55;
     }
 
-    /* Fixed living canvas behind everything */
-    #bgCanvas{
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 0;
-      pointer-events: none;
-      background: linear-gradient(135deg, #0A0B10 0%, #0A0B12 35%, #0A0A14 60%, #08091A 100%);
+    a{ color: var(--blue); text-decoration: none; }
+    a:hover{ text-decoration: underline; }
+
+    .wrap{
+      width:min(var(--max), calc(100% - 40px));
+      margin:0 auto;
+      position:relative;
     }
 
-    /* Overall layout */
-    .app{
-      position: relative;
-      z-index: 1;
-      min-height: 100%;
+    header{
+      padding: 44px 0 18px;
+      position:relative;
     }
 
-    .topbar{
-      position: fixed;
-      top: 14px;
-      left: 14px;
-      right: 14px;
-      z-index: 5;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      pointer-events: none;
-    }
-
-    .pill{
-      pointer-events: auto;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 12px;
-      border-radius: 999px;
-      background: rgba(10, 12, 20, 0.52);
-      border: 1px solid rgba(200, 220, 255, 0.16);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 10px 28px rgba(0,0,0,0.35);
-      color: rgba(235, 242, 255, 0.92);
-      font-size: 12.5px;
-      letter-spacing: 0.2px;
-      user-select: none;
-    }
-    .pill .dot{
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 0 4px rgba(110,231,224,0.12), 0 0 16px rgba(110,231,224,0.35);
-    }
-
-    .toggle{
-      pointer-events:auto;
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
-      padding: 10px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(200, 220, 255, 0.16);
-      background: rgba(10, 12, 20, 0.52);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 10px 28px rgba(0,0,0,0.35);
-      color: rgba(235, 242, 255, 0.92);
-      font-size: 12.5px;
-      cursor: pointer;
-    }
-    .switch{
-      width: 42px;
-      height: 22px;
-      border-radius: 999px;
-      background: rgba(210, 225, 255, 0.12);
-      border: 1px solid rgba(200, 220, 255, 0.18);
-      position: relative;
-    }
-    .knob{
-      position:absolute;
-      top: 2px;
-      left: 2px;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: rgba(235, 242, 255, 0.92);
-      box-shadow: 0 10px 18px rgba(0,0,0,0.35);
-      transition: transform 240ms ease;
-    }
-    .reduced .knob{ transform: translateX(20px); }
-    .toggle .label{ color: rgba(235,242,255,0.88); }
-
-    /* HERO */
-    header.hero{
-      min-height: 100vh;
+    .topline{
       display:flex;
-      align-items:center;
-      justify-content:center;
-      padding: 120px 18px 64px;
-      position: relative;
-    }
-
-    .heroInner{
-      width: min(1000px, 94vw);
-      text-align: center;
-      padding: 28px 18px;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap:wrap;
     }
 
     .name{
-      font-weight: 650;
-      font-size: clamp(44px, 7vw, 78px);
-      line-height: 1.02;
-      letter-spacing: -0.03em;
-      margin: 0;
-      text-shadow: 0 22px 70px rgba(0,0,0,0.55);
+      font-family: var(--mono);
+      font-weight: 700;
+      letter-spacing: .02em;
+      font-size: 22px;
+      line-height: 1.1;
+      color: rgba(255,255,255,.95);
     }
 
-    .tagline{
-      margin: 14px auto 0;
-      width: min(820px, 100%);
-      font-size: clamp(16px, 2.1vw, 20px);
-      line-height: 1.55;
-      color: rgba(234, 240, 255, 0.90);
-    }
-    .tagline strong{
-      font-weight: 650;
-      color: rgba(234, 240, 255, 0.98);
+    .role{
+      font-size: 16px;
+      color: rgba(255,255,255,.80);
+      letter-spacing: .01em;
     }
 
     .subtitle{
-      margin: 12px auto 0;
-      width: min(820px, 100%);
-      font-size: 14.5px;
-      line-height: 1.6;
-      color: rgba(183, 192, 216, 0.92);
-    }
-
-    .heroHint{
-      margin-top: 26px;
-      display:flex;
-      justify-content:center;
-    }
-    .scrollHint{
-      display:inline-flex;
-      align-items:center;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: 999px;
-      background: rgba(12, 14, 24, 0.44);
-      border: 1px solid rgba(200, 220, 255, 0.14);
-      backdrop-filter: blur(10px);
-      color: rgba(235, 242, 255, 0.84);
+      margin-top: 10px;
       font-size: 13px;
-    }
-    .scrollHint .arrow{
-      width: 18px; height: 18px;
-      border-radius: 50%;
-      border: 1px solid rgba(200, 220, 255, 0.18);
-      display:grid; place-items:center;
-      background: rgba(210,225,255,0.06);
+      color: var(--muted2);
+      font-weight: 400;
     }
 
-    /* CONTENT */
-    main{
-      padding: 10px 18px 72px;
-    }
-
-    .sectionTitle{
-      width: min(1100px, 96vw);
-      margin: 0 auto;
-      padding: 22px 8px 14px;
+    .runstrip{
+      margin-top: 18px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      border-radius: 999px;
+      padding: 8px 10px;
       display:flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 16px;
-    }
-    .sectionTitle h2{
-      margin: 0;
-      font-size: 16px;
-      font-weight: 650;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: rgba(234,240,255,0.82);
-    }
-    .sectionTitle p{
-      margin: 0;
-      color: rgba(183,192,216,0.86);
-      font-size: 13.5px;
-      line-height: 1.4;
-    }
-
-    .grid{
-      width: min(1100px, 96vw);
-      margin: 0 auto;
-      display:grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 14px;
-    }
-    @media (max-width: 980px){
-      .grid{ grid-template-columns: repeat(6, 1fr); }
-    }
-    @media (max-width: 620px){
-      .grid{ grid-template-columns: repeat(1, 1fr); }
-      .sectionTitle{ flex-direction: column; align-items:flex-start; }
-    }
-
-    /* Glass card with noise */
-    .card{
-      grid-column: span 6;
-      position: relative;
-      overflow: hidden;
-      border-radius: var(--radius);
-      background: linear-gradient(180deg, rgba(16, 18, 30, 0.70), rgba(12, 14, 22, 0.42));
-      border: 1px solid var(--border2);
-      box-shadow: var(--shadow);
+      align-items:center;
+      gap: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
       backdrop-filter: blur(10px);
-      transform: translateZ(0);
-      transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
-      min-height: 220px;
+      -webkit-backdrop-filter: blur(10px);
+      position:sticky;
+      top: 10px;
+      z-index: 50;
     }
-    .card::before{
+
+    .bar{
+      flex: 1;
+      height: 8px;
+      border-radius: 999px;
+      overflow:hidden;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      position:relative;
+    }
+
+    .bar > i{
+      display:block;
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(125,178,255,.85), rgba(50,213,131,.95));
+      box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset, 0 6px 18px rgba(50,213,131,.14);
+      transition: width 1100ms cubic-bezier(.2,.8,.2,1);
+      position:relative;
+    }
+
+    .bar.running > i:after{
       content:"";
       position:absolute;
-      inset:-2px;
-      background-image:
-        radial-gradient(500px 260px at 10% 20%, rgba(110, 231, 224, 0.12), transparent 60%),
-        radial-gradient(380px 240px at 90% 10%, rgba(139, 92, 246, 0.10), transparent 60%),
-        radial-gradient(600px 420px at 50% 120%, rgba(251, 191, 36, 0.08), transparent 60%);
-      opacity: 0.9;
-      pointer-events:none;
-      z-index: 0;
+      inset:-6px -30px -6px -30px;
+      background: linear-gradient(120deg, transparent 35%, rgba(255,255,255,.18) 48%, transparent 62%);
+      transform: translateX(-40%);
+      animation: shimmer 1.5s linear infinite;
+      opacity:.55;
     }
-    .card::after{
-      /* subtle noise */
+
+    @keyframes shimmer{
+      to{ transform: translateX(40%); }
+    }
+
+    .runtext{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.72);
+      white-space:nowrap;
+      display:flex;
+      align-items:center;
+      gap: 8px;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 2px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(255,255,255,.70);
+    }
+
+    .pill .dot{
+      width: 6px; height:6px; border-radius: 999px;
+      background: var(--muted2);
+    }
+
+    main{
+      padding: 10px 0 80px;
+      position:relative;
+    }
+
+    /* spine */
+    .spine{
+      position:absolute;
+      top: 0;
+      bottom: 0;
+      left: var(--spineX);
+      width: 1px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.18), rgba(255,255,255,.06));
+      filter: drop-shadow(0 0 10px rgba(125,178,255,.08));
+      opacity:.9;
+    }
+
+    .suite{
+      position:relative;
+      display:flex;
+      flex-direction: column;
+      gap: 18px;
+      margin-top: 28px;
+      padding-left: 52px; /* make room for spine + markers */
+    }
+
+    .card{
+      position:relative;
+      border-radius: var(--radius2);
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.045));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      overflow:hidden;
+      transform: translateZ(0);
+      will-change: transform;
+      isolation:isolate;
+    }
+
+    /* alternating rhythm (desktop) */
+    @media (min-width: 860px){
+      .card{
+        width: min(860px, 100%);
+      }
+      .card:nth-child(odd){
+        margin-left: 0;
+      }
+      .card:nth-child(even){
+        margin-left: 60px;
+      }
+    }
+
+    @media (max-width: 859px){
+      .suite{ padding-left: 44px; }
+      :root{ --spineX: 22px; }
+    }
+
+    .card:before{
       content:"";
       position:absolute;
       inset:0;
+      background:
+        radial-gradient(800px 200px at 10% 0%, rgba(125,178,255,.10), transparent 55%),
+        radial-gradient(600px 260px at 90% 0%, rgba(50,213,131,.09), transparent 55%);
+      opacity:.7;
       pointer-events:none;
-      z-index: 1;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='280' height='280' filter='url(%23n)' opacity='.28'/%3E%3C/svg%3E");
-      mix-blend-mode: overlay;
-      opacity: 0.14;
+      z-index:0;
     }
 
-    .card[data-span="12"]{ grid-column: span 12; }
-    @media (max-width: 980px){ .card{ grid-column: span 6; } .card[data-span="12"]{ grid-column: span 6; } }
-    @media (max-width: 620px){ .card, .card[data-span="12"]{ grid-column: span 1; } }
-
-    .card:hover{
-      transform: translateY(-2px);
-      border-color: rgba(210, 225, 255, 0.22);
-      box-shadow: 0 26px 90px rgba(0,0,0,0.60);
+    .marker{
+      position:absolute;
+      left: calc(-52px + var(--spineX) - (var(--markerSize)/2) + 1px);
+      top: 26px;
+      width: var(--markerSize);
+      height: var(--markerSize);
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.22);
+      background: rgba(0,0,0,.25);
+      box-shadow: 0 0 0 6px rgba(0,0,0,.12);
+      z-index:2;
     }
-    .card.active{
-      border-color: color-mix(in oklab, var(--accent) 42%, rgba(210,225,255,0.26));
-      box-shadow: 0 28px 100px rgba(0,0,0,0.62);
+
+    .card.passed .marker{
+      background: rgba(50,213,131,.20);
+      border-color: rgba(50,213,131,.65);
+      box-shadow: 0 0 0 6px rgba(50,213,131,.10), 0 0 20px rgba(50,213,131,.18);
+    }
+    .card.running .marker{
+      border-color: rgba(125,178,255,.55);
+      box-shadow: 0 0 0 6px rgba(125,178,255,.10);
     }
 
     .cardInner{
       position:relative;
-      z-index: 2;
-      padding: 14px 14px 16px;
+      z-index:1;
+      padding: 16px 16px 14px;
+    }
+
+    .toprow{
       display:flex;
-      flex-direction: column;
+      align-items:center;
       gap: 12px;
+      min-height: 34px;
     }
 
-    .cardHeader{
-      border-radius: 14px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-      border: 1px solid rgba(200, 220, 255, 0.12);
-      height: 88px;
+    .statusIcon{
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.20);
+      display:grid;
+      place-items:center;
+      flex: 0 0 22px;
+      position:relative;
+    }
+
+    /* queued dot */
+    .statusIcon .queuedDot{
+      width: 6px; height:6px; border-radius: 999px;
+      background: rgba(255,255,255,.35);
+      opacity: 1;
+      transition: opacity 200ms ease;
+    }
+
+    /* running spinner */
+    .statusIcon .spinner{
+      width: 12px; height: 12px;
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,.22);
+      border-top-color: rgba(125,178,255,.85);
+      position:absolute;
+      opacity:0;
+      animation: spin 800ms linear infinite;
+    }
+
+    @keyframes spin{ to{ transform: rotate(360deg);} }
+
+    /* passed check */
+    .statusIcon svg{
+      width: 14px; height: 14px;
+      opacity:0;
+      transform: scale(.9);
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .card.queued .statusIcon .queuedDot{ opacity:1; }
+    .card.queued .statusIcon .spinner{ opacity:0; }
+    .card.queued .statusIcon svg{ opacity:0; }
+
+    .card.running .statusIcon .queuedDot{ opacity:0; }
+    .card.running .statusIcon .spinner{ opacity:1; }
+    .card.running .statusIcon svg{ opacity:0; }
+
+    .card.passed .statusIcon{
+      border-color: rgba(50,213,131,.55);
+      background: rgba(50,213,131,.12);
+      box-shadow: 0 0 0 6px rgba(50,213,131,.08);
+    }
+    .card.passed .statusIcon .queuedDot{ opacity:0; }
+    .card.passed .statusIcon .spinner{ opacity:0; }
+    .card.passed .statusIcon svg{
+      opacity:1;
+      transform: scale(1);
+    }
+
+    .testname{
+      font-family: var(--mono);
+      font-size: 14px;
+      color: rgba(255,255,255,.90);
+      letter-spacing:.01em;
       overflow:hidden;
-      position: relative;
+      text-overflow: ellipsis;
+      white-space:nowrap;
+      flex: 1;
+      min-width: 0;
     }
 
-    .cardTitleRow{
+    .duration{
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(255,255,255,.66);
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+      padding: 3px 8px;
+      border-radius: 999px;
+      opacity:0;
+      transform: translateY(-2px);
+      transition: opacity 260ms ease, transform 260ms ease;
+    }
+    .card.passed .duration{
+      opacity:1;
+      transform: translateY(0);
+    }
+
+    .teaser{
+      margin: 10px 0 0;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.60);
+    }
+
+    .stateLine{
+      margin-top: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.50);
+      display:flex;
+      align-items:center;
+      gap: 8px;
+    }
+    .stateBadge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 2px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      color: rgba(255,255,255,.55);
+    }
+    .card.running .stateBadge{
+      border-color: rgba(125,178,255,.25);
+      color: rgba(125,178,255,.80);
+    }
+    .card.passed .stateBadge{
+      border-color: rgba(50,213,131,.30);
+      color: rgba(50,213,131,.92);
+      background: rgba(50,213,131,.06);
+    }
+
+    /* Unlock area (collapsible) */
+    .unlock{
+      max-height: 0px;
+      overflow:hidden;
+      transition: max-height 650ms cubic-bezier(.2,.8,.2,1);
+      border-top: 1px solid rgba(255,255,255,.08);
+      margin-top: 12px;
+    }
+    .unlockInner{
+      padding: 14px 2px 6px;
+    }
+    .card.passed .unlock{
+      /* max-height set via JS to the measured height for smoothness */
+    }
+
+    .headlineRow{
       display:flex;
       align-items:flex-start;
       justify-content: space-between;
-      gap: 14px;
+      gap: 12px;
+      flex-wrap:wrap;
+      margin-bottom: 8px;
     }
-    .cardTitle{
-      margin: 0;
+    .headline{
       font-size: 18px;
-      letter-spacing: -0.01em;
-      font-weight: 680;
-    }
-    .confidence{
-      min-width: 144px;
-      display:flex;
-      flex-direction: column;
-      gap: 6px;
-      align-items:flex-end;
-      text-align:right;
-      user-select:none;
-    }
-    .confidence label{
-      font-size: 11.5px;
-      color: rgba(183,192,216,0.88);
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-    }
-    .meter{
-      width: 144px;
-      height: 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(200, 220, 255, 0.16);
-      background: rgba(210,225,255,0.08);
-      overflow:hidden;
-      position: relative;
-    }
-    .meterFill{
-      height: 100%;
-      width: 62%;
-      background: linear-gradient(90deg,
-        color-mix(in oklab, var(--accent) 88%, white 0%),
-        rgba(210,225,255,0.78)
-      );
-      border-radius: 999px;
-      box-shadow: 0 0 18px rgba(110,231,224,0.20);
-      transition: width 340ms ease;
-    }
-    .meterValue{
-      font-family: var(--mono);
-      font-size: 12.5px;
-      color: rgba(234,240,255,0.92);
-    }
-
-    .summary{
+      letter-spacing:.01em;
       margin: 0;
-      color: rgba(234, 240, 255, 0.88);
-      line-height: 1.55;
-      font-size: 14.5px;
+      color: rgba(255,255,255,.92);
     }
 
-    .artifacts{
+    .tags{
       display:flex;
-      flex-wrap: wrap;
       gap: 8px;
-      align-items: center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      margin-top: 2px;
     }
-    .chip{
-      display:inline-flex;
-      gap: 8px;
-      align-items: center;
-      padding: 8px 10px;
+    .tag{
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 3px 9px;
       border-radius: 999px;
-      border: 1px solid rgba(200, 220, 255, 0.16);
-      background: rgba(12, 14, 24, 0.35);
-      color: rgba(235, 242, 255, 0.92);
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      color: rgba(255,255,255,.70);
+    }
+
+    .story{
+      color: rgba(255,255,255,.78);
+      line-height: 1.55;
+      margin: 8px 0 12px;
+      font-size: 14px;
+    }
+
+    .actions{
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+      margin: 10px 0 12px;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap: 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.92);
+      padding: 9px 12px;
       font-size: 13px;
-      transition: transform 160ms ease, border-color 200ms ease, background 200ms ease;
-      cursor: pointer;
+      text-decoration:none;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+      box-shadow: 0 10px 24px rgba(0,0,0,.18);
     }
-    .chip:hover{
+    .btn:hover{
       transform: translateY(-1px);
-      border-color: color-mix(in oklab, var(--accent) 55%, rgba(200,220,255,0.16));
-      background: rgba(14, 16, 28, 0.46);
+      border-color: rgba(125,178,255,.30);
+      background: rgba(125,178,255,.08);
+      text-decoration:none;
     }
-    .chip svg{ width: 16px; height: 16px; opacity: 0.92; }
-
-    /* Card header motifs */
-    .viz{
-      position:absolute; inset:0;
-      display:block;
+    .btn.primary{
+      border-color: rgba(50,213,131,.26);
+      background: rgba(50,213,131,.10);
+    }
+    .btn.primary:hover{
+      border-color: rgba(50,213,131,.48);
+      background: rgba(50,213,131,.14);
     }
 
-    /* 1) LZ ribbon */
-    .lz{
-      position:absolute; inset: 0;
+    .chips{
       display:flex;
       gap: 8px;
-      padding: 14px;
-      align-items:center;
-      opacity: 0.95;
+      flex-wrap:wrap;
+      margin: 8px 0 12px;
     }
-    .lz .track{
-      flex: 1;
-      height: 100%;
+    .chipLink{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(255,255,255,.78);
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      padding: 6px 9px;
+      border-radius: 999px;
+      text-decoration:none;
+      transition: border-color 160ms ease, transform 160ms ease;
+    }
+    .chipLink:hover{
+      border-color: rgba(125,178,255,.35);
+      transform: translateY(-1px);
+      text-decoration:none;
+    }
+    .chipLink .mini{
+      width: 7px; height: 7px; border-radius: 999px;
+      background: rgba(125,178,255,.80);
+      box-shadow: 0 0 0 3px rgba(125,178,255,.12);
+    }
+
+    /* Hover tilt / parallax (subtle) */
+    .card{
+      transform: perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(var(--ty,0px));
+      transition: transform 220ms ease, border-color 220ms ease;
+    }
+    .card:hover{
+      --ty: -2px;
+      border-color: rgba(255,255,255,.18);
+    }
+
+    /* ===== Visual motifs ===== */
+
+    /* 1) Compression bar */
+    .compression{
+      margin-top: 10px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      border-radius: 14px;
+      padding: 10px;
+      overflow:hidden;
+      position:relative;
+    }
+    .compression .barline{
+      height: 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      overflow:hidden;
       display:flex;
-      align-items:center;
       gap: 6px;
-      filter: drop-shadow(0 10px 24px rgba(0,0,0,0.40));
+      padding: 3px;
     }
-    .block{
-      height: 18px;
-      border-radius: 6px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02));
-      border: 1px solid rgba(200, 220, 255, 0.12);
-      position: relative;
+    .seg{
+      height: 100%;
+      border-radius: 999px;
+      background: rgba(125,178,255,.22);
+      border: 1px solid rgba(125,178,255,.25);
+    }
+    .seg.r{
+      background: rgba(50,213,131,.18);
+      border-color: rgba(50,213,131,.22);
+    }
+    .seg.dim{
+      background: rgba(255,255,255,.08);
+      border-color: rgba(255,255,255,.10);
+    }
+
+    /* 2) Heatmap strip + watermark */
+    .heatwrap{
+      position:relative;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.16);
+      border-radius: 14px;
+      padding: 12px;
       overflow:hidden;
     }
-    .block::after{
+    .heatwrap:before{
       content:"";
-      position:absolute; inset:0;
-      background: linear-gradient(90deg,
-        transparent,
-        rgba(255,255,255,0.14),
-        transparent
-      );
-      transform: translateX(-120%);
-      opacity: 0.55;
-    }
-    .card:hover .block::after{ animation: sheen 1200ms linear infinite; }
-    @keyframes sheen{ to{ transform: translateX(120%); } }
-
-    .card[data-theme="lz"] .lz .block:nth-child(1){ width: 22%; }
-    .card[data-theme="lz"] .lz .block:nth-child(2){ width: 12%; transform: translateX(6px); }
-    .card[data-theme="lz"] .lz .block:nth-child(3){ width: 22%; }
-    .card[data-theme="lz"] .lz .block:nth-child(4){ width: 8%; transform: translateX(10px); }
-    .card[data-theme="lz"] .lz .block:nth-child(5){ width: 22%; }
-    .card[data-theme="lz"] .lz .block:nth-child(6){ width: 10%; transform: translateX(4px); }
-
-    .compressAnim{
-      position:absolute; inset:0;
-      opacity: 0;
-      transition: opacity 240ms ease;
-    }
-    .card:hover .compressAnim{ opacity: 1; }
-    .compressAnim .bar{
       position:absolute;
-      bottom: 10px;
-      height: 8px;
-      width: 120px;
-      border-radius: 999px;
-      left: 14px;
-      background: linear-gradient(90deg,
-        color-mix(in oklab, var(--accent) 75%, white 0%),
-        rgba(210,225,255,0.55)
-      );
-      filter: blur(0.0px);
-      animation: compress 1200ms ease-in-out infinite;
-    }
-    .compressAnim .bar:nth-child(2){ left: 150px; animation-delay: 120ms; opacity: 0.78; }
-    .compressAnim .bar:nth-child(3){ left: 260px; animation-delay: 240ms; opacity: 0.58; }
-    @keyframes compress{
-      0%,100%{ transform: scaleX(1.0); opacity: 0.6; }
-      50%{ transform: scaleX(0.55); opacity: 0.95; }
-    }
-
-    /* 2) Heat map / city grid */
-    .city{
-      position:absolute; inset:0;
+      inset:-40px -20px -40px -20px;
       background:
-        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)),
-        repeating-linear-gradient(90deg, rgba(200,220,255,0.06) 0 1px, transparent 1px 22px),
-        repeating-linear-gradient(0deg, rgba(200,220,255,0.05) 0 1px, transparent 1px 18px);
-      opacity: 0.85;
-      mask-image: radial-gradient(180px 100px at 30% 40%, black 30%, transparent 70%);
+        linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px) 0 0/ 34px 34px,
+        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px) 0 0/ 34px 34px;
+      opacity:.28;
+      transform: rotate(-6deg);
+      pointer-events:none;
     }
-    .thermal{
-      position:absolute; inset:-40px;
-      background: conic-gradient(from 180deg at 50% 60%,
-        rgba(251,191,36,0.00),
-        rgba(251,191,36,0.24),
-        rgba(239,68,68,0.16),
-        rgba(110,231,224,0.12),
-        rgba(251,191,36,0.00)
-      );
-      filter: blur(16px);
-      opacity: 0.65;
-      transform: translateX(-14%);
-      transition: opacity 240ms ease;
-      animation: drift 4600ms ease-in-out infinite;
-    }
-    @keyframes drift{
-      0%,100%{ transform: translateX(-14%) translateY(0); }
-      50%{ transform: translateX(8%) translateY(6px); }
-    }
-    .card:hover .thermal{
-      opacity: 0.92;
-      filter: blur(14px);
-    }
-
-    /* 3) Polygon / blueprint */
-    .blueprint{
-      position:absolute; inset:0;
-      opacity: 0.96;
-    }
-    .blueprint svg{ width:100%; height:100%; display:block; }
-    .stepPoly{
-      transform-origin: 54px 44px;
-      transition: transform 120ms steps(1,end);
-    }
-    .card:hover .step1{ transform: rotate(18deg); }
-    .card:hover .step2{ transform: rotate(46deg); transition-delay: 120ms;}
-    .card:hover .step3{ transform: rotate(78deg); transition-delay: 240ms;}
-    .pushArrow{ opacity: 0.86; }
-    .card:hover .pushArrow{ opacity: 1; }
-
-    /* 4) Arena / duel */
-    .arena{
-      position:absolute; inset:0;
+    .legend{
+      position:relative;
+      z-index:1;
       display:flex;
       align-items:center;
-      justify-content: center;
-      padding: 10px 14px;
       gap: 10px;
+    }
+    .legend .strip{
+      flex:1;
+      height: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: linear-gradient(90deg,
+        rgba(125,178,255,.72),
+        rgba(90,200,255,.60),
+        rgba(251,191,36,.45),
+        rgba(244,63,94,.42)
+      );
+    }
+    .legend .lbl{
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(255,255,255,.70);
+      white-space:nowrap;
+    }
+
+    /* 3) Polygon "snap" */
+    .polybox{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.14);
+      border-radius: 14px;
+      padding: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      gap: 12px;
+      overflow:hidden;
+    }
+    .polybox svg{ width: 180px; height: 72px; }
+    .polybox .hint{
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(255,255,255,.66);
+    }
+    .card.passed .polyA{
+      transform-origin: 60px 36px;
+      animation: polySnap 900ms cubic-bezier(.2,.8,.2,1) 1 both;
+    }
+    .card.passed .polyB{
+      transform-origin: 140px 36px;
+      animation: polySnap2 900ms cubic-bezier(.2,.8,.2,1) 1 both;
+    }
+    @keyframes polySnap{
+      0%{ transform: rotate(-14deg) translateY(4px); opacity:.72; }
+      70%{ transform: rotate(4deg) translateY(-1px); opacity:1; }
+      100%{ transform: rotate(0deg) translateY(0px); opacity:1; }
+    }
+    @keyframes polySnap2{
+      0%{ transform: rotate(10deg) translateY(-3px); opacity:.72; }
+      75%{ transform: rotate(-3deg) translateY(1px); opacity:1; }
+      100%{ transform: rotate(0deg) translateY(0px); opacity:1; }
+    }
+
+    /* 4) Chat → punchline spark */
+    .jestMotif{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.14);
+      border-radius: 14px;
+      padding: 12px;
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      overflow:hidden;
+    }
+    .bubbles{
+      position:relative;
+      width: 210px;
+      height: 72px;
+      flex: 0 0 auto;
     }
     .bubble{
-      flex: 1;
-      height: 58px;
+      position:absolute;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
       border-radius: 14px;
-      border: 1px solid rgba(200,220,255,0.14);
-      background: rgba(210,225,255,0.06);
-      position: relative;
-      overflow:hidden;
-    }
-    .bubble::after{
-      content:"";
-      position:absolute;
-      inset:0;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
-      transform: translateX(-120%);
-      opacity: 0.5;
-    }
-    .card:hover .bubble::after{ animation: sheen 1000ms linear infinite; }
-    .vs{
+      padding: 8px 10px;
       font-family: var(--mono);
-      letter-spacing: 0.18em;
-      font-size: 12px;
-      color: rgba(183,192,216,0.86);
-      text-transform: uppercase;
+      font-size: 11px;
+      color: rgba(255,255,255,.72);
+      box-shadow: 0 10px 20px rgba(0,0,0,.15);
     }
-    .score{
+    .bubble.one{ left: 6px; top: 8px; width: 132px; }
+    .bubble.two{ right: 6px; bottom: 8px; width: 150px; }
+    .spark{
       position:absolute;
-      left: 14px;
-      right: 14px;
-      bottom: 10px;
-      height: 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(200,220,255,0.16);
-      background: rgba(210,225,255,0.07);
-      overflow:hidden;
+      right: 74px;
+      top: 28px;
+      width: 14px;
+      height: 14px;
+      border-radius: 5px;
+      background: rgba(251,191,36,.0);
+      border: 1px solid rgba(251,191,36,.0);
+      opacity:0;
+      transform: scale(.7) rotate(0deg);
     }
-    .scoreFill{
-      height:100%;
-      width: 52%;
-      background: linear-gradient(90deg, rgba(139,92,246,0.65), rgba(110,231,224,0.72));
-      transition: width 220ms ease;
+    .card.passed .spark{
+      animation: sparkPop 720ms cubic-bezier(.2,.8,.2,1) 1 both;
     }
-    .card:hover .scoreFill{
-      width: 57%;
-      animation: flicker 340ms ease-in-out 1;
+    @keyframes sparkPop{
+      0%{ opacity:0; transform: scale(.6) rotate(-10deg); background: rgba(251,191,36,.0); border-color: rgba(251,191,36,.0); }
+      50%{ opacity:1; transform: scale(1.2) rotate(12deg); background: rgba(251,191,36,.18); border-color: rgba(251,191,36,.36); }
+      100%{ opacity:.9; transform: scale(1) rotate(0deg); background: rgba(251,191,36,.12); border-color: rgba(251,191,36,.26); }
     }
-    @keyframes flicker{
-      0%{ filter: brightness(1); }
-      50%{ filter: brightness(1.25); }
-      100%{ filter: brightness(1); }
-    }
-    .punct{
-      position:absolute;
-      top: 10px;
-      right: 12px;
-      font-size: 30px;
-      font-weight: 720;
-      color: rgba(235,242,255,0.16);
-      transform: rotate(-8deg);
-      letter-spacing: -0.08em;
-      user-select:none;
+    .jestMotif .hint{
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(255,255,255,.66);
+      line-height:1.35;
     }
 
-    /* 5) Headline-to-rhyme */
-    .headline{
-      position:absolute; inset:0;
-      padding: 12px 14px;
-      display:flex;
-      flex-direction: column;
-      gap: 10px;
+    /* 5) Typewriter rhyme */
+    .typebox{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.14);
+      border-radius: 14px;
+      padding: 12px;
+      overflow:hidden;
     }
-    .tabs{
-      display:flex; gap: 8px;
-      opacity: 0.9;
+    .headlineMock{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.74);
+      opacity:.92;
     }
-    .tab{
-      width: 56px; height: 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(200,220,255,0.14);
-      background: rgba(210,225,255,0.06);
-    }
-    .line{
-      font-size: 13px;
-      color: rgba(234,240,255,0.86);
+    .rhyme{
+      margin-top: 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(50,213,131,.90);
       white-space: nowrap;
       overflow:hidden;
-      text-overflow: ellipsis;
-      padding-right: 16px;
+      width: 0ch;
+      border-right: 1px solid rgba(50,213,131,.6);
     }
-    .rewrite{
-      position: relative;
-      display:inline-block;
-      padding-bottom: 6px;
+    .card.passed .rhyme{
+      animation: typing 2.2s steps(40,end) 120ms 1 forwards, caret 950ms steps(1,end) 3;
     }
-    .rewrite::after{
-      content:"";
-      position:absolute;
-      left:0; right:0;
-      height: 2px;
-      bottom: 2px;
-      background: linear-gradient(90deg, rgba(110,231,224,0.0), rgba(110,231,224,0.7), rgba(139,92,246,0.6), rgba(110,231,224,0.0));
-      opacity: 0.45;
-      transform: translateX(-20%);
-    }
-    .card:hover .rewrite::after{
-      animation: underlineScan 900ms ease-in-out infinite;
-      opacity: 0.85;
-    }
-    @keyframes underlineScan{
-      0%,100%{ transform: translateX(-18%); }
-      50%{ transform: translateX(18%); }
-    }
-    .tokenJitter span{
-      display:inline-block;
-      transition: transform 120ms steps(1,end);
-    }
-    .card:hover .tokenJitter span:nth-child(2){ transform: translateY(-1px); }
-    .card:hover .tokenJitter span:nth-child(4){ transform: translateY(1px); }
-    .card:hover .tokenJitter span:nth-child(7){ transform: translateY(-1px); }
-    .card:hover .tokenJitter span:nth-child(9){ transform: translateY(1px); }
-
-    /* 6) Meta mini-network */
-    .miniNet{
-      position:absolute; inset:0;
+    @keyframes typing{ to{ width: 44ch; } }
+    @keyframes caret{
+      50%{ border-right-color: transparent; }
     }
 
-    /* 7) Links/output layer */
-    .linksCard .cardInner{ gap: 14px; }
-    .linkRows{
-      display:flex;
-      flex-direction: column;
-      gap: 10px;
-      padding-top: 2px;
-    }
-    .linkRow{
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 14px 14px;
+    /* 6) Recursive icon loop */
+    .recur{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.14);
       border-radius: 14px;
-      border: 1px solid rgba(200,220,255,0.14);
-      background: rgba(12, 14, 24, 0.28);
-      transition: border-color 220ms ease, transform 180ms ease, background 220ms ease;
-    }
-    .linkRow:hover{
-      transform: translateY(-1px);
-      border-color: color-mix(in oklab, var(--accent) 45%, rgba(200,220,255,0.14));
-      background: rgba(12, 14, 24, 0.38);
-    }
-    .linkRow .left{
+      padding: 12px;
       display:flex;
       align-items:center;
-      gap: 10px;
-      font-size: 15px;
-      font-weight: 620;
-      letter-spacing: -0.01em;
+      gap: 12px;
     }
-    .linkRow .hint{
+    .recur svg{
+      width: 92px;
+      height: 58px;
+      flex:0 0 auto;
+      opacity:.95;
+    }
+    .card.passed .recur svg{
+      animation: loopOnce 950ms cubic-bezier(.2,.8,.2,1) 1 both;
+      transform-origin: 50% 50%;
+    }
+    @keyframes loopOnce{
+      0%{ transform: scale(.98); filter: drop-shadow(0 0 0 rgba(50,213,131,0)); }
+      55%{ transform: scale(1.03); filter: drop-shadow(0 0 18px rgba(50,213,131,.18)); }
+      100%{ transform: scale(1); filter: drop-shadow(0 0 0 rgba(50,213,131,0)); }
+    }
+    .recur .hint{
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(255,255,255,.66);
+      line-height:1.35;
+    }
+
+    /* 7) Social buttons */
+    .socialGrid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    @media (min-width: 720px){
+      .socialGrid{ grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .iconBtn{
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      border-radius: 16px;
+      padding: 12px;
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      text-decoration:none;
+      color: rgba(255,255,255,.88);
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+      min-height: 58px;
+    }
+    .iconBtn:hover{
+      transform: translateY(-1px);
+      border-color: rgba(125,178,255,.34);
+      background: rgba(125,178,255,.08);
+      text-decoration:none;
+    }
+    .iconBtn svg{
+      width: 22px; height: 22px;
+      opacity:.92;
+    }
+    .iconBtn .meta{
+      min-width: 0;
+    }
+    .iconBtn .meta .k{
       font-family: var(--mono);
       font-size: 12px;
-      color: rgba(183,192,216,0.86);
-      font-weight: 520;
+      color: rgba(255,255,255,.70);
     }
-    .linkRow .go{
-      display:inline-flex;
-      align-items:center;
-      gap: 8px;
-      color: rgba(234,240,255,0.86);
-    }
-    .linkRow svg{ width: 18px; height: 18px; opacity: 0.92; }
-
-    /* Scanline border for meta hover */
-    .scanline{
-      position:absolute;
-      inset:0;
-      border-radius: var(--radius);
-      pointer-events:none;
-      opacity: 0;
-      transition: opacity 200ms ease;
-      z-index: 3;
-    }
-    .card[data-theme="meta"]:hover .scanline{ opacity: 1; }
-    .scanline::before{
-      content:"";
-      position:absolute;
-      inset:-2px;
-      border-radius: inherit;
-      background:
-        linear-gradient(135deg,
-          transparent 0%,
-          rgba(110,231,224,0.00) 35%,
-          rgba(110,231,224,0.22) 50%,
-          rgba(110,231,224,0.00) 65%,
-          transparent 100%
-        );
-      transform: translate(-45%, -45%);
-      animation: scan 1300ms linear infinite;
-      mix-blend-mode: screen;
-    }
-    @keyframes scan{
-      to{ transform: translate(45%, 45%); }
+    .iconBtn .meta .v{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.92);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
-    /* Footer */
+    /* Footer build summary */
     footer{
-      width: min(1100px, 96vw);
-      margin: 0 auto;
-      padding: 22px 8px 28px;
-      display:flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 18px;
-      border-top: 1px solid rgba(200, 220, 255, 0.12);
-      color: rgba(183,192,216,0.88);
-      font-size: 13px;
+      padding: 18px 0 28px;
+      border-top: 1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.18));
     }
-    @media (max-width: 620px){
-      footer{ flex-direction: column; align-items:flex-start; }
+    .summaryBar{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap:wrap;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      box-shadow: 0 14px 40px rgba(0,0,0,.25);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .summaryBar .left{
+      color: rgba(255,255,255,.72);
+      font-size: 13px;
     }
     .stopwatch{
       display:flex;
-      align-items: baseline;
+      align-items:center;
       gap: 10px;
-    }
-    .stopwatch .label{
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      font-size: 11.5px;
-      color: rgba(183,192,216,0.86);
-    }
-    .stopwatch .time{
       font-family: var(--mono);
-      font-size: 15px;
-      color: rgba(234,240,255,0.92);
-      padding: 8px 10px;
+      font-size: 12px;
+      color: rgba(255,255,255,.78);
+    }
+    .clock{
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.20);
+      padding: 6px 10px;
       border-radius: 12px;
-      border: 1px solid rgba(200,220,255,0.16);
-      background: rgba(10, 12, 20, 0.42);
-      box-shadow: 0 0 0 4px rgba(110,231,224,0.06), 0 14px 40px rgba(0,0,0,0.45);
-      text-shadow: 0 0 18px rgba(110,231,224,0.20);
+      letter-spacing:.06em;
+      position:relative;
+      min-width: 112px;
+      text-align:center;
+    }
+    .clock .colon{
+      opacity: .85;
+      animation: pulseColon 1s ease-in-out infinite;
+    }
+    @keyframes pulseColon{ 50%{ opacity:.35; } }
+
+    .finalLine{
+      margin-top: 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.55);
+      text-align:center;
+    }
+    .finalLine.done{
+      color: rgba(50,213,131,.92);
     }
 
-    /* Reduced motion */
-    .reduced *{
-      scroll-behavior: auto !important;
-    }
-    .reduced .thermal,
-    .reduced .card:hover .rewrite::after,
-    .reduced .compressAnim .bar,
-    .reduced .scanline::before,
-    .reduced .card:hover .block::after,
-    .reduced .card:hover .bubble::after{
-      animation: none !important;
-      transition: none !important;
+    /* reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      .bar > i{ transition: none; }
+      .bar.running > i:after{ animation: none; }
+      .statusIcon .spinner{ animation: none; }
+      .card{ transition: none; }
+      .card.passed .rhyme{ animation: none; width: 44ch; border-right: none; }
+      .card.passed .polyA, .card.passed .polyB, .card.passed .spark, .card.passed .recur svg{ animation: none; }
+      .clock .colon{ animation: none; }
     }
   </style>
 </head>
-
 <body>
-  <canvas id="bgCanvas" aria-hidden="true"></canvas>
-
-  <div class="app" id="app">
-    <div class="topbar" aria-hidden="false">
-      <div class="pill" id="seedPill" title="Date-based seed for today’s layout variant">
-        <span class="dot" aria-hidden="true"></span>
-        <span><span style="opacity:.80">Daily seed</span> <span id="dailySeed" style="font-family:var(--mono);opacity:.95"></span></span>
+  <div class="wrap">
+    <header>
+      <div class="topline">
+        <div class="name">Geva Kipper</div>
+        <div class="role">Software engineer at Google, currently building and scaling production systems.</div>
       </div>
+      <div class="subtitle">This portfolio is re-designed each day by AI—expect it to evolve.</div>
 
-      <button class="toggle" id="motionToggle" type="button" aria-pressed="false" title="Toggle reduced motion">
-        <span class="label">Reduce motion</span>
-        <span class="switch" aria-hidden="true"><span class="knob"></span></span>
-      </button>
-    </div>
-
-    <header class="hero" id="hero">
-      <div class="heroInner">
-        <h1 class="name">Geva Kipper</h1>
-        <p class="tagline">
-          <strong>Software engineer at Google</strong>, currently building and scaling data-driven systems.
-        </p>
-        <p class="subtitle">
-          Re-designed each day by AI — an ever-changing layout generated from today’s “training run”.
-        </p>
-        <div class="heroHint" aria-hidden="true">
-          <div class="scrollHint">
-            <span class="arrow">↓</span>
-            <span>Scroll to view learned memories</span>
-          </div>
+      <div class="runstrip" aria-label="Run status">
+        <div class="bar running" id="runBar" aria-hidden="true"><i id="runFill"></i></div>
+        <div class="runtext">
+          <span class="pill" id="runPill"><span class="dot"></span><span id="runPillText">queued</span></span>
+          <span id="runText">Initializing…</span>
         </div>
       </div>
     </header>
 
-    <main id="content" aria-label="Portfolio content">
-      <div class="sectionTitle">
-        <h2>Learned memories</h2>
-        <p>Hover a card to send an activation wave through the network and “lock” the path that led here.</p>
-      </div>
+    <main>
+      <div class="spine" aria-hidden="true"></div>
 
-      <section class="grid" id="grid" aria-label="Projects grid"></section>
+      <section class="suite" id="suite" aria-label="Test suite timeline">
+        <!-- 1) GlglStats -->
+        <article class="card queued" data-id="glglstats" data-duration="128ms">
+          <div class="marker" aria-hidden="true"></div>
+          <div class="cardInner">
+            <div class="toprow">
+              <div class="statusIcon" aria-hidden="true">
+                <span class="queuedDot"></span>
+                <span class="spinner"></span>
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M20 7L10.5 16.5L4 10" stroke="rgba(50,213,131,.95)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="testname">test_glglstats_repetition_analysis()</div>
+              <div class="duration" aria-hidden="true">128ms</div>
+            </div>
+            <p class="teaser">assert repetition_can_be_measured_with_LZ77</p>
+            <div class="stateLine"><span class="stateBadge" data-state>queued</span><span class="muted" data-log>waiting for runner…</span></div>
+
+            <div class="unlock" aria-hidden="true">
+              <div class="unlockInner">
+                <div class="headlineRow">
+                  <h3 class="headline">GlglStats</h3>
+                  <div class="tags">
+                    <span class="tag">Python</span>
+                  </div>
+                </div>
+                <p class="story">
+                  Python project measuring repetitiveness of Israeli pop-chart songs using LZ77 compression; visualizes repetition patterns across famous songs.
+                </p>
+                <div class="actions">
+                  <a class="btn primary" href="https://glglstats.geekip.dev" target="_blank" rel="noopener">Visit: glglstats.geekip.dev</a>
+                  <a class="btn" href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" rel="noopener">PyData TLV talk (YouTube)</a>
+                </div>
+
+                <div class="compression" aria-label="Compression motif">
+                  <div class="barline" aria-hidden="true">
+                    <div class="seg r" style="width:10%"></div>
+                    <div class="seg dim" style="width:6%"></div>
+                    <div class="seg r" style="width:10%"></div>
+                    <div class="seg" style="width:14%"></div>
+                    <div class="seg dim" style="width:6%"></div>
+                    <div class="seg r" style="width:10%"></div>
+                    <div class="seg" style="width:18%"></div>
+                    <div class="seg dim" style="width:7%"></div>
+                    <div class="seg r" style="width:10%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 2) Ahuzat Dibuk -->
+        <article class="card queued" data-id="dibuk" data-duration="312ms">
+          <div class="marker" aria-hidden="true"></div>
+          <div class="cardInner">
+            <div class="toprow">
+              <div class="statusIcon" aria-hidden="true">
+                <span class="queuedDot"></span>
+                <span class="spinner"></span>
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M20 7L10.5 16.5L4 10" stroke="rgba(50,213,131,.95)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="testname">test_ahuzat_dibuk_heatmaps_generate()</div>
+              <div class="duration" aria-hidden="true">312ms</div>
+            </div>
+            <p class="teaser">assert occupancy_scraping_supports_resident_heatmaps</p>
+            <div class="stateLine"><span class="stateBadge" data-state>queued</span><span class="muted" data-log>enqueued…</span></div>
+
+            <div class="unlock" aria-hidden="true">
+              <div class="unlockInner">
+                <div class="headlineRow">
+                  <h3 class="headline">Ahuzat Dibuk</h3>
+                  <div class="tags">
+                    <span class="tag">Python</span>
+                    <span class="tag">Scraping</span>
+                    <span class="tag">Data Viz</span>
+                  </div>
+                </div>
+                <p class="story">
+                  Scraping and visualization project collecting Tel-Aviv parking lot occupancy and generating resident-friendly heat maps.
+                </p>
+
+                <div class="chips" aria-label="Featured in">
+                  <a class="chipLink" href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" rel="noopener">
+                    <span class="mini" aria-hidden="true"></span> 13tv.co.il
+                  </a>
+                  <a class="chipLink" href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" rel="noopener">
+                    <span class="mini" aria-hidden="true"></span> mako.co.il
+                  </a>
+                  <a class="chipLink" href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" rel="noopener">
+                    <span class="mini" aria-hidden="true"></span> facebook.com
+                  </a>
+                </div>
+
+                <div class="heatwrap" aria-label="Heatmap motif">
+                  <div class="legend">
+                    <div class="strip" aria-hidden="true"></div>
+                    <div class="lbl">cool → warm</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 3) 2D Part Orienting -->
+        <article class="card queued" data-id="orienting" data-duration="742ms">
+          <div class="marker" aria-hidden="true"></div>
+          <div class="cardInner">
+            <div class="toprow">
+              <div class="statusIcon" aria-hidden="true">
+                <span class="queuedDot"></span>
+                <span class="spinner"></span>
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M20 7L10.5 16.5L4 10" stroke="rgba(50,213,131,.95)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="testname">test_push_plan_orients_polygon()</div>
+              <div class="duration" aria-hidden="true">742ms</div>
+            </div>
+            <p class="teaser">assert push_plan_constructs_valid_orientation</p>
+            <div class="stateLine"><span class="stateBadge" data-state>queued</span><span class="muted" data-log>awaiting geometry kernel…</span></div>
+
+            <div class="unlock" aria-hidden="true">
+              <div class="unlockInner">
+                <div class="headlineRow">
+                  <h3 class="headline">2D Part Orienting</h3>
+                  <div class="tags">
+                    <span class="tag">C++</span>
+                    <span class="tag">Computational Geometry</span>
+                  </div>
+                </div>
+                <p class="story">
+                  Open-source library implementation of an efficient algorithm constructing a ‘push plan’ to orient a polygon.
+                </p>
+                <div class="actions">
+                  <a class="btn primary" href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" rel="noopener">
+                    https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/
+                  </a>
+                </div>
+
+                <div class="polybox" aria-label="Polygon motif">
+                  <svg viewBox="0 0 200 80" fill="none" aria-hidden="true">
+                    <path class="polyA" d="M35 55 L55 18 L92 30 L80 62 Z" stroke="rgba(125,178,255,.8)" stroke-width="2" />
+                    <path class="polyB" d="M125 56 L138 22 L175 34 L164 62 Z" stroke="rgba(50,213,131,.85)" stroke-width="2" />
+                    <path d="M12 68 H188" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+                  </svg>
+                  <div class="hint">snap-to-orientation (deterministic)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 4) The Turing Jest -->
+        <article class="card queued" data-id="jest" data-duration="256ms">
+          <div class="marker" aria-hidden="true"></div>
+          <div class="cardInner">
+            <div class="toprow">
+              <div class="statusIcon" aria-hidden="true">
+                <span class="queuedDot"></span>
+                <span class="spinner"></span>
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M20 7L10.5 16.5L4 10" stroke="rgba(50,213,131,.95)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="testname">test_llm_puns_compete_in_arena()</div>
+              <div class="duration" aria-hidden="true">256ms</div>
+            </div>
+            <p class="teaser">assert users_can_rank_explanations_and_jokes</p>
+            <div class="stateLine"><span class="stateBadge" data-state>queued</span><span class="muted" data-log>waiting for judges…</span></div>
+
+            <div class="unlock" aria-hidden="true">
+              <div class="unlockInner">
+                <div class="headlineRow">
+                  <h3 class="headline">The Turing Jest</h3>
+                  <div class="tags">
+                    <span class="tag">LLMs</span>
+                    <span class="tag">Arena</span>
+                  </div>
+                </div>
+                <p class="story">
+                  An LMSYS-like arena where LLMs compete at making and explaining puns; users rate the results.
+                </p>
+                <div class="actions">
+                  <a class="btn primary" href="https://jest.geekip.dev" target="_blank" rel="noopener">https://jest.geekip.dev</a>
+                </div>
+
+                <div class="jestMotif" aria-label="Arena motif">
+                  <div class="bubbles" aria-hidden="true">
+                    <div class="bubble one">prompt: pun about systems</div>
+                    <div class="bubble two">punchline + rationale</div>
+                    <div class="spark" title="punchline spark"></div>
+                  </div>
+                  <div class="hint">pairwise votes → leaderboard<br/>humor with explanations</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 5) Rhymes of Israel -->
+        <article class="card queued" data-id="rhymes" data-duration="418ms">
+          <div class="marker" aria-hidden="true"></div>
+          <div class="cardInner">
+            <div class="toprow">
+              <div class="statusIcon" aria-hidden="true">
+                <span class="queuedDot"></span>
+                <span class="spinner"></span>
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M20 7L10.5 16.5L4 10" stroke="rgba(50,213,131,.95)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="testname">test_headlines_rhyme_in_extension()</div>
+              <div class="duration" aria-hidden="true">418ms</div>
+            </div>
+            <p class="teaser">assert headlines_transform_into_comedic_couplets</p>
+            <div class="stateLine"><span class="stateBadge" data-state>queued</span><span class="muted" data-log>waiting for renderer…</span></div>
+
+            <div class="unlock" aria-hidden="true">
+              <div class="unlockInner">
+                <div class="headlineRow">
+                  <h3 class="headline">Rhymes of Israel</h3>
+                  <div class="tags">
+                    <span class="tag">Chrome Extension</span>
+                    <span class="tag">LLM</span>
+                  </div>
+                </div>
+                <p class="story">
+                  Chrome extension that rewrites Israeli news headlines into comedic rhymes in the style of a highschool yearbook.
+                </p>
+                <div class="actions">
+                  <a class="btn primary" href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" rel="noopener">
+                    Install: chromewebstore.google.com
+                  </a>
+                </div>
+
+                <div class="typebox" aria-label="Typewriter motif">
+                  <div class="headlineMock">Headline: “Coalition talks continue into the night”</div>
+                  <div class="rhyme">→ “They talked till late, it was quite the debate.”</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 6) Portfolio Meta -->
+        <article class="card queued" data-id="meta" data-duration="196ms">
+          <div class="marker" aria-hidden="true"></div>
+          <div class="cardInner">
+            <div class="toprow">
+              <div class="statusIcon" aria-hidden="true">
+                <span class="queuedDot"></span>
+                <span class="spinner"></span>
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M20 7L10.5 16.5L4 10" stroke="rgba(50,213,131,.95)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="testname">test_portfolio_can_explain_itself()</div>
+              <div class="duration" aria-hidden="true">196ms</div>
+            </div>
+            <p class="teaser">assert artifact_is_the_interface</p>
+            <div class="stateLine"><span class="stateBadge" data-state>queued</span><span class="muted" data-log>bootstrapping narrative…</span></div>
+
+            <div class="unlock" aria-hidden="true">
+              <div class="unlockInner">
+                <div class="headlineRow">
+                  <h3 class="headline">Portfolio (Meta Test)</h3>
+                  <div class="tags">
+                    <span class="tag">UI</span>
+                    <span class="tag">Narrative</span>
+                  </div>
+                </div>
+                <p class="story">
+                  A portfolio website project—how meta! This very page is the artifact.
+                </p>
+                <div class="actions">
+                  <a class="btn primary" href="https://geekip.dev" target="_blank" rel="noopener">https://geekip.dev</a>
+                </div>
+
+                <div class="recur" aria-label="Recursive motif">
+                  <svg viewBox="0 0 140 90" fill="none" aria-hidden="true">
+                    <rect x="18" y="18" width="104" height="54" rx="10" stroke="rgba(255,255,255,.22)" />
+                    <rect x="30" y="28" width="80" height="38" rx="9" stroke="rgba(125,178,255,.55)" />
+                    <rect x="42" y="36" width="56" height="24" rx="8" stroke="rgba(50,213,131,.70)" />
+                  </svg>
+                  <div class="hint">self-reference: stable interface, changing implementation</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 7) Social -->
+        <article class="card queued" data-id="social" data-duration="92ms">
+          <div class="marker" aria-hidden="true"></div>
+          <div class="cardInner">
+            <div class="toprow">
+              <div class="statusIcon" aria-hidden="true">
+                <span class="queuedDot"></span>
+                <span class="spinner"></span>
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M20 7L10.5 16.5L4 10" stroke="rgba(50,213,131,.95)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="testname">test_contact_endpoints_resolve()</div>
+              <div class="duration" aria-hidden="true">92ms</div>
+            </div>
+            <p class="teaser">assert social_links_are_direct_and_final</p>
+            <div class="stateLine"><span class="stateBadge" data-state>queued</span><span class="muted" data-log>awaiting summary…</span></div>
+
+            <div class="unlock" aria-hidden="true">
+              <div class="unlockInner">
+                <div class="headlineRow">
+                  <h3 class="headline">Links / Social</h3>
+                  <div class="tags">
+                    <span class="tag">endpoints</span>
+                    <span class="tag">stable</span>
+                  </div>
+                </div>
+
+                <div class="socialGrid" aria-label="Social links">
+                  <a class="iconBtn" href="https://github.com/gevak" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M12 2.5C6.75 2.5 2.5 6.77 2.5 12.04c0 4.2 2.72 7.77 6.49 9.03.47.1.64-.2.64-.46v-1.6c-2.64.58-3.2-1.12-3.2-1.12-.43-1.12-1.06-1.42-1.06-1.42-.86-.6.06-.59.06-.59.95.07 1.45.99 1.45.99.85 1.47 2.23 1.05 2.77.8.09-.62.33-1.05.6-1.29-2.1-.24-4.31-1.07-4.31-4.74 0-1.05.37-1.9.98-2.57-.1-.25-.43-1.23.09-2.57 0 0 .8-.26 2.62.98a8.9 8.9 0 0 1 2.39-.33c.81 0 1.62.11 2.39.33 1.82-1.24 2.62-.98 2.62-.98.52 1.34.19 2.32.1 2.57.61.67.98 1.52.98 2.57 0 3.68-2.22 4.5-4.33 4.73.34.3.65.9.65 1.82v2.7c0 .25.17.56.65.46 3.77-1.26 6.48-4.83 6.48-9.03C21.5 6.77 17.25 2.5 12 2.5Z" stroke="rgba(255,255,255,.80)" stroke-width="1.2"/>
+                    </svg>
+                    <div class="meta">
+                      <div class="k">GitHub</div>
+                      <div class="v">github.com/gevak</div>
+                    </div>
+                  </a>
+
+                  <a class="iconBtn" href="https://linkedin.com/in/gevakip" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M6.5 9.2V20" stroke="rgba(255,255,255,.80)" stroke-width="1.6" stroke-linecap="round"/>
+                      <path d="M6.5 6.2a1.7 1.7 0 1 0 0-3.4 1.7 1.7 0 0 0 0 3.4Z" stroke="rgba(255,255,255,.80)" stroke-width="1.4"/>
+                      <path d="M10.4 20v-6.1c0-1.9 1.1-3.1 2.8-3.1 1.6 0 2.5 1.1 2.5 3V20" stroke="rgba(255,255,255,.80)" stroke-width="1.6" stroke-linecap="round"/>
+                      <path d="M10.4 12.1V9.2" stroke="rgba(255,255,255,.80)" stroke-width="1.6" stroke-linecap="round"/>
+                    </svg>
+                    <div class="meta">
+                      <div class="k">LinkedIn</div>
+                      <div class="v">linkedin.com/in/gevakip</div>
+                    </div>
+                  </a>
+
+                  <a class="iconBtn" href="https://facebook.com/geva.kipper" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M14 8.5h2.1V5.9c-.4-.05-1.6-.16-3-.16-2.95 0-4.97 1.8-4.97 5.1v2.3H5.6v3.1h2.53V20H11.4v-3.8h2.7l.43-3.1H11.4v-2c0-.9.25-1.5 1.6-1.5Z" stroke="rgba(255,255,255,.80)" stroke-width="1.4" stroke-linejoin="round"/>
+                    </svg>
+                    <div class="meta">
+                      <div class="k">Facebook</div>
+                      <div class="v">facebook.com/geva.kipper</div>
+                    </div>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </article>
+      </section>
     </main>
 
-    <footer>
-      <div>Generated by an AI model (ChatGPT) — design authored on request.</div>
-      <div class="stopwatch" aria-label="Time since genesis">
-        <div class="label">Time since genesis</div>
-        <div class="time" id="stopwatch" role="timer" aria-live="polite">00:00:00</div>
+    <footer id="footer">
+      <div class="summaryBar" id="summaryBar" aria-label="Build summary">
+        <div class="left">Generated by AI model (OpenAI) — daily redesign enabled.</div>
+        <div class="stopwatch">
+          <span>Time since 2025-12-27 01<span class="colon">:</span>08<span class="colon">:</span>56</span>
+          <span class="clock" id="clock">00<span class="colon">:</span>00<span class="colon">:</span>00</span>
+        </div>
       </div>
+      <div class="finalLine" id="finalLine">Scroll complete to finalize pipeline output…</div>
     </footer>
   </div>
 
   <script>
     (() => {
-      /* -----------------------------
-         Helpers: seeded RNG (daily)
-      ------------------------------*/
-      function xmur3(str){
-        let h = 1779033703 ^ str.length;
-        for (let i = 0; i < str.length; i++) {
-          h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
-          h = (h << 13) | (h >>> 19);
+      const cards = Array.from(document.querySelectorAll('.card'));
+      const runFill = document.getElementById('runFill');
+      const runText = document.getElementById('runText');
+      const runPillText = document.getElementById('runPillText');
+      const runBar = document.getElementById('runBar');
+      const finalLine = document.getElementById('finalLine');
+      const footer = document.getElementById('footer');
+
+      const TOTAL = cards.length;
+      const seen = new Set();
+
+      function setState(card, state) {
+        card.classList.remove('queued','running','passed');
+        card.classList.add(state);
+
+        const badge = card.querySelector('[data-state]');
+        const log = card.querySelector('[data-log]');
+        if (badge) badge.textContent = state;
+
+        if (log) {
+          if (state === 'queued') log.textContent = 'enqueued…';
+          if (state === 'running') log.textContent = 'running checks…';
+          if (state === 'passed') log.textContent = '✓ passed';
         }
-        return function(){
-          h = Math.imul(h ^ (h >>> 16), 2246822507);
-          h = Math.imul(h ^ (h >>> 13), 3266489909);
-          h ^= h >>> 16;
-          return h >>> 0;
+
+        // reveal duration label text only after passing (already visually hidden by opacity)
+        if (state === 'passed') {
+          const d = card.getAttribute('data-duration') || '—';
+          const dur = card.querySelector('.duration');
+          if (dur) dur.textContent = d;
         }
       }
-      function mulberry32(a){
-        return function(){
-          let t = a += 0x6D2B79F5;
-          t = Math.imul(t ^ (t >>> 15), t | 1);
-          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        }
+
+      function expandUnlock(card) {
+        const unlock = card.querySelector('.unlock');
+        if (!unlock) return;
+
+        unlock.setAttribute('aria-hidden', 'false');
+
+        // Measure + set max-height for smooth transition.
+        // (We set it per-card so content changes don't cause jump.)
+        unlock.style.maxHeight = '0px';
+        const inner = unlock.firstElementChild;
+        requestAnimationFrame(() => {
+          const h = inner.scrollHeight + 22;
+          unlock.style.maxHeight = h + 'px';
+        });
       }
 
-      const today = new Date();
-      const seedStr = today.toISOString().slice(0,10); // YYYY-MM-DD
-      document.getElementById('dailySeed').textContent = seedStr;
-
-      const seedFn = xmur3("geekip.daily." + seedStr);
-      const rng = mulberry32(seedFn());
-
-      const palette = [
-        { name: "teal",   hex: "#6EE7E0" },
-        { name: "violet", hex: "#8B5CF6" },
-        { name: "amber",  hex: "#FBBF24" }
-      ];
-      const accent = palette[Math.floor(rng() * palette.length)].hex;
-      document.documentElement.style.setProperty('--accent', accent);
-
-      /* -----------------------------
-         Reduced motion toggle
-      ------------------------------*/
-      const app = document.getElementById('app');
-      const motionToggle = document.getElementById('motionToggle');
-
-      const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      let reducedMotion = prefersReduced;
-
-      function setReducedMotion(on){
-        reducedMotion = !!on;
-        app.classList.toggle('reduced', reducedMotion);
-        motionToggle.setAttribute('aria-pressed', String(reducedMotion));
+      function passCard(card) {
+        setState(card, 'passed');
+        expandUnlock(card);
+        updateRunStatus();
       }
-      setReducedMotion(prefersReduced);
 
-      motionToggle.addEventListener('click', () => {
-        setReducedMotion(!reducedMotion);
-        // if user reduces motion, also trigger a subtle static redraw
-        net.requestPulse('toggle');
+      function runCard(card) {
+        setState(card, 'running');
+        updateRunStatus();
+
+        // tasteful, restrained delay per card
+        const base = 520;
+        const jitter = 380;
+        const ms = base + Math.floor(Math.random() * jitter);
+        window.setTimeout(() => passCard(card), ms);
+      }
+
+      function queuedCount() {
+        return cards.filter(c => c.classList.contains('queued') || c.classList.contains('running')).length;
+      }
+
+      function passedCount() {
+        return cards.filter(c => c.classList.contains('passed')).length;
+      }
+
+      function updateRunStatus() {
+        const passed = passedCount();
+        const pending = TOTAL - passed;
+
+        // Progress strip: spec says it eases to 100% and then flips message based on scroll.
+        // We'll keep bar full after initial boot, but status text stays live.
+        const allPassed = pending === 0;
+        runPillText.textContent = allPassed ? 'passed' : (pending + ' pending');
+
+        runText.textContent = allPassed
+          ? 'All checks passed'
+          : `${pending} checks pending`;
+
+        // Keep a subtle shimmer while anything isn't passed
+        runBar.classList.toggle('running', !allPassed);
+      }
+
+      // initial "CI boot": bar fills to 100%
+      requestAnimationFrame(() => {
+        runFill.style.width = '100%';
+        updateRunStatus();
       });
 
-      /* -----------------------------
-         Data: 7 cards (memories)
-      ------------------------------*/
-      const cardsData = [
-        {
-          id: "glglstats",
-          theme: "lz",
-          title: "GlglStats",
-          summary: "Python project measuring repetitiveness of Israeli pop-chart songs via LZ77 compression, plus repetition-pattern visualizations of famous tracks.",
-          artifacts: [
-            { label: "Live site", href: "https://glglstats.geekip.dev", icon: "link" },
-            { label: "PyData TLV talk (video)", href: "https://www.youtube.com/watch?v=jrKAtOsj1Lo", icon: "video" },
-          ],
-          span: 6
-        },
-        {
-          id: "ahuzat-dibuk",
-          theme: "heat",
-          title: "Ahuzat Dibuk",
-          summary: "Python scraping + data visualization project collecting Tel-Aviv parking lot occupancy and generating resident-friendly heat-maps.",
-          artifacts: [
-            { label: "News story (13tv)", href: "https://13tv.co.il/item/news/domestic/internal/parking-902956407/", icon: "news" },
-            { label: "News story (mako)", href: "https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm", icon: "news" },
-            { label: "Original Facebook post", href: "https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/", icon: "post" },
-          ],
-          span: 6
-        },
-        {
-          id: "2d-part-orienting",
-          theme: "geom",
-          title: "2D Part Orienting",
-          summary: "C++ implementation in an open-source computational geometry library: an efficient algorithm constructing a push plan to orient a polygon.",
-          artifacts: [
-            { label: "Additional info + code", href: "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/", icon: "code" },
-          ],
-          span: 6
-        },
-        {
-          id: "turing-jest",
-          theme: "arena",
-          title: "The Turing Jest",
-          summary: "An LMSYS-like arena where LLMs compete at making and explaining puns, rated by users.",
-          artifacts: [
-            { label: "Live site", href: "https://jest.geekip.dev", icon: "link" },
-          ],
-          span: 6
-        },
-        {
-          id: "rhymes-of-israel",
-          theme: "rhyme",
-          title: "Rhymes of Israel",
-          summary: "Chrome extension that uses an LLM to rewrite Israeli news headlines into comedic rhymes, high-school yearbook style.",
-          artifacts: [
-            { label: "Install on Chrome Web Store", href: "https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb", icon: "install" },
-          ],
-          span: 6
-        },
-        {
-          id: "portfolio-meta",
-          theme: "meta",
-          title: "Portfolio website (meta)",
-          summary: "A portfolio website project (how meta): the site you’re currently exploring.",
-          artifacts: [
-            { label: "Self-reference", href: "https://geekip.dev", icon: "link" },
-          ],
-          span: 6
-        },
-        {
-          id: "links",
-          theme: "links",
-          title: "Links / presence",
-          summary: "A clean output layer: the model’s most confident external pointers.",
-          artifacts: [],
-          span: 12
+      // Intersection observer: queued -> running -> passed, once
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          const card = e.target;
+          if (seen.has(card)) continue;
+          seen.add(card);
+
+          // queued → running
+          runCard(card);
         }
-      ];
+      }, { threshold: 0.35 });
 
-      // Slight daily shuffle: do a few adjacent swaps (stable usability, small variation).
-      const shuffled = cardsData.slice();
-      const swapCount = 2 + Math.floor(rng() * 3); // 2..4 swaps
-      for (let s=0; s<swapCount; s++){
-        const i = Math.floor(rng() * (shuffled.length - 2)) + 1; // avoid always moving first item too much
-        const j = i + (rng() < 0.65 ? 1 : -1);
-        if (j >= 0 && j < shuffled.length){
-          const tmp = shuffled[i]; shuffled[i] = shuffled[j]; shuffled[j] = tmp;
-        }
-      }
-      // Keep links as last to preserve "output layer" affordance.
-      const linksIdx = shuffled.findIndex(c => c.id === "links");
-      if (linksIdx !== -1 && linksIdx !== shuffled.length - 1){
-        const [links] = shuffled.splice(linksIdx, 1);
-        shuffled.push(links);
-      }
-
-      // Accent rotation per-card (tasteful)
-      const accents = [accent, "#8B5CF6", "#FBBF24"];
-      function accentFor(i){
-        return accents[i % accents.length];
-      }
-
-      /* -----------------------------
-         Icons
-      ------------------------------*/
-      function iconSVG(name){
-        const common = 'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
-        switch(name){
-          case "link": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M10 13a5 5 0 0 0 7.07 0l1.41-1.41a5 5 0 0 0 0-7.07 5 5 0 0 0-7.07 0L10.5 5.5"/><path ${common} d="M14 11a5 5 0 0 0-7.07 0L5.5 12.41a5 5 0 0 0 0 7.07 5 5 0 0 0 7.07 0L13.5 18.5"/></svg>`;
-          case "video": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M14 7H6a3 3 0 0 0-3 3v4a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-4a3 3 0 0 0-3-3Z"/><path ${common} d="M21 8.5l-4 2.5v2l4 2.5Z"/></svg>`;
-          case "code": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M16 18l6-6-6-6"/><path ${common} d="M8 6l-6 6 6 6"/><path ${common} d="M14 4l-4 16"/></svg>`;
-          case "install": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M12 3v10"/><path ${common} d="M8 9l4 4 4-4"/><path ${common} d="M5 21h14"/></svg>`;
-          case "news": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M4 4h14v16H4z"/><path ${common} d="M8 8h6"/><path ${common} d="M8 12h8"/><path ${common} d="M8 16h8"/><path ${common} d="M18 8h2v12a1 1 0 0 1-1 1h-1"/></svg>`;
-          case "post": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path ${common} d="M8 8h8"/><path ${common} d="M8 12h6"/></svg>`;
-          case "github": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.72c-2.77.6-3.36-1.17-3.36-1.17-.45-1.14-1.1-1.44-1.1-1.44-.9-.62.07-.61.07-.61 1 .07 1.52 1.03 1.52 1.03.9 1.54 2.36 1.1 2.94.84.09-.65.35-1.1.63-1.35-2.21-.25-4.54-1.1-4.54-4.91 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02A9.6 9.6 0 0 1 12 6.8c.85 0 1.71.12 2.51.35 1.9-1.29 2.74-1.02 2.74-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.68 0 3.82-2.34 4.66-4.57 4.9.36.31.68.92.68 1.86v2.76c0 .27.18.58.69.48A10 10 0 0 0 12 2Z" fill="currentColor" opacity="0.92"/></svg>`;
-          case "linkedin": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.94 6.5A2.44 2.44 0 1 1 7 1.63a2.44 2.44 0 0 1-.06 4.87ZM2.5 22h4.9V8.5H2.5V22ZM9.3 8.5h4.7v1.85h.07c.65-1.23 2.25-2.52 4.63-2.52 4.95 0 5.87 3.26 5.87 7.5V22h-4.9v-5.97c0-1.42-.03-3.25-1.98-3.25-1.98 0-2.28 1.55-2.28 3.15V22H9.3V8.5Z" fill="currentColor" opacity="0.92"/></svg>`;
-          case "facebook": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 22v-8h2.6l.4-3h-3V9.1c0-.87.24-1.46 1.5-1.46h1.6V5c-.28-.04-1.23-.12-2.34-.12-2.31 0-3.89 1.41-3.89 4V11H8v3h2.4v8h3.1Z" fill="currentColor" opacity="0.92"/></svg>`;
-          case "arrow": return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M7 17L17 7"/><path ${common} d="M9 7h8v8"/></svg>`;
-          default: return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M12 5v14"/><path ${common} d="M5 12h14"/></svg>`;
-        }
-      }
-
-      /* -----------------------------
-         Render cards
-      ------------------------------*/
-      const grid = document.getElementById('grid');
-
-      function makeArtifacts(artifacts){
-        if (!artifacts || !artifacts.length) return '';
-        return `
-          <div class="artifacts" aria-label="Artifacts">
-            ${artifacts.map(a => `
-              <a class="chip" href="${a.href}" target="_blank" rel="noopener noreferrer">
-                ${iconSVG(a.icon)}
-                <span>${a.label}</span>
-              </a>
-            `).join('')}
-          </div>`;
-      }
-
-      function headerMarkup(theme){
-        if (theme === "lz"){
-          return `
-            <div class="cardHeader" aria-hidden="true">
-              <div class="lz">
-                <div class="track">
-                  <div class="block"></div>
-                  <div class="block"></div>
-                  <div class="block"></div>
-                  <div class="block"></div>
-                  <div class="block"></div>
-                  <div class="block"></div>
-                </div>
-              </div>
-              <div class="compressAnim" aria-hidden="true">
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
-              </div>
-            </div>`;
-        }
-        if (theme === "heat"){
-          return `
-            <div class="cardHeader" aria-hidden="true">
-              <div class="city"></div>
-              <div class="thermal"></div>
-            </div>`;
-        }
-        if (theme === "geom"){
-          return `
-            <div class="cardHeader blueprint" aria-hidden="true">
-              <svg viewBox="0 0 320 140" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="bp" x1="0" x2="1">
-                    <stop offset="0" stop-color="rgba(110,231,224,0.55)"/>
-                    <stop offset="1" stop-color="rgba(210,225,255,0.35)"/>
-                  </linearGradient>
-                </defs>
-                <g opacity="0.95">
-                  <path d="M20 22H300" stroke="rgba(200,220,255,0.10)" stroke-width="2"/>
-                  <path d="M20 118H300" stroke="rgba(200,220,255,0.10)" stroke-width="2"/>
-                  <g class="stepPoly step1">
-                    <path d="M78 44 L130 26 L186 44 L170 96 L104 106 Z"
-                      fill="rgba(210,225,255,0.04)"
-                      stroke="url(#bp)" stroke-width="2.2"/>
-                    <path d="M104 106 L130 26" stroke="rgba(200,220,255,0.16)" stroke-width="1.4" stroke-dasharray="4 5"/>
-                  </g>
-                  <g class="stepPoly step2">
-                    <path d="M198 38 L254 44 L268 90 L214 104 L188 74 Z"
-                      fill="rgba(210,225,255,0.03)"
-                      stroke="rgba(139,92,246,0.45)" stroke-width="2.1"/>
-                  </g>
-                  <g class="stepPoly step3">
-                    <path d="M44 62 L62 36 L88 52 L78 86 L50 88 Z"
-                      fill="rgba(210,225,255,0.03)"
-                      stroke="rgba(251,191,36,0.44)" stroke-width="2.1"/>
-                  </g>
-
-                  <g class="pushArrow" opacity="0.86">
-                    <path d="M152 68h80" stroke="rgba(234,240,255,0.32)" stroke-width="2"/>
-                    <path d="M232 68l-10-7m10 7l-10 7" stroke="rgba(234,240,255,0.32)" stroke-width="2" fill="none"/>
-                    <text x="152" y="60" fill="rgba(183,192,216,0.75)" font-family="ui-monospace" font-size="11">push plan</text>
-                  </g>
-                </g>
-              </svg>
-            </div>`;
-        }
-        if (theme === "arena"){
-          return `
-            <div class="cardHeader" aria-hidden="true">
-              <div class="arena">
-                <div class="bubble"></div>
-                <div class="vs">vs</div>
-                <div class="bubble"></div>
-              </div>
-              <div class="punct">?!</div>
-              <div class="score"><div class="scoreFill"></div></div>
-            </div>`;
-        }
-        if (theme === "rhyme"){
-          return `
-            <div class="cardHeader" aria-hidden="true">
-              <div class="headline">
-                <div class="tabs">
-                  <div class="tab"></div><div class="tab" style="width:40px;opacity:.75"></div><div class="tab" style="width:32px;opacity:.55"></div>
-                </div>
-                <div class="line rewrite tokenJitter" data-a="Breaking: coalition debates budget…" data-b="Budget? We fudge it — then we judge it.">
-                  <span>B</span><span>r</span><span>e</span><span>a</span><span>k</span><span>i</span><span>n</span><span>g</span><span>:</span>
-                  <span>&nbsp;</span><span>h</span><span>e</span><span>a</span><span>d</span><span>l</span><span>i</span><span>n</span><span>e</span><span>s</span><span>&nbsp;</span><span>→</span><span>&nbsp;</span><span>r</span><span>h</span><span>y</span><span>m</span><span>e</span>
-                </div>
-                <div class="line" style="color:rgba(183,192,216,0.88)">tokens decode with just enough mischief</div>
-              </div>
-            </div>`;
-        }
-        if (theme === "meta"){
-          return `
-            <div class="cardHeader" aria-hidden="true">
-              <canvas class="miniNet viz"></canvas>
-            </div>`;
-        }
-        if (theme === "links"){
-          return `
-            <div class="cardHeader" aria-hidden="true">
-              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
-                <div style="text-align:center;">
-                  <div style="font-family:var(--mono);letter-spacing:.18em;text-transform:uppercase;font-size:12px;color:rgba(183,192,216,.78);">
-                    output layer
-                  </div>
-                  <div style="margin-top:6px;font-size:13.5px;color:rgba(234,240,255,.78);">
-                    select a final pointer
-                  </div>
-                </div>
-              </div>
-            </div>`;
-        }
-        return `<div class="cardHeader" aria-hidden="true"></div>`;
-      }
-
-      function cardMarkup(card, index){
-        const a = accentFor(index);
-        const confBase = 0.60 + rng() * 0.09; // ~0.60..0.69 initial
-        const confHi   = 0.88 + rng() * 0.05; // ~0.88..0.93 on hover
-        const span = card.span === 12 ? 'data-span="12"' : '';
-        const isLinks = card.theme === "links";
-        return `
-          <article class="card ${isLinks ? 'linksCard' : ''}"
-            data-id="${card.id}"
-            data-theme="${card.theme}"
-            data-accent="${a}"
-            data-confbase="${confBase.toFixed(2)}"
-            data-confhi="${confHi.toFixed(2)}"
-            ${span}
-          >
-            <div class="scanline" aria-hidden="true"></div>
-            <div class="cardInner">
-              ${headerMarkup(card.theme)}
-              <div class="cardTitleRow">
-                <div>
-                  <h3 class="cardTitle">${card.title}</h3>
-                </div>
-                <div class="confidence" aria-label="Confidence meter">
-                  <label>confidence</label>
-                  <div class="meter" aria-hidden="true"><div class="meterFill"></div></div>
-                  <div class="meterValue">${confBase.toFixed(2)}</div>
-                </div>
-              </div>
-
-              <p class="summary">${card.summary}</p>
-
-              ${card.theme !== "links" ? makeArtifacts(card.artifacts) : `
-                <div class="linkRows" aria-label="Presence links">
-                  <a class="linkRow" href="https://github.com/gevak" target="_blank" rel="noopener noreferrer" data-row="github">
-                    <div class="left">${iconSVG('github')} <span>GitHub</span></div>
-                    <div class="go"><span class="hint">github.com/gevak</span> ${iconSVG('arrow')}</div>
-                  </a>
-                  <a class="linkRow" href="https://linkedin.com/in/gevakip" target="_blank" rel="noopener noreferrer" data-row="linkedin">
-                    <div class="left">${iconSVG('linkedin')} <span>LinkedIn</span></div>
-                    <div class="go"><span class="hint">linkedin.com/in/gevakip</span> ${iconSVG('arrow')}</div>
-                  </a>
-                  <a class="linkRow" href="https://facebook.com/geva.kipper" target="_blank" rel="noopener noreferrer" data-row="facebook">
-                    <div class="left">${iconSVG('facebook')} <span>Facebook</span></div>
-                    <div class="go"><span class="hint">facebook.com/geva.kipper</span> ${iconSVG('arrow')}</div>
-                  </a>
-                </div>
-              `}
-            </div>
-          </article>
-        `;
-      }
-
-      grid.innerHTML = shuffled.map((c, i) => cardMarkup(c, i)).join('');
-
-      // Apply per-card accent (border glow + meter color) via inline CSS vars
-      const cardEls = Array.from(document.querySelectorAll('.card'));
-      cardEls.forEach((el) => {
-        el.style.setProperty('--accent', el.dataset.accent);
-        // set initial confidence width
-        const base = parseFloat(el.dataset.confbase || "0.62");
-        const fill = el.querySelector('.meterFill');
-        const val  = el.querySelector('.meterValue');
-        if (fill) fill.style.width = Math.round(base * 100) + "%";
-        if (val)  val.textContent = base.toFixed(2);
+      cards.forEach(c => {
+        setState(c, 'queued');
+        io.observe(c);
       });
 
-      /* -----------------------------
-         Rhyme header text morph (lightweight)
-      ------------------------------*/
-      function setRewriteLine(el, text){
-        // token-ish rendering: wrap chars in spans for subtle "decode" feel
-        el.innerHTML = [...text].map(ch => `<span>${ch === ' ' ? '&nbsp;' : ch.replace(/</g,'&lt;')}</span>`).join('');
-      }
-      document.querySelectorAll('.rewrite').forEach(line => {
-        const a = line.getAttribute('data-a');
-        if (a) setRewriteLine(line, a);
-      });
-      // On hover swap to rhyming line and back
-      cardEls.forEach(card => {
-        if (card.dataset.theme !== "rhyme") return;
-        const line = card.querySelector('.rewrite');
-        const a = line?.getAttribute('data-a') || '';
-        const b = line?.getAttribute('data-b') || '';
-        if (!line) return;
-        card.addEventListener('mouseenter', () => setRewriteLine(line, b));
-        card.addEventListener('mouseleave', () => setRewriteLine(line, a));
-      });
-
-      /* -----------------------------
-         Mini network canvas for meta card
-      ------------------------------*/
-      function drawMiniNetwork(canvas, t, accentHex){
-        const dpr = Math.min(2, window.devicePixelRatio || 1);
-        const w = canvas.clientWidth, h = canvas.clientHeight;
-        if (!w || !h) return;
-        if (canvas.width !== Math.floor(w*dpr) || canvas.height !== Math.floor(h*dpr)){
-          canvas.width = Math.floor(w*dpr); canvas.height = Math.floor(h*dpr);
-        }
-        const ctx = canvas.getContext('2d');
-        ctx.setTransform(dpr,0,0,dpr,0,0);
-        ctx.clearRect(0,0,w,h);
-
-        // background vignette
-        const g = ctx.createRadialGradient(w*0.35, h*0.35, 10, w*0.5, h*0.6, Math.max(w,h));
-        g.addColorStop(0, "rgba(255,255,255,0.06)");
-        g.addColorStop(1, "rgba(255,255,255,0.00)");
-        ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-
-        const nodes = [
-          {x:w*0.22,y:h*0.55},{x:w*0.34,y:h*0.30},{x:w*0.42,y:h*0.60},
-          {x:w*0.56,y:h*0.38},{x:w*0.70,y:h*0.56},{x:w*0.78,y:h*0.32},
-        ];
-        const edges = [[0,1],[0,2],[1,3],[2,3],[3,4],[4,5],[3,5]];
-        ctx.lineWidth = 1.1;
-
-        edges.forEach(([a,b], idx) => {
-          const A = nodes[a], B = nodes[b];
-          const pulse = 0.5 + 0.5*Math.sin(t*2.1 + idx*1.2);
-          ctx.strokeStyle = `rgba(200,220,255,${0.10 + 0.10*pulse})`;
-          ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y); ctx.stroke();
-          // traveling signal
-          if (!reducedMotion){
-            const tt = (t*0.18 + idx*0.11) % 1;
-            const x = A.x + (B.x-A.x)*tt;
-            const y = A.y + (B.y-A.y)*tt;
-            ctx.fillStyle = `rgba(110,231,224,${0.18 + 0.35*pulse})`;
-            ctx.beginPath(); ctx.arc(x,y, 1.8, 0, Math.PI*2); ctx.fill();
-          }
-        });
-
-        nodes.forEach((p, i) => {
-          const ph = 0.5 + 0.5*Math.sin(t*1.8 + i);
-          ctx.fillStyle = `rgba(234,240,255,${0.32 + 0.18*ph})`;
-          ctx.beginPath(); ctx.arc(p.x, p.y, 3.2, 0, Math.PI*2); ctx.fill();
-          ctx.fillStyle = accentHex ? accentHex : "rgba(110,231,224,0.7)";
-          ctx.globalAlpha = 0.12 + 0.10*ph;
-          ctx.beginPath(); ctx.arc(p.x, p.y, 9.5, 0, Math.PI*2); ctx.fill();
-          ctx.globalAlpha = 1;
-        });
-
-        // recursion hint: tiny "card" rectangle
-        ctx.strokeStyle = "rgba(200,220,255,0.16)";
-        ctx.fillStyle = "rgba(12,14,24,0.22)";
-        ctx.lineWidth = 1;
-        const rx = w*0.60, ry = h*0.62, rw = w*0.28, rh = h*0.22;
-        ctx.beginPath();
-        ctx.roundRect(rx, ry, rw, rh, 10);
-        ctx.fill(); ctx.stroke();
-        ctx.fillStyle = "rgba(234,240,255,0.66)";
-        ctx.font = "12px " + getComputedStyle(document.documentElement).getPropertyValue('--mono');
-        ctx.fillText("…learning…", rx+10, ry+rh/2+4);
-      }
-
-      /* -----------------------------
-         Global "living model" network
-      ------------------------------*/
-      const canvas = document.getElementById('bgCanvas');
-      const ctx = canvas.getContext('2d');
-
-      const net = {
-        dpr: 1,
-        w: 0,
-        h: 0,
-        nodes: [],
-        edges: [],
-        particles: [],
-        hoveredCard: null,
-        hoveredRow: null, // for links/output
-        pulse: { active:false, t0:0, reason:"" },
-        lastNow: performance.now(),
-        clusterTargets: [],
-        requestPulse(reason="scroll"){
-          if (reducedMotion) return;
-          this.pulse = { active:true, t0: performance.now(), reason };
-        }
-      };
-
-      function resize(){
-        const dpr = Math.min(2, window.devicePixelRatio || 1);
-        net.dpr = dpr;
-        net.w = canvas.width = Math.floor(innerWidth * dpr);
-        net.h = canvas.height = Math.floor(innerHeight * dpr);
-        canvas.style.width = innerWidth + "px";
-        canvas.style.height = innerHeight + "px";
-        ctx.setTransform(dpr,0,0,dpr,0,0);
-
-        // build nodes (seeded stable-ish)
-        buildNetwork();
-      }
-      window.addEventListener('resize', resize);
-
-      function buildNetwork(){
-        // Node field: 3 clusters + some outliers; clusters drift over time.
-        const w = innerWidth, h = innerHeight;
-
-        const clusters = [
-          { cx: 0.30 + (rng()-0.5)*0.08, cy: 0.35 + (rng()-0.5)*0.06, r: 0.16 },
-          { cx: 0.62 + (rng()-0.5)*0.08, cy: 0.40 + (rng()-0.5)*0.06, r: 0.18 },
-          { cx: 0.48 + (rng()-0.5)*0.08, cy: 0.68 + (rng()-0.5)*0.06, r: 0.20 },
-        ];
-
-        const N = 58;
-        const nodes = [];
-        for (let i=0;i<N;i++){
-          const c = clusters[Math.floor(rng()*clusters.length)];
-          const ang = rng()*Math.PI*2;
-          const rad = (0.12 + rng()*0.88) * c.r;
-          const x = c.cx + Math.cos(ang)*rad + (rng()-0.5)*0.02;
-          const y = c.cy + Math.sin(ang)*rad + (rng()-0.5)*0.02;
-
-          nodes.push({
-            x, y,
-            vx: 0, vy: 0,
-            baseX: x, baseY: y,
-            glow: 0.0,
-            phase: rng()*Math.PI*2
-          });
-        }
-
-        // Add a "hero center" anchor node
-        nodes.unshift({
-          x: 0.50, y: 0.42,
-          vx: 0, vy: 0,
-          baseX: 0.50, baseY: 0.42,
-          glow: 0.35,
-          phase: 0
-        });
-
-        // Edges: k-nearest
-        const edges = [];
-        const k = 3;
-        for (let i=0;i<nodes.length;i++){
-          const dists = [];
-          for (let j=0;j<nodes.length;j++){
-            if (i===j) continue;
-            const dx = nodes[i].x - nodes[j].x;
-            const dy = nodes[i].y - nodes[j].y;
-            const d2 = dx*dx + dy*dy;
-            dists.push({ j, d2 });
-          }
-          dists.sort((a,b)=>a.d2-b.d2);
-          for (let m=0;m<k;m++){
-            const j = dists[m].j;
-            const a = Math.min(i,j), b = Math.max(i,j);
-            const key = a + "-" + b;
-            if (!edges.some(e => e.key === key)){
-              edges.push({ a, b, key, strength: 0 });
-            }
-          }
-        }
-
-        // Particles: one per edge to feel alive (moderate count)
-        const particles = [];
-        for (let i=0;i<edges.length;i++){
-          if (rng() < 0.65){
-            particles.push({ e: i, t: rng(), speed: 0.10 + rng()*0.16 });
-          }
-        }
-
-        net.nodes = nodes;
-        net.edges = edges;
-        net.particles = particles;
-
-        // Drift targets (clusters "learning")
-        net.clusterTargets = clusters.map(c => ({
-          cx: c.cx + (rng()-0.5)*0.10,
-          cy: c.cy + (rng()-0.5)*0.10
-        }));
-      }
-
-      // Compute a card anchor point in viewport -> normalized canvas coords
-      function elementAnchor(el){
-        if (!el) return null;
-        const r = el.getBoundingClientRect();
-        const x = Math.max(0, Math.min(innerWidth,  r.left + r.width*0.5));
-        const y = Math.max(0, Math.min(innerHeight, r.top + Math.min(80, r.height*0.22))); // toward header
-        return { x: x / innerWidth, y: y / innerHeight };
-      }
-
-      // Highlight path from hero center to card anchor: choose closest nodes along a direction.
-      function computePathTo(target){
-        if (!target) return [];
-        const nodes = net.nodes;
-        const start = 0; // hero center node index
-        const tx = target.x, ty = target.y;
-
-        // Greedy stepping: repeatedly choose neighbor that reduces distance to target.
-        const neighbors = new Map();
-        net.edges.forEach((e, idx) => {
-          if (!neighbors.has(e.a)) neighbors.set(e.a, []);
-          if (!neighbors.has(e.b)) neighbors.set(e.b, []);
-          neighbors.get(e.a).push(e.b);
-          neighbors.get(e.b).push(e.a);
-        });
-
-        const visited = new Set([start]);
-        const path = [start];
-        let cur = start;
-
-        for (let step=0; step<10; step++){
-          const nbs = neighbors.get(cur) || [];
-          let best = null;
-          let bestD = Infinity;
-          for (const j of nbs){
-            if (visited.has(j)) continue;
-            const dx = nodes[j].x - tx;
-            const dy = nodes[j].y - ty;
-            const d = dx*dx + dy*dy;
-            if (d < bestD){
-              bestD = d; best = j;
-            }
-          }
-          if (best == null) break;
-          visited.add(best);
-          path.push(best);
-          cur = best;
-          if (bestD < 0.003) break;
-        }
-        return path;
-      }
-
-      function draw(now){
-        const w = innerWidth, h = innerHeight;
-        ctx.clearRect(0,0,w,h);
-
-        // background soft gradient overlay (canvas side)
-        const bg = ctx.createLinearGradient(0, 0, w, h);
-        bg.addColorStop(0, "rgba(7, 8, 16, 0.0)");
-        bg.addColorStop(1, "rgba(11, 12, 26, 0.55)");
-        ctx.fillStyle = bg;
-        ctx.fillRect(0,0,w,h);
-
-        const dt = Math.min(0.05, (now - net.lastNow) / 1000);
-        net.lastNow = now;
-
-        // "learning": gentle drift + spring back to base
-        const t = now / 1000;
-        const drift = reducedMotion ? 0 : 0.55;
-
-        // create mild wandering targets (update occasionally)
-        if (!reducedMotion && Math.floor(t) % 7 === 0 && Math.floor((t-dt)) % 7 !== 0){
-          // nudge base positions slightly, but keep stable
-          for (let i=1; i<net.nodes.length; i++){
-            const n = net.nodes[i];
-            const jitter = (rng() - 0.5) * 0.016;
-            n.baseX = Math.max(0.06, Math.min(0.94, n.baseX + jitter));
-            n.baseY = Math.max(0.06, Math.min(0.94, n.baseY + jitter*0.8));
-          }
-        }
-
-        for (let i=0;i<net.nodes.length;i++){
-          const n = net.nodes[i];
-          const nx = n.baseX + (Math.sin(t*0.6 + n.phase) * 0.012) * drift;
-          const ny = n.baseY + (Math.cos(t*0.7 + n.phase) * 0.010) * drift;
-
-          // simple spring
-          const ax = (nx - n.x) * (reducedMotion ? 0.08 : 0.18);
-          const ay = (ny - n.y) * (reducedMotion ? 0.08 : 0.18);
-          n.vx = (n.vx + ax) * (reducedMotion ? 0.78 : 0.86);
-          n.vy = (n.vy + ay) * (reducedMotion ? 0.78 : 0.86);
-          n.x += n.vx * dt * 60;
-          n.y += n.vy * dt * 60;
-
-          // decay glow
-          n.glow *= (reducedMotion ? 0.92 : 0.90);
-        }
-
-        // Pulse wave (scroll/hover)
-        let wave = null;
-        if (net.pulse.active){
-          const age = (now - net.pulse.t0) / 1000;
-          if (age > 1.25) net.pulse.active = false;
-          else wave = { r: age * 0.55, band: 0.07, strength: 1.0 - age/1.25 };
-        }
-
-        // Hover path target
-        let target = null;
-        if (net.hoveredCard){
-          target = elementAnchor(net.hoveredCard);
-        } else if (net.hoveredRow){
-          target = elementAnchor(net.hoveredRow);
-        }
-        const path = target ? computePathTo(target) : [];
-
-        // Map nodes to pixels
-        function pxX(u){ return u * w; }
-        function pxY(v){ return v * h; }
-
-        // Edges
-        ctx.lineWidth = 1;
-        net.edges.forEach((e, idx) => {
-          const A = net.nodes[e.a], B = net.nodes[e.b];
-          const ax = pxX(A.x), ay = pxY(A.y);
-          const bx = pxX(B.x), by = pxY(B.y);
-
-          const baseAlpha = 0.08;
-          let alpha = baseAlpha;
-
-          // wave highlight
-          if (wave){
-            const mx = (A.x + B.x) * 0.5;
-            const my = (A.y + B.y) * 0.5;
-            const d = Math.hypot(mx - 0.50, my - 0.42);
-            const band = Math.abs(d - wave.r);
-            if (band < wave.band){
-              alpha += (0.18 * (1 - band/wave.band)) * wave.strength;
-            }
-          }
-
-          // path highlight
-          if (path.length){
-            for (let i=0; i<path.length-1; i++){
-              const pa = path[i], pb = path[i+1];
-              if ((e.a===pa && e.b===pb) || (e.a===pb && e.b===pa)){
-                alpha += 0.32;
-                break;
-              }
-            }
-          }
-
-          const accentCol = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#6EE7E0";
-          const stroke = (path.length && alpha > 0.25)
-            ? `rgba(110,231,224,${Math.min(0.55, alpha)})`
-            : `rgba(200,220,255,${Math.min(0.26, alpha)})`;
-
-          ctx.strokeStyle = stroke;
-          ctx.beginPath();
-          ctx.moveTo(ax, ay);
-          ctx.lineTo(bx, by);
-          ctx.stroke();
-        });
-
-        // Traveling signals on edges
-        if (!reducedMotion){
-          for (const p of net.particles){
-            p.t = (p.t + dt * p.speed) % 1;
-            const e = net.edges[p.e];
-            const A = net.nodes[e.a], B = net.nodes[e.b];
-
-            const x = pxX(A.x + (B.x - A.x) * p.t);
-            const y = pxY(A.y + (B.y - A.y) * p.t);
-
-            // brighten if on the highlighted path
-            let boost = 0;
-            if (path.length){
-              for (let i=0; i<path.length-1; i++){
-                const pa = path[i], pb = path[i+1];
-                if ((e.a===pa && e.b===pb) || (e.a===pb && e.b===pa)){
-                  boost = 1;
-                  break;
-                }
-              }
-            }
-
-            ctx.fillStyle = `rgba(110,231,224,${0.10 + 0.22*boost})`;
-            ctx.beginPath();
-            ctx.arc(x, y, 1.35 + 0.6*boost, 0, Math.PI*2);
-            ctx.fill();
-          }
-        }
-
-        // Nodes
-        for (let i=0;i<net.nodes.length;i++){
-          const n = net.nodes[i];
-          const x = pxX(n.x), y = pxY(n.y);
-          const pulse = 0.5 + 0.5*Math.sin(t*1.4 + n.phase);
-          let glow = n.glow;
-
-          // wave increases glow
-          if (wave){
-            const d = Math.hypot(n.x - 0.50, n.y - 0.42);
-            const band = Math.abs(d - wave.r);
-            if (band < wave.band) glow += (0.55 * (1 - band/wave.band)) * wave.strength;
-          }
-
-          // path increases glow
-          if (path.includes(i)) glow += 0.70;
-
-          // halo
-          const haloR = 10 + 10*pulse + 18*glow;
-          const g = ctx.createRadialGradient(x,y,0, x,y, haloR);
-          g.addColorStop(0, `rgba(110,231,224,${0.06 + 0.14*glow})`);
-          g.addColorStop(1, `rgba(110,231,224,0)`);
-          ctx.fillStyle = g;
-          ctx.beginPath();
-          ctx.arc(x,y, haloR, 0, Math.PI*2);
-          ctx.fill();
-
-          // core
-          const coreA = 0.22 + 0.14*pulse + 0.26*glow;
-          ctx.fillStyle = `rgba(234,240,255,${Math.min(0.92, coreA)})`;
-          ctx.beginPath();
-          ctx.arc(x,y, 2.0 + 0.6*glow, 0, Math.PI*2);
-          ctx.fill();
-        }
-
-        // A subtle "beam" to hovered card anchor
-        if (target){
-          const sx = pxX(net.nodes[0].x), sy = pxY(net.nodes[0].y);
-          const tx = target.x * w, ty = target.y * h;
-
-          ctx.lineWidth = 1.2;
-          ctx.strokeStyle = `rgba(110,231,224,0.18)`;
-          ctx.beginPath();
-          ctx.moveTo(sx, sy);
-          const cx1 = sx + (tx - sx) * 0.35;
-          const cy1 = sy + (ty - sy) * 0.05;
-          const cx2 = sx + (tx - sx) * 0.65;
-          const cy2 = sy + (ty - sy) * 0.95;
-          ctx.bezierCurveTo(cx1,cy1,cx2,cy2,tx,ty);
-          ctx.stroke();
-
-          if (!reducedMotion){
-            const tt = ((t * 0.45) % 1);
-            // point on bezier (approx)
-            function bezier(p0,p1,p2,p3,t){
-              const u=1-t;
-              return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3;
-            }
-            const bx = bezier(sx, cx1, cx2, tx, tt);
-            const by = bezier(sy, cy1, cy2, ty, tt);
-            ctx.fillStyle = "rgba(110,231,224,0.35)";
-            ctx.beginPath();
-            ctx.arc(bx, by, 2.2, 0, Math.PI*2);
-            ctx.fill();
-          }
-        }
-      }
-
-      function loop(now){
-        draw(now);
-
-        // meta mini network redraw
-        const meta = document.querySelector('.card[data-theme="meta"] canvas.miniNet');
-        if (meta){
-          drawMiniNetwork(meta, now/1000, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
-        }
-
-        if (!reducedMotion){
-          requestAnimationFrame(loop);
-        }
-      }
-
-      // Reduced-motion mode: redraw at low rate
-      let reducedTimer = null;
-      function startRender(){
-        if (reducedTimer) { clearInterval(reducedTimer); reducedTimer = null; }
-        if (reducedMotion){
-          reducedTimer = setInterval(() => {
-            draw(performance.now());
-            const meta = document.querySelector('.card[data-theme="meta"] canvas.miniNet');
-            if (meta) drawMiniNetwork(meta, performance.now()/1000, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
-          }, 180);
-        } else {
-          requestAnimationFrame(loop);
-        }
-      }
-
-      // Re-start rendering when toggle changes
-      const observer = new MutationObserver(() => startRender());
-      observer.observe(app, { attributes:true, attributeFilter:['class'] });
-
-      // Activation on scroll (brief)
-      let lastScrollY = window.scrollY;
-      window.addEventListener('scroll', () => {
-        const dy = Math.abs(window.scrollY - lastScrollY);
-        lastScrollY = window.scrollY;
-        if (dy > 8) net.requestPulse('scroll');
-      }, { passive:true });
-
-      // Hover interactions: card -> path highlight + confidence meter
-      function animateConfidence(card, toHigh){
-        const base = parseFloat(card.dataset.confbase || "0.62");
-        const hi   = parseFloat(card.dataset.confhi || "0.90");
-        const fill = card.querySelector('.meterFill');
-        const val  = card.querySelector('.meterValue');
-        const target = toHigh ? hi : base;
-
-        if (fill) fill.style.width = Math.round(target * 100) + "%";
-
-        // Animate number (small, playful, but restrained)
-        if (!val) return;
-        const start = parseFloat(val.textContent || base);
-        const t0 = performance.now();
-        const dur = reducedMotion ? 0 : 320;
-        if (dur === 0){ val.textContent = target.toFixed(2); return; }
-
-        function step(now){
-          const k = Math.min(1, (now - t0) / dur);
-          const ease = 1 - Math.pow(1-k, 3);
-          const cur = start + (target - start) * ease;
-          val.textContent = cur.toFixed(2);
-          if (k < 1) requestAnimationFrame(step);
-        }
-        requestAnimationFrame(step);
-      }
-
-      cardEls.forEach(card => {
-        card.addEventListener('mouseenter', () => {
-          net.hoveredCard = card;
-          card.classList.add('active');
-          animateConfidence(card, true);
-          if (!reducedMotion){
-            // brighten nodes along path
-            const target = elementAnchor(card);
-            const path = computePathTo(target);
-            path.forEach(i => { if (net.nodes[i]) net.nodes[i].glow = Math.max(net.nodes[i].glow, 0.8); });
-            net.requestPulse('hover');
-          }
-        });
-        card.addEventListener('mouseleave', () => {
-          if (net.hoveredCard === card) net.hoveredCard = null;
-          card.classList.remove('active');
-          animateConfidence(card, false);
-        });
-      });
-
-      // Links rows: hover should target the row specifically (output selection)
-      document.querySelectorAll('.linkRow').forEach(row => {
-        row.addEventListener('mouseenter', () => {
-          net.hoveredRow = row;
-          net.requestPulse('output');
-        });
-        row.addEventListener('mouseleave', () => {
-          if (net.hoveredRow === row) net.hoveredRow = null;
-        });
-      });
-
-      /* -----------------------------
-         Stopwatch: time since genesis
-      ------------------------------*/
-      const genesis = new Date("2025-12-26T01:10:34");
-      const swEl = document.getElementById('stopwatch');
-
-      function pad2(n){ return String(n).padStart(2,'0'); }
-      function updateStopwatch(){
-        const now = new Date();
-        let diff = Math.max(0, Math.floor((now - genesis) / 1000));
-        const hours = Math.floor(diff / 3600);
-        diff -= hours * 3600;
-        const mins = Math.floor(diff / 60);
-        const secs = diff - mins * 60;
-        swEl.textContent = `${pad2(hours)}:${pad2(mins)}:${pad2(secs)}`;
-      }
-      updateStopwatch();
-      setInterval(updateStopwatch, 1000);
-
-      /* -----------------------------
-         Start
-      ------------------------------*/
-      resize();
-      startRender();
-
-      /* -----------------------------
-         Tiny progressive enhancement:
-         Keyboard focus should also activate path
-      ------------------------------*/
-      document.addEventListener('focusin', (e) => {
-        const card = e.target.closest?.('.card');
-        const row  = e.target.closest?.('.linkRow');
-        if (row){
-          net.hoveredRow = row;
-          net.requestPulse('focus');
+      // Footer observer: "quiet All checks passed" line once user reaches footer
+      const footerObs = new IntersectionObserver((entries) => {
+        const hit = entries.some(x => x.isIntersecting);
+        if (!hit) {
+          finalLine.classList.remove('done');
+          finalLine.textContent = 'Scroll complete to finalize pipeline output…';
           return;
         }
-        if (card){
-          net.hoveredCard = card;
-          card.classList.add('active');
-          animateConfidence(card, true);
-          net.requestPulse('focus');
-        }
-      });
-      document.addEventListener('focusout', (e) => {
-        // Clear only if focus moved outside the previously-focused elements
-        if (e.target.closest?.('.linkRow')) net.hoveredRow = null;
-        const card = e.target.closest?.('.card');
-        if (card){
-          card.classList.remove('active');
-          animateConfidence(card, false);
-          if (net.hoveredCard === card) net.hoveredCard = null;
-        }
-      });
+        const allPassed = passedCount() === TOTAL;
+        finalLine.classList.toggle('done', allPassed);
+        finalLine.textContent = allPassed ? 'All checks passed' : 'Pipeline summary reached (some checks still pending).';
+      }, { threshold: 0.4 });
+      footerObs.observe(footer);
 
-      // If the browser doesn't support roundRect
-      if (!CanvasRenderingContext2D.prototype.roundRect) {
-        CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
-          r = Math.min(r, w/2, h/2);
-          this.beginPath();
-          this.moveTo(x+r, y);
-          this.arcTo(x+w, y, x+w, y+h, r);
-          this.arcTo(x+w, y+h, x, y+h, r);
-          this.arcTo(x, y+h, x, y, r);
-          this.arcTo(x, y, x+w, y, r);
-          this.closePath();
-          return this;
-        };
+      // Stopwatch since 2025-12-27 01:08:56 (local interpretation)
+      const start = new Date('2025-12-27T01:08:56');
+      const clock = document.getElementById('clock');
+
+      function pad2(n){ return String(n).padStart(2,'0'); }
+
+      function tick() {
+        const now = new Date();
+        let diff = Math.max(0, now - start);
+        const h = Math.floor(diff / 3600000);
+        diff -= h * 3600000;
+        const m = Math.floor(diff / 60000);
+        diff -= m * 60000;
+        const s = Math.floor(diff / 1000);
+        clock.innerHTML = `${pad2(h)}<span class="colon">:</span>${pad2(m)}<span class="colon">:</span>${pad2(s)}`;
       }
+      tick();
+      setInterval(tick, 1000);
+
+      // Subtle hover tilt via pointer position (kept restrained)
+      function attachTilt(card) {
+        let raf = 0;
+        const max = 2.25; // degrees
+        const onMove = (ev) => {
+          const r = card.getBoundingClientRect();
+          const cx = r.left + r.width / 2;
+          const cy = r.top + r.height / 2;
+          const dx = (ev.clientX - cx) / (r.width / 2);
+          const dy = (ev.clientY - cy) / (r.height / 2);
+          const ry = Math.max(-1, Math.min(1, dx)) * max;
+          const rx = Math.max(-1, Math.min(1, -dy)) * max;
+
+          if (raf) cancelAnimationFrame(raf);
+          raf = requestAnimationFrame(() => {
+            card.style.setProperty('--ry', `${ry}deg`);
+            card.style.setProperty('--rx', `${rx}deg`);
+          });
+        };
+        const onLeave = () => {
+          card.style.setProperty('--ry', '0deg');
+          card.style.setProperty('--rx', '0deg');
+        };
+
+        card.addEventListener('pointermove', onMove);
+        card.addEventListener('pointerleave', onLeave);
+      }
+      cards.forEach(attachTilt);
+
+      // Keep run text reflecting scroll position/passed checks
+      window.addEventListener('scroll', () => updateRunStatus(), { passive: true });
+
+      // If user reloads mid-scroll, ensure anything already in view runs
+      updateRunStatus();
     })();
   </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20251226",
+          pageId: "20251227",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
