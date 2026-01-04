@@ -1,627 +1,601 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper // Engineering Portfolio</title>
-    
-    <!-- Fonts -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Geva Kipper | The Void of Data</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- CORE VARIABLES & RESET --- */
         :root {
             --glass-bg: rgba(255, 255, 255, 0.03);
             --glass-border: rgba(255, 255, 255, 0.1);
-            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            --glass-blur: blur(20px);
-            --accent-green: #00ff9d;
-            --accent-red: #ff4757;
-            --accent-yellow: #ffa502;
-            --font-ui: 'Inter', sans-serif;
-            --font-code: 'JetBrains Mono', monospace;
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --accent: #64ffda;
+            --neon-border: rgba(100, 255, 218, 0.4);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        
-        body {
-            background: #050510;
-            color: #ffffff;
-            font-family: var(--font-ui);
-            overflow: hidden; /* App-like feel */
-            height: 100vh;
-            width: 100vw;
-            user-select: none; /* Desktop OS feel */
+        * {
+            box-sizing: border-box;
+            cursor: none; /* Hide default cursor for custom sphere */
         }
 
-        a { text-decoration: none; color: inherit; cursor: pointer; }
-
-        /* --- BACKGROUND CANVAS --- */
-        #aether-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
+        body, html {
+            margin: 0;
+            padding: 0;
             width: 100%;
             height: 100%;
-            z-index: -1;
-            /* Deep purple/teal base provided by JS drawing, fallback here */
-            background: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #000000 100%);
+            overflow: hidden; /* Closed physics container */
+            background: radial-gradient(circle at center, #1a2a40 0%, #050505 100%);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
         }
 
-        /* --- SYSTEM BAR (HEADER) --- */
-        .system-bar {
+        /* Custom Cursor */
+        #cursor-sphere {
             position: fixed;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            height: 48px;
-            background: rgba(10, 10, 20, 0.4);
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            z-index: 1000;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        }
-
-        .bar-left { display: flex; align-items: center; gap: 15px; }
-        .brand-name { font-weight: 800; opacity: 0.9; letter-spacing: -0.5px; }
-        .status-badge {
-            background: rgba(255,255,255,0.1);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .status-dot {
-            width: 6px;
-            height: 6px;
-            background-color: var(--accent-green);
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            box-shadow: 0 0 8px var(--accent-green);
-            animation: pulse 2s infinite;
+            background: radial-gradient(circle, rgba(100,255,218,0.2) 0%, rgba(100,255,218,0) 70%);
+            border: 1px solid rgba(100,255,218,0.3);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            transition: transform 0.1s ease-out;
+            mix-blend-mode: screen;
         }
 
-        .bar-center {
-            flex: 1;
-            margin: 0 40px;
-            overflow: hidden;
-            position: relative;
-            font-family: var(--font-code);
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.7);
-            background: rgba(0,0,0,0.2);
-            height: 28px;
-            display: flex;
-            align-items: center;
-            border-radius: 4px;
-        }
-        .marquee-content {
-            white-space: nowrap;
-            display: inline-block;
-            animation: scroll-left 20s linear infinite;
-        }
-
-        .bar-right { display: flex; align-items: center; gap: 20px; font-family: var(--font-code); font-size: 0.9rem;}
-        .wifi-icon:hover { color: var(--accent-green); cursor: help; }
-
-        /* --- DESKTOP ENVIRONMENT --- */
-        #desktop {
+        /* Physics Objects styling */
+        .phys-obj {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            overflow: hidden;
-        }
-
-        /* --- WINDOW SYSTEM --- */
-        .window {
-            position: absolute;
+            will-change: transform;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             background: var(--glass-bg);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
             border: 1px solid var(--glass-border);
-            border-radius: 12px;
             box-shadow: var(--glass-shadow);
-            color: #fff;
+            border-radius: 16px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            transition: transform 0.2s ease, opacity 0.2s ease;
-            min-width: 300px;
-            min-height: 200px;
-        }
-        
-        .window:active { cursor: grabbing; }
-
-        .window-header {
-            height: 36px;
-            background: rgba(255,255,255,0.02);
-            border-bottom: 1px solid var(--glass-border);
-            display: flex;
             align-items: center;
-            padding: 0 12px;
-            cursor: grab;
-            border-radius: 12px 12px 0 0;
-            justify-content: space-between;
+            text-align: center;
+            user-select: none;
+            transition: background 0.3s, border-color 0.3s, opacity 0.3s;
         }
+
+        .phys-obj:hover {
+            z-index: 1000 !important;
+            background: rgba(255, 255, 255, 0.08); /* Brighter on hover */
+            border-color: rgba(255, 255, 255, 0.3);
+            cursor: none; /* Keep custom cursor */
+        }
+
+        /* Typography */
+        h1 { margin: 0; font-weight: 800; font-size: 2rem; letter-spacing: -1px; }
+        h2 { margin: 0 0 10px 0; font-weight: 600; font-size: 1.2rem; }
+        h3 { margin: 5px 0 0 0; font-weight: 400; font-size: 0.9rem; color: var(--text-muted); }
+        p { font-size: 0.85rem; line-height: 1.4; color: #d0d0d0; margin-bottom: 15px; }
         
-        .traffic-lights { display: flex; gap: 8px; }
-        .light { width: 10px; height: 10px; border-radius: 50%; }
-        .light.red { background: var(--accent-red); }
-        .light.yellow { background: var(--accent-yellow); }
-        .light.green { background: var(--accent-green); }
-
-        .file-name {
-            font-family: var(--font-code);
-            font-size: 0.75rem;
-            opacity: 0.6;
-            letter-spacing: 0.5px;
-        }
-
-        .window-content {
-            flex: 1;
-            padding: 15px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        /* --- CONTENT STYLES (Specific Windows) --- */
-
-        /* 1. GlglStats */
-        .terminal-bg { background: rgba(0,0,0,0.6); padding: 10px; border-radius: 6px; font-family: var(--font-code); font-size: 0.8rem; height: 100%; display: flex; flex-direction: column; }
-        .video-embed { width: 100%; aspect-ratio: 16/9; background: #000; margin-bottom: 10px; border-radius: 4px; overflow: hidden; }
-        .visualizer { display: flex; gap: 4px; align-items: flex-end; height: 30px; margin: 10px 0; }
-        .bar { flex: 1; background: var(--accent-green); animation: bounce 0.5s infinite ease-in-out alternate; }
-        .bar:nth-child(2) { animation-delay: 0.1s; }
-        .bar:nth-child(3) { animation-delay: 0.3s; }
-        .bar:nth-child(4) { animation-delay: 0.2s; }
-        .bar:nth-child(5) { animation-delay: 0.4s; }
-        .btn-run { background: var(--accent-green); color: #000; border: none; padding: 8px; font-family: var(--font-code); font-weight: bold; cursor: pointer; text-align: center; margin-top: auto; }
-        .btn-run:hover { opacity: 0.8; }
-
-        /* 2. Ahuzat Dibuk */
-        .dashboard-grid { display: grid; grid-template-rows: 1fr; gap: 10px; height: 100%; }
-        .heatmap-bg {
-            position: absolute; top:0; left:0; width:100%; height:100%;
-            background: linear-gradient(135deg, rgba(255,71,87,0.1), rgba(0,0,0,0)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="rgba(255,255,255,0.02)" x="0" y="0" width="100" height="100"/></svg>');
-            z-index: 0; pointer-events: none;
-        }
-        .notif-card {
+        /* Links & Buttons */
+        .btn {
+            display: inline-block;
+            margin: 4px;
+            padding: 6px 14px;
             background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 10px; border-radius: 6px; z-index: 1;
-            font-size: 0.8rem; display: flex; align-items: center; justify-content: space-between;
-            transition: background 0.2s;
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.75rem;
+            font-family: 'Roboto Mono', monospace;
+            transition: all 0.2s;
         }
-        .notif-card:hover { background: rgba(255,255,255,0.1); }
-        .notif-source { font-weight: bold; font-size: 0.7rem; color: var(--accent-yellow); text-transform: uppercase; }
+        .btn:hover {
+            background: var(--accent);
+            color: #000;
+            box-shadow: 0 0 10px var(--neon-border);
+            cursor: none; /* Keep custom cursor logic */
+        }
 
-        /* 3. 2D Part Orienting */
-        .wireframe-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
-        .polygon-svg { width: 100px; height: 100px; animation: rotate 10s linear infinite; }
-        .polygon-svg path { fill: none; stroke: #fff; stroke-width: 2; vector-effect: non-scaling-stroke; }
-        .cpp-overlay { position: absolute; bottom: 10px; width: 100%; text-align: center; font-family: var(--font-code); font-size: 0.7rem; background: rgba(0,0,0,0.5); padding: 5px; }
+        /* Specific Elements */
+        #header-card {
+            border-radius: 50px;
+            padding: 20px 40px;
+        }
 
-        /* 4. Turing Jest */
-        .chat-interface { display: flex; flex-direction: column; gap: 10px; height: 100%; }
-        .bubble { padding: 8px 12px; border-radius: 12px; font-size: 0.85rem; max-width: 80%; }
-        .bubble.llm { background: rgba(255,255,255,0.1); align-self: flex-start; border-bottom-left-radius: 2px; }
-        .bubble.user { background: var(--accent-green); color: #000; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .play-btn { margin-top: auto; width: 100%; padding: 10px; background: rgba(255,255,255,0.2); border: 1px solid #fff; color: #fff; font-family: var(--font-code); cursor: pointer; text-align: center; transition: all 0.2s; }
-        .play-btn:hover { background: #fff; color: #000; }
+        .ai-badge {
+            margin-top: 10px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--accent);
+            border: 1px dashed var(--neon-border);
+            padding: 4px 8px;
+            border-radius: 4px;
+            animation: pulse-border 2s infinite;
+        }
 
-        /* 5. Rhymes of Israel */
-        .store-layout { text-align: center; padding-top: 20px; }
-        .retro-title { font-family: "Courier New", serif; font-weight: bold; font-size: 1.2rem; color: var(--accent-yellow); margin-bottom: 20px; }
-        .add-chrome-btn { background: #fff; color: #333; padding: 10px 20px; border-radius: 4px; font-weight: bold; display: inline-block; box-shadow: 0 4px 0 #ccc; transition: all 0.1s; }
-        .add-chrome-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #ccc; }
+        @keyframes pulse-border {
+            0% { border-color: rgba(100, 255, 218, 0.2); }
+            50% { border-color: rgba(100, 255, 218, 0.8); }
+            100% { border-color: rgba(100, 255, 218, 0.2); }
+        }
 
-        /* 6. Recursive Portfolio */
-        .recursive-frame { width: 100%; height: 100%; border: none; opacity: 0.5; pointer-events: none; border-radius: 4px; background: #000; }
-        .recursion-label { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #000; padding: 10px; border: 1px solid var(--accent-green); color: var(--accent-green); font-family: var(--font-code); text-align: center; }
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
 
-        /* 7. Connectivity */
-        .social-dock { display: flex; justify-content: space-around; align-items: center; height: 100%; }
-        .social-icon { width: 48px; height: 48px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s; border: 1px solid rgba(255,255,255,0.2); }
-        .social-icon:hover { transform: translateY(-10px) scale(1.1); box-shadow: 0 10px 20px rgba(0,255,157,0.3); background: #fff; color: #000; }
-        .social-icon svg { width: 24px; height: 24px; fill: currentColor; }
+        .social-node {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+        }
+        .social-node svg { width: 24px; height: 24px; fill: white; }
 
-        /* --- SYSTEM FOOTER --- */
-        .task-monitor {
-            position: fixed;
+        /* Footer */
+        #footer {
+            position: absolute;
             bottom: 20px;
             left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: fit-content;
-            min-width: 400px;
-            padding: 10px 25px;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 50px;
-            z-index: 1000;
-            gap: 30px;
+            transform: translateX(-50%); /* Start centered */
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.4);
+            padding: 10px 20px;
+            border-radius: 4px;
+            border-top: 2px solid var(--accent);
+            pointer-events: none; /* Let physics pass through mostly */
         }
-        .credits { font-size: 0.7rem; color: #888; letter-spacing: 1px; }
-        .temporal-counter { font-family: var(--font-code); color: var(--accent-red); font-weight: bold; font-size: 1.1rem; text-shadow: 0 0 10px var(--accent-red); }
 
-        /* --- ANIMATIONS --- */
-        @keyframes scroll-left { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 157, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(0, 255, 157, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 157, 0); } }
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes bounces { 0% { height: 20%; } 100% { height: 100%; } }
-        @keyframes bounce { 0% { height: 10px; } 100% { height: 30px; } }
-
-        /* Responsive Tweaks */
-        @media (max-width: 768px) {
-            .system-bar { padding: 0 10px; }
-            .bar-center { display: none; } /* Hide marquee on mobile */
-            .window { width: 90% !important; height: auto !important; left: 5% !important; top: 100px !important; position: relative !important; margin-bottom: 20px; }
-            #desktop { overflow-y: auto; padding-top: 80px; padding-bottom: 100px; pointer-events: auto; }
-            .task-monitor { width: 90%; min-width: auto; bottom: 10px; flex-direction: column; gap: 5px; border-radius: 20px; }
+        /* Canvas for drawing tether lines */
+        #lines-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
         }
     </style>
 </head>
 <body>
 
-    <!-- Generative Background -->
-    <canvas id="aether-canvas"></canvas>
+    <!-- Canvas for Social Tethers -->
+    <canvas id="lines-canvas"></canvas>
 
-    <!-- Header System Bar -->
-    <header class="system-bar">
-        <div class="bar-left">
-            <div class="brand-name">Geva Kipper</div>
-            <div class="status-badge">
-                <div class="status-dot"></div>
-                <span>Currently Engineering at Google</span>
-            </div>
+    <!-- Custom Cursor -->
+    <div id="cursor-sphere"></div>
+
+    <!-- Header -->
+    <div id="header-card" class="phys-obj" data-mass="2.5">
+        <h1>Geva Kipper</h1>
+        <h3>Software Engineer at Google</h3>
+        <div class="ai-badge" id="ai-badge-text">Initializing...</div>
+    </div>
+
+    <!-- Project 1: GlglStats -->
+    <div class="phys-obj project-card" data-mass="1.2">
+        <div class="card-icon">🌊</div>
+        <h2>GlglStats</h2>
+        <p>Pop-chart analysis using LZ77 compression algorithm.</p>
+        <div>
+            <a href="https://glglstats.geekip.dev" target="_blank" class="btn">Visit Site</a>
+            <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn">PyData Talk</a>
         </div>
-        <div class="bar-center">
-            <div class="marquee-content">
-                Version Build 1.0 // This interface is redesigned daily by AI. Architecture is fluid. // All systems nominal.
-            </div>
+    </div>
+
+    <!-- Project 2: Ahuzat Dibuk -->
+    <div class="phys-obj project-card" data-mass="1.4">
+        <div class="card-icon">🗺️</div>
+        <h2>Ahuzat Dibuk</h2>
+        <p>Tel-Aviv parking lot scraping and heatmap visualization.</p>
+        <div>
+            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="btn">Ch.13 Item</a>
+            <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="btn">Mako</a>
+            <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="btn">FB Post</a>
         </div>
-        <div class="bar-right">
-            <span id="system-clock">00:00</span>
-            <div class="wifi-icon" title="Connection: Secure">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
-            </div>
+    </div>
+
+    <!-- Project 3: 2D Part Orienting -->
+    <div class="phys-obj project-card" data-mass="1.1">
+        <div class="card-icon">📐</div>
+        <h2>2D Part Orienting</h2>
+        <p>C++ push-plan algorithm for sensorless geometric orientation.</p>
+        <div>
+            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn">Project & Code</a>
         </div>
-    </header>
+    </div>
 
-    <!-- Main Desktop Environment -->
-    <main id="desktop">
-
-        <!-- 1. GlglStats -->
-        <div class="window" style="width: 350px; height: 320px;" data-id="1">
-            <div class="window-header">
-                <div class="traffic-lights"><div class="light red"></div><div class="light yellow"></div><div class="light green"></div></div>
-                <div class="file-name">GlglStats.exe</div>
-                <div></div>
-            </div>
-            <div class="window-content">
-                <div class="terminal-bg">
-                    <div style="margin-bottom:5px;">> init_protocol...</div>
-                    <div class="video-embed">
-                        <iframe width="100%" height="100%" src="https://www.youtube.com/embed/jrKAtOsj1Lo?controls=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-                    </div>
-                    <div class="visualizer">
-                        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-                    </div>
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="btn-run">EXECUTE</a>
-                </div>
-            </div>
+    <!-- Project 4: The Turing Jest -->
+    <div class="phys-obj project-card" data-mass="1.0">
+        <div class="card-icon">🤖</div>
+        <h2>The Turing Jest</h2>
+        <p>LLM punning leaderboard. Man vs Machine humor.</p>
+        <div>
+            <a href="https://jest.geekip.dev" target="_blank" class="btn">Play Game</a>
         </div>
+    </div>
 
-        <!-- 2. Ahuzat Dibuk -->
-        <div class="window" style="width: 320px; height: 280px;" data-id="2">
-            <div class="window-header">
-                <div class="traffic-lights"><div class="light red"></div><div class="light yellow"></div><div class="light green"></div></div>
-                <div class="file-name">Ahuzat_Dibuk.py</div>
-                <div></div>
-            </div>
-            <div class="window-content">
-                <div class="heatmap-bg"></div>
-                <div class="dashboard-grid">
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="notif-card">
-                        <span>Parking Shortage Crisis</span>
-                        <span class="notif-source">13TV</span>
-                    </a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="notif-card">
-                        <span>Tech Analysis</span>
-                        <span class="notif-source">MAKO</span>
-                    </a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="notif-card">
-                        <span>Community Publication</span>
-                        <span class="notif-source">FB</span>
-                    </a>
-                </div>
-            </div>
+    <!-- Project 5: Rhymes of Israel -->
+    <div class="phys-obj project-card" data-mass="0.9">
+        <div class="card-icon">✒️</div>
+        <h2>Rhymes of Israel</h2>
+        <p>Chrome extension. Generates AI rhymes for news headlines.</p>
+        <div>
+            <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn">Install</a>
         </div>
+    </div>
 
-        <!-- 3. 2D Part Orienting -->
-        <div class="window" style="width: 300px; height: 300px;" data-id="3">
-            <div class="window-header">
-                <div class="traffic-lights"><div class="light red"></div><div class="light yellow"></div><div class="light green"></div></div>
-                <div class="file-name">2D_Part_Orienting.cpp</div>
-                <div></div>
-            </div>
-            <div class="window-content" style="background: #000;">
-                <div class="wireframe-container">
-                    <svg class="polygon-svg" viewBox="0 0 100 100">
-                        <path d="M50 10 L90 30 L80 80 L20 80 L10 30 Z" />
-                    </svg>
-                    <div class="cpp-overlay">
-                        // Optimizing geometry...<br>
-                        // C++ Backend
-                    </div>
-                </div>
-                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" style="text-align:center; padding:10px; border-top:1px solid #333; font-size:0.8rem; color:#888; font-family:var(--font-code);">View Source Code</a>
-            </div>
+    <!-- Project 6: Meta-Portfolio -->
+    <div class="phys-obj project-card" data-mass="1.5">
+        <div class="card-icon">🔳</div>
+        <h2>Meta-Portfolio</h2>
+        <p>The Void of Data. The site you are currently navigating.</p>
+        <div>
+            <a href="https://geekip.dev" target="_blank" class="btn">Recursion Link</a>
         </div>
+    </div>
 
-        <!-- 4. Turing Jest -->
-        <div class="window" style="width: 300px; height: 340px;" data-id="4">
-            <div class="window-header">
-                <div class="traffic-lights"><div class="light red"></div><div class="light yellow"></div><div class="light green"></div></div>
-                <div class="file-name">The_Turing_Jest.app</div>
-                <div></div>
-            </div>
-            <div class="window-content">
-                <div class="chat-interface">
-                    <div class="bubble llm">Tell me a joke about recursion.</div>
-                    <div class="bubble user">Did you mean: recursion?</div>
-                    <div style="flex:1"></div>
-                    <a href="https://jest.geekip.dev" target="_blank" class="play-btn">PLAY NOW</a>
-                </div>
-            </div>
-        </div>
+    <!-- Social Satellite Cluster -->
+    <div class="phys-obj social-node" id="soc-gh" data-mass="0.5" data-group="social">
+        <a href="https://github.com/gevak" target="_blank">
+            <svg viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        </a>
+    </div>
+    <div class="phys-obj social-node" id="soc-li" data-mass="0.5" data-group="social">
+        <a href="https://linkedin.com/in/gevakip" target="_blank">
+            <svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+        </a>
+    </div>
+    <div class="phys-obj social-node" id="soc-fb" data-mass="0.5" data-group="social">
+        <a href="https://facebook.com/geva.kipper" target="_blank">
+            <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385h-3.047v-3.47h3.047v-2.641c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953h-1.513c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385c5.737-.9 10.125-5.864 10.125-11.854z"/></svg>
+        </a>
+    </div>
 
-        <!-- 5. Rhymes of Israel -->
-        <div class="window" style="width: 280px; height: 200px;" data-id="5">
-            <div class="window-header">
-                <div class="traffic-lights"><div class="light red"></div><div class="light yellow"></div><div class="light green"></div></div>
-                <div class="file-name">Rhymes_of_Israel.crx</div>
-                <div></div>
-            </div>
-            <div class="window-content" style="background:#f0f0f0; color:#333;">
-                <div class="store-layout">
-                    <div class="retro-title" style="color:#d35400;">Rhymes of Israel</div>
-                    <p style="font-size:0.7rem; margin-bottom:15px; color:#555;">Learn Hebrew the fun way.</p>
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="add-chrome-btn">Add to Browser</a>
-                </div>
-            </div>
-        </div>
+    <!-- Footer Counter -->
+    <div id="footer" class="phys-obj" data-mass="10" data-static="true">
+        Created by AI Model [Claude 3.5 Sonnet]. Runtime: <span id="timer">00:00:00</span>
+    </div>
 
-        <!-- 6. Recursive Portfolio -->
-        <div class="window" style="width: 400px; height: 300px;" data-id="6">
-            <div class="window-header">
-                <div class="traffic-lights"><div class="light red"></div><div class="light yellow"></div><div class="light green"></div></div>
-                <div class="file-name">Recursive_Portfolio.sys</div>
-                <div></div>
-            </div>
-            <div class="window-content">
-                <!-- Using empty iframe src to avoid loop on local, js will fill or simulate -->
-                <div style="position:relative; width:100%; height:100%; border:1px solid #333;">
-                    <iframe class="recursive-frame" src=""></iframe>
-                    <a href="https://geekip.dev" target="_blank" class="recursion-label">
-                        You are here.<br>Recursion depth: 1<br>
-                        <span style="font-size:0.6rem; opacity:0.7;">(Click to Enter)</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- 7. Connectivity (Socials) -->
-        <div class="window" style="width: 320px; height: 110px;" data-id="7">
-            <div class="window-header">
-                <div class="traffic-lights"><div class="light red"></div><div class="light green"><div class="light yellow"></div></div></div>
-                <div class="file-name">Connectivity</div>
-                <div></div>
-            </div>
-            <div class="window-content">
-                <div class="social-dock">
-                    <a href="https://github.com/gevak" target="_blank" class="social-icon" title="GitHub">
-                        <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.285 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
-                    </a>
-                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-icon" title="LinkedIn">
-                        <svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-                    </a>
-                    <a href="https://facebook.com/geva.kipper" target="_blank" class="social-icon" title="Facebook">
-                        <svg viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- Footer System Monitor -->
-    <footer class="task-monitor">
-        <div class="credits">Architected by Model [o1-Pro]</div>
-        <div class="temporal-counter" id="epoch-timer">T-MINUS 00:00:00:00</div>
-    </footer>
-
-    <!-- LOGIC -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            
-            /* --- 1. WINDOW SYSTEM LOGIC --- */
-            const windows = document.querySelectorAll('.window');
-            const desktop = document.getElementById('desktop');
-            let highestZ = 10;
+        // --- 1. CONFIGURATION & STATE ---
+        const config = {
+            damp: 0.98, // Velocity decay (friction)
+            springK: 0.05, // Spring strength for social molecule
+            springLen: 100, // Distance for social molecule
+            mouseRepel: 500, // Strength of mouse cursor
+            mouseDist: 250, // Radius of mouse effect
+            bgSpeed: 0.02 // Background drift speed
+        };
 
-            // Initialize Scatter
-            windows.forEach(win => {
-                const randomX = Math.floor(Math.random() * (window.innerWidth - 450)) + 20;
-                const randomY = Math.floor(Math.random() * (window.innerHeight - 400)) + 60;
+        const state = {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            entities: [],
+            mouseX: -9999,
+            mouseY: -9999,
+            hoveredEntity: null
+        };
+
+        const canvas = document.getElementById('lines-canvas');
+        const ctx = canvas.getContext('2d');
+        const cursorSphere = document.getElementById('cursor-sphere');
+
+        // --- 2. ENTITY CLASS ---
+        class Entity {
+            constructor(element) {
+                this.el = element;
+                this.w = element.offsetWidth;
+                this.h = element.offsetHeight;
                 
-                // Keep inside bounds roughly
-                const safeX = Math.max(20, Math.min(window.innerWidth - 400, randomX));
-                const safeY = Math.max(80, Math.min(window.innerHeight - 300, randomY));
+                // Random initial position within bounds (padded)
+                this.x = Math.random() * (state.width - this.w - 100) + 50;
+                this.y = Math.random() * (state.height - this.h - 100) + 50;
+
+                // Footer specific init
+                if(element.id === 'footer') {
+                    this.x = state.width / 2 - this.w / 2;
+                    this.y = state.height - this.h - 40;
+                    this.initialY = this.y;
+                    this.initialX = this.x;
+                }
+
+                // Random velocity
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
                 
-                win.style.left = `${safeX}px`;
-                win.style.top = `${safeY}px`;
+                // Rotation
+                this.rot = (Math.random() - 0.5) * 10;
+                this.vRot = (Math.random() - 0.5) * 0.2;
+
+                this.mass = parseFloat(element.dataset.mass) || 1;
+                this.isSocial = element.dataset.group === 'social';
+                this.isStatic = element.dataset.static === 'true'; // For footer mainly
+
+                // Track hover state
+                this.isHovered = false;
                 
-                setupDraggable(win);
+                // Initialize events
+                this.el.addEventListener('mouseenter', () => this.enterHover());
+                this.el.addEventListener('mouseleave', () => this.leaveHover());
+            }
+
+            enterHover() {
+                this.isHovered = true;
+                state.hoveredEntity = this;
+                this.el.style.transform = `translate(${this.x}px, ${this.y}px) scale(1.05) rotate(0deg)`;
+                this.el.style.zIndex = 9999;
+                this.el.style.opacity = '1';
+            }
+
+            leaveHover() {
+                this.isHovered = false;
+                state.hoveredEntity = null;
+                this.el.style.zIndex = '';
+                this.el.style.opacity = '';
+            }
+
+            update() {
+                if (this.isHovered) {
+                    // Stop physics, but keep position updated for transform
+                    this.vx = 0;
+                    this.vy = 0;
+                    this.vRot = 0;
+                    // Gently correct position if it was bumped? No, just freeze.
+                    return; 
+                }
+
+                // Apply brownian motion / drift
+                if(!this.isStatic) {
+                    this.vx += (Math.random() - 0.5) * 0.05;
+                    this.vy += (Math.random() - 0.5) * 0.05;
+                }
+
+                // Mouse Repulsor Physics
+                let dx = this.x + this.w/2 - state.mouseX;
+                let dy = this.y + this.h/2 - state.mouseY;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < config.mouseDist) {
+                    let force = (config.mouseDist - dist) / config.mouseDist;
+                    let angle = Math.atan2(dy, dx);
+                    let push = force * config.mouseRepel / this.mass;
+                    this.vx += Math.cos(angle) * push * 0.05;
+                    this.vy += Math.sin(angle) * push * 0.05;
+                    this.vRot += (Math.random() - 0.5) * push * 0.01;
+                }
+
+                // Special Logic for Footer (Heavy Sediment)
+                if(this.isStatic) {
+                    // Spring back to center bottom
+                    let targetX = state.width/2 - this.w/2;
+                    let targetY = state.height - this.h - 40;
+                    let fx = (targetX - this.x) * 0.05; // Spring force
+                    let fy = (targetY - this.y) * 0.05;
+                    
+                    this.vx += fx;
+                    this.vy += fy;
+                    this.vx *= 0.8; // Heavy damping
+                    this.vy *= 0.8;
+                    this.rot *= 0.9;
+                }
+
+                // Update Position
+                this.x += this.vx;
+                this.y += this.vy;
+                this.rot += this.vRot;
+
+                // Box Collision with Walls
+                if (this.x < 0) { this.x = 0; this.vx *= -1; }
+                if (this.x + this.w > state.width) { this.x = state.width - this.w; this.vx *= -1; }
+                if (this.y < 0) { this.y = 0; this.vy *= -1; }
+                if (this.y + this.h > state.height) { this.y = state.height - this.h; this.vy *= -1; }
+
+                // Apply Damping
+                this.vx *= config.damp;
+                this.vy *= config.damp;
+            }
+
+            draw() {
+                if(!this.isHovered) {
+                    this.el.style.transform = `translate(${this.x.toFixed(1)}px, ${this.y.toFixed(1)}px) rotate(${this.rot.toFixed(1)}deg)`;
+                }
+            }
+        }
+
+        // --- 3. INITIALIZATION ---
+
+        function init() {
+            // Setup Entities
+            document.querySelectorAll('.phys-obj').forEach(el => {
+                state.entities.push(new Entity(el));
             });
 
-            function setupDraggable(element) {
-                const header = element.querySelector('.window-header');
-                let isDragging = false;
-                let startX, startY, initialLeft, initialTop;
-
-                // Bring to front on click
-                element.addEventListener('mousedown', () => {
-                    highestZ++;
-                    element.style.zIndex = highestZ;
-                    // Subtle zoom effect
-                    element.style.transform = "scale(1.02)";
-                    setTimeout(() => element.style.transform = "scale(1)", 150);
-                });
-
-                header.addEventListener('mousedown', (e) => {
-                    isDragging = true;
-                    startX = e.clientX;
-                    startY = e.clientY;
-                    initialLeft = element.offsetLeft;
-                    initialTop = element.offsetTop;
-                    element.style.cursor = 'grabbing';
-                });
-
-                window.addEventListener('mousemove', (e) => {
-                    if (!isDragging) return;
-                    e.preventDefault();
-                    const dx = e.clientX - startX;
-                    const dy = e.clientY - startY;
-                    element.style.left = `${initialLeft + dx}px`;
-                    element.style.top = `${initialTop + dy}px`;
-                });
-
-                window.addEventListener('mouseup', () => {
-                    isDragging = false;
-                    element.style.cursor = 'default';
-                });
-            }
-
-            /* --- 2. SYSTEM CLOCK & WIFI --- */
-            function updateClock() {
-                const now = new Date();
-                const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                document.getElementById('system-clock').textContent = timeString;
-            }
-            setInterval(updateClock, 1000);
-            updateClock();
-
-            /* --- 3. EPOCH TIMER (Task Monitor) --- */
-            // Target: 2026-01-03 01:08:03
-            const targetDate = new Date('2026-01-03T01:08:03').getTime();
-            const timerEl = document.getElementById('epoch-timer');
-
-            function updateEpoch() {
-                const now = Date.now();
-                const diff = now - targetDate;
-                
-                const isNegative = diff < 0;
-                const absDiff = Math.abs(diff);
-
-                // Calculations
-                const ms = Math.floor(absDiff % 1000);
-                const seconds = Math.floor((absDiff / 1000) % 60);
-                const minutes = Math.floor((absDiff / (1000 * 60)) % 60);
-                const hours = Math.floor((absDiff / (1000 * 60 * 60)) % 24);
-                const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
-
-                // Formatting
-                const pad = (n) => n.toString().padStart(2, '0');
-                const msPad = ms.toString().padStart(3, '0');
-
-                // If future: Use T-Minus concept. If past (future date reached), just show elapsed.
-                // Prompt: "calculate precise time elapsed since". If date is future relative to now, technically elapsed is negative.
-                const sign = isNegative ? "-" : "+";
-                
-                // Spec format: 00:00:00 (H:M:S) ms
-                // Let's do H:M:S:ms for engineering precision
-                // We add days to hours for total elapsed vibe or keep compact?
-                // Request asks specifically for red monochromatic font.
-                
-                timerEl.textContent = `${sign} ${Math.floor(absDiff / 3600000)}:${pad(minutes)}:${pad(seconds)}.${msPad}`;
-                
-                requestAnimationFrame(updateEpoch);
-            }
-            requestAnimationFrame(updateEpoch);
-
-            /* --- 4. CANVAS BACKGROUND (Visual Aether) --- */
-            const canvas = document.getElementById('aether-canvas');
-            const ctx = canvas.getContext('2d');
+            // Update AI Badge
+            const date = new Date();
+            const dateStr = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+            document.getElementById('ai-badge-text').innerText = `This site is re-designed daily by AI. Current iteration: ${dateStr}. Status: Ever-changing.`;
             
-            let w, h;
-            function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
-            window.addEventListener('resize', resize);
-            resize();
+            // Resize handler
+            window.addEventListener('resize', () => {
+                state.width = window.innerWidth;
+                state.height = window.innerHeight;
+                canvas.width = state.width;
+                canvas.height = state.height;
+                // Re-center footer target logic implicitly handles resizing
+            });
+            
+            // Mouse Tracker
+            document.addEventListener('mousemove', (e) => {
+                state.mouseX = e.clientX;
+                state.mouseY = e.clientY;
+                cursorSphere.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+            });
 
-            // Blobs
-            const blobs = [
-                { x: 0, y: 0, dx: 1, dy: 1, r: 400, color: 'rgba(74, 14, 255, 0.4)' }, // Purple
-                { x: w, y: 0, dx: -1, dy: 1, r: 500, color: 'rgba(0, 255, 157, 0.2)' }, // Teal
-                { x: 0, y: h, dx: 0.5, dy: -0.5, r: 600, color: 'rgba(30, 0, 100, 0.5)' } // Navy
-            ];
+            // Initial resize
+            window.dispatchEvent(new Event('resize'));
+            
+            // Start Loop
+            requestAnimationFrame(loop);
+        }
 
-            function animateBg() {
-                ctx.clearRect(0, 0, w, h);
-                
-                // Deep background
-                const grd = ctx.createLinearGradient(0, 0, 0, h);
-                grd.addColorStop(0, "#0f0c29");
-                grd.addColorStop(1, "#302b63");
-                ctx.fillStyle = grd;
-                ctx.fillRect(0, 0, w, h);
+        // --- 4. PHYSICS LOOP ---
 
-                // Move and draw blobs
-                blobs.forEach(b => {
-                    b.x += b.dx;
-                    b.y += b.dy;
-                    if(b.x < -b.r || b.x > w + b.r) b.dx *= -1;
-                    if(b.y < -b.r || b.y > h + b.r) b.dy *= -1;
+        function resolveCollisions() {
+            for (let i = 0; i < state.entities.length; i++) {
+                for (let j = i + 1; j < state.entities.length; j++) {
+                    let a = state.entities[i];
+                    let b = state.entities[j];
 
-                    const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
-                    g.addColorStop(0, b.color);
-                    g.addColorStop(1, 'rgba(0,0,0,0)');
+                    // Don't collide physics if one is hovered (it acts as a ghost/anchor)
+                    if (a.isHovered || b.isHovered) continue;
+
+                    // AABB Collision (Axis Aligned) - Approximation
+                    // It's cheaper than rotating rect collision and fits the chaotic "void" vibe
+                    if (a.x < b.x + b.w &&
+                        a.x + a.w > b.x &&
+                        a.y < b.y + b.h &&
+                        a.y + a.h > b.y) {
+                        
+                        // Simple Elastic Collision reaction
+                        // Calculate overlap center
+                        let cxA = a.x + a.w/2;
+                        let cyA = a.y + a.h/2;
+                        let cxB = b.x + b.w/2;
+                        let cyB = b.y + b.h/2;
+
+                        let dx = cxA - cxB;
+                        let dy = cyA - cyB;
+                        let dist = Math.sqrt(dx*dx + dy*dy);
+                        
+                        if(dist === 0) { dx = 1; dist = 1; } // Prevent div by zero
+
+                        // Normalize
+                        let nx = dx / dist;
+                        let ny = dy / dist;
+
+                        // Separate them slightly
+                        let overlap = 2; 
+                        a.x += nx * overlap;
+                        a.y += ny * overlap;
+                        b.x -= nx * overlap;
+                        b.y -= ny * overlap;
+
+                        // Exchange velocities weighted by mass
+                        // Actually just adding repulsion force is easier and looks more "floaty"
+                        let force = 0.5;
+                        a.vx += nx * force / a.mass;
+                        a.vy += ny * force / a.mass;
+                        b.vx -= nx * force / b.mass;
+                        b.vy -= ny * force / b.mass;
+
+                        // Add spin
+                        a.vRot += (Math.random()-0.5) * 2;
+                        b.vRot += (Math.random()-0.5) * 2;
+                    }
+                }
+            }
+        }
+
+        function forceSocialMolecule() {
+            // Find social nodes
+            const socials = state.entities.filter(e => e.isSocial);
+            if (socials.length < 2) return;
+
+            // Connect them all to each other
+            ctx.clearRect(0, 0, state.width, state.height);
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 1;
+
+            for (let i = 0; i < socials.length; i++) {
+                for (let j = i + 1; j < socials.length; j++) {
+                    let a = socials[i];
+                    let b = socials[j];
+
+                    // Draw line
+                    let ax = a.x + a.w/2;
+                    let ay = a.y + a.h/2;
+                    let bx = b.x + b.w/2;
+                    let by = b.y + b.h/2;
+
+                    ctx.moveTo(ax, ay);
+                    ctx.lineTo(bx, by);
+
+                    // Spring Physics
+                    let dx = ax - bx;
+                    let dy = ay - by;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
                     
-                    ctx.fillStyle = g;
-                    ctx.beginPath();
-                    ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
-                    ctx.fill();
-                });
+                    if (dist > 0) {
+                        let force = (dist - config.springLen) * config.springK;
+                        let fx = (dx/dist) * force;
+                        let fy = (dy/dist) * force;
 
-                requestAnimationFrame(animateBg);
+                        if(!a.isHovered) {
+                            a.vx -= fx / a.mass;
+                            a.vy -= fy / a.mass;
+                        }
+                        if(!b.isHovered) {
+                            b.vx += fx / b.mass;
+                            b.vy += fy / b.mass;
+                        }
+                    }
+                }
             }
-            animateBg();
+            ctx.stroke();
+        }
+
+        function updateTimer() {
+            const target = new Date("2026-01-04T01:19:45");
+            const now = new Date();
+            let diff = now - target;
+            let prefix = "";
             
-            // Recursive Iframe Fix (Point to itself visually)
-            document.querySelector('.recursive-frame').src = window.location.href;
-        });
+            if (diff < 0) {
+                diff = Math.abs(diff);
+                prefix = "-";
+            }
+
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+
+            const format = (n) => n.toString().padStart(2, '0');
+            document.getElementById('timer').innerText = `${prefix}${format(h)}:${format(m)}:${format(s)}`;
+        }
+
+        function loop() {
+            state.entities.forEach(e => e.update());
+            resolveCollisions();
+            forceSocialMolecule();
+            state.entities.forEach(e => e.draw());
+            updateTimer();
+            requestAnimationFrame(loop);
+        }
+
+        // Boot
+        window.onload = init;
+
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260103",
+          pageId: "20260104",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
