@@ -2,793 +2,745 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | Engineering Portfolio</title>
-    <!-- Load Three.js from CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700&family=VT323&display=swap" rel="stylesheet">
+    <title>Geva Kipper | Developer Sanctum</title>
+    <!-- Importing Retro Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --text-primary: #1a1a2e;
-            --highlight: #00bcd4;
-            --solar-green: #9CCC65;
-            --led-red: #ff3333;
+            --bg-color: #120a23;
+            --wall-color: #1f1138;
+            --floor-color: #2a1848;
+            --neon-blue: #0ff;
+            --neon-pink: #f0f;
+            --neon-green: #39ff14;
+            --neon-amber: #ffbf00;
+            --terminal-bg: #0c0c0c;
+            --hud-bg: rgba(0, 0, 0, 0.8);
+            --font-main: 'VT323', monospace;
+            --font-pixel: 'Press Start 2P', cursive;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
         }
 
         body {
             margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: #fff;
+            font-family: var(--font-main);
             overflow: hidden;
-            font-family: 'Space Grotesk', sans-serif;
-            background-color: #2b2b2b; /* Fallback */
-            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        /* 3D Canvas */
-        #canvas-container {
-            position: absolute;
+        /* --- CRT / Glitch Effects --- */
+        .scanlines {
+            position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            z-index: 1;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.6;
         }
 
-        /* HUD Overlay Layer */
-        #hud {
+        @keyframes glitch-anim {
+            0% { clip-path: inset(40% 0 61% 0); transform: translate(-2px, 2px); }
+            20% { clip-path: inset(92% 0 1% 0); transform: translate(2px, -2px); }
+            40% { clip-path: inset(43% 0 1% 0); transform: translate(-2px, 2px); }
+            60% { clip-path: inset(25% 0 58% 0); transform: translate(2px, -2px); }
+            80% { clip-path: inset(54% 0 7% 0); transform: translate(-2px, 2px); }
+            100% { clip-path: inset(58% 0 43% 0); transform: translate(2px, -2px); }
+        }
+
+        /* --- HUD --- */
+        .hud {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            pointer-events: none; /* Let clicks pass through to 3D except on interactive elements */
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 15px;
+            padding: 10px;
+            background: var(--hud-bg);
+            border: 2px solid var(--neon-blue);
+            box-shadow: 0 0 10px var(--neon-blue);
+            z-index: 100;
+            font-family: var(--font-pixel);
+            font-size: 10px;
+            width: 350px;
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            background: #444;
+            image-rendering: pixelated;
+            border: 2px solid white;
+            position: relative;
+            /* Simple CSS Pixel Face */
+            background-image: linear-gradient(to bottom, #d2a679 60%, transparent 60%),
+                              linear-gradient(to right, transparent 20%, #000 20%, #000 30%, transparent 30%, transparent 70%, #000 70%, #000 80%, transparent 80%);
+            background-size: 100% 100%, 100% 40%;
+            background-repeat: no-repeat;
+            background-position: center bottom, center 15px;
+        }
+        
+        .avatar:after {
+            /* Headset */
+            content: '';
+            position: absolute;
+            top: 10px; left: -2px; width: 54px; height: 10px;
+            background: #222;
+        }
+
+        .status-block {
+            flex-grow: 1;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            padding: 20px;
-            box-sizing: border-box;
+            gap: 5px;
         }
 
-        /* Glassmorphism Common */
-        .glass-panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 15px 25px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            pointer-events: auto;
+        .name { color: var(--neon-amber); text-shadow: 2px 2px #000; }
+        .class { color: var(--neon-green); font-size: 8px; }
+
+        .marquee-container {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            background: #000;
+            padding: 2px;
+            color: var(--neon-blue);
+            font-family: var(--font-main);
+            font-size: 14px;
         }
 
-        /* Top Left Bio */
-        .bio-section h1 {
-            margin: 0;
-            font-size: 1.8rem;
-            font-weight: 700;
-        }
-        .bio-section p {
-            margin: 5px 0 0;
-            font-size: 0.9rem;
-            opacity: 0.8;
+        .marquee-content {
+            display: inline-block;
+            animation: scroll-left 10s linear infinite;
         }
 
-        /* Top Right Glitch */
-        .glitch-container {
-            text-align: right;
-            font-family: 'VT323', monospace;
-            font-size: 1.2rem;
-            color: #333;
-        }
-        .glitch-text {
-            animation: pulse-glitch 3s infinite;
+        @keyframes scroll-left {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
         }
 
-        /* Bottom Left Tutorial */
-        .controls-hint {
+        /* --- The Room (Main Content) --- */
+        .room-container {
+            width: 800px;
+            height: 600px;
+            position: relative;
+            /* Pseudo-Isometric Rotation */
+            transform: perspective(1000px) rotateX(20deg);
+            transform-style: preserve-3d;
+            background: radial-gradient(circle at center, var(--floor-color), #111);
+            border: 4px solid #000;
+            box-shadow: inset 0 0 100px #000;
+        }
+
+        /* Floor Grid */
+        .room-container::after {
+            content: " ";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: linear-gradient(#ffffff0a 1px, transparent 1px),
+            linear-gradient(90deg, #ffffff0a 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+
+        /* Interactive Items (Furniture) */
+        .item {
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            image-rendering: pixelated;
+        }
+
+        .item:hover {
+            transform: scale(1.05) translateY(-5px);
+            z-index: 20; /* Pop to front */
+        }
+        
+        /* Label on hover */
+        .item::before {
+            content: attr(data-label);
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000;
+            border: 1px solid white;
+            padding: 2px 5px;
+            font-family: var(--font-pixel);
+            font-size: 8px;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 30;
+        }
+        .item:hover::before { opacity: 1; }
+
+        /* --- Furniture Styling (CSS Art) --- */
+        
+        /* 1. Jukebox */
+        .jukebox {
+            top: 250px; left: 50px;
+            width: 60px; height: 100px;
+            background: linear-gradient(90deg, #422 10%, #633 50%, #422 90%);
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
+            border: 2px solid #200;
+        }
+        /* Neon strips */
+        .jukebox::after {
+            content: '';
+            position: absolute;
+            top: 20px; left: 10px; width: 40px; height: 60px;
+            background: repeating-linear-gradient(0deg, #f0f, #f0f 5px, #000 5px, #000 10px, #0ff 10px, #0ff 15px);
+            animation: pulse-lights 1s infinite;
+        }
+
+        /* 2. Window */
+        .window {
+            top: 50px; left: 200px;
+            width: 140px; height: 100px;
+            background: #051030; /* Night sky */
+            border: 4px solid #5a4b4b; /* Frame */
+            box-shadow: 0 0 20px rgba(100, 100, 255, 0.2);
+        }
+        /* City Lights (CSS pixels) */
+        .window::after {
+            content: '';
+            position: absolute;
+            bottom: 0; width: 100%; height: 40%;
+            background-image: linear-gradient(90deg, transparent 50%, #ff0 50%);
+            background-size: 4px 4px;
+            opacity: 0.5;
+        }
+
+        /* 3. Blueprint Table */
+        .blueprint-table {
+            top: 350px; left: 250px;
+            width: 100px; height: 80px;
+            background: #cba;
+            transform: skewX(-10deg); /* Slanted */
+            border: 2px solid #543;
+        }
+        /* Blueprint Paper */
+        .blueprint-table::after {
+            content: '';
+            position: absolute;
+            top: 10px; left: 10px; width: 80px; height: 60px;
+            background: #003366;
+            border: 1px dashed white;
+        }
+
+        /* 4. Arcade Cabinet */
+        .arcade {
+            top: 150px; right: 80px;
+            width: 70px; height: 120px;
+            background: linear-gradient(90deg, #222 0%, #444 50%, #222 100%);
+            border: 2px solid #111;
+        }
+        /* Screen */
+        .arcade::after {
+            content: "JEST";
+            position: absolute;
+            top: 20px; left: 10px; width: 50px; height: 40px;
+            background: var(--neon-green);
+            color: black;
+            font-family: var(--font-pixel);
+            font-size: 8px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 0.8rem;
-        }
-        .key {
-            border: 1px solid rgba(0,0,0,0.3);
-            border-radius: 4px;
-            padding: 2px 6px;
-            background: rgba(255,255,255,0.3);
-            font-weight: bold;
+            justify-content: center;
+            animation: flicker 3s infinite;
+            box-shadow: 0 0 10px var(--neon-green);
         }
 
-        /* Interaction Prompt (Floating) */
-        #interact-prompt {
+        /* 5. Bookshelf */
+        .bookshelf {
+            top: 50px; right: 200px;
+            width: 100px; height: 140px;
+            background: #532;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            padding: 5px;
+            border: 2px solid #321;
+        }
+        /* Books */
+        .bookshelf div {
+            height: 25px;
+            background: repeating-linear-gradient(90deg, #933 0, #933 5px, #422 5px, #422 7px, #36b 7px, #36b 14px);
+        }
+        /* Glowing Book */
+        .bookshelf .glow-book {
             position: absolute;
-            top: 50%;
+            top: 45px; left: 40px;
+            width: 10px; height: 25px;
+            background: gold;
+            box-shadow: 0 0 10px gold;
+            animation: pulse-gold 2s infinite ease-in-out;
+        }
+
+        /* 6. Mirror */
+        .mirror {
+            top: 350px; right: 50px;
+            width: 50px; height: 110px;
+            background: #aaa;
+            border: 4px solid silver;
+            border-radius: 25px;
+            overflow: hidden;
+        }
+        .mirror::after {
+            content: '<html>...';
+            position: absolute;
+            top:0; left:0; width: 100%;
+            color: var(--neon-green);
+            font-size: 10px;
+            writing-mode: vertical-rl;
+            animation: scroll-vertical 2s linear infinite;
+        }
+
+        /* 7. Desk & Terminal */
+        .desk-area {
+            position: absolute;
+            bottom: 50px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 1rem;
-            display: none;
-            z-index: 20;
-            animation: bounce 1s infinite alternate;
+            transform: translateX(-50%);
+            width: 250px; height: 80px;
+            background: #433;
+            border: 2px solid #211;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
         }
-
-        /* Project Modal Overlay */
-        #project-modal {
+        .terminal {
+            width: 60px; height: 50px;
+            background: #222;
+            border: 3px solid #666;
+            margin-bottom: 20px;
+            position: relative;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,255,0,0.2);
+        }
+        /* Terminal green screen */
+        .terminal::after {
+            content: '>';
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.4);
-            z-index: 100;
+            top: 5px; left: 5px; right: 5px; bottom: 5px;
+            background: #000;
+            color: var(--neon-green);
+            font-size: 10px;
+            padding: 2px;
+        }
+        .terminal:hover { box-shadow: 0 0 15px var(--neon-green); }
+
+        /* --- Modals (RPG Style) --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 500;
             display: none;
             justify-content: center;
             align-items: center;
-            pointer-events: auto;
+        }
+        .modal-box {
+            background: var(--bg-color);
+            border: 4px double var(--neon-blue);
+            width: 600px;
+            max-width: 90%;
+            padding: 20px;
+            position: relative;
+            box-shadow: 0 0 20px var(--neon-blue);
+            font-family: var(--font-main);
+            font-size: 20px;
+        }
+        .modal-box.terminal-style {
+            background: #000;
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+            font-family: monospace;
+            box-shadow: 0 0 20px var(--neon-green);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px; right: 10px;
+            background: transparent;
+            border: 1px solid currentColor;
+            color: currentColor;
+            cursor: pointer;
+            font-family: var(--font-pixel);
+            padding: 5px;
         }
         
-        .modal-content {
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 40px;
-            border-radius: 16px;
-            position: relative;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-            animation: slideUp 0.3s ease-out;
+        .modal-content h2 {
+            font-family: var(--font-pixel);
+            font-size: 16px;
+            margin-top: 0;
+            border-bottom: 1px solid currentColor;
+            padding-bottom: 10px;
+        }
+        
+        .typewriter-text {
+            min-height: 80px;
+            margin-bottom: 20px;
+            line-height: 1.4;
         }
 
-        .modal-close {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            cursor: pointer;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #555;
-        }
-
-        .modal-close:hover { color: #000; }
-
-        .project-tag {
-            display: inline-block;
-            background: #eee;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            margin-bottom: 15px;
-            color: #555;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        .btn {
-            display: inline-block;
-            background: var(--text-primary);
-            color: #fff;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 6px;
+        .action-area {
+            display: flex;
+            gap: 15px;
             margin-top: 20px;
-            font-weight: bold;
-            transition: transform 0.2s;
+            flex-wrap: wrap;
         }
-        .btn:hover { transform: scale(1.05); }
 
-        /* Footer Bar */
-        #footer-bar {
+        .rpg-btn {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid currentColor;
+            color: currentColor;
+            padding: 10px 15px;
+            text-decoration: none;
+            font-family: var(--font-pixel);
+            font-size: 10px;
+            transition: 0.2s;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .rpg-btn:hover {
+            background: currentColor;
+            color: #000;
+        }
+
+        /* --- System Footer --- */
+        .system-footer {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            background: #111;
-            color: #888;
-            font-size: 0.75rem;
+            background: #000;
+            color: #555;
+            font-family: var(--font-main);
+            font-size: 16px;
+            padding: 5px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 5px 20px;
-            box-sizing: border-box;
-            z-index: 50;
             border-top: 1px solid #333;
+            z-index: 900;
         }
-        .singularity-timer {
-            font-family: 'VT323', monospace;
-            font-size: 1.1rem;
-            color: var(--led-red);
-            letter-spacing: 1px;
+        
+        .timer {
+            color: #f00;
+            font-family: monospace;
+            text-shadow: 0 0 5px #f00;
         }
 
         /* Animations */
-        @keyframes pulse-glitch {
-            0% { opacity: 1; transform: skewX(0deg); }
-            5% { opacity: 0.8; transform: skewX(20deg); }
-            10% { opacity: 1; transform: skewX(-5deg); }
-            100% { opacity: 1; transform: skewX(0deg); }
-        }
-        @keyframes bounce {
-            from { transform: translate(-50%, -50%); }
-            to { transform: translate(-50%, -60%); }
-        }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(50px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes pulse-lights { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+        @keyframes flicker { 0% { opacity: 1; } 5% { opacity: 0.2; } 10% { opacity: 1; } }
+        @keyframes pulse-gold { 0% { box-shadow: 0 0 5px gold; } 50% { box-shadow: 0 0 20px gold; } 100% { box-shadow: 0 0 5px gold; } }
+        @keyframes scroll-vertical { 0% { transform: translateY(0); } 100% { transform: translateY(-20px); } }
 
-        /* Embed Utilities */
-        .video-wrapper {
-            position: relative;
-            padding-bottom: 56.25%; /* 16:9 */
-            height: 0;
-            margin: 15px 0;
-        }
-        .video-wrapper iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border-radius: 8px;
-        }
-        .floating-icons a {
-            font-size: 2rem;
-            margin-right: 15px;
-            text-decoration: none;
+        /* Media Queries */
+        @media (max-width: 600px) {
+            .room-container { transform: scale(0.6) perspective(1000px) rotateX(20deg); }
+            .hud { width: 280px; top: 10px; left: 10px; }
+            .modal-box { width: 95%; font-size: 16px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- 3D Scene Container -->
-    <div id="canvas-container"></div>
+    <!-- Visual Overlays -->
+    <div class="scanlines"></div>
 
-    <!-- HUD Overlay -->
-    <div id="hud">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <!-- Bio -->
-            <div class="glass-panel bio-section">
-                <h1>Geva Kipper</h1>
-                <p>Currently engineering at Google.</p>
-            </div>
-            
-            <!-- Glitch Subtitle -->
-            <div class="glass-panel glitch-container">
-                <span class="glitch-text">This digital architecture is re-imagined daily by AI.<br>Current iteration: v.2024.X</span>
+    <!-- Interface HUD -->
+    <nav class="hud">
+        <div class="avatar"></div>
+        <div class="status-block">
+            <div class="name">PLAYER: GEVA KIPPER</div>
+            <div class="class">LVL ? | CLASS: SWE @ GOOGLE</div>
+            <div class="marquee-container">
+                <div class="marquee-content" id="sys-msg">
+                    SCAN COMPLETE. AI ARCHITECT: "WELCOME TO THE PROCEDURAL SANCTUM."
+                </div>
             </div>
         </div>
+    </nav>
 
-        <!-- Controls Hint -->
-        <div class="glass-panel" style="align-self: flex-start; margin-bottom: 25px;">
-            <div class="controls-hint">
-                <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span>
-                <span>to Move</span>
-                <span style="margin-left:10px;">•</span>
-                <span style="margin-left:10px;">Click Stations to Interact</span>
-            </div>
+    <!-- The Interactive Room -->
+    <main class="room-container">
+        <!-- Decoration -->
+        <div class="desk-area">
+            <!-- Social Links / Connectivity Station -->
+            <div class="terminal" data-label="SOCIAL UPLINK" onclick="openSocials()"></div>
         </div>
-    </div>
 
-    <!-- Interaction Prompt -->
-    <div id="interact-prompt">Press SPACE to Inspect</div>
+        <!-- 1. Jukebox (GlglStats) -->
+        <div class="item jukebox" data-label="VINTAGE JUKEBOX" onclick="openProject('jukebox')"></div>
+
+        <!-- 2. Window (Ahuzat Dibuk) -->
+        <div class="item window" data-label="DIGITAL WINDOW" onclick="openProject('window')"></div>
+
+        <!-- 3. Architect Table (2D Part) -->
+        <div class="item blueprint-table" data-label="BLUEPRINT TABLE" onclick="openProject('blueprint')"></div>
+
+        <!-- 4. Arcade (Turing Jest) -->
+        <div class="item arcade" data-label="JEST FIGHTER" onclick="openProject('arcade')"></div>
+
+        <!-- 5. Bookshelf (Rhymes of Israel) -->
+        <div class="item bookshelf" data-label="ARCHIVES" onclick="openProject('bookshelf')">
+            <div></div><div></div>
+            <div class="glow-book"></div>
+            <div></div>
+        </div>
+
+        <!-- 6. Mirror (Portfolio Meta) -->
+        <div class="item mirror" data-label="?? ERROR ??" onclick="openProject('mirror')"></div>
+    </main>
 
     <!-- Modal System -->
-    <div id="project-modal">
-        <div class="modal-content" id="modal-inner">
-            <span class="modal-close" onclick="closeModal()">×</span>
-            <div id="modal-body"></div>
+    <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-box" id="modal-box" onclick="event.stopPropagation()">
+            <button class="close-btn" onclick="closeModal()">[X]</button>
+            <div class="modal-content">
+                <h2 id="modal-title">TITLE</h2>
+                <div id="modal-text" class="typewriter-text"></div>
+                
+                <!-- Media/Embed Container -->
+                <div id="modal-media" style="margin-bottom:15px; border: 1px solid #444; background: #000; display:none;">
+                    <!-- Content injected via JS -->
+                </div>
+
+                <div class="action-area" id="modal-actions">
+                    <!-- Buttons injected via JS -->
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Fixed Footer -->
-    <div id="footer-bar">
-        <div>Site architecture generated by AI Model [DeepSeek-V3]</div>
-        <div class="singularity-timer" id="singularity-timer">Calculating Singularity...</div>
-    </div>
+    <!-- System Footer -->
+    <footer class="system-footer">
+        <span>ARCHITECT: AI MODEL [THINK-01] // BUILD SUCCESSFUL.</span>
+        <span class="timer" id="singularity-timer">LOADING...</span>
+    </footer>
 
     <script>
-        // --- 1. CONFIGURATION & STATE ---
-        const config = {
-            colors: {
-                floor: 0xf5f5f5,
-                wall: 0xe0e0e0,
-                accent: 0x4fc3f7,
-                highlight: 0xffeb3b,
-                dark: 0x333333,
-                plantGreen: 0x66bb6a,
-                plantPot: 0x8d6e63
+        // --- Project Data ---
+        const projects = {
+            jukebox: {
+                title: "GlglStats: The Algorithmic Jukebox",
+                text: "A deep dive into the repetitive nature of Israel's most popular radio playlist. Using the LZ77 algorithm, this project analyzes pattern recognition in music broadcasts.",
+                color: "#ff00ff",
+                actions: [
+                    { label: "▶ PLAY GLGLSTATS", url: "https://glglstats.geekip.dev" },
+                    { label: "📺 WATCH TALK", url: "https://www.youtube.com/watch?v=jrKAtOsj1Lo" }
+                ],
+                embed: '<iframe width="100%" height="200" src="https://www.youtube.com/embed/jrKAtOsj1Lo" frameborder="0" allowfullscreen></iframe>'
             },
-            speed: 0.15,
-            interactionDist: 4
-        };
-
-        const state = {
-            canMove: true,
-            activeStation: null,
-            targetPosition: null
-        };
-
-        // --- 2. THREE.JS SETUP ---
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xdceefb); // Soft pastel blue sky
-        scene.fog = new THREE.Fog(0xdceefb, 20, 50);
-
-        // Isometric Camera setup
-        const aspect = window.innerWidth / window.innerHeight;
-        const d = 20;
-        const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
-        camera.position.set(20, 20, 20); // Isometric angle
-        camera.lookAt(scene.position);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        container.appendChild(renderer.domElement);
-
-        // Lighting
-        const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
-        scene.add(hemiLight);
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
-        dirLight.position.set(10, 20, 10);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-        dirLight.shadow.camera.left = -30;
-        dirLight.shadow.camera.right = 30;
-        dirLight.shadow.camera.top = 30;
-        dirLight.shadow.camera.bottom = -30;
-        scene.add(dirLight);
-
-        // --- 3. ENVIRONMENT GENERATION ---
-
-        // Materials
-        const mats = {
-            floor: new THREE.MeshStandardMaterial({ color: config.colors.floor }),
-            skin: new THREE.MeshStandardMaterial({ color: 0xffccaa }),
-            hoodie: new THREE.MeshStandardMaterial({ color: 0x333333 }),
-            pants: new THREE.MeshStandardMaterial({ color: 0x555555 }),
-            furniture: new THREE.MeshStandardMaterial({ color: 0xffffff }),
-            wood: new THREE.MeshStandardMaterial({ color: 0x8d6e63 }),
-            highlight: new THREE.MeshStandardMaterial({ color: config.colors.highlight, emissive: 0xffee58, emissiveIntensity: 0.2 }),
-            hologram: new THREE.MeshPhongMaterial({ color: 0x00ff00, opacity: 0.6, transparent: true, flatShading: true, shininess: 100 }),
-            mirror: new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.9, roughness: 0.1 }),
-            glitch: new THREE.MeshBasicMaterial({ color: 0x00ff41, wireframe: true })
-        };
-
-        // Floor
-        const floorGeo = new THREE.PlaneGeometry(60, 60);
-        const floor = new THREE.Mesh(floorGeo, mats.floor);
-        floor.rotation.x = -Math.PI / 2;
-        floor.receiveShadow = true;
-        scene.add(floor);
-
-        // Helper: Create Box
-        function createBox(w, h, d, x, y, z, mat, shadow = true) {
-            const geo = new THREE.BoxGeometry(w, h, d);
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.set(x, y, z);
-            if (shadow) {
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
+            window: {
+                title: "Ahuzat Dibuk: Parking Reality",
+                text: "A scraper system monitoring Tel Aviv's parking lots. This data visualization revealed the hidden patterns of urban congestion and was featured on national news.",
+                color: "#00ccff",
+                actions: [
+                    { label: "📰 CH 13 NEWS", url: "https://13tv.co.il/item/news/domestic/internal/parking-902956407/" },
+                    { label: "📰 MAKO", url: "https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" },
+                    { label: "📘 FACEBOOK POST", url: "https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" }
+                ]
+            },
+            blueprint: {
+                title: "2D Part Orienting C++ Algorithms",
+                text: "An academic implementation of robotic manipulation algorithms. Calculates push plans to orient polygonal parts on a conveyor belt without sensors.",
+                color: "#ffaa00",
+                actions: [
+                    { label: "📐 VIEW BLUEPRINTS (TAU)", url: "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" }
+                ]
+            },
+            arcade: {
+                title: "The Turing Jest: AI vs Human Humor",
+                text: "WELCOME TO THE ARENA. An LMSYS-style battleground for puns. Two models enter, one joke leaves. Can machines be funny?",
+                color: "#39ff14",
+                actions: [
+                    { label: "🕹️ INSERT COIN (PLAY)", url: "https://jest.geekip.dev" }
+                ]
+            },
+            bookshelf: {
+                title: "Rhymes of Israel (Extension)",
+                text: "A localized Chrome extension that brings comedic relief to browsing by highlighting Israeli cultural references and rhymes.",
+                color: "#ffd700",
+                actions: [
+                    { label: "📥 ADD TO CHROME", url: "https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" }
+                ]
+            },
+            mirror: {
+                title: "RECURSION_DETECTED",
+                text: "You are looking at the code that generates the code. This portfolio is a self-referential entity hosted at geekip.dev.",
+                color: "#ffffff",
+                actions: [
+                    { label: "🌐 GEEKIP.DEV", url: "https://geekip.dev" }
+                ]
             }
-            return mesh;
-        }
-
-        // Helper: Create Plant
-        function createPlant(x, z) {
-            const group = new THREE.Group();
-            const pot = createBox(1, 1, 1, 0, 0.5, 0, mats.wood);
-            const stem = createBox(0.2, 1, 0.2, 0, 1.2, 0, new THREE.MeshStandardMaterial({color: 0x4a3b2a}));
-            const leavesGeo = new THREE.IcosahedronGeometry(0.8);
-            const leavesMat = new THREE.MeshStandardMaterial({ color: config.colors.plantGreen, flatShading: true });
-            const leaves = new THREE.Mesh(leavesGeo, leavesMat);
-            leaves.position.set(0, 2, 0);
-            leaves.castShadow = true;
-            
-            group.add(pot);
-            group.add(stem);
-            group.add(leaves);
-            group.position.set(x, 0, z);
-            return group;
-        }
-        
-        // Add decorative plants
-        scene.add(createPlant(-10, -10));
-        scene.add(createPlant(12, 12));
-        scene.add(createPlant(-12, 5));
-
-        // --- 4. STATIONS (Project Objects) ---
-        const stations = [];
-
-        // 1. Audio Corner (Jukebox)
-        const s1 = new THREE.Group();
-        s1.add(createBox(2, 4, 2, 0, 2, 0, new THREE.MeshStandardMaterial({color: 0x222}))); // Body
-        const speaker = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.5, 32), mats.highlight);
-        speaker.rotation.x = Math.PI/2;
-        speaker.position.set(0, 2.5, 1);
-        s1.add(speaker);
-        s1.position.set(-8, 0, -5);
-        s1.userData = { id: 'glgl', title: 'GlglStats' };
-        scene.add(s1);
-        stations.push(s1);
-
-        // 2. Situation Room (Hologram Table)
-        const s2 = new THREE.Group();
-        s2.add(createBox(5, 1.5, 4, 0, 0.75, 0, mats.furniture)); // Table
-        const holoGeo = new THREE.ConeGeometry(2, 2, 4, 1, true);
-        const holo = new THREE.Mesh(holoGeo, mats.hologram);
-        holo.position.set(0, 2.5, 0);
-        holo.scale.set(1, -1, 1); // Point down
-        
-        // Animated Map bits
-        for(let i=0; i<5; i++) {
-            const b = createBox(0.2, Math.random()*1, 0.2, (Math.random()-0.5)*3, 1.6, (Math.random()-0.5)*2, new THREE.MeshBasicMaterial({color: 0xff3333}));
-            s2.add(b);
-        }
-        s2.add(holo);
-        s2.position.set(5, 0, -5);
-        s2.userData = { id: 'ahuzat', title: 'Ahuzat Dibuk' };
-        scene.add(s2);
-        stations.push(s2);
-
-        // 3. Engineering Desk (Robot Arm)
-        const s3 = new THREE.Group();
-        s3.add(createBox(4, 2, 2, 0, 1, 0, mats.wood)); // Desk
-        // Simple Robot Arm
-        const armBase = createBox(0.8, 0.2, 0.8, 1, 2.1, 0, mats.pants);
-        const armLink = createBox(0.2, 1.5, 0.2, 1, 2.8, 0, mats.furniture);
-        const armHead = new THREE.Mesh(new THREE.OctahedronGeometry(0.4), mats.highlight);
-        armHead.position.set(0.5, 3.5, 0);
-        s3.add(armBase, armLink, armHead);
-        
-        // Store reference for animation
-        s3.userData = { id: 'orienting', title: '2D Part Orienting', animated: armHead };
-        s3.position.set(10, 0, 8);
-        scene.add(s3);
-        stations.push(s3);
-
-        // 4. Comedy Stage (Mic Stand)
-        const s4 = new THREE.Group();
-        const stage = new THREE.Mesh(new THREE.CylinderGeometry(3, 3.2, 0.5, 8), mats.floor);
-        stage.position.y = 0.25;
-        stage.receiveShadow = true;
-        s4.add(stage);
-        const micPole = createBox(0.1, 2, 0.1, 0, 1.5, 0, new THREE.MeshStandardMaterial({color: 0x111}));
-        const micHead = new THREE.Mesh(new THREE.SphereGeometry(0.2), mats.skin);
-        micHead.position.set(0, 2.5, 0);
-        s4.add(micPole, micHead);
-        // "Ha Ha" bubbles
-        const textGeo = createBox(0.5, 0.2, 0.1, 1, 2, 0, mats.highlight); 
-        s4.add(textGeo);
-        
-        s4.position.set(-5, 0, 10);
-        s4.userData = { id: 'jest', title: 'The Turing Jest' };
-        scene.add(s4);
-        stations.push(s4);
-
-        // 5. Printing Press (Typewriter)
-        const s5 = new THREE.Group();
-        s5.add(createBox(2, 1.5, 2, 0, 0.75, 0, mats.furniture)); // Stand
-        const typewriter = createBox(1, 0.5, 1, 0, 1.75, 0, mats.pants);
-        const paper = createBox(0.8, 1, 0.02, 0, 2.2, -0.2, new THREE.MeshStandardMaterial({color: 0xffffff}));
-        paper.rotation.x = -0.2;
-        s5.add(typewriter, paper);
-        s5.position.set(-12, 0, 2);
-        s5.userData = { id: 'rhymes', title: 'Rhymes of Israel' };
-        scene.add(s5);
-        stations.push(s5);
-
-        // 6. Infinite Mirror (Server Rack)
-        const s6 = new THREE.Group();
-        const rack = createBox(2, 5, 2, 0, 2.5, 0, new THREE.MeshStandardMaterial({color: 0x1a1a1a}));
-        const screen = createBox(1.5, 1, 0.1, 0, 3.5, 1.05, mats.mirror); // The "Mirror"
-        
-        // Simulated blinking server lights
-        for(let j=0; j<8; j++) {
-            let light = createBox(0.1, 0.1, 0.05, (Math.random()-0.5)*1.5, 1 + Math.random()*2, 1.05, new THREE.MeshBasicMaterial({color: 0x00ff00}));
-            s6.add(light);
-        }
-        s6.add(rack, screen);
-        s6.position.set(0, 0, -10); // Back center
-        s6.userData = { id: 'meta', title: 'Meta-Portfolio' };
-        scene.add(s6);
-        stations.push(s6);
-
-        // 7. Social Lounge
-        const s7 = new THREE.Group();
-        const rug = new THREE.Mesh(new THREE.CircleGeometry(3, 32), new THREE.MeshStandardMaterial({color: 0xffecb3}));
-        rug.rotation.x = -Math.PI/2;
-        rug.position.y = 0.02;
-        const chair1 = createBox(1, 1, 1, -1, 0.5, 0, new THREE.MeshStandardMaterial({color: 0xff7043}));
-        const chair2 = createBox(1, 1, 1, 1, 0.5, 0, new THREE.MeshStandardMaterial({color: 0xff7043}));
-        s7.add(rug, chair1, chair2);
-        
-        // Floating Icons (Abstracted cubes rotating)
-        const iconGroup = new THREE.Group();
-        const i1 = createBox(0.5, 0.5, 0.5, -1, 0, 0, new THREE.MeshBasicMaterial({color: 0x181717})); // Github
-        const i2 = createBox(0.5, 0.5, 0.5, 0, 0, 0, new THREE.MeshBasicMaterial({color: 0x0077b5})); // Linkedin
-        const i3 = createBox(0.5, 0.5, 0.5, 1, 0, 0, new THREE.MeshBasicMaterial({color: 0x1877f2})); // FB
-        iconGroup.add(i1, i2, i3);
-        iconGroup.position.set(0, 2.5, 0);
-        s7.add(iconGroup);
-        s7.userData = { id: 'social', title: 'Social Lounge', icons: iconGroup };
-        
-        s7.position.set(0, 0, 0); // Center room
-        scene.add(s7);
-        stations.push(s7);
-
-
-        // --- 5. THE CHARACTER (Avatar) ---
-        const avatar = new THREE.Group();
-        
-        // Body (Hoodie)
-        const body = createBox(0.8, 1.2, 0.5, 0, 0.6, 0, mats.hoodie);
-        // Head
-        const head = createBox(0.5, 0.6, 0.5, 0, 1.5, 0, mats.skin);
-        // Hood
-        const hood = createBox(0.6, 0.6, 0.6, 0, 1.55, -0.1, mats.hoodie);
-        // Headphones
-        const hpL = createBox(0.1, 0.3, 0.3, -0.32, 1.5, 0, new THREE.MeshStandardMaterial({color: 0x111}));
-        const hpR = createBox(0.1, 0.3, 0.3, 0.32, 1.5, 0, new THREE.MeshStandardMaterial({color: 0x111}));
-        const hpBand = createBox(0.7, 0.1, 0.1, 0, 1.85, 0, new THREE.MeshStandardMaterial({color: 0x111}));
-
-        avatar.add(body, head, hood, hpL, hpR, hpBand);
-        avatar.position.set(0, 0, 5); // Start position
-        avatar.castShadow = true;
-        scene.add(avatar);
-
-        // --- 6. CONTROLS & PHYSICS ---
-        const keys = { w: false, a: false, s: false, d: false };
-
-        window.addEventListener('keydown', (e) => {
-            if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = true;
-            if(e.code === 'Space' && state.activeStation) openModal(state.activeStation);
-        });
-        window.addEventListener('keyup', (e) => {
-            if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = false;
-        });
-
-        // Mouse interaction for clicking
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        window.addEventListener('mousedown', (e) => {
-            if(!state.activeStation) return;
-            
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            
-            // Allow clicking to trigger modal if proximity is good
-            openModal(state.activeStation);
-        });
-
-
-        // --- 7. DATA CONTENT (The Specifications) ---
-        const projectData = {
-            'glgl': `
-                <span class="project-tag">Data Analysis & Python</span>
-                <h2>GlglStats: The Beat of Israel</h2>
-                <div class="video-wrapper">
-                    <iframe src="https://www.youtube.com/embed/jrKAtOsj1Lo" frameborder="0" allowfullscreen></iframe>
-                </div>
-                <p>Analyzing Israeli pop music using LZ77 compression and Python. This project visualizes repetition patterns in songs from the Galgalatz charts.</p>
-                <a href="https://glglstats.geekip.dev" target="_blank" class="btn">Launch Project</a>
-            `,
-            'ahuzat': `
-                <span class="project-tag">Big Data & Visualization</span>
-                <h2>Ahuzat Dibuk: Tel-Aviv Parking Map</h2>
-                <p>An automated pipeline scraping Tel-Aviv municipal data to generate real-time parking heatmaps.</p>
-                <div style="display:flex; gap:10px; margin: 15px 0;">
-                    <div style="flex:1; height:60px; background:linear-gradient(90deg, #ff0000, #00ff00); border-radius:4px;"></div>
-                </div>
-                <h3>In The News:</h3>
-                <ul style="opacity:0.8; font-size:0.9rem;">
-                   <li><a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">Channel 13 Coverage</a></li>
-                   <li><a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">Mako News</a></li>
-                   <li><a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">Original Viral Post</a></li>
-                </ul>
-            `,
-            'orienting': `
-                <span class="project-tag">C++ & Computational Geometry</span>
-                <h2>2D Part Orienting</h2>
-                <p>A C++ implementation of algorithms for sensorless manipulation. The system computes the optimal sequence of fence rotations to orient a polygonal part into a known position.</p>
-                <div style="background:#eee; padding:10px; border-radius:4px; font-family:monospace; margin:10px 0;">
-                    std::vector&lt;Edge&gt; computeSeq(Polygon p);
-                </div>
-                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn">View Algorithm</a>
-            `,
-            'jest': `
-                <span class="project-tag">LLM & Fullstack</span>
-                <h2>The Turing Jest</h2>
-                <p>Can AI be funny? An LLM-powered pun competition where AI models generate jokes based on prompts and users rate them in an arena-style face-off.</p>
-                <p style="font-style:italic;">"Why did the developer go broke? Because he used up all his cache."</p>
-                <a href="https://jest.geekip.dev" target="_blank" class="btn">Start Laughing</a>
-            `,
-            'rhymes': `
-                <span class="project-tag">Chrome Extension</span>
-                <h2>Rhymes of Israel</h2>
-                <p>Brings joy to browsing news sites by converting boring headlines into yearbook-style rhymes instantly.</p>
-                <div style="display:flex; justify-content:space-between; background:#222; color:#fff; padding:10px; border-radius:4px; margin:10px 0;">
-                    <span>"Politics Update"</span> <span>→</span> <span style="color:#ffcc00">"Politics is great!"</span>
-                </div>
-                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn">Get Extension</a>
-            `,
-            'meta': `
-                <span class="project-tag">Web 3D</span>
-                <h2>Meta-Portfolio</h2>
-                <p>You are looking at it. This low-poly world is rendered in real-time in your browser.</p>
-                <a href="https://geekip.dev" class="btn">Recursion (Refresh)</a>
-            `,
-            'social': `
-                <span class="project-tag">Connect</span>
-                <h2>The Social Lounge</h2>
-                <p>Let's build something together.</p>
-                <div class="floating-icons" style="margin-top:20px; text-align:center;">
-                    <a href="https://github.com/gevak" target="_blank">🐱 GitHub</a>
-                    <a href="https://linkedin.com/in/gevakip" target="_blank">💼 LinkedIn</a>
-                    <a href="https://facebook.com/geva.kipper" target="_blank">📘 Facebook</a>
-                </div>
-            `
         };
 
-        // --- 8. GAME & UI LOGIC ---
+        const socials = [
+            { label: "🐙 GITHUB", url: "https://github.com/gevak" },
+            { label: "💼 LINKEDIN", url: "https://linkedin.com/in/gevakip" },
+            { label: "👍 FACEBOOK", url: "https://facebook.com/geva.kipper" }
+        ];
 
-        const promptEl = document.getElementById('interact-prompt');
-        const modal = document.getElementById('project-modal');
-        const modalBody = document.getElementById('modal-body');
+        // --- Logic ---
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalBox = document.getElementById('modal-box');
+        const modalTitle = document.getElementById('modal-title');
+        const modalText = document.getElementById('modal-text');
+        const modalActions = document.getElementById('modal-actions');
+        const modalMedia = document.getElementById('modal-media');
 
-        function openModal(station) {
-            state.canMove = false;
-            const content = projectData[station.userData.id];
-            modalBody.innerHTML = content;
-            modal.style.display = 'flex';
+        let typeWriterTimeout;
+
+        function typeWriter(text, element, speed = 20) {
+            element.innerHTML = "";
+            let i = 0;
+            function type() {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i);
+                    i++;
+                    typeWriterTimeout = setTimeout(type, speed);
+                }
+            }
+            type();
         }
 
-        window.closeModal = function() { // Global scope for onClick
-            modal.style.display = 'none';
-            state.canMove = true;
+        function openProject(id) {
+            clearTimeout(typeWriterTimeout);
+            const data = projects[id];
+            
+            modalBox.classList.remove('terminal-style');
+            modalBox.style.borderColor = data.color;
+            modalBox.style.boxShadow = `0 0 20px ${data.color}`;
+            modalTitle.style.color = data.color;
+            modalTitle.innerText = data.title;
+            
+            // Handle actions
+            modalActions.innerHTML = "";
+            data.actions.forEach(act => {
+                const btn = document.createElement('a');
+                btn.className = 'rpg-btn';
+                btn.href = act.url;
+                btn.target = "_blank";
+                btn.innerText = act.label;
+                btn.style.color = data.color;
+                modalActions.appendChild(btn);
+            });
+
+            // Handle Media
+            if(data.embed) {
+                modalMedia.style.display = 'block';
+                modalMedia.innerHTML = data.embed;
+            } else {
+                modalMedia.style.display = 'none';
+                modalMedia.innerHTML = '';
+            }
+
+            modalOverlay.style.display = 'flex';
+            typeWriter(data.text, modalText);
         }
 
-        // Singularity Timer
-        const targetDate = new Date("2026-01-08T01:12:48").getTime();
-        const timerEl = document.getElementById('singularity-timer');
+        function openSocials() {
+            clearTimeout(typeWriterTimeout);
+            modalBox.classList.add('terminal-style');
+            modalTitle.innerText = "C:\\USERS\\GEVA\\NET_UPLINK.EXE";
+            
+            modalActions.innerHTML = "";
+            socials.forEach(soc => {
+                const btn = document.createElement('a');
+                btn.className = 'rpg-btn';
+                btn.href = soc.url;
+                btn.target = "_blank";
+                btn.innerText = soc.label;
+                modalActions.appendChild(btn);
+            });
+
+            modalMedia.style.display = 'none';
+            modalOverlay.style.display = 'flex';
+            typeWriter("Establishing secure connection... \nSelect destination node:", modalText);
+        }
+
+        function closeModal(e) {
+            if (e && e.target !== modalOverlay && e.target.className !== 'close-btn') return;
+            modalOverlay.style.display = 'none';
+            modalMedia.innerHTML = ''; // Stop video playback
+        }
+
+        // --- Singularity Timer ---
+        // Goal: 2026-01-09 01:14:01
+        // Prompt says "Counts UP... Time Since". 
+        // If current date < goal: Show countdown T-Minus.
+        // If current date > goal: Show time since.
+        const targetDate = new Date("2026-01-09T01:14:01").getTime();
 
         function updateTimer() {
             const now = new Date().getTime();
-            const delta = targetDate - now;
+            const diff = now - targetDate;
+            
+            const isFuture = diff < 0;
+            const absDiff = Math.abs(diff);
 
-            const isFuture = delta > 0;
-            const absDelta = Math.abs(delta);
+            const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((absDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((absDiff % (1000 * 60)) / 1000);
+
+            let label = isFuture ? "T-MINUS TO SINGULARITY: " : "TIME SINCE SINGULARITY: ";
+            // Pad Zeroes
+            const f = (n) => n.toString().padStart(2, '0');
             
-            const hours = Math.floor((absDelta % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((absDelta % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((absDelta % (1000 * 60)) / 1000);
-            
-            // Formatting with leading zeros
-            const h = hours.toString().padStart(2, '0');
-            const m = minutes.toString().padStart(2, '0');
-            const s = seconds.toString().padStart(2, '0');
-            
-            // To simulate "Time SINCE" for a future date, we display it as a negative countdown
-            timerEl.innerText = `Time since Singularity: -${Math.floor(absDelta/(1000*60*60*24))}d ${h}:${m}:${s}`;
+            document.getElementById('singularity-timer').innerText = 
+                `${label} ${days}d ${f(hours)}:${f(minutes)}:${f(seconds)}`;
         }
+
         setInterval(updateTimer, 1000);
         updateTimer();
 
-        // --- 9. ANIMATION LOOP ---
-
-        function animate(time) {
-            requestAnimationFrame(animate);
-
-            // Movement Logic
-            if(state.canMove) {
-                const moveVec = new THREE.Vector3(0, 0, 0);
-                // Isometric conversion: W moves -Z-X (Upper Left), S moves +Z+X ...
-                // Actually, let's keep it simple relative to screen up/down/left/right
-                // In Isometric: Up is (-1, 0, -1), Right is (1, 0, -1) roughly
-                
-                if(keys.w) moveVec.z -= 1;
-                if(keys.s) moveVec.z += 1;
-                if(keys.a) moveVec.x -= 1;
-                if(keys.d) moveVec.x += 1;
-
-                if(moveVec.length() > 0) {
-                    moveVec.normalize().multiplyScalar(config.speed);
-                    
-                    const nextPos = avatar.position.clone().add(moveVec);
-                    
-                    // Simple Bounds check (Room Size 60x60)
-                    if(nextPos.x > -25 && nextPos.x < 25 && nextPos.z > -25 && nextPos.z < 25) {
-                        avatar.position.add(moveVec);
-                        // Rotate character to face movement
-                        const targetLook = avatar.position.clone().add(moveVec);
-                        avatar.lookAt(targetLook);
-                    }
-                }
-            }
-
-            // Proximity Check
-            let closestDist = Infinity;
-            let closestStation = null;
-
-            stations.forEach(station => {
-                const dist = avatar.position.distanceTo(station.position);
-                
-                // Animation of specific station parts
-                if(station.userData.id === 'orienting') {
-                    station.userData.animated.rotation.y += 0.02;
-                    station.userData.animated.rotation.z = Math.sin(time * 0.002) * 0.5;
-                }
-                if(station.userData.id === 'social') {
-                    station.userData.icons.rotation.y = time * 0.001;
-                }
-
-                if(dist < closestDist) {
-                    closestDist = dist;
-                    closestStation = station;
-                }
-            });
-
-            if(closestDist < config.interactionDist) {
-                state.activeStation = closestStation;
-                promptEl.style.display = 'block';
-                promptEl.innerText = `Press SPACE: ${closestStation.userData.title}`;
-                
-                // Head tracking look at nearby station
-                const head = avatar.children[1];
-                if(head) {
-                    const localPos = closestStation.position.clone().sub(avatar.position);
-                    // simple approximate look logic for head bone
-                    // Actually simple mesh rotation is easier
-                    // Not implemented to keep code simple, full body LookAt used in movement
-                }
-            } else {
-                state.activeStation = null;
-                promptEl.style.display = 'none';
-            }
-
-            // Camera Follow System (Smooth Lerp)
-            const targetCamPos = new THREE.Vector3(
-                avatar.position.x + 20, 
-                avatar.position.y + 20, 
-                avatar.position.z + 20
-            );
-            camera.position.lerp(targetCamPos, 0.05);
-            camera.lookAt(avatar.position);
-
-            renderer.render(scene, camera);
-        }
-
-        // Handle Resize
-        window.addEventListener('resize', () => {
-            const aspect = window.innerWidth / window.innerHeight;
-            camera.left = -d * aspect;
-            camera.right = d * aspect;
-            camera.top = d;
-            camera.bottom = -d;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        animate(0);
+        // System Message Rotation
+        const messages = [
+            "System Alert: Environment generated.",
+            "Visualizers online.",
+            "Scanning for recruiters...",
+            "Coffee levels critical.",
+            "Pixel density optimal."
+        ];
+        let msgIndex = 0;
+        setInterval(() => {
+            msgIndex = (msgIndex + 1) % messages.length;
+            document.getElementById('sys-msg').innerText = messages[msgIndex];
+        }, 5000);
 
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260108",
+          pageId: "20260109",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
