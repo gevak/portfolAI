@@ -2,721 +2,726 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper // Dungeon Crawler Portfolio</title>
-    
-    <!-- Retro Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <title>KipperOS v9000 | Geva Kipper</title>
+    <!-- Fonts: Inter for UI, Roboto Mono for Terminal, Press Start 2P for Retro, UnifrakturMaguntia for Newspaper -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Press+Start+2P&family=Roboto+Mono:wght@400;700&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
-            --bg-dark: #1a1c2c;
-            --bg-wall: #29366f;
-            --bg-floor: #141013;
-            --accent-gold: #f4b41b;
-            --accent-orange: #d77bba; /* Adjusted for fantasy feel */
-            --accent-torch: #ffcc68;
-            --text-pixel: 'Press Start 2P', monospace;
-            --text-body: 'VT323', monospace;
-            --hud-bg: rgba(20, 16, 19, 0.9);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --accent-green: #00ff41;
+            --accent-violet: #bb00ff;
+            --font-ui: 'Inter', sans-serif;
+            --font-mono: 'Roboto Mono', monospace;
+            --font-retro: 'Press Start 2P', monospace;
+            --font-news: 'UnifrakturMaguntia', serif;
         }
 
         * {
             box-sizing: border-box;
-            cursor: crosshair; /* RPG feel */
+            cursor: none; /* Hide default cursor */
         }
 
-        body, html {
+        body {
             margin: 0;
             padding: 0;
-            background-color: var(--bg-floor);
-            color: #e0e0e0;
-            font-family: var(--text-body);
-            overflow-x: hidden;
-            scroll-behavior: smooth;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: var(--font-ui);
+            color: white;
+            /* Mesh Gradient Background */
+            background-color: #0f0c29;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 0% 100%, hsla(270,50%,40%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 100%, hsla(250,100%,5%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 50%, hsla(260,100%,20%,1) 0, transparent 50%);
+            background-size: 200% 200%;
+            animation: meshFlow 20s ease infinite alternate;
         }
 
-        /* --- CRT & VIGNETTE EFFECTS --- */
-        .crt-overlay {
+        @keyframes meshFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- Custom Cursor --- */
+        #cursor {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: 
-                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 2px, 3px 100%;
+            width: 20px;
+            height: 20px;
             pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+        }
+        
+        #cursor svg {
+            fill: white;
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 5px var(--accent-violet));
+        }
+
+        /* --- Status Bar --- */
+        #status-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px;
+            font-size: 12px;
+            font-family: var(--font-mono);
+            border-bottom: 1px solid var(--glass-border);
             z-index: 1000;
         }
 
-        .vignette {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.8) 100%);
-            pointer-events: none;
-            z-index: 999;
-            animation: breathe 5s infinite ease-in-out;
-        }
-
-        @keyframes breathe {
-            0%, 100% { opacity: 0.8; }
-            50% { opacity: 0.6; }
-        }
-
-        /* --- HUD --- */
-        .hud {
-            position: fixed;
-            top: 20px;
+        .start-btn {
+            position: absolute;
             left: 50%;
             transform: translateX(-50%);
-            width: 90%;
-            max-width: 800px;
-            background: var(--hud-bg);
-            border: 4px solid var(--bg-wall);
-            box-shadow: 0 0 0 2px black, 0 0 10px var(--bg-wall);
-            padding: 10px;
+            font-size: 16px;
+            color: var(--accent-violet);
+            transition: transform 0.2s;
+        }
+        .start-btn:hover { transform: translateX(-50%) scale(1.2); text-shadow: 0 0 10px var(--accent-violet); }
+
+        /* --- Profile Widget --- */
+        #profile-widget {
+            position: absolute;
+            top: 60px;
+            left: 30px;
+            width: 280px;
+            padding: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: var(--glass-shadow);
+            z-index: 50;
+        }
+
+        .profile-header {
             display: flex;
             align-items: center;
             gap: 15px;
-            z-index: 900;
-            image-rendering: pixelated;
+            margin-bottom: 15px;
         }
 
         .avatar {
             width: 60px;
             height: 60px;
-            background: #333;
-            border: 2px solid #fff;
-            /* Simple CSS Pixel Art Face */
+            border-radius: 50%;
+            background: url('https://avatars.githubusercontent.com/u/1?v=4') center/cover; /* Placeholder for Geva (using a generic logic placeholder or falling back) - In real scenario use local asset */
+            /* Using a generated gradient as placeholder if image fails */
+            background: radial-gradient(circle, #ddd, #333); 
+            border: 2px solid var(--accent-green);
+            box-shadow: 0 0 15px var(--accent-green);
             position: relative;
-            box-shadow: inset 0 0 10px #000;
         }
-        .avatar::after {
-            content: '';
+        /* Assuming we don't have the actual jpg, using a CSS placeholder */
+        .avatar::after { content: 'GK'; position: absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:black; font-weight:bold;}
+
+        .profile-info h1 { margin: 0; font-size: 1.2rem; font-weight: 800; }
+        .role-pill {
+            display: inline-block;
+            font-size: 0.7rem;
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 5px;
+            box-shadow: 0 0 5px rgba(0, 255, 65, 0.3);
+        }
+
+        .ai-notice {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.6);
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-left: 2px solid orange;
+            line-height: 1.4;
+        }
+
+        /* --- Window System --- */
+        .window {
             position: absolute;
-            top: 15px; left: 15px;
-            width: 5px; height: 5px;
-            background: #fff;
-            box-shadow: 25px 0 0 #fff, 10px 25px 0 #dfa, 15px 25px 0 #dfa;
-        }
-
-        .stats {
-            flex: 1;
-        }
-
-        .player-name {
-            font-family: var(--text-pixel);
-            font-size: 12px;
-            color: var(--accent-gold);
-            margin-bottom: 5px;
-            text-transform: uppercase;
-        }
-
-        .player-class {
-            font-size: 18px;
-            color: #fff;
-            margin-bottom: 5px;
-        }
-
-        .sub-stat {
-            font-size: 16px;
-            color: #0f0;
-            opacity: 0.8;
-            border-top: 1px dashed #444;
-            padding-top: 2px;
-        }
-
-        .glitch {
-            animation: glitch-anim 2s infinite;
-        }
-
-        @keyframes glitch-anim {
-            0% { opacity: 1; transform: translate(0); }
-            92% { opacity: 1; transform: translate(0); }
-            94% { opacity: 0.8; transform: translate(-2px, 2px); }
-            96% { opacity: 1; transform: translate(2px, -2px); }
-            98% { opacity: 0.5; transform: translate(0); }
-            100% { opacity: 1; transform: translate(0); }
-        }
-
-        /* --- THE HERO & WORLD --- */
-        
-        /* The Hero stays fixed in view, simulating camera following him */
-        #hero {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%); /* Scaled up for visibility */
-            width: 32px;
-            height: 32px;
-            z-index: 500;
-            transition: transform 0.1s;
-        }
-
-        /* CSS Pixel Art Hero (Geva) */
-        .pixel-hero {
-            width: 4px; /* Pixel Size */
-            height: 4px;
-            background: transparent;
-            /* Coordinate-based box-shadow map for a little guy */
-            box-shadow: 
-                12px 0px #3b2137, 16px 0px #3b2137, /* Hair */
-                8px 4px #3b2137, 12px 4px #eeb694, 16px 4px #eeb694, 20px 4px #3b2137, /* Face */
-                8px 8px #3b2137, 12px 8px #eeb694, 16px 8px #eeb694, 20px 8px #3b2137,
-                8px 12px #29366f, 12px 12px #9c2a70, 16px 12px #9c2a70, 20px 12px #29366f, /* Shirt */
-                4px 16px #eeb694, 8px 16px #29366f, 12px 16px #9c2a70, 16px 16px #9c2a70, 20px 16px #29366f, 24px 16px #eeb694,
-                8px 20px 0 0 #2e222f, 12px 20px 0 0 #2e222f, 16px 20px 0 0 #2e222f, 20px 20px 0 0 #2e222f, /* Pants */
-                8px 24px 0 0 #2e222f, 20px 24px 0 0 #2e222f,
-                8px 28px 0 0 #000, 20px 28px 0 0 #000; /* Shoes */
-        }
-
-        #hero.walking .pixel-hero {
-            animation: walk-anim 0.3s infinite alternate;
-        }
-        
-        #hero.idle .pixel-hero {
-            animation: idle-anim 1.5s infinite;
-        }
-
-        @keyframes walk-anim {
-            from { transform: translateY(0); }
-            to { transform: translateY(-4px); }
-        }
-        
-        @keyframes idle-anim {
-            0%, 90% { transform: scaleX(1); }
-            95% { transform: scaleX(0.95) translateY(1px); } /* Tap foot/breathe */
-            100% { transform: scaleX(1); }
-        }
-
-        /* --- DUNGEON ROOMS --- */
-        .dungeon-container {
-            position: relative;
-            width: 100%;
-            /* Make it tall so we can scroll */
-        }
-
-        .room {
-            min-height: 100vh;
-            width: 100%;
+            background: rgba(20, 20, 30, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            box-shadow: var(--glass-shadow);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-bottom: 20px solid #000; /* Room divider */
-            position: relative;
-            padding: 100px 20px;
             overflow: hidden;
+            transition: box-shadow 0.2s, border-color 0.2s, transform 0.1s;
+            min-width: 300px;
+            min-height: 200px;
         }
 
-        /* Room Backgrounds */
-        .room-1 { background: radial-gradient(#3a3a52 10%, #1a1c2c 90%); } /* Bard */
-        .room-2 { 
-            background: repeating-linear-gradient(0deg, #222, #222 50px, #333 50px, #333 52px); 
-            background-color: #222;
-        } /* Street/Asphalt */
-        .room-3 { background: #111; position: relative; } /* Geometry */
-        .room-3::before {
-            content: "+  -  =  x";
-            position: absolute; color: #333; font-family:var(--text-pixel); 
-            font-size: 30px; width: 100%; text-align: center; opacity: 0.2;
-        }
-        .room-4 { background: radial-gradient(circle, #4a3b32 20%, #1a110a 90%); } /* Arena */
-        .room-5 { background: repeating-linear-gradient(90deg, #3b2137 0px, #3b2137 20px, #2a1626 21px, #2a1626 40px); } /* Library */
-        .room-6 { background: linear-gradient(135deg, #000 0%, #111 100%); } /* Mirrors */
-        .room-treasure { background: #2f2518; }
-
-        /* The Path */
-        .path {
-            position: absolute;
-            top: 0; bottom: 0; left: 50%; width: 100px;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.2);
-            border-left: 2px dashed rgba(255,255,255,0.1);
-            border-right: 2px dashed rgba(255,255,255,0.1);
-            z-index: 1;
+        .window:active, .window.active {
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
         }
 
-        /* --- INTERACTIVE OBJECTS & ART (CSS ONLY) --- */
-        .obj-container {
-            position: relative;
-            z-index: 10;
-            margin-bottom: 40px;
-            transform-style: preserve-3d;
-        }
-        
-        /* 1. Gramophone */
-        .gramophone { width: 60px; height: 60px; background: gold; clip-path: polygon(0% 0%, 100% 0%, 50% 100%); animation: spin 4s linear infinite; }
-        .notes { position: absolute; font-size: 20px; color: cyan; animation: floatUp 2s infinite; }
-        
-        /* 2. Car */
-        .pixel-car { 
-            width: 80px; height: 40px; background: #c0392b; 
-            box-shadow: 10px 10px 0 #000; position: relative;
-        }
-        .pixel-car::before { content:''; position: absolute; top: 5px; left: 10px; width: 20px; height: 15px; background: #87ceeb; }
-        
-        /* 3. Polygon */
-        .polygon-shape {
-            width: 60px; height: 60px; border: 4px solid #0f0; transform: rotate(45deg);
-            animation: rotatePoly 5s infinite linear;
-        }
-
-        /* 4. Robots */
-        .robot-pair { display: flex; gap: 40px; }
-        .robot { width: 30px; height: 40px; background: #777; border-top: 5px solid #f00;box-shadow: 2px 2px 0 #000; }
-        
-        /* 5. Book */
-        .big-book {
-            width: 80px; height: 60px; background: #fff; border: 2px solid #5d4037;
-            border-radius: 2px;
-            position: relative;
-        }
-        .big-book::after { content:''; position: absolute; left: 50%; height: 100%; width: 1px; background: #000; }
-
-        /* 6. Mirror */
-        .mirror-frame {
-            width: 60px; height: 100px; background: #add8e6; border: 5px solid silver;
-            opacity: 0.6;
-            margin: 0 auto;
-        }
-
-        /* --- RPG DIALOG BOXES --- */
-        .rpg-box {
-            background: #0000a0; /* Classic FF Blue */
-            border: 4px solid #fff;
-            outline: 4px solid #000;
-            padding: 20px;
-            width: 90%;
-            max-width: 500px;
-            border-radius: 4px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.8);
-            position: relative;
-            z-index: 20;
-            opacity: 0;
-            transform: translateY(20px) scale(0.9);
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            margin-top: 150px; /* Push below the center hero */
-        }
-        
-        .rpg-box.visible {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-
-        .rpg-box::after {
-            content: '';
-            position: absolute;
-            top: -6px; left: -6px; right: -6px; bottom: -6px;
-            border: 2px solid #f4b41b;
-            pointer-events: none;
-            border-radius: 6px;
-        }
-
-        .box-title {
-            font-family: var(--text-pixel);
-            color: var(--accent-gold);
-            margin-bottom: 15px;
-            text-align: center;
-            font-size: 14px;
-            border-bottom: 2px solid #fff;
-            padding-bottom: 5px;
-        }
-
-        .box-content {
-            font-size: 18px;
-            line-height: 1.4;
-            margin-bottom: 20px;
-        }
-
-        .visualizer-bar { display: inline-block; width: 4px; height: 10px; background: #ff00ff; margin-right: 2px; animation: eq 0.5s infinite alternate; }
-        @keyframes eq { to { height: 20px; } }
-
-        /* Buttons */
-        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;}
-        
-        .rpg-btn {
-            background: #fff;
-            color: #000;
-            font-family: var(--text-pixel);
-            font-size: 10px;
-            padding: 10px 15px;
-            text-decoration: none;
-            border: 2px solid #000;
-            box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
-            transition: transform 0.1s;
+        .title-bar {
+            height: 30px;
+            background: rgba(255, 255, 255, 0.05);
             display: flex;
             align-items: center;
-            gap: 5px;
+            padding-left: 10px;
+            border-bottom: 1px solid var(--glass-border);
         }
 
-        .rpg-btn:hover {
-            transform: translate(2px, 2px);
-            box-shadow: 2px 2px 0 rgba(0,0,0,0.5);
-            background: var(--accent-gold);
-        }
-
-        .rpg-btn.fight { background: #d00; color: #fff; border-color: #fff; }
-
-        /* --- TREASURE ROOM & FOOTER --- */
-        .chest-container {
+        .traffic-lights {
             display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin-top: 50px;
+            gap: 6px;
+            margin-right: 15px;
         }
+        .light { width: 10px; height: 10px; border-radius: 50%; opacity: 0.8; }
+        .light.red { background: #ff5f56; }
+        .light.yellow { background: #ffbd2e; }
+        .light.green { background: #27c93f; }
 
-        .chest {
-            width: 60px; height: 40px;
-            background: #8b4513; 
-            border: 2px solid #ffd700;
-            border-radius: 4px 4px 0 0;
-            position: relative;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .chest:hover { transform: translateY(-5px); }
-        
-        /* Floating Icons on hover */
-        .chest .icon-float {
-            position: absolute;
-            top: 0; left: 50%;
-            transform: translate(-50%, 0) scale(0);
-            width: 40px; height: 40px;
-            background: #fff;
-            border-radius: 50%;
+        .window-title {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            user-select: none;
             display: flex;
             align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-            border: 2px solid #000;
-        }
-        
-        .chest:hover .icon-float {
-            transform: translate(-50%, -60px) scale(1);
+            gap: 8px;
         }
 
-        .icon-svg { width: 24px; height: 24px; }
-
-        /* System Terminal */
-        .system-footer {
-            background: #000;
-            color: #0f0;
+        .window-body {
+            flex: 1;
             padding: 15px;
-            font-family: var(--text-pixel);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Global Button Style */
+        .action-btn {
+            display: inline-block;
+            text-align: center;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            margin-top: 10px;
+            cursor: none; /* Custom cursor handles this */
+        }
+        .action-btn:hover {
+            background: white;
+            color: black;
+            box-shadow: 0 0 15px white;
+        }
+
+        /* Specific Window Styles */
+        
+        /* 1. Audio Analyzer */
+        #win-audio { width: 320px; height: 250px; left: 350px; top: 80px; }
+        #win-audio.active { animation: borderPulse 1s infinite alternate; }
+        @keyframes borderPulse { from { border-color: rgba(255,255,255,0.2); } to { border-color: var(--accent-violet); } }
+        
+        .waveform {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            height: 50px;
+            margin-bottom: 10px;
+        }
+        .bar { width: 6px; background: var(--accent-violet); animation: wave 1s ease-in-out infinite; }
+        .bar:nth-child(2) { animation-delay: 0.1s; }
+        .bar:nth-child(3) { animation-delay: 0.2s; }
+        .bar:nth-child(4) { animation-delay: 0.3s; }
+        .bar:nth-child(5) { animation-delay: 0.4s; }
+        @keyframes wave { 0%, 100% { height: 10px; opacity: 0.5; } 50% { height: 40px; opacity: 1; } }
+
+        /* 2. Urban Heatmap */
+        #win-map { width: 350px; height: 280px; left: 700px; top: 120px; }
+        .radar-screen {
+            background: radial-gradient(circle, #002200, #001100);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            font-family: var(--font-mono);
+            height: 100%;
+            padding: 10px;
+            position: relative;
+        }
+        .radar-line {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent 50%, #00ff00 100%);
+            transform-origin: 0 0;
+            animation: radarSpin 4s linear infinite;
+        }
+        @keyframes radarSpin { from {transform: rotate(0deg);} to {transform: rotate(360deg);} }
+        .ticker { font-size: 0.7rem; white-space: nowrap; overflow: hidden; margin-bottom: 5px; border-bottom: 1px dashed #004400; padding: 2px;}
+
+        /* 3. Geometric Engine */
+        #win-geo { width: 300px; height: 240px; left: 40px; top: 350px; background: #001529; }
+        #win-geo .window-body { border: 1px solid rgba(255,255,255,0.1); background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 20px 20px; }
+        .geo-shape {
+            position: absolute; top: 10px; right: 10px;
+            width: 50px; height: 50px;
+            border: 1px solid white;
+            animation: rotate3d 10s linear infinite;
+        }
+        @keyframes rotate3d { from { transform: rotateX(0) rotateY(0); } to { transform: rotateX(360deg) rotateY(360deg); } }
+
+        /* 4. Comedy Arena */
+        #win-jest { width: 340px; height: 260px; left: 400px; top: 380px; background: #220000; font-family: var(--font-retro); border: 4px solid #fff; box-shadow: none;}
+        #win-jest .title-bar { background: red; }
+        .fight-stats { display: flex; justify-content: space-between; font-size: 0.6rem; color: yellow; margin: 10px 0; }
+        .btn-fight { animation: flash 0.5s infinite; background: red; border: none; font-family: var(--font-retro); color: white; width: 100%; cursor: none;}
+        @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* 5. Rhyme Press */
+        #win-rhyme { width: 320px; height: 300px; right: 80px; top: 100px; background: #e0e0d0; color: #111; }
+        #win-rhyme .title-bar { background: #333; }
+        .newspaper-head { font-family: var(--font-news); font-size: 1.8rem; text-align: center; border-bottom: 2px solid black; margin-bottom: 10px; }
+        #win-rhyme .window-body { animation: glitch 5s infinite; }
+        @keyframes glitch { 
+            0% { transform: translate(0); filter: none;} 
+            98% { transform: translate(0); filter: none;} 
+            98.5% { transform: translate(2px, -2px); filter: invert(1); } 
+            99% { transform: translate(-2px, 2px); filter: invert(0); } 
+            100% { transform: translate(0); } 
+        }
+
+        /* 6. Recursive Mirror */
+        #win-meta { width: 280px; height: 220px; right: 120px; bottom: 180px; }
+        .meta-frame { width: 100%; height: 100%; border: none; opacity: 0.7; pointer-events: none; transform: scale(0.8);}
+
+        /* --- Dock --- */
+        #dock {
+            position: fixed;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            gap: 20px;
+            z-index: 2000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .dock-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s;
+            text-decoration: none;
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .dock-icon:hover {
+            transform: scale(1.3) translateY(-10px);
+            background: rgba(255,255,255,0.2);
+        }
+
+        .bg-gh { background: #333; }
+        .bg-li { background: #0077b5; }
+        .bg-fb { background: #1877f2; }
+        .bg-mail { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+
+        /* --- Footer Console --- */
+        #console-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 25px;
+            background: rgba(0,0,0,0.9);
+            color: #00ff41;
+            font-family: var(--font-mono);
             font-size: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-top: 4px solid #333;
-            width: 100%;
-            position: relative;
-            z-index: 100;
+            padding: 0 20px;
+            z-index: 2001;
+            border-top: 1px solid #333;
         }
 
-        .timer-red { color: #f00; font-weight: bold; }
+        /* Utilities */
+        .interactive:hover { cursor: none; } /* Ensure system cursor stays hidden */
 
-        @keyframes rotatePoly { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes floatUp { 0% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(-20px); } }
-
-        /* Media Queries */
-        @media (max-width: 600px) {
-            .hud { flex-direction: column; align-items: flex-start; }
-            .avatar { display: none; }
-            .btn-group { flex-direction: column; width: 100%; }
-            .rpg-btn { width: 100%; justify-content: center; }
+        /* Responsive safety */
+        @media (max-width: 768px) {
+            .window { transform: scale(0.7); transform-origin: top left; }
+            #profile-widget { transform: scale(0.8); transform-origin: top left; }
+            #dock { bottom: 40px; padding: 5px 10px; }
+            .dock-icon { width: 35px; height: 35px; font-size: 18px; }
         }
-
     </style>
 </head>
 <body>
 
-    <!-- CRT Visual Filters -->
-    <div class="crt-overlay"></div>
-    <div class="vignette"></div>
+    <!-- Custom Cursor -->
+    <div id="cursor">
+        <svg viewBox="0 0 24 24">
+            <path d="M5.5 3.2L5.5 20.8L10.3 16L12.5 21.2L15.3 20L13.1 14.8L18.5 14.8L5.5 3.2Z"/>
+        </svg>
+    </div>
 
-    <!-- HUD -->
-    <div class="hud">
-        <div class="avatar"></div>
-        <div class="stats">
-            <div class="player-name">Player: Geva Kipper</div>
-            <div class="player-class">Class: Software Engineer @ Google</div>
-            <div class="sub-stat glitch">Reality construct #842. This dungeon is re-designed daily by AI.</div>
+    <!-- Status Bar -->
+    <div id="status-bar">
+        <div id="typing-status">System: INIT...</div>
+        <div class="start-btn interactive"><i class="fa-solid fa-brain"></i></div>
+        <div style="display: flex; gap: 15px;">
+            <span id="clock">00:00 UTC</span>
+            <span id="battery"><i class="fa-solid fa-battery-half"></i> --%</span>
         </div>
     </div>
 
-    <!-- The Hero (Fixed Center) -->
-    <div id="hero" class="idle">
-        <div class="pixel-hero"></div>
+    <!-- Profile Widget -->
+    <div id="profile-widget">
+        <div class="profile-header">
+            <div class="avatar"></div>
+            <div class="profile-info">
+                <h1>Geva Kipper</h1>
+                <div class="role-pill">Software Engineer @ Google</div>
+            </div>
+        </div>
+        <div class="ai-notice">
+            WARNING: This interface is hallucinated daily. Architecture stability: 12%.
+        </div>
     </div>
 
-    <!-- Game World -->
-    <div class="dungeon-container">
-
-        <!-- Initial Spacer -->
-        <div style="height: 50vh;"></div>
-
-        <!-- Room 1: GlglStats -->
-        <section class="room room-1">
-            <div class="path"></div>
-            <div class="obj-container">
-                <div class="gramophone"></div>
-                <div class="notes" style="left:70px; top:-10px;">♪</div>
-                <div class="notes" style="left:80px; top:10px; animation-delay: 0.5s;">♫</div>
+    <!-- Windows Container (The Stage) -->
+    
+    <!-- Window 1: Audio -->
+    <div class="window interactive" id="win-audio" style="z-index: 1;">
+        <div class="title-bar">
+            <div class="traffic-lights">
+                <div class="light red"></div><div class="light yellow"></div><div class="light green"></div>
             </div>
-            
-            <div class="rpg-box">
-                <div class="box-title">The Bard’s Corner: GlglStats</div>
-                <div class="box-content">
-                    <p>Analysis of redundancy in popular music.</p>
-                    <span class="visualizer-bar"></span><span class="visualizer-bar" style="animation-delay:0.1s"></span><span class="visualizer-bar" style="animation-delay:0.2s"></span>
-                    <p>Reptitiveness algorithm detected.</p>
-                </div>
-                <div class="btn-group">
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="rpg-btn">▶ Play Demo</a>
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="rpg-btn">⚡ Enter Source</a>
-                </div>
+            <div class="window-title"><i class="fa-solid fa-compact-disc"></i> GlglStats</div>
+        </div>
+        <div class="window-body">
+            <div class="waveform">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
             </div>
-        </section>
-
-        <!-- Room 2: Ahuzat Dibuk -->
-        <section class="room room-2">
-            <div class="path" style="border-style: solid; border-color: #fff; background:#222;"></div>
-            <div class="obj-container">
-                <div class="pixel-car"></div>
+            <p style="font-size: 0.8rem; margin:0; opacity:0.8;">LZ77 compression visualization & metadata analysis.</p>
+            <div>
+                <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="action-btn">▶ Play PyData Talk</a>
+                <a href="https://glglstats.geekip.dev" target="_blank" class="action-btn" style="border:none; opacity:0.6;">Source</a>
             </div>
-            
-            <div class="rpg-box">
-                <div class="box-title">Grid of Streets: Ahuzat Dibuk</div>
-                <div class="box-content">
-                    <p>Data Scroll acquired: Parking Heatmap of Tel-Aviv.</p>
-                    <!-- Simple css grid for heatmap -->
-                    <div style="display:grid; grid-template-columns: repeat(10, 1fr); gap:1px; margin-bottom:10px;">
-                        <div style="background:#f00; height:5px;"></div><div style="background:#f00; height:5px;"></div>
-                        <div style="background:#0f0; height:5px;"></div><div style="background:#ff0; height:5px;"></div>
-                        <div style="background:#f00; height:5px;"></div>
-                    </div>
-                </div>
-                <div class="btn-group">
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="rpg-btn">👍 Original Post</a>
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="rpg-btn">📰 Ch13 News</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="rpg-btn">📰 Mako</a>
-                </div>
-            </div>
-        </section>
-
-        <!-- Room 3: 2D Part Orienting -->
-        <section class="room room-3">
-            <div class="path"></div>
-            <div class="obj-container">
-                <div class="polygon-shape"></div>
-            </div>
-            
-            <div class="rpg-box">
-                <div class="box-title">Geometry Chamber</div>
-                <div class="box-content">
-                    <p>Logic: C++ Implementation // Push Strategies.</p>
-                    <p>Aligning vertices to axis...</p>
-                </div>
-                <div class="btn-group">
-                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="rpg-btn">📐 View Blueprint</a>
-                </div>
-            </div>
-        </section>
-
-        <!-- Room 4: The Turing Jest -->
-        <section class="room room-4">
-            <div class="path" style="background: rgba(100,60,20, 0.3);"></div>
-            <div class="obj-container">
-                <div class="robot-pair">
-                    <div class="robot"></div>
-                    <div class="box-title" style="border:none; color:red; font-size:10px;">VS</div>
-                    <div class="robot" style="background:#999; border-color:blue;"></div>
-                </div>
-            </div>
-            
-            <div class="rpg-box">
-                <div class="box-title">Arena of Wits</div>
-                <div class="box-content">
-                    <p>LLM Pun Competition.</p>
-                    <p>Subject: Humor. Outcome: Unknown.</p>
-                </div>
-                <div class="btn-group">
-                    <a href="https://jest.geekip.dev" target="_blank" class="rpg-btn fight">⚔️ FIGHT!</a>
-                </div>
-            </div>
-        </section>
-
-        <!-- Room 5: Rhymes of Israel -->
-        <section class="room room-5">
-            <div class="path" style="background: #3e2723;"></div>
-            <div class="obj-container">
-                <div class="big-book"></div>
-            </div>
-            
-            <div class="rpg-box">
-                <div class="box-title">Yearbook Library</div>
-                <div class="box-content">
-                    <p>Comedic headline re-writer.</p>
-                    <p>Skill gained: Rhyme Generation.</p>
-                </div>
-                <div class="btn-group">
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="rpg-btn">🧩 Equip Spell (Extension)</a>
-                </div>
-            </div>
-        </section>
-
-        <!-- Room 6: Portfolio (Recursion) -->
-        <section class="room room-6">
-            <div class="path"></div>
-            <div class="obj-container">
-                <div class="mirror-frame"></div>
-            </div>
-            
-            <div class="rpg-box">
-                <div class="box-title">Hall of Mirrors</div>
-                <div class="box-content">
-                    <p>Warning: Recursion loop detected.</p>
-                    <p>The reflection shows... this website.</p>
-                </div>
-                <div class="btn-group">
-                    <a href="https://geekip.dev" class="rpg-btn">🔄 Geekip.dev</a>
-                </div>
-            </div>
-        </section>
-
-        <!-- Treasure Room (Contact) -->
-        <section class="room room-treasure">
-            <div class="obj-container">
-                <div style="font-family: var(--text-pixel); color: gold; text-shadow: 2px 2px #000; margin-bottom: 20px;">QUEST COMPLETE</div>
-                <div class="chest-container">
-                    <!-- GitHub -->
-                    <a href="https://github.com/gevak" class="chest">
-                        <div class="icon-float">
-                            <!-- Simple SVG Octocat -->
-                            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                        </div>
-                    </a>
-                    <!-- LinkedIn -->
-                    <a href="https://linkedin.com/in/gevakip" class="chest">
-                        <div class="icon-float">
-                            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-                        </div>
-                    </a>
-                    <!-- Facebook -->
-                    <a href="https://facebook.com/geva.kipper" class="chest">
-                        <div class="icon-float">
-                            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
-                        </div>
-                    </a>
-                </div>
-            </div>
-        </section>
-
+        </div>
     </div>
 
-    <!-- System Terminal Footer -->
-    <div class="system-footer">
-        <div>Architect: Construct created by Claude 3.5 Sonnet.</div>
-        <div id="chrono" class="timer-red">Calculating Time Delta...</div>
+    <!-- Window 2: Urban Heatmap -->
+    <div class="window interactive" id="win-map" style="z-index: 2;">
+        <div class="title-bar">
+            <div class="traffic-lights"><div class="light red"></div><div class="light yellow"></div><div class="light green"></div></div>
+            <div class="window-title"><i class="fa-solid fa-map-location-dot"></i> Ahuzat Dibuk</div>
+        </div>
+        <div class="window-body">
+            <div class="radar-screen">
+                <div class="radar-line"></div>
+                <div class="ticker">>> BREAKING: 99% Parking Occupancy in Tel Aviv</div>
+                <div class="ticker">>> ALERT: Tow Truck Sighted on Rothschild</div>
+                <div style="margin-top: 20px; text-align: center; color: white;">
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="action-btn" style="border-color:#00ff00; color:#00ff00;">Community Alert (FB)</a>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- Window 3: Geometric Engine -->
+    <div class="window interactive" id="win-geo" style="z-index: 3;">
+        <div class="title-bar">
+            <div class="traffic-lights"><div class="light red"></div><div class="light yellow"></div><div class="light green"></div></div>
+            <div class="window-title"><i class="fa-solid fa-draw-polygon"></i> 2D Part Orienting</div>
+        </div>
+        <div class="window-body" style="color: #aaccff;">
+            <div class="geo-shape"></div>
+            <h4 style="margin: 0; font-family: var(--font-mono);">C++ ENGINE</h4>
+            <p style="font-size: 0.7rem;">Automated assembly line optimization via geometric algorithms.</p>
+            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="action-btn">Compile Plan</a>
+        </div>
+    </div>
+
+    <!-- Window 4: Comedy Arena -->
+    <div class="window interactive" id="win-jest" style="z-index: 4;">
+        <div class="title-bar">
+            <div class="traffic-lights"><div class="light red"></div><div class="light yellow"></div><div class="light green"></div></div>
+            <div class="window-title"><i class="fa-solid fa-robot"></i> The Turing Jest</div>
+        </div>
+        <div class="window-body">
+            <div style="text-align: center; margin-bottom: 10px;">
+                <i class="fa-solid fa-face-grin-tears" style="font-size: 2rem; color: yellow;"></i>
+            </div>
+            <div class="fight-stats">
+                <span>P1: HUMAN</span>
+                <span>P2: LLM</span>
+            </div>
+            <p style="font-size: 0.6rem; color: white; text-align: center;">Can AI be funny? The ultimate test.</p>
+            <a href="https://jest.geekip.dev" target="_blank" class="action-btn btn-fight">FIGHT!</a>
+        </div>
+    </div>
+
+    <!-- Window 5: Rhyme Press -->
+    <div class="window interactive" id="win-rhyme" style="z-index: 5;">
+        <div class="title-bar">
+            <div class="traffic-lights"><div class="light red"></div><div class="light yellow"></div><div class="light green"></div></div>
+            <div class="window-title"><i class="fa-solid fa-scroll"></i> Rhymes of Israel</div>
+        </div>
+        <div class="window-body">
+            <div class="newspaper-head">The Daily Rhyme</div>
+            <p style="font-family: serif; font-size: 0.9rem; line-height: 1.2;">
+                "Where ancient verbs<br>meet modern tech,<br>a plugin born<br>to double-check."
+            </p>
+            <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="action-btn" style="background: black; color: white;">Add to Chrome</a>
+        </div>
+    </div>
+
+    <!-- Window 6: Recursive Mirror -->
+    <div class="window interactive" id="win-meta" style="z-index: 0;">
+        <div class="title-bar">
+            <div class="traffic-lights"><div class="light red"></div><div class="light yellow"></div><div class="light green"></div></div>
+            <div class="window-title"><i class="fa-solid fa-infinity"></i> Recursion</div>
+        </div>
+        <div class="window-body" style="padding: 0;">
+            <!-- Using iframe to Geekip.dev -->
+            <iframe src="https://geekip.dev" class="meta-frame" title="Recursion"></iframe>
+            <div style="position: absolute; bottom: 10px; width: 100%; text-align: center;">
+                <a href="https://geekip.dev" target="_blank" class="action-btn" style="background: rgba(0,0,0,0.8);">Enter Loop</a>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Connectivity Dock -->
+    <div id="dock">
+        <a href="https://github.com/gevak" target="_blank" class="dock-icon bg-gh interactive"><i class="fa-brands fa-github"></i></a>
+        <a href="https://linkedin.com/in/gevakip" target="_blank" class="dock-icon bg-li interactive"><i class="fa-brands fa-linkedin"></i></a>
+        <a href="https://facebook.com/geva.kipper" target="_blank" class="dock-icon bg-fb interactive"><i class="fa-brands fa-facebook-messenger"></i></a>
+        <a href="mailto:contact@geekip.dev" class="dock-icon bg-mail interactive"><i class="fa-solid fa-envelope"></i></a>
+    </div>
+
+    <!-- Footer Console -->
+    <div id="console-bar">
+        <span>> Code generated by AI_Construct // v9000</span>
+        <span id="countdown">T-Minus: CALC...</span>
+    </div>
+
+    <!-- Logic Script -->
     <script>
-        // --- GAME LOGIC ---
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- 1. Custom Cursor Logic ---
+            const cursor = document.getElementById('cursor');
+            let mouseX = 0, mouseY = 0;
+            let cursorX = 0, cursorY = 0;
 
-        const hero = document.getElementById('hero');
-        const dialogBoxes = document.querySelectorAll('.rpg-box');
-
-        // 1. Scroll-to-Walk Animation Logic
-        let isScrolling;
-        
-        window.addEventListener('scroll', () => {
-            // Set walking state
-            hero.classList.add('walking');
-            hero.classList.remove('idle');
-
-            // Clear existing timeout
-            window.clearTimeout(isScrolling);
-
-            // Set a timeout to return to idle when scroll stops
-            isScrolling = setTimeout(() => {
-                hero.classList.remove('walking');
-                hero.classList.add('idle');
-            }, 100); // 100ms after scroll stops
-        });
-
-        // 2. Intersection Observer for Logic Dialog Boxes
-        // This triggers the box to appear when the room "object" enters the view
-        const observerOptions = {
-            root: null,
-            rootMargin: '0px',
-            threshold: 0.4
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    // Find the dialog box in this section
-                    const box = entry.target.parentElement.querySelector('.rpg-box');
-                    if(box) box.classList.add('visible');
-                } else {
-                    // Optional: Close box when leaving
-                    const box = entry.target.parentElement.querySelector('.rpg-box');
-                    // Uncomment line below if you want boxes to disappear when scrolling away
-                    // if(box) box.classList.remove('visible'); 
-                }
-            });
-        }, observerOptions);
-
-        // Observe the visual objects in each room
-        document.querySelectorAll('.obj-container').forEach(el => observer.observe(el));
-
-
-        // 3. System Terminal Timer
-        const targetDate = new Date('2026-01-11T01:20:09').getTime();
-        const chronometer = document.getElementById('chrono');
-
-        function updateTimer() {
-            const now = new Date().getTime();
-            const distance = targetDate - now;
-
-            if (distance > 0) {
-                // Future Date - Count Down
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
                 
-                chronometer.innerText = `T-MINUS TO SINGULARITY: ${days}d ${hours}h ${minutes}m ${seconds}s`;
-            } else {
-                // Past Date - Count Up
-                const pastDist = now - targetDate;
-                const hours = Math.floor(pastDist / (1000 * 60 * 60));
-                const minutes = Math.floor((pastDist % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((pastDist % (1000 * 60)) / 1000);
+                // Add "Magnetic" parallax to background
+                document.body.style.backgroundPosition = `${mouseX / 50}% ${mouseY / 50}%`;
+            });
 
-                // Format HH:MM:SS
-                const h = hours < 10 ? "0" + hours : hours;
-                const m = minutes < 10 ? "0" + minutes : minutes;
-                const s = seconds < 10 ? "0" + seconds : seconds;
-
-                chronometer.innerText = `${h}:${m}:${s} SINCE RESET`;
+            // Smooth cursor follow
+            function animateCursor() {
+                const dx = mouseX - cursorX;
+                const dy = mouseY - cursorY;
+                cursorX += dx * 0.2;
+                cursorY += dy * 0.2;
+                cursor.style.left = `${cursorX}px`;
+                cursor.style.top = `${cursorY}px`;
+                requestAnimationFrame(animateCursor);
             }
-        }
+            animateCursor();
 
-        setInterval(updateTimer, 1000);
-        updateTimer();
+            // Hover effects (Magnetic scaling)
+            document.querySelectorAll('a, button, .interactive').forEach(el => {
+                el.addEventListener('mouseenter', () => {
+                    cursor.style.transform = 'translate(-50%, -50%) scale(2)';
+                    cursor.style.mixBlendMode = 'overlay';
+                });
+                el.addEventListener('mouseleave', () => {
+                    cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+                    cursor.style.mixBlendMode = 'difference';
+                });
+            });
 
+            // --- 2. Window Dragging Logic ---
+            let maxZIdx = 10;
+            const windows = document.querySelectorAll('.window');
+
+            windows.forEach(win => {
+                const titleBar = win.querySelector('.title-bar');
+                
+                // Bring to front on click
+                win.addEventListener('mousedown', () => {
+                    maxZIdx++;
+                    win.style.zIndex = maxZIdx;
+                    win.classList.add('active');
+                });
+
+                // Dragging
+                titleBar.addEventListener('mousedown', (e) => {
+                    e.preventDefault(); // Prevent text selection
+                    
+                    let shiftX = e.clientX - win.getBoundingClientRect().left;
+                    let shiftY = e.clientY - win.getBoundingClientRect().top;
+
+                    // Adding overlay to iframes during drag to prevent mouse capture loss
+                    const frames = document.querySelectorAll('iframe');
+                    frames.forEach(f => f.style.pointerEvents = 'none');
+
+                    function moveAt(pageX, pageY) {
+                        win.style.left = pageX - shiftX + 'px';
+                        win.style.top = pageY - shiftY + 'px';
+                    }
+
+                    function onMouseMove(event) {
+                        moveAt(event.clientX, event.clientY);
+                    }
+
+                    document.addEventListener('mousemove', onMouseMove);
+
+                    document.onmouseup = function() {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.onmouseup = null;
+                        // Re-enable iframe interaction
+                        frames.forEach(f => f.style.pointerEvents = 'auto');
+                    };
+                });
+            });
+
+            // --- 3. Typing Animation (Header) ---
+            const typingElement = document.getElementById('typing-status');
+            const texts = [
+                "System: ONLINE",
+                "Designer: AI_Construct",
+                "User: Guest_101",
+                "Kernel: KipperOS v9000"
+            ];
+            let textIdx = 0;
+            let charIdx = 0;
+            let isDeleting = false;
+
+            function typeWriter() {
+                const currentText = texts[textIdx];
+                if (isDeleting) {
+                    typingElement.innerHTML = currentText.substring(0, charIdx - 1) + ' <span style="animation:blink 1s infinite">_</span>';
+                    charIdx--;
+                } else {
+                    typingElement.innerHTML = currentText.substring(0, charIdx + 1) + ' <span style="animation:blink 1s infinite">_</span>';
+                    charIdx++;
+                }
+
+                if (!isDeleting && charIdx === currentText.length) {
+                    isDeleting = true;
+                    setTimeout(typeWriter, 2000);
+                } else if (isDeleting && charIdx === 0) {
+                    isDeleting = false;
+                    textIdx = (textIdx + 1) % texts.length;
+                    setTimeout(typeWriter, 500);
+                } else {
+                    setTimeout(typeWriter, isDeleting ? 50 : 100);
+                }
+            }
+            typeWriter();
+
+            // --- 4. Clock ---
+            function updateClock() {
+                const now = new Date();
+                const timeString = now.toISOString().substr(11, 5) + " UTC";
+                document.getElementById('clock').innerText = timeString;
+            }
+            setInterval(updateClock, 1000);
+            updateClock();
+
+            // --- 5. Battery API ---
+            if ('getBattery' in navigator) {
+                navigator.getBattery().then(battery => {
+                    function updateBattery() {
+                        const level = Math.round(battery.level * 100);
+                        const icon = level > 80 ? 'full' : (level > 20 ? 'half' : 'empty');
+                        const chargingIcon = battery.charging ? '<i class="fa-solid fa-bolt"></i>' : '';
+                        document.getElementById('battery').innerHTML = `${chargingIcon} <i class="fa-solid fa-battery-${icon}"></i> ${level}%`;
+                    }
+                    updateBattery();
+                    battery.addEventListener('levelchange', updateBattery);
+                    battery.addEventListener('chargingchange', updateBattery);
+                });
+            } else {
+                document.getElementById('battery').innerHTML = '<i class="fa-solid fa-plug"></i> AC PWR';
+            }
+
+            // --- 6. The Chronometer (Footer) ---
+            const targetDate = new Date("2026-01-12T01:16:27").getTime();
+            const counterEl = document.getElementById('countdown');
+
+            function updateCountdown() {
+                const now = new Date().getTime();
+                const distance = targetDate - now;
+                const isFuture = distance > 0;
+                
+                const absDistance = Math.abs(distance);
+                
+                const days = Math.floor(absDistance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((absDistance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((absDistance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((absDistance % (1000 * 60)) / 1000);
+                const ms = Math.floor((absDistance % 1000) / 10).toString().padStart(2, '0');
+
+                const prefix = isFuture ? "T-Minus until Singularity:" : "Time Elapsed Since Incident:";
+                const timeStr = `${days}d ${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}:${ms}`;
+                
+                counterEl.innerText = `${prefix} ${timeStr}`;
+            }
+            setInterval(updateCountdown, 30); // High refresh rate for millisecond urgency
+        });
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260111",
+          pageId: "20260112",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
