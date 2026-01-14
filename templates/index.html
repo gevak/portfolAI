@@ -2,954 +2,1038 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - Portfolio OS</title>
-    <style>
-        /* --- FONTS & BASICS --- */
-        @font-face {
-            font-family: 'PixelSans';
-            src: local('MS Sans Serif'), local('Arial'), sans-serif;
-            /* In a real scenario, we'd load a woff2 pixel font. 
-               Using system fonts with specific rendering settings for now. */
-        }
+    <title>Geva Kipper // Sentient Terminal</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@300;400;600&family=Orbitron:wght@500&display=swap" rel="stylesheet">
 
+    <style>
+        /* --- CORE VARIABLES & RESET --- */
         :root {
-            --win-teal: #008080;
-            --win-gray: #C0C0C0;
-            --win-dark: #808080;
-            --win-black: #000000;
-            --win-white: #FFFFFF;
-            --win-blue: #000080;
-            --header-h: 28px;
+            --bg-void: #0a0a0a;
+            --terminal-green: #00ff41;
+            --neon-cyan: #0ff;
+            --neon-violet: #b026ff;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --font-mono: 'Fira Code', monospace;
+            --font-body: 'Inter', sans-serif;
+            --font-clock: 'Orbitron', sans-serif;
+            --paradox-red: #ff3333;
         }
 
         * {
             box-sizing: border-box;
-            user-select: none;
-            -webkit-font-smoothing: none;
+            margin: 0;
+            padding: 0;
+            cursor: none; /* Custom cursor implementation below */
         }
 
         body {
-            background-color: var(--win-teal);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Fallback */
-            font-family: 'PixelSans', sans-serif; 
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            width: 100vw;
-            height: 100vh;
-            cursor: default;
+            background-color: var(--bg-void);
+            color: #e0e0e0;
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 16px; background: var(--win-gray); }
-        ::-webkit-scrollbar-button { background: var(--win-gray); border: 2px outset white; height: 16px; }
-        ::-webkit-scrollbar-track { background: url('data:image/svg+xml;utf8,<svg width="2" height="2" viewBox="0 0 2 2" xmlns="http://www.w3.org/2000/svg"><rect fill="%23FFFFFF" x="0" y="0" width="1" height="1"/><rect fill="%23C0C0C0" x="1" y="0" width="1" height="1"/><rect fill="%23C0C0C0" x="0" y="1" width="1" height="1"/><rect fill="%23FFFFFF" x="1" y="1" width="1" height="1"/></svg>'); }
-        ::-webkit-scrollbar-thumb { background: var(--win-gray); border: 2px outset white; }
-
-        /* --- UTILS --- */
-        .w95-border-outset {
-            border-top: 2px solid var(--win-white);
-            border-left: 2px solid var(--win-white);
-            border-right: 2px solid var(--win-black);
-            border-bottom: 2px solid var(--win-black);
-            box-shadow: 1px 1px 0 var(--win-dark) inset, -1px -1px 0 var(--win-gray) inset;
-        }
-
-        .w95-border-inset {
-            border-top: 2px solid var(--win-dark);
-            border-left: 2px solid var(--win-dark);
-            border-right: 2px solid var(--win-white);
-            border-bottom: 2px solid var(--win-white);
-            box-shadow: 1px 1px 0 var(--win-black) inset, -1px -1px 0 var(--win-gray) inset;
-        }
-
-        .btn {
-            background: var(--win-gray);
-            border: none;
-            outline: none;
-            padding: 4px 8px;
-            font-family: inherit;
-            font-size: 13px;
-            cursor: pointer;
-        }
-        .btn:active {
-            border-top: 2px solid var(--win-black);
-            border-left: 2px solid var(--win-black);
-            border-right: 2px solid var(--win-white);
-            border-bottom: 2px solid var(--win-white);
-        }
-
-        /* --- BIOS SCREEN --- */
-        #bios {
+        /* custom cursor */
+        #cursor-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--neon-cyan);
+            border-radius: 50%;
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            color: #ccc;
-            font-family: 'Courier New', monospace;
+            pointer-events: none;
             z-index: 9999;
-            padding: 20px;
-            font-size: 14px;
-            display: flex;
-            flex-direction: column;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px var(--neon-cyan);
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
         }
 
-        /* --- DESKTOP ICONS --- */
-        #desktop {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 35px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            flex-wrap: wrap;
-            align-content: flex-start;
-            gap: 20px;
-        }
-
-        .desktop-icon {
-            width: 80px;
-            text-align: center;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            text-shadow: 1px 1px 0 #000;
-            margin-bottom: 10px;
-        }
-        
-        .desktop-icon img {
-            width: 32px;
-            height: 32px;
-            margin-bottom: 4px;
-            image-rendering: pixelated;
-        }
-
-        .desktop-icon span {
-            font-size: 12px;
-            padding: 2px;
-            border: 1px dotted transparent;
-        }
-
-        .desktop-icon:active span, .desktop-icon.selected span {
-            background-color: var(--win-blue);
-            border: 1px dotted yellow;
-        }
-
-        /* --- WINDOWS SYSTEM --- */
-        .window {
-            position: absolute;
-            background: var(--win-gray);
-            padding: 2px;
-            display: flex;
-            flex-direction: column;
-            min-width: 200px;
-            min-height: 100px;
-            box-shadow: 4px 4px 10px rgba(0,0,0,0.4);
-        }
-        /* Focus State for Z-Index */
-        .window.active { z-index: 100; }
-        
-        .title-bar {
-            background: var(--win-blue);
-            color: white;
-            padding: 3px 4px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            height: var(--header-h);
-            font-size: 13px;
-            font-weight: bold;
-            cursor: pointer; /* Drag handle */
-        }
-        /* Inactive Window Title */
-        .window:not(.active) .title-bar {
-            background: var(--win-dark);
-            color: #ccc;
-        }
-
-        .title-bar-text {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .title-bar-text img { width: 16px; height: 16px; }
-
-        .title-bar-controls {
-            display: flex;
-            gap: 2px;
-        }
-        
-        .win-btn {
-            width: 16px;
-            height: 14px;
-            background: var(--win-gray);
-            color: black;
-            font-size: 9px;
-            line-height: 11px;
-            text-align: center;
-            font-weight: bold;
-            border-top: 1px solid white;
-            border-left: 1px solid white;
-            border-right: 1px solid black;
-            border-bottom: 1px solid black;
-        }
-        .win-btn:active {
-            border-top: 1px solid black;
-            border-left: 1px solid black;
-            border-right: 1px solid white;
-            border-bottom: 1px solid white;
-        }
-
-        .window-body {
-            flex-grow: 1;
-            margin-top: 2px;
-            overflow: auto;
-            position: relative;
-        }
-
-        /* --- SPECIFIC WINDOW STYLES --- */
-        
-        /* Bio Window */
-        .bio-content {
-            display: flex;
-            padding: 20px;
-            align-items: flex-start;
-            gap: 20px;
-            font-size: 14px;
-        }
-        .avatar {
-            width: 80px;
-            height: 80px;
-            background: #000;
-            border: 2px solid #808080;
-            image-rendering: pixelated;
-        }
-        .bio-text h2 { margin: 0 0 5px 0; font-size: 18px; }
-        .bio-text p { margin: 0; color: #444; }
-
-        /* Notepad (Log) */
-        .notepad-area {
+        /* --- BACKGROUND CANVAS --- */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            border: none;
-            resize: none;
-            background: white;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            padding: 5px;
-            outline: none;
+            z-index: -1;
+            opacity: 0.4;
         }
 
-        /* Projects Explorer */
-        .explorer-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-            gap: 15px;
-            padding: 10px;
-            background: white;
+        /* --- LAYOUT UTILS --- */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            width: 100%;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* --- HEADER --- */
+        header {
+            padding: 2rem 0;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header-grid {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .identity-block {
+            flex: 1;
+        }
+
+        /* Glitch Effect */
+        .glitch-text {
+            font-family: var(--font-mono);
+            font-size: 3rem;
+            font-weight: 700;
+            color: #fff;
+            position: relative;
+            text-transform: uppercase;
+        }
+
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
             height: 100%;
         }
-        .explorer-item {
+
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -1px 0 #ff00c1;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 5s infinite linear alternate-reverse;
+        }
+
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -1px 0 var(--neon-cyan);
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim2 5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(12px, 9999px, 51px, 0); }
+            5% { clip: rect(72px, 9999px, 34px, 0); }
+            10% { clip: rect(81px, 9999px, 86px, 0); }
+            15% { clip: rect(6px, 9999px, 20px, 0); }
+            100% { clip: rect(1px, 9999px, 1px, 0); }
+        }
+        @keyframes glitch-anim2 {
+            0% { clip: rect(66px, 9999px, 24px, 0); }
+            5% { clip: rect(2px, 9999px, 86px, 0); }
+            10% { clip: rect(32px, 9999px, 13px, 0); }
+            15% { clip: rect(96px, 9999px, 11px, 0); }
+            100% { clip: rect(1px, 9999px, 1px, 0); }
+        }
+
+        .role-text {
+            font-family: var(--font-mono);
+            color: var(--terminal-green);
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .cursor-blink {
+            display: inline-block;
+            width: 10px;
+            height: 1.2rem;
+            background-color: var(--terminal-green);
+            margin-left: 5px;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .ai-badge {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 0.8rem 1.2rem;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            backdrop-filter: blur(10px);
+            max-width: 300px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+            animation: pulse-border 4s infinite;
+        }
+
+        @keyframes pulse-border {
+            0% { border-color: rgba(255,255,255,0.1); }
+            50% { border-color: rgba(0,255,255,0.4); }
+            100% { border-color: rgba(255,255,255,0.1); }
+        }
+
+        /* --- MAIN SPLIT LAYOUT --- */
+        main {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 3rem;
+            flex: 1;
+            margin-top: 2rem;
+        }
+
+        /* Left Column: Avatar & Controller */
+        .controller-panel {
+            position: sticky;
+            top: 2rem;
+            height: fit-content;
             display: flex;
             flex-direction: column;
             align-items: center;
+        }
+
+        .avatar-container {
+            width: 300px;
+            height: 300px;
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        #avatar-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .chat-simulation {
+            width: 100%;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+        }
+
+        .chat-prompt {
+            color: #888;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 0.5rem;
+        }
+
+        .suggested-question {
+            background: rgba(0, 255, 65, 0.05);
+            color: var(--terminal-green);
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            border-left: 2px solid var(--terminal-green);
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        .suggested-question:hover {
+            opacity: 1;
+            background: rgba(0, 255, 65, 0.15);
+            transform: translateX(5px);
+        }
+
+        /* Right Column: Data Stream */
+        .data-stream {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            padding-bottom: 4rem;
+        }
+
+        /* Project Card Base */
+        .project-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(15px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 280px;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .project-card h3 {
+            font-family: var(--font-mono);
+            font-size: 1.4rem;
+            margin-bottom: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .project-card p {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #ccc;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .card-link-btn {
+            display: inline-block;
+            margin-top: auto;
+            padding: 0.6rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--terminal-green);
+            color: var(--terminal-green);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            border-radius: 4px;
+            transition: all 0.3s ease;
             text-align: center;
-            cursor: pointer;
-            color: black;
+            width: fit-content;
         }
-        .explorer-item:hover span { background: var(--win-blue); color: white; }
-        .explorer-item img { width: 32px; height: 32px; margin-bottom: 4px; }
-        .explorer-item span { font-size: 11px; padding: 2px; }
 
-        /* Media Player (GlglStats) */
-        .media-player { background: #E0E0E0; height: 100%; display: flex; flex-direction: column; }
-        .video-screen { background: black; height: 200px; margin: 10px; border: 2px inset white; position: relative;}
-        .video-screen iframe { width: 100%; height: 100%; border: none; }
-        .mp-controls { display: flex; gap: 5px; padding: 0 10px; }
-        .mp-text { padding: 10px; font-size: 12px; }
-
-        /* Excel (Ahuzat) */
-        .excel-grid { background: #fff; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
-        .excel-bar { background: #E0E0E0; padding: 2px; border-bottom: 1px solid #808080; font-size: 11px;}
-        .sheet-body { padding: 10px; overflow: auto; flex: 1; }
-        .heatmap-placeholder {
-            width: 100%; height: 150px; 
-            background: linear-gradient(45deg, red, yellow, green);
-            border: 1px solid #000;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; color: white; text-shadow: 1px 1px black;
+        .card-link-btn:hover {
+            background: var(--terminal-green);
+            color: #000;
+            box-shadow: 0 0 15px var(--terminal-green);
         }
-        .excel-links { display: flex; gap: 10px; padding: 10px; background: #E0E0E0;}
 
-        /* CMD (2D Part) */
-        .cmd-body { background: black; color: #0f0; font-family: monospace; padding: 10px; height: 100%; }
-        .polygon {
-            width: 50px; height: 50px; border: 2px solid #0f0;
-            margin: 20px auto;
-            transform: rotate(45deg);
-            animation: spin 4s linear infinite;
+        /* --- CARD SPECIFIC STYLES --- */
+
+        /* Card 1: GlglStats */
+        .card-glgl .visual-bg {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            opacity: 0.0; /* Hidden by description by default, distinct layer */
+            z-index: 0;
+            pointer-events: none;
         }
-        @keyframes spin { 100% { transform: rotate(405deg); } }
-
-        /* Jest Arena */
-        .jest-body { background: #FFF8E7; padding: 15px; height: 100%; font-family: 'Comic Sans MS', cursive, sans-serif; text-align: center; }
-        .chat-bubbles { text-align: left; margin-bottom: 20px;}
-        .bubble { background: white; border: 2px solid black; border-radius: 10px; padding: 5px; margin: 5px; display: inline-block;}
-
-        /* Browser (Rhymes) */
-        .browser-chrome { background: var(--win-gray); padding: 5px; border-bottom: 2px groove white;}
-        .browser-content { background: white; padding: 20px; text-align: center; height: 100%;}
         
-        /* Recursion */
-        .recursion-body { background: var(--win-teal); height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;}
-        .mirror {
-            width: 70%; height: 70%; background: var(--win-gray);
-            border: 2px outset white;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+        .card-glgl:hover .visual-bg {
+             /* Making it subtle visible behind text on hover */
+             opacity: 0.2;
+        }
+        
+        .waveform-bar {
+            width: 4px;
+            background: var(--neon-cyan);
+            animation: wave 1s infinite ease-in-out;
+        }
+        @keyframes wave {
+            0%, 100% { height: 10px; }
+            50% { height: 50px; }
+        }
+
+        .holo-thumb {
+            display: block;
+            width: 100%;
+            height: 120px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+            border: 1px solid var(--neon-cyan);
+            filter: grayscale(80%) sepia(20%) hue-rotate(180deg);
+            transition: all 0.4s;
+            position: relative;
+        }
+        
+        .holo-thumb:hover {
+            filter: none;
+            box-shadow: 0 0 15px var(--neon-cyan);
+            opacity: 1;
+        }
+        
+        .holo-thumb::after {
+            content: '▶ HOLOGRAPHIC REPLAY';
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            font-size: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 2px 4px;
+            color: var(--neon-cyan);
+        }
+
+        /* Card 2: Ahuzat Dibuk (Radar) */
+        .card-dibuk {
+            position: relative;
+        }
+        .radar-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: 
+                radial-gradient(circle, transparent 20%, rgba(0,255,65,0.05) 20%, rgba(0,255,65,0.05) 21%, transparent 21%),
+                radial-gradient(circle, transparent 40%, rgba(0,255,65,0.05) 40%, rgba(0,255,65,0.05) 41%, transparent 41%);
+            z-index: 0;
+        }
+        .radar-sweep {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 300px; height: 300px;
+            background: conic-gradient(from 0deg, transparent 0deg, rgba(0,255,65,0.1) 60deg, transparent 60deg);
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            animation: rotate 4s linear infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+        @keyframes rotate { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+        
+        .news-ticker {
+            font-size: 0.75rem;
+            margin-top: 1rem;
+            border-top: 1px dashed var(--glass-border);
+            padding-top: 0.5rem;
+            color: #777;
+        }
+        .news-links a {
+            color: #999;
+            margin-right: 10px;
+            transition: color 0.2s;
+            display: inline-block;
+        }
+        .news-links a:hover { color: var(--terminal-green); text-decoration: underline; }
+
+        /* Card 3: 2D Part (Polygon) */
+        .card-part .poly-bg {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: linear-gradient(30deg, #111 12%, transparent 12.5%, transparent 87%, #111 87.5%, #111),
+            linear-gradient(150deg, #111 12%, transparent 12.5%, transparent 87%, #111 87.5%, #111),
+            linear-gradient(30deg, #111 12%, transparent 12.5%, transparent 87%, #111 87.5%, #111),
+            linear-gradient(150deg, #111 12%, transparent 12.5%, transparent 87%, #111 87.5%, #111),
+            linear-gradient(60deg, #222 25%, transparent 25.5%, transparent 75%, #222 75%, #222),
+            linear-gradient(60deg, #222 25%, transparent 25.5%, transparent 75%, #222 75%, #222);
+            background-size: 40px 70px;
+            background-position: 0 0, 0 0, 20px 35px, 20px 35px, 0 0, 20px 35px;
+            opacity: 0.05;
+            z-index: 0;
+        }
+        
+        .comment-btn {
+            font-family: var(--font-mono);
+            color: #7f8ca3; 
+            border: none;
+            background: transparent;
+            font-style: italic;
+        }
+        .comment-btn:hover {
+            color: #a0aab9; 
+            background: transparent;
+            box-shadow: none;
+        }
+
+        /* Card 4: Turing Jest (Chat Bubble / Fun) */
+        .card-jest .easter-egg {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            opacity: 0;
+            color: var(--neon-violet);
+            font-weight: bold;
+            font-family: var(--font-mono);
+            transition: opacity 0.3s;
+        }
+        .card-jest:hover .easter-egg {
+            opacity: 1;
+        }
+        .card-jest h3::before {
+            content: '🤖';
+            margin-right: 10px;
+            filter: grayscale(1);
+            transition: 0.3s;
+        }
+        .card-jest:hover h3::before {
+            filter: grayscale(0);
+        }
+
+        /* Card 5: Rhymes (Vintage) */
+        .card-rhymes {
+            background: linear-gradient(rgba(10,10,10,0.95), rgba(10,10,10,0.85)), url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.1'/%3E%3C/svg%3E");
+        }
+        .install-badge {
+            background: #222;
+            border: 1px solid #444;
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .install-badge::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(45deg, #4285F4, #34A853, #FBBC05, #EA4335);
+            border-radius: 50%;
+        }
+
+        /* Card 6: Meta (Droste) */
+        .card-meta {
+            overflow: hidden;
+        }
+        .droste-bg {
+            position: absolute;
+            top: 20px;
+            right: -20px;
+            width: 100px;
+            height: 100px;
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.5);
+            transform: rotate(15deg);
+            z-index: 0;
+        }
+        .droste-bg::before {
+            content: '';
+            position: absolute;
+            top: 20%; right: 20%; width: 60%; height: 60%;
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.5);
+        }
+        .droste-bg::after {
+            content: '';
+            position: absolute;
+            top: 40%; right: 40%; width: 20%; height: 20%;
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.5);
+        }
+
+        /* --- FOOTER --- */
+        footer {
+            margin-top: auto;
+            border-top: 1px solid var(--glass-border);
+            padding: 3rem 0;
+            background: linear-gradient(to top, #000 0%, transparent 100%);
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            text-align: center;
+        }
+
+        .social-dock {
+            display: flex;
+            gap: 3rem;
+        }
+
+        .social-link {
+            font-size: 2rem;
+            color: #555;
+            transition: all 0.3s;
             position: relative;
         }
 
-        /* --- TASKBAR --- */
-        #taskbar {
-            position: absolute;
-            bottom: 0; left: 0; right: 0; height: 35px;
-            background: var(--win-gray);
-            display: flex;
-            align-items: center;
-            padding: 3px;
-            z-index: 9000;
+        .social-link svg {
+            width: 32px;
+            height: 32px;
+            fill: currentColor;
         }
 
-        #start-btn {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-weight: bold;
-            font-style: italic;
-            padding: 3px 6px;
-            margin-right: 10px;
-        }
-        #start-btn img { width: 18px; }
+        /* Colors for socials on hover */
+        .social-link.gh:hover { color: #fff; text-shadow: 0 0 20px #fff; }
+        .social-link.li:hover { color: #0077b5; text-shadow: 0 0 20px #0077b5; }
+        .social-link.fb:hover { color: #1877f2; text-shadow: 0 0 20px #1877f2; }
 
-        #start-menu {
-            position: absolute;
-            bottom: 37px; left: 3px;
-            width: 150px;
-            background: var(--win-gray);
-            z-index: 9999;
-            display: none;
-            padding: 2px;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-        }
-        .start-item {
-            padding: 8px 10px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-        }
-        .start-item:hover { background: var(--win-blue); color: white; }
-
-        #task-list {
-            flex-grow: 1;
-            display: flex;
-            gap: 4px;
-            overflow: hidden;
-            padding-right: 10px;
-        }
-        .task-btn {
-            width: 140px;
-            text-align: left;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            padding: 2px 5px;
-        }
-        .task-btn.active {
-            background: #eee; /* Dithered look approx */
-            border-top: 2px solid black;
-            border-left: 2px solid black;
-            border-right: 2px solid white;
-            border-bottom: 2px solid white;
-            font-weight: bold;
+        .ai-credit {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: #444;
         }
 
-        #tray {
-            width: 280px;
-            height: 100%;
-            padding: 2px 5px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 11px;
-            font-family: inherit;
+        .chronometer {
+            font-family: var(--font-clock);
+            font-size: 1.5rem;
+            color: var(--paradox-red);
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(255, 51, 51, 0.5);
         }
 
-        #marquee {
-            width: 160px;
-            overflow: hidden;
-            white-space: nowrap;
-            margin-right: 5px;
-        }
-        #marquee span {
-            display: inline-block;
-            animation: marquee 8s linear infinite;
-        }
-        @keyframes marquee {
-            0% { transform: translate(160px, 0); }
-            100% { transform: translate(-100%, 0); }
+        .chronometer-label {
+            font-size: 0.7rem;
+            color: #666;
+            margin-bottom: 0.2rem;
+            font-family: var(--font-mono);
+            letter-spacing: 1px;
         }
 
-        #clock {
-            width: 100px;
-            text-align: center;
+        /* --- MEDIA QUERIES --- */
+        @media (max-width: 900px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+            .controller-panel {
+                position: relative;
+                top: 0;
+                margin-bottom: 2rem;
+            }
+            .header-grid {
+                flex-direction: column;
+            }
+            .glitch-text {
+                font-size: 2.2rem;
+            }
+            .data-stream {
+                grid-template-columns: 1fr;
+            }
+            #cursor-dot { display: none; }
         }
-
-        /* SVG Icons Constants (Classes) */
-        .icon { width: 32px; height: 32px; }
-        .icon-sm { width: 16px; height: 16px; }
-
-        /* Draggable overlap fix for Iframes */
-        .drag-overlay {
-            position: absolute; top:0; left:0; width:100%; height:100%; 
-            display: none; z-index: 999;
-        }
-        .window.dragging .drag-overlay { display: block; }
-        
-        a { color: var(--win-blue); }
     </style>
 </head>
 <body>
 
-    <!-- BIOS BOOT SEQUENCE -->
-    <div id="bios">
-        <div>Award Modular BIOS v4.51PG, An Energy Star Ally</div>
-        <div style="margin-top: 10px;">Copyright (C) 1984-95, Geva Kipper Corp.</div>
-        <div style="margin-top: 20px;">PENTIUM-II CPU at 400MHz</div>
-        <div style="margin: 5px 0;">Memory Test: <span id="mem-test">0</span>K OK</div>
-        <br>
-        <div id="bios-details" style="display:none;">
-            Detecting HDD Primary Master ... QUANTUM FIREBALL<br>
-            Detecting HDD Primary Slave ... None<br>
-            Detecting CD-ROM ... ATAPI CD-ROM<br>
-            <br>
-            Initializing Portfolio OS... <span class="blink">_</span>
-        </div>
-    </div>
+    <!-- Dynamic Cursor -->
+    <div id="cursor-dot"></div>
 
-    <!-- MAIN DESKTOP -->
-    <div id="desktop">
-        <!-- Icons populated by JS -->
-    </div>
+    <!-- Background Matrix/Particles -->
+    <canvas id="bg-canvas"></canvas>
 
-    <!-- WINDOWS CONTAINER -->
-    <div id="window-area">
-        <!-- Rendered Windows go here -->
-    </div>
-
-    <!-- TASKBAR -->
-    <div id="start-menu" class="w95-border-outset">
-        <div class="side-strip" style="position:absolute; left:0; top:0; bottom:0; width: 20px; background:#808080; color:#C0C0C0; writing-mode: vertical-rl; text-align:center; transform: rotate(180deg); font-weight:bold; font-size:16px;">GEVAOS 95</div>
-        <div style="margin-left: 25px;">
-             <div class="start-item" onclick="window.location.reload()">
-                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'><path d='M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z'/><path d='M11 6h2v6h-2zm0 8h2v2h-2z'/></svg>" width="24" height="24">
-                Shut Down...
-            </div>
-        </div>
-    </div>
-
-    <div id="taskbar" class="w95-border-outset">
-        <button id="start-btn" class="w95-border-outset btn" onclick="toggleStart()">
-            <img src="https://win98icons.alexmeub.com/icons/png/windows-0.png" alt="logo">
-            Start
-        </button>
-        <div class="w95-border-inset" style="height: 2px; width: 2px; margin: 0 5px;"></div>
+    <div class="container">
         
-        <div id="task-list">
-            <!-- Task buttons -->
-        </div>
+        <header>
+            <div class="header-grid">
+                <div class="identity-block">
+                    <!-- Glitched Name -->
+                    <h1 class="glitch-text" data-text="GEVA KIPPER">GEVA KIPPER</h1>
+                    
+                    <!-- Role -->
+                    <div class="role-text">
+                        <span id="role-typewriter"></span><span class="cursor-blink">|</span>
+                    </div>
+                </div>
 
-        <div id="tray" class="w95-border-inset">
-            <div id="marquee"><span>Site generated by AI Model</span></div>
-            <div id="clock">00:00:00</div>
-        </div>
+                <div class="ai-badge">
+                    <strong style="color:var(--neon-cyan)">[NOTICE]</strong> This interface is re-designed daily by AI.<br>
+                    Current Iteration: <span id="current-date"></span><br>
+                    Status: <span style="color:var(--terminal-green)">Evolving</span>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <!-- LEFT: CONTROLLER -->
+            <section class="controller-panel">
+                <div class="avatar-container">
+                    <canvas id="avatar-canvas"></canvas>
+                </div>
+                
+                <div class="chat-simulation">
+                    <div class="chat-prompt">> USER_HISTORY_LOG:</div>
+                    <div class="suggested-question">"Show me your work on compression"</div>
+                    <div class="suggested-question">"What about data scraping?"</div>
+                    <div class="suggested-question">"Recursive aesthetics?"</div>
+                    <div class="suggested-question">"Humor in AI systems?"</div>
+                </div>
+            </section>
+
+            <!-- RIGHT: DATA STREAM -->
+            <section class="data-stream">
+
+                <!-- CARD 1: GlglStats -->
+                <article class="project-card card-glgl" data-theme="cyan">
+                    <div class="visual-bg">
+                        <div class="waveform-bar" style="animation-delay: 0.1s"></div>
+                        <div class="waveform-bar" style="animation-delay: 0.3s"></div>
+                        <div class="waveform-bar" style="animation-delay: 0.5s"></div>
+                        <div class="waveform-bar" style="animation-delay: 0.2s"></div>
+                        <div class="waveform-bar" style="animation-delay: 0.4s"></div>
+                    </div>
+                    <div>
+                        <h3>GlglStats</h3>
+                        <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="holo-thumb" style="background-image: url('https://img.youtube.com/vi/jrKAtOsj1Lo/hqdefault.jpg')"></a>
+                        <p>An in-depth analysis of Israeli pop chart repetitiveness using the LZ77 compression algorithm. Visualizing the homogeneity of "Galgalatz" playlists over decades.</p>
+                    </div>
+                    <a href="https://glglstats.geekip.dev" target="_blank" class="card-link-btn">ACCESS TERMINAL</a>
+                </article>
+
+                <!-- CARD 2: Ahuzat Dibuk -->
+                <article class="project-card card-dibuk" data-theme="green">
+                    <div class="radar-bg"></div>
+                    <div class="radar-sweep"></div>
+                    <div>
+                        <h3>Ahuzat Dibuk</h3>
+                        <p>Automated scraping and data-mining of Tel-Aviv parking availability. Revealed hidden patterns in urban parking enforcement and availability zones.</p>
+                        
+                        <div class="news-ticker">
+                            <div>SOURCES DETECTED:</div>
+                            <div class="news-links">
+                                <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">[13tv]</a>
+                                <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">[Mako]</a>
+                                <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">[Social]</a>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- CARD 3: 2D Part Orienting -->
+                <article class="project-card card-part" data-theme="white">
+                    <div class="poly-bg"></div>
+                    <div>
+                        <h3>2D Part Orienting</h3>
+                        <p>C++ algorithm design for industrial robotics. Calculating optimal "push plans" to orient polygonal parts on a conveyor belt without sensors.</p>
+                    </div>
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="card-link-btn comment-btn">// View Source & Docs</a>
+                </article>
+
+                <!-- CARD 4: Turing Jest -->
+                <article class="project-card card-jest" data-theme="violet">
+                    <div class="easter-egg">HA-HA-HA</div>
+                    <div>
+                        <h3>The Turing Jest</h3>
+                        <p>A human-vs-bot arena for puns. Users rate jokes to determine if machines can truly master the lowest form of humor.</p>
+                    </div>
+                    <a href="https://jest.geekip.dev" target="_blank" class="card-link-btn">PLAY / RATE</a>
+                </article>
+
+                <!-- CARD 5: Rhymes of Israel -->
+                <article class="project-card card-rhymes" data-theme="mono">
+                    <div>
+                        <h3>Rhymes of Israel</h3>
+                        <p>A Chrome extension styling experience. Brings a vintage, "highschool yearbook" aesthetic to your browsing, highlighting rhymes and poetry in real-time.</p>
+                    </div>
+                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="card-link-btn install-badge">Install Extension</a>
+                </article>
+
+                <!-- CARD 6: Meta Portfolio -->
+                <article class="project-card card-meta" data-theme="void">
+                    <div class="droste-bg"></div>
+                    <div>
+                        <h3>The Meta-Portfolio</h3>
+                        <p>You are here. A self-referential exploration of web identity, generated daily by AI specifications. Recursion at its finest.</p>
+                    </div>
+                    <a href="https://geekip.dev" class="card-link-btn">Return to Recursion</a>
+                </article>
+
+            </section>
+        </main>
+
+        <footer>
+            <div class="container footer-content">
+                <div class="social-dock">
+                    <a href="https://github.com/gevak" target="_blank" class="social-link gh" aria-label="Github">
+                        <svg viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    </a>
+                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-link li" aria-label="LinkedIn">
+                        <svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                    </a>
+                    <a href="https://facebook.com/geva.kipper" target="_blank" class="social-link fb" aria-label="Facebook">
+                        <svg viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+                    </a>
+                </div>
+                
+                <div class="ai-credit">
+                    Site architecture generated by &lt;LLM-Entity&gt;
+                </div>
+
+                <div>
+                    <div class="chronometer-label" style="text-align:center">SYSTEM UPTIME (TIME PARADOX DETECTED)</div>
+                    <div id="chrono" class="chronometer">00:000:00:00:00</div>
+                </div>
+            </div>
+        </footer>
     </div>
 
     <script>
-        // --- ASSETS (ICONS) ---
-        // Using external sources for authentic look (or placeholders) to keep code relatively clean, 
-        // but can be replaced with SVG paths. Using win98icons.alexmeub.com for easy replication of style.
-        const ICONS = {
-            my_computer: "https://win98icons.alexmeub.com/icons/png/computer_explorer-0.png",
-            folder: "https://win98icons.alexmeub.com/icons/png/directory_open-0.png",
-            text_file: "https://win98icons.alexmeub.com/icons/png/notepad-0.png",
-            media: "https://win98icons.alexmeub.com/icons/png/media_player_stream_no2-1.png",
-            excel: "https://win98icons.alexmeub.com/icons/png/excel-0.png",
-            cmd: "https://win98icons.alexmeub.com/icons/png/console_prompt-0.png",
-            game: "https://win98icons.alexmeub.com/icons/png/game_solitaire-0.png",
-            net: "https://win98icons.alexmeub.com/icons/png/world-0.png",
-            network: "https://win98icons.alexmeub.com/icons/png/network_neighborhood-0.png",
-            github: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-            linkedin: "https://cdn-icons-png.flaticon.com/512/174/174857.png",
-            facebook: "https://upload.wikimedia.org/wikipedia/commons/6/6c/Facebook_Logo_2023.png",
-            bio: "https://win98icons.alexmeub.com/icons/png/computer_explorer-4.png", // Using as generic system icon
-        };
-        
-        // --- DATA ---
-        const projects = [
-            { id: 'glglstats', title: 'GlglStats', icon: ICONS.media, type: 'app_media' },
-            { id: 'ahuzat', title: 'Ahuzat Dibuk', icon: ICONS.excel, type: 'app_excel' },
-            { id: '2dpart', title: '2D Part Orienting', icon: ICONS.cmd, type: 'app_cmd' },
-            { id: 'turing', title: 'The Turing Jest', icon: ICONS.game, type: 'app_game' },
-            { id: 'rhymes', title: 'Rhymes of Israel', icon: ICONS.net, type: 'app_browser' },
-            { id: 'meta', title: 'Portfolio (Meta)', icon: ICONS.my_computer, type: 'app_meta' }
-        ];
+        // --- 1. SET CURRENT DATE IN HEADER ---
+        document.getElementById('current-date').innerText = new Date().toISOString().split('T')[0];
 
-        const desktopIconsData = [
-            { label: "My Computer", icon: ICONS.my_computer, action: "open_projects" },
-            { label: "Network Neighborhood", icon: ICONS.network, action: "open_socials" },
-            { label: "Recycle Bin", icon: "https://win98icons.alexmeub.com/icons/png/recycle_bin_empty-4.png", action: "alert_trash" },
-            { label: "Projects", icon: ICONS.folder, action: "open_projects" }
-        ];
+        // --- 2. TYPEWRITER EFFECT FOR TITLE ---
+        const roleText = "Software Engineer at Google";
+        const roleEl = document.getElementById('role-typewriter');
+        let i = 0;
+        function typeWriter() {
+            if (i < roleText.length) {
+                roleEl.innerHTML += roleText.charAt(i);
+                i++;
+                setTimeout(typeWriter, 50 + Math.random() * 50); // Human-like variance
+            }
+        }
+        setTimeout(typeWriter, 500);
 
-        // --- STATE ---
-        let windows = []; // { id, title, icon, contentHtml, x, y, z, minimized, width, height }
-        let zCounter = 100;
-        let draggedWindow = null;
-        let dragOffset = { x:0, y:0 };
+        // --- 3. BACKGROUND CANVAS (PARTICLES) ---
+        const bgCanvas = document.getElementById('bg-canvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        let bgWidth, bgHeight;
 
-        // --- DOM ELEMENTS ---
-        const desktopObj = document.getElementById('desktop');
-        const windowArea = document.getElementById('window-area');
-        const taskList = document.getElementById('task-list');
-        const clockEl = document.getElementById('clock');
-        const memTest = document.getElementById('mem-test');
-        const startMenu = document.getElementById('start-menu');
+        function resizeBg() {
+            bgWidth = window.innerWidth;
+            bgHeight = window.innerHeight;
+            bgCanvas.width = bgWidth;
+            bgCanvas.height = bgHeight;
+        }
+        window.addEventListener('resize', resizeBg);
+        resizeBg();
 
-        // --- BOOT SEQUENCE ---
-        function runBios() {
-            let mem = 0;
-            const limit = 64000; // 64MB representation
-            const interval = setInterval(() => {
-                mem += 1234;
-                if(mem >= limit) {
-                    mem = limit;
-                    clearInterval(interval);
-                    memTest.innerText = mem;
-                    setTimeout(() => {
-                        document.getElementById('bios-details').style.display = 'block';
-                        setTimeout(() => {
-                            document.getElementById('bios').style.display = 'none';
-                            initDesktop();
-                        }, 1500);
-                    }, 500);
-                } else {
-                    memTest.innerText = mem;
+        const particles = [];
+        const particleCount = 80;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * bgWidth;
+                this.y = Math.random() * bgHeight;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2;
+            }
+            update(mouseX, mouseY) {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                // Subtle repulsion from mouse
+                const dx = this.x - mouseX;
+                const dy = this.y - mouseY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 100) {
+                    this.x += dx * 0.01;
+                    this.y += dy * 0.01;
                 }
-            }, 10);
-        }
 
-        // --- INITIALIZATION ---
-        function initDesktop() {
-            // Render Desktop Icons
-            desktopIconsData.forEach((item, idx) => {
-                const el = document.createElement('div');
-                el.className = 'desktop-icon';
-                el.style.top = `${10 + (Math.floor(idx/3)*90)}px`; // Simple grid positioning logic
-                el.style.left = `${10 + ((idx%3)*90)}px`;
-                el.innerHTML = `<img src="${item.icon}"><span>${item.label}</span>`;
-                el.ondblclick = () => handleIconAction(item.action);
-                
-                // Classic click-to-focus
-                el.onclick = (e) => {
-                    document.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
-                    el.classList.add('selected');
-                    e.stopPropagation();
-                }
-                
-                // Allow Dragging Icons (Simplified - just visual absolute adjustment)
-                makeDraggable(el, true);
-                desktopObj.appendChild(el);
-            });
-
-            document.body.onclick = () => {
-                document.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
-                startMenu.style.display = 'none';
-            };
-
-            // Open Default Windows
-            openWindow('welcome', 'Welcome to GevaOS', ICONS.bio, getHtml('welcome'), 80, 50, 400, 300);
-            openWindow('log', 'daily_log.txt - Notepad', ICONS.text_file, getHtml('log'), 500, 100, 300, 200);
-            openWindow('explorer', 'Projects', ICONS.folder, getHtml('explorer'), 150, 400, 450, 300);
-
-            startClock();
-        }
-
-        function handleIconAction(action) {
-            if(action === 'open_projects') {
-                if(windows.find(w => w.id === 'explorer')) focusWindow('explorer');
-                else openWindow('explorer', 'Projects', ICONS.folder, getHtml('explorer'), 150, 150, 450, 300);
+                if (this.x < 0) this.x = bgWidth;
+                if (this.x > bgWidth) this.x = 0;
+                if (this.y < 0) this.y = bgHeight;
+                if (this.y > bgHeight) this.y = 0;
             }
-            if(action === 'open_socials') {
-                 if(windows.find(w => w.id === 'socials')) focusWindow('socials');
-                else openWindow('socials', 'Network Neighborhood', ICONS.network, getHtml('socials'), 200, 200, 400, 250);
-            }
-            if(action === 'alert_trash') {
-                alert("Access Denied: The Trash is managed by the AI Garbage Collector.");
+            draw() {
+                bgCtx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+                bgCtx.beginPath();
+                bgCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                bgCtx.fill();
             }
         }
 
-        // --- CONTENT GENERATION ---
-        function getHtml(type, extra) {
-            switch(type) {
-                case 'welcome':
-                    return `
-                        <div class="bio-content">
-                            <img class="avatar" src="https://robohash.org/GevaKipper?set=set4" alt="Geva">
-                            <div class="bio-text">
-                                <h2>Geva Kipper</h2>
-                                <p>Software Engineer at Google.</p>
-                                <br>
-                                <p>System: GevaOS 95</p>
-                                <p>Registered to: User</p>
-                                <button class="btn w95-border-outset" style="margin-top:10px;" onclick="window.open('https://geekip.dev', '_blank')">Visit geekip.dev</button>
-                            </div>
-                        </div>
-                    `;
-                case 'log':
-                    return `<textarea class="notepad-area" readonly>This website is re-designed each day by AI and is thus ever-changing.
-
-// AUTOMATED LOG ENTRY
-// SYSTEM STATUS: OPTIMAL
-// USER: AUTHENTICATED</textarea>`;
-                case 'explorer':
-                    const items = projects.map(p => 
-                        `<div class="explorer-item" ondblclick="openApp('${p.id}')">
-                            <img src="${p.icon}">
-                            <span>${p.title}</span>
-                         </div>`
-                    ).join('');
-                    return `<div class="explorer-grid w95-border-inset">${items}</div>`;
-                case 'socials':
-                    return `
-                        <div class="explorer-grid w95-border-inset">
-                             <div class="explorer-item" onclick="window.open('https://github.com/gevak', '_blank')">
-                                <img src="${ICONS.github}" style="filter: grayscale(100%);">
-                                <span>GitHub (D:)</span>
-                             </div>
-                             <div class="explorer-item" onclick="window.open('https://linkedin.com/in/gevakip', '_blank')">
-                                <img src="${ICONS.linkedin}" style="filter: grayscale(100%);">
-                                <span>LinkedIn (E:)</span>
-                             </div>
-                             <div class="explorer-item" onclick="window.open('https://facebook.com/geva.kipper', '_blank')">
-                                <img src="${ICONS.facebook}" style="filter: grayscale(100%);">
-                                <span>Facebook (F:)</span>
-                             </div>
-                        </div>
-                    `;
-                // PROJECT APPS
-                case 'app_media': // GlglStats
-                    return `
-                        <div class="media-player">
-                            <div class="video-screen">
-                                <iframe src="https://www.youtube.com/embed/jrKAtOsj1Lo" title="GlglStats" allowfullscreen></iframe>
-                            </div>
-                            <div class="mp-controls w95-border-outset">
-                                <button class="btn">Play</button><button class="btn">Stop</button>
-                            </div>
-                            <div class="mp-text">
-                                <p><strong>GlglStats:</strong> Python/LZ77 algorithm analysis presented at PyData.</p>
-                                <button class="btn w95-border-outset" onclick="window.open('https://glglstats.geekip.dev','_blank')">Launch App</button>
-                            </div>
-                        </div>`;
-                case 'app_excel': // Ahuzat Dibuk
-                    return `
-                        <div class="excel-grid">
-                            <div class="excel-bar">A1: Parking Heatmap</div>
-                            <div class="sheet-body w95-border-inset">
-                                <div class="heatmap-placeholder">PARKING DENSITY MAP<br>(Scraping 13TV/Mako)</div>
-                                <p style="padding:5px; font-size:12px;">Visualizing parking availability via data scraping.</p>
-                            </div>
-                            <div class="excel-links">
-                                <button class="btn w95-border-outset" onclick="window.open('https://13tv.co.il/item/news/domestic/internal/parking-902956407/', '_blank')">13TV</button>
-                                <button class="btn w95-border-outset" onclick="window.open('https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm', '_blank')">Mako</button>
-                                <button class="btn w95-border-outset" onclick="window.open('https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943', '_blank')">Facebook</button>
-                            </div>
-                        </div>`;
-                case 'app_cmd': // 2D Part
-                    return `
-                        <div class="cmd-body" onclick="focusWindow(this.closest('.window').id)">
-                            C:\\> run orientation_algo.cpp<br>
-                            Initializing C++ Computational Geometry...<br>
-                            Calculating hulls... Done.<br>
-                            <div class="polygon"></div>
-                            <br>
-                            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" style="color:#0f0;">[View Project Information]</a>
-                            <br>
-                            C:\\> _
-                        </div>`;
-                case 'app_game': // Turing Jest
-                    return `
-                        <div class="jest-body">
-                            <h3>The Turing Jest</h3>
-                            <div class="chat-bubbles">
-                                <div class="bubble">System: Welcome to the Pun Arena.</div>
-                                <div class="bubble">AI: Prepare to laugh.</div>
-                            </div>
-                            <button class="btn w95-border-outset" style="font-weight:bold; padding:10px;" onclick="window.open('https://jest.geekip.dev','_blank')">Enter the Arena</button>
-                        </div>`;
-                case 'app_browser': // Rhymes
-                    return `
-                        <div class="browser-chrome">
-                            <span>Address:</span> <input type="text" value="chrome://extensions" readonly style="width:70%;">
-                        </div>
-                        <div class="browser-content">
-                            <h1>Rhymes of Israel</h1>
-                            <p>An extension to find rhymes instantly.</p>
-                            <br>
-                            <button class="btn w95-border-outset" onclick="window.open('https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb','_blank')">Download from Store</button>
-                        </div>`;
-                case 'app_meta': // Recursion
-                    return `
-                        <div class="recursion-body">
-                            <div class="mirror">
-                                <div class="mirror" style="width:50%; height:50%;">
-                                    <div class="mirror" style="width:40%; height:40%;">
-                                        <div style="color:white; font-size:10px;">...</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <button class="btn w95-border-outset" style="position:absolute; bottom:10px;" onclick="window.open('https://geekip.dev','_blank')">Refresh Recursion</button>
-                        </div>`;
-            }
+        for (let j = 0; j < particleCount; j++) {
+            particles.push(new Particle());
         }
 
-        function openApp(id) {
-            const p = projects.find(x => x.id === id);
-            if(!p) return;
+        // --- 4. AVATAR CANVAS (3D WIREFRAME SPHERE) ---
+        const avCanvas = document.getElementById('avatar-canvas');
+        const avCtx = avCanvas.getContext('2d');
+        // Setting internal resolution
+        avCanvas.width = 300;
+        avCanvas.height = 300;
+
+        let spherePoints = [];
+        const sphereRadius = 80;
+        const numPoints = 200;
+
+        // Generate points on sphere
+        // Function to create points
+        for(let j=0; j<numPoints; j++) {
+            const y = 1 - (j / (numPoints - 1)) * 2;
+            const radius = Math.sqrt(1 - y * y);
+            const theta = 2.4 * j; // golden angle increment approximately
+            const x = Math.cos(theta) * radius;
+            const z = Math.sin(theta) * radius;
+            spherePoints.push({x: x*sphereRadius, y: y*sphereRadius, z: z*sphereRadius});
+        }
+
+        let angleX = 0;
+        let angleY = 0;
+        let targetColor = '#00ff41'; // Default Green
+        let currentColorHex = '#00ff41';
+
+        function interpolateColor(color1, color2, factor) {
+            // Very basic Hex interpolation for visuals
+            if (factor >= 1) return color2;
+            return color2; // In this simple script, instant switch looks glitchier/better or could be complex valid JS linear arb. For now, snapping color.
+        }
+
+        // --- 5. GLOBAL LOOP & MOUSE TRACKING ---
+        let mouseX = bgWidth / 2;
+        let mouseY = bgHeight / 2;
+        let mainCursor = document.getElementById('cursor-dot');
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+
+            // Custom cursor follow
+            mainCursor.style.left = e.clientX + 'px';
+            mainCursor.style.top = e.clientY + 'px';
+
+            // Avatar rotation based on mouse relative to center of avatar
+            const rect = avCanvas.getBoundingClientRect();
+            const avCenterX = rect.left + rect.width/2;
+            const avCenterY = rect.top + rect.height/2;
+            const offsetX = (e.clientX - avCenterX) * 0.0005;
+            const offsetY = (e.clientY - avCenterY) * 0.0005;
             
-            // Check if open
-            if(windows.find(w => w.id === id)) {
-                focusWindow(id);
-                return;
-            }
-
-            openWindow(id, p.title, p.icon, getHtml(p.type), 100 + (Math.random()*50), 100 + (Math.random()*50), 500, 350);
-        }
-
-        // --- WINDOW MANAGER ---
-        function openWindow(id, title, icon, content, x, y, w, h) {
-            const el = document.createElement('div');
-            el.className = 'window w95-border-outset';
-            el.id = 'win-' + id;
-            el.style.left = x + 'px';
-            el.style.top = y + 'px';
-            el.style.width = w + 'px';
-            el.style.height = h + 'px';
-            el.style.zIndex = ++zCounter;
-
-            el.innerHTML = `
-                <div class="title-bar" onmousedown="startDrag(event, '${id}')">
-                    <div class="title-bar-text"><img src="${icon}"> ${title}</div>
-                    <div class="title-bar-controls">
-                        <div class="win-btn" onclick="minimizeWindow('${id}')">_</div>
-                        <div class="win-btn" onclick="maximizeWindow('${id}')">?</div> <!-- Maximize not fully impl in this snippet, mostly visual -->
-                        <div class="win-btn" onclick="closeWindow('${id}')">X</div>
-                    </div>
-                </div>
-                <div class="window-body">
-                    <div class="drag-overlay"></div>
-                    ${content}
-                </div>
-            `;
-
-            el.onmousedown = () => focusWindow(id);
-            windowArea.appendChild(el);
-
-            windows.push({ id, title, icon, el, minimized: false });
-            updateTaskbar();
-            focusWindow(id);
-        }
-
-        function closeWindow(id) {
-            const idx = windows.findIndex(w => w.id === id);
-            if(idx > -1) {
-                windows[idx].el.remove();
-                windows.splice(idx, 1);
-                updateTaskbar();
-            }
-        }
-
-        function minimizeWindow(id) {
-            const w = windows.find(x => x.id === id);
-            if(w) {
-                w.el.style.display = 'none';
-                w.minimized = true;
-                updateTaskbar();
-            }
-        }
-
-        function focusWindow(id) {
-            const w = windows.find(x => x.id === id);
-            if(w) {
-                if(w.minimized) {
-                    w.el.style.display = 'flex';
-                    w.minimized = false;
-                }
-                w.el.style.zIndex = ++zCounter;
-                // Update CSS classes
-                document.querySelectorAll('.window').forEach(win => win.classList.remove('active'));
-                w.el.classList.add('active');
-                updateTaskbar();
-            }
-        }
-
-        function maximizeWindow(id) {
-            const w = windows.find(x => x.id === id);
-            if(w) {
-                if (w.el.style.width === '100%') {
-                   // Restore (rough logic)
-                   w.el.style.width = '400px'; 
-                   w.el.style.height = '300px';
-                   w.el.style.top = '100px';
-                   w.el.style.left = '100px';
-                } else {
-                    w.el.style.top = '0';
-                    w.el.style.left = '0';
-                    w.el.style.width = '100%';
-                    w.el.style.height = 'calc(100vh - 35px)';
-                }
-                focusWindow(id);
-            }
-        }
-
-        function updateTaskbar() {
-            taskList.innerHTML = '';
-            windows.forEach(w => {
-                const btn = document.createElement('button');
-                const isActive = w.el.classList.contains('active') && !w.minimized;
-                btn.className = `task-btn w95-border-${isActive ? 'inset active' : 'outset'}`;
-                btn.innerHTML = `<img src="${w.icon}" class="icon-sm"> ${w.title}`;
-                btn.onclick = () => focusWindow(w.id);
-                taskList.appendChild(btn);
-            });
-        }
-
-        // --- TASKBAR SYSTEM ---
-        function toggleStart() {
-            const menu = document.getElementById('start-menu');
-            const btn = document.getElementById('start-btn');
-            if(menu.style.display === 'block') {
-                menu.style.display = 'none';
-                btn.classList.add('w95-border-outset');
-                btn.classList.remove('w95-border-inset');
-            } else {
-                menu.style.display = 'block';
-                btn.classList.add('w95-border-inset');
-                btn.classList.remove('w95-border-outset');
-            }
-        }
-
-        // --- DRAG SYSTEM ---
-        function makeDraggable(el, isIcon) {
-            // Simplified drag for icons
-            let isDragging = false;
-            let startX, startY, initialLeft, initialTop;
-            
-            el.addEventListener('mousedown', (e) => {
-                if(e.button !== 0) return; // Only left click
-                isDragging = true;
-                startX = e.clientX;
-                startY = e.clientY;
-                initialLeft = el.offsetLeft;
-                initialTop = el.offsetTop;
-                el.style.position = 'absolute'; // Ensure absolute
-            });
-
-            window.addEventListener('mousemove', (e) => {
-                if(!isDragging) return;
-                const dx = e.clientX - startX;
-                const dy = e.clientY - startY;
-                el.style.left = `${initialLeft + dx}px`;
-                el.style.top = `${initialTop + dy}px`;
-            });
-
-            window.addEventListener('mouseup', () => {
-                isDragging = false;
-            });
-        }
-
-        // Window dragging specific logic
-        function startDrag(e, id) {
-            e.preventDefault();
-            const w = windows.find(x => x.id === id);
-            focusWindow(id); // Bring to front
-            draggedWindow = w.el;
-            draggedWindow.classList.add('dragging'); // Enables overlay to fix iframe stealing mouse
-            dragOffset.x = e.clientX - draggedWindow.offsetLeft;
-            dragOffset.y = e.clientY - draggedWindow.offsetTop;
-            document.body.style.cursor = 'move';
-        }
-
-        window.addEventListener('mousemove', (e) => {
-            if (draggedWindow) {
-                // Bounds checking
-                let newX = e.clientX - dragOffset.x;
-                let newY = e.clientY - dragOffset.y;
-                
-                // Keep minimal visibility
-                if(newY < 0) newY = 0;
-                draggedWindow.style.left = newX + 'px';
-                draggedWindow.style.top = newY + 'px';
-            }
+            angleY += offsetX;
+            angleX -= offsetY;
         });
 
-        window.addEventListener('mouseup', () => {
-            if(draggedWindow) {
-                draggedWindow.classList.remove('dragging');
-                draggedWindow = null;
-                document.body.style.cursor = 'default';
-            }
+        // Hover listeners for theme changing
+        const cards = document.querySelectorAll('.project-card');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                const theme = card.getAttribute('data-theme');
+                if(theme === 'cyan') targetColor = '#00ffff';
+                if(theme === 'green') targetColor = '#00ff41';
+                if(theme === 'violet') targetColor = '#b026ff';
+                if(theme === 'white') targetColor = '#ffffff';
+                if(theme === 'void') targetColor = '#333333';
+                if(theme === 'mono') targetColor = '#aaaaaa';
+                
+                mainCursor.style.backgroundColor = targetColor;
+                mainCursor.style.boxShadow = `0 0 10px ${targetColor}`;
+                mainCursor.style.width = '24px';
+                mainCursor.style.height = '24px';
+                mainCursor.style.opacity = '0.5';
+            });
+            card.addEventListener('mouseleave', () => {
+                targetColor = '#00ff41'; // Reset
+                mainCursor.style.backgroundColor = 'var(--neon-cyan)';
+                mainCursor.style.boxShadow = `0 0 10px var(--neon-cyan)`;
+                mainCursor.style.width = '8px';
+                mainCursor.style.height = '8px';
+                mainCursor.style.opacity = '1';
+            });
         });
 
-        // --- CLOCK ---
-        function startClock() {
-            // Target: 2026-01-13 01:09:58
-            const target = new Date('2026-01-13T01:09:58').getTime();
+        // --- ANIMATION LOOP ---
+        function animate() {
+            // Background
+            bgCtx.clearRect(0, 0, bgWidth, bgHeight);
+            
+            // Draw grid lines (faint)
+            bgCtx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            bgCtx.lineWidth = 1;
+            const gridSize = 100;
+            // Moving grid effect
+            const time = Date.now() * 0.001;
+            const offsetX = (time * 10) % gridSize;
+            
+            for(let x = offsetX; x < bgWidth; x += gridSize) {
+                bgCtx.beginPath();
+                bgCtx.moveTo(x, 0);
+                bgCtx.lineTo(x, bgHeight);
+                bgCtx.stroke();
+            }
 
-            setInterval(() => {
-                const now = new Date().getTime();
-                const diff = now - target;
-                const absDiff = Math.abs(diff);
+            particles.forEach(p => {
+                p.update(mouseX, mouseY);
+                p.draw();
+            });
 
-                const hours = Math.floor(absDiff / (1000 * 60 * 60));
-                const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((absDiff % (1000 * 60)) / 1000);
+            // Avatar 3D
+            avCtx.clearRect(0, 0, 300, 300);
+            avCtx.save();
+            avCtx.translate(150, 150);
+            
+            // Auto rotation slight
+            angleY += 0.005;
 
-                const prefix = diff < 0 ? "-" : "+";
-                
-                // Formatting to maintain width
-                const h = String(hours).padStart(2, '0');
-                const m = String(minutes).padStart(2, '0');
-                const s = String(seconds).padStart(2, '0');
+            // Sort points by Z for depth illusion (painter's algo simple)
+            // Not strictly necessary for wireframe but helps with dots
+            
+            // Draw Lines & Dots
+            avCtx.strokeStyle = targetColor;
+            avCtx.fillStyle = targetColor;
+            avCtx.lineWidth = 0.5;
 
-                clockEl.innerText = `${prefix}${h}:${m}:${s}`;
-            }, 1000);
+            // Determine "Eye" direction interactively
+            // We just rotate the field.
+            
+            spherePoints.forEach(p => {
+                // Rotation Y
+                let x1 = p.x * Math.cos(angleY) - p.z * Math.sin(angleY);
+                let z1 = p.z * Math.cos(angleY) + p.x * Math.sin(angleY);
+                // Rotation X
+                let y1 = p.y * Math.cos(angleX) - z1 * Math.sin(angleX);
+                let z2 = z1 * Math.cos(angleX) + p.y * Math.sin(angleX);
+
+                let scale = 300 / (300 + z2); // Perspective
+                let x2D = x1 * scale;
+                let y2D = y1 * scale;
+                let alpha = (z2 + sphereRadius) / (2 * sphereRadius); // Fade back points
+
+                avCtx.globalAlpha = Math.max(0.1, alpha);
+                avCtx.beginPath();
+                avCtx.arc(x2D, y2D, 1.5, 0, Math.PI*2);
+                avCtx.fill();
+
+                // Draw random connections for glitch wireframe look
+                if(Math.random() > 0.98) {
+                    avCtx.beginPath();
+                    avCtx.moveTo(x2D, y2D);
+                    avCtx.lineTo(0, 0); // Connect to core
+                    avCtx.stroke();
+                }
+            });
+            
+            avCtx.restore();
+
+            requestAnimationFrame(animate);
         }
 
-        // Run
-        runBios();
+        animate();
+
+
+        // --- 6. PARADOX CLOCK logic ---
+        // Target: 2026-01-14 01:16:06
+        // If current date < Target, counting UP (negative).
+        // Since prompt says it displays time UP since that date (future), it's negative.
+        const targetDate = new Date("2026-01-14T01:16:06").getTime();
+        const clockEl = document.getElementById('chrono');
+
+        setInterval(() => {
+            const now = Date.now();
+            let diff = now - targetDate; // Negative value usually
+            
+            const isNegative = diff < 0;
+            diff = Math.abs(diff);
+
+            const years = Math.floor(diff / (1000 * 60 * 60 * 24 * 365));
+            const days = Math.floor((diff % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            const sign = isNegative ? "-" : "+";
+            const yy = String(years).padStart(2, '0');
+            const ddd = String(days).padStart(3, '0');
+            const hh = String(hours).padStart(2, '0');
+            const mm = String(minutes).padStart(2, '0');
+            const ss = String(seconds).padStart(2, '0');
+
+            clockEl.innerText = `${sign}${yy}:${ddd}:${hh}:${mm}:${ss}`;
+        }, 1000);
+
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260113",
+          pageId: "20260114",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
