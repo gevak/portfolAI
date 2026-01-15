@@ -2,1038 +2,681 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper // Sentient Terminal</title>
+    <title>Geva Kipper // The Generative Terminal</title>
     
-    <!-- Fonts -->
+    <!-- Fonts: Fira Code for that developer aesthetic -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@300;400;600&family=Orbitron:wght@500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&display=swap" rel="stylesheet">
 
     <style>
-        /* --- CORE VARIABLES & RESET --- */
         :root {
-            --bg-void: #0a0a0a;
-            --terminal-green: #00ff41;
-            --neon-cyan: #0ff;
-            --neon-violet: #b026ff;
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --font-mono: 'Fira Code', monospace;
-            --font-body: 'Inter', sans-serif;
-            --font-clock: 'Orbitron', sans-serif;
-            --paradox-red: #ff3333;
+            --bg-color: #0d1117;
+            --text-color: #c9d1d9;
+            --accent-cyan: #58a6ff;
+            --accent-amber: #d29922;
+            --accent-purple: #bc8cff;
+            --accent-green: #3fb950;
+            --terminal-glow: 0 0 10px rgba(88, 166, 255, 0.2);
+            --scanline-color: rgba(0, 0, 0, 0.5);
+            --border-dim: #30363d;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            cursor: none; /* Custom cursor implementation below */
         }
 
         body {
-            background-color: var(--bg-void);
-            color: #e0e0e0;
-            font-family: var(--font-body);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Fira Code', monospace;
+            font-size: 16px;
+            line-height: 1.6;
             overflow-x: hidden;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            position: relative;
         }
 
-        /* custom cursor */
-        #cursor-dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--neon-cyan);
-            border-radius: 50%;
-            position: fixed;
-            pointer-events: none;
-            z-index: 9999;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 10px var(--neon-cyan);
-            transition: width 0.2s, height 0.2s, background-color 0.2s;
-        }
-
-        /* --- BACKGROUND CANVAS --- */
-        #bg-canvas {
+        /* ___ BACKGROUND EFFECTS ___ */
+        #matrix-canvas {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: -1;
-            opacity: 0.4;
+            opacity: 0.08; /* Very subtle */
         }
 
-        /* --- LAYOUT UTILS --- */
-        .container {
-            max-width: 1400px;
+        /* Scanline Overlay */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* ___ LAYOUT ___ */
+        .terminal-container {
+            max-width: 900px;
             margin: 0 auto;
-            padding: 0 2rem;
-            width: 100%;
-        }
-
-        a {
-            text-decoration: none;
-            color: inherit;
-        }
-
-        /* --- HEADER --- */
-        header {
-            padding: 2rem 0;
+            padding: 2rem 1rem 6rem 1rem;
             position: relative;
             z-index: 10;
         }
 
-        .header-grid {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .identity-block {
-            flex: 1;
-        }
-
-        /* Glitch Effect */
-        .glitch-text {
-            font-family: var(--font-mono);
-            font-size: 3rem;
-            font-weight: 700;
-            color: #fff;
-            position: relative;
-            text-transform: uppercase;
-        }
-
-        .glitch-text::before, .glitch-text::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        .glitch-text::before {
-            left: 2px;
-            text-shadow: -1px 0 #ff00c1;
-            clip: rect(44px, 450px, 56px, 0);
-            animation: glitch-anim 5s infinite linear alternate-reverse;
-        }
-
-        .glitch-text::after {
-            left: -2px;
-            text-shadow: -1px 0 var(--neon-cyan);
-            clip: rect(44px, 450px, 56px, 0);
-            animation: glitch-anim2 5s infinite linear alternate-reverse;
-        }
-
-        @keyframes glitch-anim {
-            0% { clip: rect(12px, 9999px, 51px, 0); }
-            5% { clip: rect(72px, 9999px, 34px, 0); }
-            10% { clip: rect(81px, 9999px, 86px, 0); }
-            15% { clip: rect(6px, 9999px, 20px, 0); }
-            100% { clip: rect(1px, 9999px, 1px, 0); }
-        }
-        @keyframes glitch-anim2 {
-            0% { clip: rect(66px, 9999px, 24px, 0); }
-            5% { clip: rect(2px, 9999px, 86px, 0); }
-            10% { clip: rect(32px, 9999px, 13px, 0); }
-            15% { clip: rect(96px, 9999px, 11px, 0); }
-            100% { clip: rect(1px, 9999px, 1px, 0); }
-        }
-
-        .role-text {
-            font-family: var(--font-mono);
-            color: var(--terminal-green);
-            font-size: 1.1rem;
-            margin-top: 0.5rem;
-            display: flex;
-            align-items: center;
-        }
-
-        .cursor-blink {
-            display: inline-block;
-            width: 10px;
-            height: 1.2rem;
-            background-color: var(--terminal-green);
-            margin-left: 5px;
-            animation: blink 1s step-end infinite;
-        }
-
-        @keyframes blink { 50% { opacity: 0; } }
-
-        .ai-badge {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            padding: 0.8rem 1.2rem;
-            border-radius: 4px;
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            backdrop-filter: blur(10px);
-            max-width: 300px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
-            animation: pulse-border 4s infinite;
-        }
-
-        @keyframes pulse-border {
-            0% { border-color: rgba(255,255,255,0.1); }
-            50% { border-color: rgba(0,255,255,0.4); }
-            100% { border-color: rgba(255,255,255,0.1); }
-        }
-
-        /* --- MAIN SPLIT LAYOUT --- */
-        main {
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 3rem;
-            flex: 1;
-            margin-top: 2rem;
-        }
-
-        /* Left Column: Avatar & Controller */
-        .controller-panel {
-            position: sticky;
-            top: 2rem;
-            height: fit-content;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .avatar-container {
-            width: 300px;
-            height: 300px;
-            position: relative;
-            margin-bottom: 2rem;
-        }
-
-        #avatar-canvas {
-            width: 100%;
-            height: 100%;
-        }
-
-        .chat-simulation {
-            width: 100%;
-            font-family: var(--font-mono);
-            font-size: 0.9rem;
-        }
-
-        .chat-prompt {
-            color: #888;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid var(--glass-border);
-            padding-bottom: 0.5rem;
-        }
-
-        .suggested-question {
-            background: rgba(0, 255, 65, 0.05);
-            color: var(--terminal-green);
-            padding: 0.8rem;
-            margin-bottom: 0.5rem;
-            border-left: 2px solid var(--terminal-green);
-            opacity: 0.7;
+        a {
+            text-decoration: none;
+            color: var(--accent-cyan);
             transition: all 0.3s ease;
         }
-
-        .suggested-question:hover {
-            opacity: 1;
-            background: rgba(0, 255, 65, 0.15);
-            transform: translateX(5px);
+        a:hover {
+            text-shadow: 0 0 8px var(--accent-cyan);
+            text-decoration: underline;
         }
 
-        /* Right Column: Data Stream */
-        .data-stream {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        /* ___ HEADER ___ */
+        .prompt-line {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+            color: var(--accent-green);
+        }
+        .prompt-symbol { margin-right: 10px; }
+        .command-text { color: var(--text-color); }
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background-color: var(--accent-cyan);
+            animation: blink 1s step-end infinite;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .hero-output {
+            margin-bottom: 2rem;
+            border-left: 2px solid var(--border-dim);
+            padding-left: 1rem;
+            min-height: 120px;
+        }
+
+        .hero-name {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-color);
+            text-shadow: 0 0 5px rgba(255,255,255,0.3);
+            letter-spacing: -1px;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .hero-role {
+            font-size: 1.1rem;
+            color: var(--accent-purple);
+            opacity: 0.9;
+        }
+
+        /* ___ SUBTITLE WARNING ___ */
+        .system-notification {
+            border: 1px solid var(--accent-amber);
+            background: rgba(210, 153, 34, 0.05);
+            padding: 1rem;
+            color: var(--accent-amber);
+            font-size: 0.9rem;
+            margin-bottom: 4rem;
+            box-shadow: 0 0 15px rgba(210, 153, 34, 0.1);
+            animation: pulse-border 3s infinite;
+        }
+        
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 5px rgba(210, 153, 34, 0.1); }
+            50% { box-shadow: 0 0 15px rgba(210, 153, 34, 0.3); }
+            100% { box-shadow: 0 0 5px rgba(210, 153, 34, 0.1); }
+        }
+
+        /* ___ CHAT STREAM ___ */
+        .stream-container {
+            display: flex;
+            flex-direction: column;
             gap: 2rem;
-            padding-bottom: 4rem;
         }
 
-        /* Project Card Base */
+        .chat-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        .user-query {
+            align-self: flex-start;
+            color: #6e7681;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            padding-left: 1rem;
+            border-left: 2px solid #30363d;
+        }
+
+        .ai-response {
+            align-self: flex-end;
+            width: 100%;
+            max-width: 85%;
+        }
+
+        /* ___ PROJECT CARDS ___ */
         .project-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
+            background: rgba(22, 27, 34, 0.8);
+            border: 1px solid var(--border-dim);
+            border-radius: 6px;
             padding: 1.5rem;
             position: relative;
             overflow: hidden;
-            backdrop-filter: blur(15px);
-            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            min-height: 280px;
+            transition: transform 0.2s, border-color 0.2s;
+            backdrop-filter: blur(5px);
         }
 
         .project-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(255, 255, 255, 0.3);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border-color: var(--accent-cyan);
+            transform: translateX(-5px);
+            box-shadow: var(--terminal-glow);
         }
 
-        .project-card h3 {
-            font-family: var(--font-mono);
-            font-size: 1.4rem;
-            margin-bottom: 0.8rem;
+        .card-header {
             display: flex;
             justify-content: space-between;
+            margin-bottom: 1rem;
+            border-bottom: 1px dashed var(--border-dim);
+            padding-bottom: 0.5rem;
+        }
+
+        .project-title {
+            color: var(--accent-cyan);
+            font-weight: 700;
+        }
+
+        .project-meta {
+            font-size: 0.8rem;
+            color: var(--accent-purple);
+        }
+
+        .card-body {
+            display: flex;
+            gap: 1.5rem;
             align-items: center;
         }
-
-        .project-card p {
-            font-size: 0.95rem;
-            line-height: 1.5;
-            color: #ccc;
-            margin-bottom: 1.5rem;
-            position: relative;
-            z-index: 2;
-        }
-
-        .card-link-btn {
-            display: inline-block;
-            margin-top: auto;
-            padding: 0.6rem 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--terminal-green);
-            color: var(--terminal-green);
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            border-radius: 4px;
-            transition: all 0.3s ease;
-            text-align: center;
-            width: fit-content;
-        }
-
-        .card-link-btn:hover {
-            background: var(--terminal-green);
-            color: #000;
-            box-shadow: 0 0 15px var(--terminal-green);
-        }
-
-        /* --- CARD SPECIFIC STYLES --- */
-
-        /* Card 1: GlglStats */
-        .card-glgl .visual-bg {
-            position: absolute;
-            top: 50%;
-            left: 0;
-            width: 100%;
-            height: 60px;
+        
+        .card-visual {
+            width: 80px;
+            height: 80px;
+            flex-shrink: 0;
+            border: 1px solid var(--border-dim);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
-            opacity: 0.0; /* Hidden by description by default, distinct layer */
-            z-index: 0;
-            pointer-events: none;
-        }
-        
-        .card-glgl:hover .visual-bg {
-             /* Making it subtle visible behind text on hover */
-             opacity: 0.2;
-        }
-        
-        .waveform-bar {
-            width: 4px;
-            background: var(--neon-cyan);
-            animation: wave 1s infinite ease-in-out;
-        }
-        @keyframes wave {
-            0%, 100% { height: 10px; }
-            50% { height: 50px; }
-        }
-
-        .holo-thumb {
-            display: block;
-            width: 100%;
-            height: 120px;
-            background-size: cover;
-            background-position: center;
-            border-radius: 4px;
-            margin-bottom: 1rem;
-            opacity: 0.8;
-            border: 1px solid var(--neon-cyan);
-            filter: grayscale(80%) sepia(20%) hue-rotate(180deg);
-            transition: all 0.4s;
-            position: relative;
-        }
-        
-        .holo-thumb:hover {
-            filter: none;
-            box-shadow: 0 0 15px var(--neon-cyan);
-            opacity: 1;
-        }
-        
-        .holo-thumb::after {
-            content: '▶ HOLOGRAPHIC REPLAY';
-            position: absolute;
-            bottom: 4px;
-            right: 4px;
-            font-size: 10px;
-            background: rgba(0,0,0,0.7);
-            padding: 2px 4px;
-            color: var(--neon-cyan);
-        }
-
-        /* Card 2: Ahuzat Dibuk (Radar) */
-        .card-dibuk {
-            position: relative;
-        }
-        .radar-bg {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: 
-                radial-gradient(circle, transparent 20%, rgba(0,255,65,0.05) 20%, rgba(0,255,65,0.05) 21%, transparent 21%),
-                radial-gradient(circle, transparent 40%, rgba(0,255,65,0.05) 40%, rgba(0,255,65,0.05) 41%, transparent 41%);
-            z-index: 0;
-        }
-        .radar-sweep {
-            position: absolute;
-            top: 50%; left: 50%;
-            width: 300px; height: 300px;
-            background: conic-gradient(from 0deg, transparent 0deg, rgba(0,255,65,0.1) 60deg, transparent 60deg);
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            animation: rotate 4s linear infinite;
-            z-index: 0;
-            pointer-events: none;
-        }
-        @keyframes rotate { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
-        
-        .news-ticker {
-            font-size: 0.75rem;
-            margin-top: 1rem;
-            border-top: 1px dashed var(--glass-border);
-            padding-top: 0.5rem;
-            color: #777;
-        }
-        .news-links a {
-            color: #999;
-            margin-right: 10px;
-            transition: color 0.2s;
-            display: inline-block;
-        }
-        .news-links a:hover { color: var(--terminal-green); text-decoration: underline; }
-
-        /* Card 3: 2D Part (Polygon) */
-        .card-part .poly-bg {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-image: linear-gradient(30deg, #111 12%, transparent 12.5%, transparent 87%, #111 87.5%, #111),
-            linear-gradient(150deg, #111 12%, transparent 12.5%, transparent 87%, #111 87.5%, #111),
-            linear-gradient(30deg, #111 12%, transparent 12.5%, transparent 87%, #111 87.5%, #111),
-            linear-gradient(150deg, #111 12%, transparent 12.5%, transparent 87%, #111 87.5%, #111),
-            linear-gradient(60deg, #222 25%, transparent 25.5%, transparent 75%, #222 75%, #222),
-            linear-gradient(60deg, #222 25%, transparent 25.5%, transparent 75%, #222 75%, #222);
-            background-size: 40px 70px;
-            background-position: 0 0, 0 0, 20px 35px, 20px 35px, 0 0, 20px 35px;
-            opacity: 0.05;
-            z-index: 0;
-        }
-        
-        .comment-btn {
-            font-family: var(--font-mono);
-            color: #7f8ca3; 
-            border: none;
-            background: transparent;
-            font-style: italic;
-        }
-        .comment-btn:hover {
-            color: #a0aab9; 
-            background: transparent;
-            box-shadow: none;
-        }
-
-        /* Card 4: Turing Jest (Chat Bubble / Fun) */
-        .card-jest .easter-egg {
-            position: absolute;
-            top: 1rem;
-            right: 1.5rem;
-            opacity: 0;
-            color: var(--neon-violet);
-            font-weight: bold;
-            font-family: var(--font-mono);
-            transition: opacity 0.3s;
-        }
-        .card-jest:hover .easter-egg {
-            opacity: 1;
-        }
-        .card-jest h3::before {
-            content: '🤖';
-            margin-right: 10px;
-            filter: grayscale(1);
-            transition: 0.3s;
-        }
-        .card-jest:hover h3::before {
-            filter: grayscale(0);
-        }
-
-        /* Card 5: Rhymes (Vintage) */
-        .card-rhymes {
-            background: linear-gradient(rgba(10,10,10,0.95), rgba(10,10,10,0.85)), url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.1'/%3E%3C/svg%3E");
-        }
-        .install-badge {
-            background: #222;
-            border: 1px solid #444;
-            color: #fff;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .install-badge::before {
-            content: '';
-            width: 12px;
-            height: 12px;
-            background: linear-gradient(45deg, #4285F4, #34A853, #FBBC05, #EA4335);
-            border-radius: 50%;
-        }
-
-        /* Card 6: Meta (Droste) */
-        .card-meta {
+            background: #000;
             overflow: hidden;
-        }
-        .droste-bg {
-            position: absolute;
-            top: 20px;
-            right: -20px;
-            width: 100px;
-            height: 100px;
-            border: 1px solid var(--glass-border);
-            background: rgba(0,0,0,0.5);
-            transform: rotate(15deg);
-            z-index: 0;
-        }
-        .droste-bg::before {
-            content: '';
-            position: absolute;
-            top: 20%; right: 20%; width: 60%; height: 60%;
-            border: 1px solid var(--glass-border);
-            background: rgba(0,0,0,0.5);
-        }
-        .droste-bg::after {
-            content: '';
-            position: absolute;
-            top: 40%; right: 40%; width: 20%; height: 20%;
-            border: 1px solid var(--glass-border);
-            background: rgba(0,0,0,0.5);
-        }
-
-        /* --- FOOTER --- */
-        footer {
-            margin-top: auto;
-            border-top: 1px solid var(--glass-border);
-            padding: 3rem 0;
-            background: linear-gradient(to top, #000 0%, transparent 100%);
-        }
-
-        .footer-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2rem;
-            text-align: center;
-        }
-
-        .social-dock {
-            display: flex;
-            gap: 3rem;
-        }
-
-        .social-link {
-            font-size: 2rem;
-            color: #555;
-            transition: all 0.3s;
             position: relative;
         }
 
-        .social-link svg {
-            width: 32px;
-            height: 32px;
-            fill: currentColor;
+        .card-content {
+            flex-grow: 1;
         }
 
-        /* Colors for socials on hover */
-        .social-link.gh:hover { color: #fff; text-shadow: 0 0 20px #fff; }
-        .social-link.li:hover { color: #0077b5; text-shadow: 0 0 20px #0077b5; }
-        .social-link.fb:hover { color: #1877f2; text-shadow: 0 0 20px #1877f2; }
+        .card-desc {
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            color: #8b949e;
+        }
 
-        .ai-credit {
-            font-family: var(--font-mono);
+        .btn-action {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            background: rgba(88, 166, 255, 0.1);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
             font-size: 0.8rem;
-            color: #444;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .btn-action:hover {
+            background: rgba(88, 166, 255, 0.2);
+            box-shadow: 0 0 10px rgba(88, 166, 255, 0.4);
         }
 
-        .chronometer {
-            font-family: var(--font-clock);
-            font-size: 1.5rem;
-            color: var(--paradox-red);
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px rgba(255, 51, 51, 0.5);
+        /* ___ SPECIFIC VISUALS ___ */
+        /* 1. Audio Visualizer */
+        .viz-bar {
+            width: 8px;
+            background: var(--accent-cyan);
+            margin: 0 2px;
+            animation: equalize 0.8s infinite ease-in-out alternate;
+        }
+        .viz-bar:nth-child(1) { height: 40%; animation-delay: -0.2s; }
+        .viz-bar:nth-child(2) { height: 80%; animation-delay: -0.4s; }
+        .viz-bar:nth-child(3) { height: 50%; animation-delay: -0.6s; }
+        .viz-bar:nth-child(4) { height: 70%; animation-delay: -0.8s; }
+        @keyframes equalize { 0% { height: 20%; } 100% { height: 90%; } }
+
+        /* 2. Heatmap */
+        .heatmap-bg {
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at 30% 30%, #ff4d4d, transparent 40%),
+                        radial-gradient(circle at 70% 70%, #4dff4d, transparent 40%),
+                        radial-gradient(circle at 50% 50%, #ffff4d, transparent 50%);
+            filter: blur(5px);
+            opacity: 0.7;
         }
 
-        .chronometer-label {
-            font-size: 0.7rem;
-            color: #666;
-            margin-bottom: 0.2rem;
-            font-family: var(--font-mono);
-            letter-spacing: 1px;
+        /* 3. Wireframe Poly */
+        .wireframe-poly {
+            width: 40px; height: 40px;
+            border: 2px solid var(--accent-green);
+            transform: rotate(45deg);
+            animation: rotatePoly 4s linear infinite;
+        }
+        @keyframes rotatePoly { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* 4. Robot Duel */
+        .robot-duel { font-size: 1.5rem; }
+
+        /* 5. Music News */
+        .note-icon {
+            font-size: 2rem;
+            animation: bounceNote 2s infinite;
+        }
+        @keyframes bounceNote { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+        /* 6. Recursive */
+        .recursive-box {
+            width: 60%; height: 60%;
+            border: 1px solid var(--accent-purple);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .recursive-inner {
+            width: 60%; height: 60%;
+            border: 1px solid var(--accent-purple);
+            opacity: 0.7;
         }
 
-        /* --- MEDIA QUERIES --- */
-        @media (max-width: 900px) {
-            main {
-                grid-template-columns: 1fr;
-            }
-            .controller-panel {
-                position: relative;
-                top: 0;
-                margin-bottom: 2rem;
-            }
-            .header-grid {
-                flex-direction: column;
-            }
-            .glitch-text {
-                font-size: 2.2rem;
-            }
-            .data-stream {
-                grid-template-columns: 1fr;
-            }
-            #cursor-dot { display: none; }
+        /* ___ FOOTER SOCIALS ___ */
+        .social-array-wrapper {
+            margin-top: 4rem;
+            margin-bottom: 2rem;
+            border-top: 1px solid var(--border-dim);
+            padding-top: 2rem;
+        }
+        .code-comment { color: #8b949e; font-style: italic; margin-bottom: 0.5rem; display: block; }
+        
+        .social-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+        
+        .social-btn {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-dim);
+            padding: 1.5rem;
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--text-color);
+            transition: all 0.3s;
+        }
+        
+        .social-btn.github:hover {
+            border-color: #fff;
+            text-shadow: 0 0 10px #fff;
+            background: rgba(255,255,255,0.1);
+        }
+        .social-btn.linkedin:hover {
+            border-color: #0077b5;
+            text-shadow: 0 0 10px #0077b5;
+            color: #0077b5;
+            background: rgba(0, 119, 181, 0.1);
+        }
+        .social-btn.facebook:hover {
+            border-color: #1877f2;
+            text-shadow: 0 0 10px #1877f2;
+            color: #1877f2;
+            background: rgba(24, 119, 242, 0.1);
+        }
+
+        /* ___ SYSTEM FOOTER ___ */
+        .system-footer {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-top: 1px solid var(--border-dim);
+            font-size: 0.75rem;
+            color: #484f58;
+            text-transform: uppercase;
+            align-items: center;
+        }
+
+        .timer-display {
+            font-family: 'Fira Code', monospace;
+            color: var(--accent-cyan);
+            font-weight: bold;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .ai-response { max-width: 100%; }
+            .card-body { flex-direction: column; align-items: flex-start; }
+            .card-visual { width: 100%; height: 100px; margin-bottom: 1rem; }
+            .social-grid { grid-template-columns: 1fr; }
+            .system-footer { flex-direction: column; gap: 0.5rem; text-align: center; }
+            .hero-name { font-size: 1.8rem; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Dynamic Cursor -->
-    <div id="cursor-dot"></div>
+    <!-- Canvas for Matrix Rain -->
+    <canvas id="matrix-canvas"></canvas>
 
-    <!-- Background Matrix/Particles -->
-    <canvas id="bg-canvas"></canvas>
-
-    <div class="container">
+    <div class="terminal-container">
         
-        <header>
-            <div class="header-grid">
-                <div class="identity-block">
-                    <!-- Glitched Name -->
-                    <h1 class="glitch-text" data-text="GEVA KIPPER">GEVA KIPPER</h1>
-                    
-                    <!-- Role -->
-                    <div class="role-text">
-                        <span id="role-typewriter"></span><span class="cursor-blink">|</span>
-                    </div>
-                </div>
+        <!-- Prompt Header -->
+        <div class="prompt-line">
+            <span class="prompt-symbol">root@ai-architect:~$</span>
+            <span class="command-text">explain user --id="Geva Kipper"</span>
+        </div>
 
-                <div class="ai-badge">
-                    <strong style="color:var(--neon-cyan)">[NOTICE]</strong> This interface is re-designed daily by AI.<br>
-                    Current Iteration: <span id="current-date"></span><br>
-                    Status: <span style="color:var(--terminal-green)">Evolving</span>
-                </div>
+        <!-- Typewriter Output -->
+        <div class="hero-output">
+            <span id="typewriter-name" class="hero-name"></span>
+            <span id="typewriter-role" class="hero-role"></span>
+            <span class="cursor"></span>
+        </div>
+
+        <!-- Warning Subtitle -->
+        <div class="system-notification">
+            ⚠ ARCHITECTURE WARNING: This interface is hallucinated daily. Current build seed generated by AI Model [Version X]. Layout volatility: High.
+        </div>
+
+        <!-- Dynamic Content Stream -->
+        <div class="stream-container" id="stream-container">
+            <!-- JS will populate project cards here -->
+        </div>
+
+        <!-- Footer Socials -->
+        <div class="social-array-wrapper">
+            <span class="code-comment">// Output: Contact Methods</span>
+            <span class="code-comment">const social_links = [ ... ];</span>
+            <div class="social-grid">
+                <a href="https://github.com/gevak" target="_blank" class="social-btn github">
+                    GitHub_
+                </a>
+                <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-btn linkedin">
+                    LinkedIn_
+                </a>
+                <a href="https://facebook.com/geva.kipper" target="_blank" class="social-btn facebook">
+                    Facebook_
+                </a>
             </div>
-        </header>
+        </div>
 
-        <main>
-            <!-- LEFT: CONTROLLER -->
-            <section class="controller-panel">
-                <div class="avatar-container">
-                    <canvas id="avatar-canvas"></canvas>
-                </div>
-                
-                <div class="chat-simulation">
-                    <div class="chat-prompt">> USER_HISTORY_LOG:</div>
-                    <div class="suggested-question">"Show me your work on compression"</div>
-                    <div class="suggested-question">"What about data scraping?"</div>
-                    <div class="suggested-question">"Recursive aesthetics?"</div>
-                    <div class="suggested-question">"Humor in AI systems?"</div>
-                </div>
-            </section>
-
-            <!-- RIGHT: DATA STREAM -->
-            <section class="data-stream">
-
-                <!-- CARD 1: GlglStats -->
-                <article class="project-card card-glgl" data-theme="cyan">
-                    <div class="visual-bg">
-                        <div class="waveform-bar" style="animation-delay: 0.1s"></div>
-                        <div class="waveform-bar" style="animation-delay: 0.3s"></div>
-                        <div class="waveform-bar" style="animation-delay: 0.5s"></div>
-                        <div class="waveform-bar" style="animation-delay: 0.2s"></div>
-                        <div class="waveform-bar" style="animation-delay: 0.4s"></div>
-                    </div>
-                    <div>
-                        <h3>GlglStats</h3>
-                        <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="holo-thumb" style="background-image: url('https://img.youtube.com/vi/jrKAtOsj1Lo/hqdefault.jpg')"></a>
-                        <p>An in-depth analysis of Israeli pop chart repetitiveness using the LZ77 compression algorithm. Visualizing the homogeneity of "Galgalatz" playlists over decades.</p>
-                    </div>
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="card-link-btn">ACCESS TERMINAL</a>
-                </article>
-
-                <!-- CARD 2: Ahuzat Dibuk -->
-                <article class="project-card card-dibuk" data-theme="green">
-                    <div class="radar-bg"></div>
-                    <div class="radar-sweep"></div>
-                    <div>
-                        <h3>Ahuzat Dibuk</h3>
-                        <p>Automated scraping and data-mining of Tel-Aviv parking availability. Revealed hidden patterns in urban parking enforcement and availability zones.</p>
-                        
-                        <div class="news-ticker">
-                            <div>SOURCES DETECTED:</div>
-                            <div class="news-links">
-                                <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">[13tv]</a>
-                                <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">[Mako]</a>
-                                <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">[Social]</a>
-                            </div>
-                        </div>
-                    </div>
-                </article>
-
-                <!-- CARD 3: 2D Part Orienting -->
-                <article class="project-card card-part" data-theme="white">
-                    <div class="poly-bg"></div>
-                    <div>
-                        <h3>2D Part Orienting</h3>
-                        <p>C++ algorithm design for industrial robotics. Calculating optimal "push plans" to orient polygonal parts on a conveyor belt without sensors.</p>
-                    </div>
-                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="card-link-btn comment-btn">// View Source & Docs</a>
-                </article>
-
-                <!-- CARD 4: Turing Jest -->
-                <article class="project-card card-jest" data-theme="violet">
-                    <div class="easter-egg">HA-HA-HA</div>
-                    <div>
-                        <h3>The Turing Jest</h3>
-                        <p>A human-vs-bot arena for puns. Users rate jokes to determine if machines can truly master the lowest form of humor.</p>
-                    </div>
-                    <a href="https://jest.geekip.dev" target="_blank" class="card-link-btn">PLAY / RATE</a>
-                </article>
-
-                <!-- CARD 5: Rhymes of Israel -->
-                <article class="project-card card-rhymes" data-theme="mono">
-                    <div>
-                        <h3>Rhymes of Israel</h3>
-                        <p>A Chrome extension styling experience. Brings a vintage, "highschool yearbook" aesthetic to your browsing, highlighting rhymes and poetry in real-time.</p>
-                    </div>
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="card-link-btn install-badge">Install Extension</a>
-                </article>
-
-                <!-- CARD 6: Meta Portfolio -->
-                <article class="project-card card-meta" data-theme="void">
-                    <div class="droste-bg"></div>
-                    <div>
-                        <h3>The Meta-Portfolio</h3>
-                        <p>You are here. A self-referential exploration of web identity, generated daily by AI specifications. Recursion at its finest.</p>
-                    </div>
-                    <a href="https://geekip.dev" class="card-link-btn">Return to Recursion</a>
-                </article>
-
-            </section>
-        </main>
-
-        <footer>
-            <div class="container footer-content">
-                <div class="social-dock">
-                    <a href="https://github.com/gevak" target="_blank" class="social-link gh" aria-label="Github">
-                        <svg viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                    </a>
-                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-link li" aria-label="LinkedIn">
-                        <svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-                    </a>
-                    <a href="https://facebook.com/geva.kipper" target="_blank" class="social-link fb" aria-label="Facebook">
-                        <svg viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
-                    </a>
-                </div>
-                
-                <div class="ai-credit">
-                    Site architecture generated by &lt;LLM-Entity&gt;
-                </div>
-
-                <div>
-                    <div class="chronometer-label" style="text-align:center">SYSTEM UPTIME (TIME PARADOX DETECTED)</div>
-                    <div id="chrono" class="chronometer">00:000:00:00:00</div>
-                </div>
+        <!-- System Footer -->
+        <div class="system-footer">
+            <span>Site architecture generated by AI Model: Claude 3.5 Sonnet</span>
+            <div class="timer-container">
+                SYSTEM UPTIME (SINCE EPOCH 2026-01-15): <span id="clock" class="timer-display">CALCULATING...</span>
             </div>
-        </footer>
+        </div>
+
     </div>
 
     <script>
-        // --- 1. SET CURRENT DATE IN HEADER ---
-        document.getElementById('current-date').innerText = new Date().toISOString().split('T')[0];
+        /* 
+         * GENERATIVE TERMINAL SCRIPT
+         * Handles: Matrix Background, Typewriter Logic, Data Rendering, Clock
+         */
 
-        // --- 2. TYPEWRITER EFFECT FOR TITLE ---
-        const roleText = "Software Engineer at Google";
-        const roleEl = document.getElementById('role-typewriter');
-        let i = 0;
-        function typeWriter() {
-            if (i < roleText.length) {
-                roleEl.innerHTML += roleText.charAt(i);
-                i++;
-                setTimeout(typeWriter, 50 + Math.random() * 50); // Human-like variance
-            }
+        // --- 1. Matrix Background Effect ---
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         }
-        setTimeout(typeWriter, 500);
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
-        // --- 3. BACKGROUND CANVAS (PARTICLES) ---
-        const bgCanvas = document.getElementById('bg-canvas');
-        const bgCtx = bgCanvas.getContext('2d');
-        let bgWidth, bgHeight;
+        const chars = '0123456789ABCDEF';
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = Array(Math.ceil(columns)).fill(1);
 
-        function resizeBg() {
-            bgWidth = window.innerWidth;
-            bgHeight = window.innerHeight;
-            bgCanvas.width = bgWidth;
-            bgCanvas.height = bgHeight;
-        }
-        window.addEventListener('resize', resizeBg);
-        resizeBg();
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(13, 17, 23, 0.05)'; // Fade effect
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#58a6ff'; // Cyan text
+            ctx.font = fontSize + 'px monospace';
 
-        const particles = [];
-        const particleCount = 80;
+            for(let i = 0; i < drops.length; i++) {
+                const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
 
-        class Particle {
-            constructor() {
-                this.x = Math.random() * bgWidth;
-                this.y = Math.random() * bgHeight;
-                this.speedX = (Math.random() - 0.5) * 0.5;
-                this.speedY = (Math.random() - 0.5) * 0.5;
-                this.size = Math.random() * 2;
-            }
-            update(mouseX, mouseY) {
-                this.x += this.speedX;
-                this.y += this.speedY;
-
-                // Subtle repulsion from mouse
-                const dx = this.x - mouseX;
-                const dy = this.y - mouseY;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 100) {
-                    this.x += dx * 0.01;
-                    this.y += dy * 0.01;
+                if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
                 }
-
-                if (this.x < 0) this.x = bgWidth;
-                if (this.x > bgWidth) this.x = 0;
-                if (this.y < 0) this.y = bgHeight;
-                if (this.y > bgHeight) this.y = 0;
-            }
-            draw() {
-                bgCtx.fillStyle = 'rgba(0, 255, 255, 0.3)';
-                bgCtx.beginPath();
-                bgCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                bgCtx.fill();
+                drops[i]++;
             }
         }
+        setInterval(drawMatrix, 50);
 
-        for (let j = 0; j < particleCount; j++) {
-            particles.push(new Particle());
+
+        // --- 2. Typewriter Effect ---
+        const nameText = "GEVA KIPPER";
+        const roleText = "Software Engineer at Google.";
+        const nameEl = document.getElementById('typewriter-name');
+        const roleEl = document.getElementById('typewriter-role');
+
+        async function typeWriter(text, element, speed = 50) {
+            for (let i = 0; i < text.length; i++) {
+                element.innerHTML += text.charAt(i);
+                await new Promise(r => setTimeout(r, speed));
+            }
         }
 
-        // --- 4. AVATAR CANVAS (3D WIREFRAME SPHERE) ---
-        const avCanvas = document.getElementById('avatar-canvas');
-        const avCtx = avCanvas.getContext('2d');
-        // Setting internal resolution
-        avCanvas.width = 300;
-        avCanvas.height = 300;
+        // --- 3. Project Data & Rendering ---
+        const projects = [
+            {
+                query: "Show me data visualization projects",
+                title: "GlglStats",
+                meta: "DataViz / Python / LZ77",
+                desc: "LZ77 LZ77 compression algorithm visualization. Includes talk from PyData TLV.",
+                linkText: "./run_glglstats.exe",
+                linkUrl: "https://glglstats.geekip.dev",
+                visualClass: "viz_glgl"
+            },
+            {
+                query: "Any efficient scraping tools?",
+                title: "Ahuzat Dibuk",
+                meta: "Scraper / TLV Parking",
+                desc: "The legendary Tel-Aviv parking scraper that made the news.",
+                links: [
+                    { t: "[13TV]", u: "https://13tv.co.il/item/news/domestic/internal/parking-902956407/" },
+                    { t: "[Mako]", u: "https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" },
+                    { t: "[SecretGrp]", u: "https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" }
+                ],
+                visualClass: "viz_ahuzat"
+            },
+            {
+                query: "Display algorithmic geometry libraries",
+                title: "2D Part Orienting",
+                meta: "C++ / Comp. Geometry",
+                desc: "Algorithms for orienting parts. Implementation of C++ CG library.",
+                linkText: "[View Source]",
+                linkUrl: "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/",
+                visualClass: "viz_2d"
+            },
+            {
+                query: "Load entertainment modules",
+                title: "The Turing Jest",
+                meta: "LLM / React",
+                desc: "An arena where Large Language Models compete to make puns.",
+                linkText: "[Enter Arena]",
+                linkUrl: "https://jest.geekip.dev",
+                visualClass: "viz_jest"
+            },
+            {
+                query: "Extension_Chrome --genre=comedy",
+                title: "Rhymes of Israel",
+                meta: "Chrome / Extension",
+                desc: "Transforms boring news headlines into rhymes for comedic effect.",
+                linkText: "[Install Extension]",
+                linkUrl: "https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb",
+                visualClass: "viz_rhymes"
+            },
+            {
+                query: "user.current_location()",
+                title: "The Recursive Portfolio",
+                meta: "Meta / Self-Reference",
+                desc: "Recursion error detected: Self-referencing loop found in current DOM.",
+                linkText: "[ reload_universe() ]",
+                linkUrl: "https://geekip.dev",
+                visualClass: "viz_meta"
+            }
+        ];
 
-        let spherePoints = [];
-        const sphereRadius = 80;
-        const numPoints = 200;
-
-        // Generate points on sphere
-        // Function to create points
-        for(let j=0; j<numPoints; j++) {
-            const y = 1 - (j / (numPoints - 1)) * 2;
-            const radius = Math.sqrt(1 - y * y);
-            const theta = 2.4 * j; // golden angle increment approximately
-            const x = Math.cos(theta) * radius;
-            const z = Math.sin(theta) * radius;
-            spherePoints.push({x: x*sphereRadius, y: y*sphereRadius, z: z*sphereRadius});
+        function getVisualHTML(type) {
+            if(type === 'viz_glgl') {
+                return `<div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div>`;
+            } else if (type === 'viz_ahuzat') {
+                return `<div class="heatmap-bg"></div>`;
+            } else if (type === 'viz_2d') {
+                return `<div class="wireframe-poly"></div>`;
+            } else if (type === 'viz_jest') {
+                return `<div class="robot-duel">🤖</div>`;
+            } else if (type === 'viz_rhymes') {
+                return `<div class="note-icon">🎵</div>`;
+            } else if (type === 'viz_meta') {
+                return `<div class="recursive-box"><div class="recursive-inner"></div></div>`;
+            }
+            return '';
         }
 
-        let angleX = 0;
-        let angleY = 0;
-        let targetColor = '#00ff41'; // Default Green
-        let currentColorHex = '#00ff41';
-
-        function interpolateColor(color1, color2, factor) {
-            // Very basic Hex interpolation for visuals
-            if (factor >= 1) return color2;
-            return color2; // In this simple script, instant switch looks glitchier/better or could be complex valid JS linear arb. For now, snapping color.
-        }
-
-        // --- 5. GLOBAL LOOP & MOUSE TRACKING ---
-        let mouseX = bgWidth / 2;
-        let mouseY = bgHeight / 2;
-        let mainCursor = document.getElementById('cursor-dot');
-
-        document.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-
-            // Custom cursor follow
-            mainCursor.style.left = e.clientX + 'px';
-            mainCursor.style.top = e.clientY + 'px';
-
-            // Avatar rotation based on mouse relative to center of avatar
-            const rect = avCanvas.getBoundingClientRect();
-            const avCenterX = rect.left + rect.width/2;
-            const avCenterY = rect.top + rect.height/2;
-            const offsetX = (e.clientX - avCenterX) * 0.0005;
-            const offsetY = (e.clientY - avCenterY) * 0.0005;
+        async function renderStream() {
+            // First animate header
+            await typeWriter(nameText, nameEl, 60);
+            await new Promise(r => setTimeout(r, 300));
+            nameEl.style.borderRight = "none"; 
+            await typeWriter(roleText, roleEl, 30);
             
-            angleY += offsetX;
-            angleX -= offsetY;
-        });
+            // Wait before starting stream
+            await new Promise(r => setTimeout(r, 800));
 
-        // Hover listeners for theme changing
-        const cards = document.querySelectorAll('.project-card');
-        cards.forEach(card => {
-            card.addEventListener('mouseenter', () => {
-                const theme = card.getAttribute('data-theme');
-                if(theme === 'cyan') targetColor = '#00ffff';
-                if(theme === 'green') targetColor = '#00ff41';
-                if(theme === 'violet') targetColor = '#b026ff';
-                if(theme === 'white') targetColor = '#ffffff';
-                if(theme === 'void') targetColor = '#333333';
-                if(theme === 'mono') targetColor = '#aaaaaa';
+            const container = document.getElementById('stream-container');
+            
+            // Loop with delay for "Streaming" feel
+            for (let project of projects) {
+                // Create User Query
+                const queryDiv = document.createElement('div');
+                queryDiv.className = 'chat-row user-query';
+                queryDiv.innerText = `> User: ${project.query}`;
+                container.appendChild(queryDiv);
+
+                await new Promise(r => setTimeout(r, 400)); // "Thinking" time
+
+                // Create AI Response (Card)
+                const cardRow = document.createElement('div');
+                cardRow.className = 'chat-row ai-response';
                 
-                mainCursor.style.backgroundColor = targetColor;
-                mainCursor.style.boxShadow = `0 0 10px ${targetColor}`;
-                mainCursor.style.width = '24px';
-                mainCursor.style.height = '24px';
-                mainCursor.style.opacity = '0.5';
-            });
-            card.addEventListener('mouseleave', () => {
-                targetColor = '#00ff41'; // Reset
-                mainCursor.style.backgroundColor = 'var(--neon-cyan)';
-                mainCursor.style.boxShadow = `0 0 10px var(--neon-cyan)`;
-                mainCursor.style.width = '8px';
-                mainCursor.style.height = '8px';
-                mainCursor.style.opacity = '1';
-            });
-        });
-
-        // --- ANIMATION LOOP ---
-        function animate() {
-            // Background
-            bgCtx.clearRect(0, 0, bgWidth, bgHeight);
-            
-            // Draw grid lines (faint)
-            bgCtx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
-            bgCtx.lineWidth = 1;
-            const gridSize = 100;
-            // Moving grid effect
-            const time = Date.now() * 0.001;
-            const offsetX = (time * 10) % gridSize;
-            
-            for(let x = offsetX; x < bgWidth; x += gridSize) {
-                bgCtx.beginPath();
-                bgCtx.moveTo(x, 0);
-                bgCtx.lineTo(x, bgHeight);
-                bgCtx.stroke();
-            }
-
-            particles.forEach(p => {
-                p.update(mouseX, mouseY);
-                p.draw();
-            });
-
-            // Avatar 3D
-            avCtx.clearRect(0, 0, 300, 300);
-            avCtx.save();
-            avCtx.translate(150, 150);
-            
-            // Auto rotation slight
-            angleY += 0.005;
-
-            // Sort points by Z for depth illusion (painter's algo simple)
-            // Not strictly necessary for wireframe but helps with dots
-            
-            // Draw Lines & Dots
-            avCtx.strokeStyle = targetColor;
-            avCtx.fillStyle = targetColor;
-            avCtx.lineWidth = 0.5;
-
-            // Determine "Eye" direction interactively
-            // We just rotate the field.
-            
-            spherePoints.forEach(p => {
-                // Rotation Y
-                let x1 = p.x * Math.cos(angleY) - p.z * Math.sin(angleY);
-                let z1 = p.z * Math.cos(angleY) + p.x * Math.sin(angleY);
-                // Rotation X
-                let y1 = p.y * Math.cos(angleX) - z1 * Math.sin(angleX);
-                let z2 = z1 * Math.cos(angleX) + p.y * Math.sin(angleX);
-
-                let scale = 300 / (300 + z2); // Perspective
-                let x2D = x1 * scale;
-                let y2D = y1 * scale;
-                let alpha = (z2 + sphereRadius) / (2 * sphereRadius); // Fade back points
-
-                avCtx.globalAlpha = Math.max(0.1, alpha);
-                avCtx.beginPath();
-                avCtx.arc(x2D, y2D, 1.5, 0, Math.PI*2);
-                avCtx.fill();
-
-                // Draw random connections for glitch wireframe look
-                if(Math.random() > 0.98) {
-                    avCtx.beginPath();
-                    avCtx.moveTo(x2D, y2D);
-                    avCtx.lineTo(0, 0); // Connect to core
-                    avCtx.stroke();
+                let actionButtons = '';
+                if (project.links) {
+                    actionButtons = project.links.map(l => `<a href="${l.u}" target="_blank" class="btn-action" style="margin-right:5px; margin-top:5px; display:inline-block;">${l.t}</a>`).join('');
+                } else {
+                    actionButtons = `<a href="${project.linkUrl}" target="_blank" class="btn-action">${project.linkText}</a>`;
                 }
-            });
-            
-            avCtx.restore();
 
-            requestAnimationFrame(animate);
+                cardRow.innerHTML = `
+                    <div class="project-card">
+                        <div class="card-header">
+                            <span class="project-title">${project.title}</span>
+                            <span class="project-meta">${project.meta}</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-visual">
+                                ${getVisualHTML(project.visualClass)}
+                            </div>
+                            <div class="card-content">
+                                <p class="card-desc">${project.desc}</p>
+                                <div class="card-actions">
+                                    ${actionButtons}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(cardRow);
+
+                await new Promise(r => setTimeout(r, 600)); // Delay between outputs
+            }
         }
 
-        animate();
+        // --- 4. System Clock (Future Epoch) ---
+        function updateClock() {
+            const now = new Date();
+            const epoch = new Date('2026-01-15T00:00:00');
+            const diff = epoch - now;
 
-
-        // --- 6. PARADOX CLOCK logic ---
-        // Target: 2026-01-14 01:16:06
-        // If current date < Target, counting UP (negative).
-        // Since prompt says it displays time UP since that date (future), it's negative.
-        const targetDate = new Date("2026-01-14T01:16:06").getTime();
-        const clockEl = document.getElementById('chrono');
-
-        setInterval(() => {
-            const now = Date.now();
-            let diff = now - targetDate; // Negative value usually
+            const isFuture = diff > 0;
+            const label = isFuture ? "T-MINUS TO SINGULARITY" : "UPTIME";
             
-            const isNegative = diff < 0;
-            diff = Math.abs(diff);
+            // Convert to absolute to display time
+            const absDiff = Math.abs(diff);
+            
+            const hours = Math.floor(absDiff / (1000 * 60 * 60));
+            const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((absDiff % (1000 * 60)) / 1000);
+            const ms = Math.floor((absDiff % 1000) / 10); // 2 digits
 
-            const years = Math.floor(diff / (1000 * 60 * 60 * 24 * 365));
-            const days = Math.floor((diff % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            // Formatting
+            const h = hours.toString().padStart(2, '0');
+            const m = minutes.toString().padStart(2, '0');
+            const s = seconds.toString().padStart(2, '0');
+            const msStr = ms.toString().padStart(2, '0');
 
-            const sign = isNegative ? "-" : "+";
-            const yy = String(years).padStart(2, '0');
-            const ddd = String(days).padStart(3, '0');
-            const hh = String(hours).padStart(2, '0');
-            const mm = String(minutes).padStart(2, '0');
-            const ss = String(seconds).padStart(2, '0');
+            const timeString = `${isFuture ? '-' : '+'}${h}:${m}:${s}:${msStr}`;
+            
+            document.getElementById('clock').innerText = timeString;
+        }
 
-            clockEl.innerText = `${sign}${yy}:${ddd}:${hh}:${mm}:${ss}`;
-        }, 1000);
+        setInterval(updateClock, 30);
+        
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+             renderStream();
+        });
 
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260114",
+          pageId: "20260115",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
