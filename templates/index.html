@@ -2,673 +2,765 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper // The Generative Terminal</title>
-    
-    <!-- Fonts: Fira Code for that developer aesthetic -->
+    <title>Geva Kipper | Cyber-Fintech Portfolio</title>
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600&family=VT323&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         :root {
-            --bg-color: #0d1117;
-            --text-color: #c9d1d9;
-            --accent-cyan: #58a6ff;
-            --accent-amber: #d29922;
-            --accent-purple: #bc8cff;
-            --accent-green: #3fb950;
-            --terminal-glow: 0 0 10px rgba(88, 166, 255, 0.2);
-            --scanline-color: rgba(0, 0, 0, 0.5);
-            --border-dim: #30363d;
+            --bg-color: #1a1a1a;
+            --panel-bg: rgba(35, 35, 35, 0.65);
+            --neon-blue: #00f3ff;
+            --neon-green: #00ff9d;
+            --neon-red: #ff0055;
+            --neon-yellow: #ffee00;
+            --text-main: #e0e0e0;
+            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+            --shadow-light: rgba(255, 255, 255, 0.05);
+            --shadow-dark: rgba(0, 0, 0, 0.5);
+            --font-head: 'Orbitron', sans-serif;
+            --font-body: 'Rajdhani', sans-serif;
+            --font-term: 'VT323', monospace;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--neon-blue) var(--bg-color);
         }
 
         body {
             background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Fira Code', monospace;
-            font-size: 16px;
-            line-height: 1.6;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        /* ___ BACKGROUND EFFECTS ___ */
-        #matrix-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            opacity: 0.08; /* Very subtle */
-        }
-
-        /* Scanline Overlay */
-        body::after {
-            content: "";
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
+            background-image: 
+                radial-gradient(circle at 50% 50%, #2a2a2a 0%, #1a1a1a 100%),
+                url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+            color: var(--text-main);
+            font-family: var(--font-body);
             height: 100vh;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0, 0, 0, 0.15),
-                rgba(0, 0, 0, 0.15) 1px,
-                transparent 1px,
-                transparent 2px
-            );
-            pointer-events: none;
-            z-index: 999;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* ___ LAYOUT ___ */
-        .terminal-container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 2rem 1rem 6rem 1rem;
+        /* --- Animations --- */
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 5px var(--neon-blue); }
+            50% { box-shadow: 0 0 15px var(--neon-blue), 0 0 5px var(--neon-blue) inset; }
+            100% { box-shadow: 0 0 5px var(--neon-blue); }
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        @keyframes receipt-print {
+            0% { transform: translateY(-100%) translateX(-50%); opacity: 0; }
+            100% { transform: translateY(0) translateX(-50%); opacity: 1; }
+        }
+
+        /* --- UI Elements --- */
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: var(--glass-border);
+            border-radius: 12px;
+            box-shadow: 10px 10px 20px var(--shadow-dark), -5px -5px 15px var(--shadow-light);
+        }
+
+        .btn-neo {
+            background: linear-gradient(145deg, #2a2a2a, #1f1f1f);
+            box-shadow: 4px 4px 8px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
+            border: none;
+            color: var(--neon-blue);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-neo:active, .btn-neo.pressed {
+            box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -2px -2px 6px var(--shadow-light);
+            transform: translateY(1px);
+        }
+
+        .term-text {
+            font-family: var(--font-term);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* --- Header --- */
+        header {
+            padding: 1rem 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            border-bottom: 2px solid var(--neon-blue);
+            background: rgba(0,0,0,0.3);
             position: relative;
             z-index: 10;
         }
 
-        a {
-            text-decoration: none;
-            color: var(--accent-cyan);
-            transition: all 0.3s ease;
-        }
-        a:hover {
-            text-shadow: 0 0 8px var(--accent-cyan);
-            text-decoration: underline;
+        .account-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        /* ___ HEADER ___ */
-        .prompt-line {
+        .user-details h1 {
+            font-family: var(--font-head);
+            font-size: 1.8rem;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+
+        .user-details .role {
+            font-family: var(--font-term);
+            color: var(--neon-green);
+            font-size: 1.2rem;
+        }
+
+        .ticker-wrap {
+            width: 100%;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            height: 24px;
             display: flex;
             align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 1rem;
-            color: var(--accent-green);
         }
-        .prompt-symbol { margin-right: 10px; }
-        .command-text { color: var(--text-color); }
-        .cursor {
+
+        .ticker {
             display: inline-block;
-            width: 10px;
-            height: 1.2em;
-            background-color: var(--accent-cyan);
-            animation: blink 1s step-end infinite;
-            margin-left: 5px;
-            vertical-align: middle;
+            white-space: nowrap;
+            animation: marquee 20s linear infinite;
+            font-family: var(--font-term);
+            color: var(--neon-red);
+            font-size: 1rem;
         }
 
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-
-        .hero-output {
-            margin-bottom: 2rem;
-            border-left: 2px solid var(--border-dim);
-            padding-left: 1rem;
-            min-height: 120px;
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
         }
 
-        .hero-name {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--text-color);
-            text-shadow: 0 0 5px rgba(255,255,255,0.3);
-            letter-spacing: -1px;
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-        
-        .hero-role {
-            font-size: 1.1rem;
-            color: var(--accent-purple);
-            opacity: 0.9;
+        /* --- Main Layout --- */
+        .atm-interface {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
         }
 
-        /* ___ SUBTITLE WARNING ___ */
-        .system-notification {
-            border: 1px solid var(--accent-amber);
-            background: rgba(210, 153, 34, 0.05);
-            padding: 1rem;
-            color: var(--accent-amber);
+        /* --- Transaction Grid --- */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 15px var(--neon-blue);
+            border-color: var(--neon-blue);
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+            transition: color 0.3s;
+        }
+
+        .card:hover .card-icon {
+            color: var(--neon-green);
+        }
+
+        .card h3 {
+            font-family: var(--font-head);
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .card .subtitle {
+            font-family: var(--font-term);
             font-size: 0.9rem;
-            margin-bottom: 4rem;
-            box-shadow: 0 0 15px rgba(210, 153, 34, 0.1);
-            animation: pulse-border 3s infinite;
-        }
-        
-        @keyframes pulse-border {
-            0% { box-shadow: 0 0 5px rgba(210, 153, 34, 0.1); }
-            50% { box-shadow: 0 0 15px rgba(210, 153, 34, 0.3); }
-            100% { box-shadow: 0 0 5px rgba(210, 153, 34, 0.1); }
+            color: #888;
+            margin-top: 0.5rem;
         }
 
-        /* ___ CHAT STREAM ___ */
-        .stream-container {
+        /* --- Sidebar --- */
+        .sidebar {
             display: flex;
             flex-direction: column;
             gap: 2rem;
         }
 
-        .chat-row {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            opacity: 0;
-            animation: fadeIn 0.5s forwards;
+        .slot-container {
+            position: relative;
+            background: #111;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            box-shadow: inset 0 0 10px #000;
+            text-align: center;
         }
 
-        @keyframes fadeIn { to { opacity: 1; } }
-
-        .user-query {
-            align-self: flex-start;
-            color: #6e7681;
-            font-size: 0.85rem;
-            margin-bottom: 0.5rem;
-            padding-left: 1rem;
-            border-left: 2px solid #30363d;
-        }
-
-        .ai-response {
-            align-self: flex-end;
+        .resume-slot {
             width: 100%;
-            max-width: 85%;
-        }
-
-        /* ___ PROJECT CARDS ___ */
-        .project-card {
-            background: rgba(22, 27, 34, 0.8);
-            border: 1px solid var(--border-dim);
-            border-radius: 6px;
-            padding: 1.5rem;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.2s, border-color 0.2s;
-            backdrop-filter: blur(5px);
-        }
-
-        .project-card:hover {
-            border-color: var(--accent-cyan);
-            transform: translateX(-5px);
-            box-shadow: var(--terminal-glow);
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-            border-bottom: 1px dashed var(--border-dim);
-            padding-bottom: 0.5rem;
-        }
-
-        .project-title {
-            color: var(--accent-cyan);
-            font-weight: 700;
-        }
-
-        .project-meta {
-            font-size: 0.8rem;
-            color: var(--accent-purple);
-        }
-
-        .card-body {
-            display: flex;
-            gap: 1.5rem;
-            align-items: center;
-        }
-        
-        .card-visual {
-            width: 80px;
-            height: 80px;
-            flex-shrink: 0;
-            border: 1px solid var(--border-dim);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            height: 15px;
             background: #000;
-            overflow: hidden;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: inset 0 2px 5px rgba(255,255,255,0.1);
             position: relative;
+            overflow: visible;
         }
 
-        .card-content {
-            flex-grow: 1;
+        .slot-light {
+            width: 100%;
+            height: 5px;
+            background: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
+            animation: pulse-glow 2s infinite;
+            margin-top: 5px;
         }
 
-        .card-desc {
-            font-size: 0.95rem;
-            margin-bottom: 1rem;
-            color: #8b949e;
+        .receipt-paper {
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            width: 300px;
+            background: #fff;
+            color: #000;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transform: translateY(-200%) translateX(-50%);
+            transition: transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.27);
+            text-align: center;
+            border-bottom: 5px jagged #eee; /* Simulation of torn paper */
         }
-
-        .btn-action {
-            display: inline-block;
-            padding: 0.4rem 0.8rem;
-            background: rgba(88, 166, 255, 0.1);
-            border: 1px solid var(--accent-cyan);
-            color: var(--accent-cyan);
-            font-size: 0.8rem;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        .btn-action:hover {
-            background: rgba(88, 166, 255, 0.2);
-            box-shadow: 0 0 10px rgba(88, 166, 255, 0.4);
-        }
-
-        /* ___ SPECIFIC VISUALS ___ */
-        /* 1. Audio Visualizer */
-        .viz-bar {
-            width: 8px;
-            background: var(--accent-cyan);
-            margin: 0 2px;
-            animation: equalize 0.8s infinite ease-in-out alternate;
-        }
-        .viz-bar:nth-child(1) { height: 40%; animation-delay: -0.2s; }
-        .viz-bar:nth-child(2) { height: 80%; animation-delay: -0.4s; }
-        .viz-bar:nth-child(3) { height: 50%; animation-delay: -0.6s; }
-        .viz-bar:nth-child(4) { height: 70%; animation-delay: -0.8s; }
-        @keyframes equalize { 0% { height: 20%; } 100% { height: 90%; } }
-
-        /* 2. Heatmap */
-        .heatmap-bg {
-            width: 100%; height: 100%;
-            background: radial-gradient(circle at 30% 30%, #ff4d4d, transparent 40%),
-                        radial-gradient(circle at 70% 70%, #4dff4d, transparent 40%),
-                        radial-gradient(circle at 50% 50%, #ffff4d, transparent 50%);
-            filter: blur(5px);
-            opacity: 0.7;
-        }
-
-        /* 3. Wireframe Poly */
-        .wireframe-poly {
-            width: 40px; height: 40px;
-            border: 2px solid var(--accent-green);
-            transform: rotate(45deg);
-            animation: rotatePoly 4s linear infinite;
-        }
-        @keyframes rotatePoly { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        /* 4. Robot Duel */
-        .robot-duel { font-size: 1.5rem; }
-
-        /* 5. Music News */
-        .note-icon {
-            font-size: 2rem;
-            animation: bounceNote 2s infinite;
-        }
-        @keyframes bounceNote { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-
-        /* 6. Recursive */
-        .recursive-box {
-            width: 60%; height: 60%;
-            border: 1px solid var(--accent-purple);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .recursive-inner {
-            width: 60%; height: 60%;
-            border: 1px solid var(--accent-purple);
-            opacity: 0.7;
-        }
-
-        /* ___ FOOTER SOCIALS ___ */
-        .social-array-wrapper {
-            margin-top: 4rem;
-            margin-bottom: 2rem;
-            border-top: 1px solid var(--border-dim);
-            padding-top: 2rem;
-        }
-        .code-comment { color: #8b949e; font-style: italic; margin-bottom: 0.5rem; display: block; }
         
-        .social-grid {
+        .receipt-paper.active {
+            transform: translateY(0) translateX(-50%);
+        }
+
+        .keypad {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-        }
-        
-        .social-btn {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border-dim);
-            padding: 1.5rem;
-            text-align: center;
-            font-size: 1.2rem;
-            color: var(--text-color);
-            transition: all 0.3s;
-        }
-        
-        .social-btn.github:hover {
-            border-color: #fff;
-            text-shadow: 0 0 10px #fff;
-            background: rgba(255,255,255,0.1);
-        }
-        .social-btn.linkedin:hover {
-            border-color: #0077b5;
-            text-shadow: 0 0 10px #0077b5;
-            color: #0077b5;
-            background: rgba(0, 119, 181, 0.1);
-        }
-        .social-btn.facebook:hover {
-            border-color: #1877f2;
-            text-shadow: 0 0 10px #1877f2;
-            color: #1877f2;
-            background: rgba(24, 119, 242, 0.1);
+            gap: 10px;
+            background: #222;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #444;
         }
 
-        /* ___ SYSTEM FOOTER ___ */
-        .system-footer {
+        .key {
+            padding: 15px;
+            font-family: var(--font-head);
+            font-weight: bold;
+            font-size: 1.2rem;
+            border-radius: 5px;
+            color: #aaa;
+        }
+
+        .key.action { color: #111; }
+        .key.green { background: var(--neon-green); box-shadow: 0 0 5px var(--neon-green); }
+        .key.yellow { background: var(--neon-yellow); box-shadow: 0 0 5px var(--neon-yellow); }
+        .key.red { background: var(--neon-red); box-shadow: 0 0 5px var(--neon-red); }
+
+        /* --- Footer --- */
+        footer {
+            background: #111;
+            border-top: 2px solid #333;
+            padding: 10px 20px;
             display: flex;
             justify-content: space-between;
-            padding: 1rem 0;
-            border-top: 1px solid var(--border-dim);
-            font-size: 0.75rem;
-            color: #484f58;
-            text-transform: uppercase;
             align-items: center;
+            font-family: var(--font-term);
+            margin-top: auto;
         }
 
-        .timer-display {
-            font-family: 'Fira Code', monospace;
-            color: var(--accent-cyan);
-            font-weight: bold;
+        .chrono {
+            font-size: 1.5rem;
+            color: var(--neon-red);
+            text-shadow: 0 0 5px var(--neon-red);
+            background: #000;
+            padding: 5px 15px;
+            border-radius: 4px;
+            border: 1px solid #333;
         }
 
-        /* Mobile Adjustments */
-        @media (max-width: 768px) {
-            .ai-response { max-width: 100%; }
-            .card-body { flex-direction: column; align-items: flex-start; }
-            .card-visual { width: 100%; height: 100px; margin-bottom: 1rem; }
-            .social-grid { grid-template-columns: 1fr; }
-            .system-footer { flex-direction: column; gap: 0.5rem; text-align: center; }
-            .hero-name { font-size: 1.8rem; }
+        /* --- Modals/Overlays --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 50;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            width: 80%;
+            max-width: 800px;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 1.5rem;
+            color: var(--neon-red);
+            cursor: pointer;
+            font-family: var(--font-head);
+        }
+
+        .project-details {
+            border: 1px dashed var(--neon-blue);
+            padding: 1rem;
+            margin-top: 1rem;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .action-btn {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.8rem 1.5rem;
+            background: transparent;
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            font-family: var(--font-term);
+            text-decoration: none;
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            background: var(--neon-green);
+            color: #000;
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        /* Balance Sheet Style */
+        .balance-sheet {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-term);
+            font-size: 1.2rem;
+        }
+        .balance-sheet th { text-align: left; border-bottom: 2px solid #555; color: #888; padding: 5px;}
+        .balance-sheet td { padding: 8px 5px; border-bottom: 1px solid #333; }
+        .balance-sheet .credit { color: var(--neon-green); text-align: right;}
+        .balance-sheet .asset { color: var(--neon-blue); text-align: right;}
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .atm-interface {
+                grid-template-columns: 1fr;
+            }
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+            .keypad {
+                max-width: 300px;
+                margin: 0 auto;
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- Canvas for Matrix Rain -->
-    <canvas id="matrix-canvas"></canvas>
+    <!-- Header -->
+    <header>
+        <div class="account-info">
+            <div class="user-details">
+                <h1>GEVA KIPPER</h1>
+                <div class="role term-text">Account Status: Software Engineer @ Google</div>
+            </div>
+            <div class="status-light" style="width: 15px; height: 15px; background: var(--neon-green); border-radius: 50%; box-shadow: 0 0 10px var(--neon-green);"></div>
+        </div>
+        <div class="ticker-wrap">
+            <div class="ticker term-text">
+                SYSTEM MESSAGE: THIS INTERFACE IS RE-DESIGNED DAILY BY AI. ARCHITECTURE IS EVER-CHANGING. >>> WELCOME TO THE TERMINAL. >>> SECURE CONNECTION ESTABLISHED.
+            </div>
+        </div>
+    </header>
 
-    <div class="terminal-container">
+    <!-- Main Content -->
+    <div class="atm-interface">
         
-        <!-- Prompt Header -->
-        <div class="prompt-line">
-            <span class="prompt-symbol">root@ai-architect:~$</span>
-            <span class="command-text">explain user --id="Geva Kipper"</span>
-        </div>
-
-        <!-- Typewriter Output -->
-        <div class="hero-output">
-            <span id="typewriter-name" class="hero-name"></span>
-            <span id="typewriter-role" class="hero-role"></span>
-            <span class="cursor"></span>
-        </div>
-
-        <!-- Warning Subtitle -->
-        <div class="system-notification">
-            ⚠ ARCHITECTURE WARNING: This interface is hallucinated daily. Current build seed generated by AI Model [Version X]. Layout volatility: High.
-        </div>
-
-        <!-- Dynamic Content Stream -->
-        <div class="stream-container" id="stream-container">
-            <!-- JS will populate project cards here -->
-        </div>
-
-        <!-- Footer Socials -->
-        <div class="social-array-wrapper">
-            <span class="code-comment">// Output: Contact Methods</span>
-            <span class="code-comment">const social_links = [ ... ];</span>
-            <div class="social-grid">
-                <a href="https://github.com/gevak" target="_blank" class="social-btn github">
-                    GitHub_
-                </a>
-                <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-btn linkedin">
-                    LinkedIn_
-                </a>
-                <a href="https://facebook.com/geva.kipper" target="_blank" class="social-btn facebook">
-                    Facebook_
-                </a>
+        <!-- Project Grid -->
+        <main class="grid-container">
+            <!-- 1. GlglStats -->
+            <div class="card glass-panel" onclick="openModal('proj-1')">
+                <i class="fas fa-chart-bar card-icon" style="color: var(--neon-blue);"></i>
+                <h3>GLGLSTATS</h3>
+                <div class="subtitle">Audio Pattern Analysis - Audit</div>
             </div>
-        </div>
 
-        <!-- System Footer -->
-        <div class="system-footer">
-            <span>Site architecture generated by AI Model: Claude 3.5 Sonnet</span>
-            <div class="timer-container">
-                SYSTEM UPTIME (SINCE EPOCH 2026-01-15): <span id="clock" class="timer-display">CALCULATING...</span>
+            <!-- 2. Ahuzat Dibuk -->
+            <div class="card glass-panel" onclick="openModal('proj-2')">
+                <i class="fas fa-parking card-icon" style="color: var(--neon-red);"></i>
+                <h3>AHUZAT DIBUK</h3>
+                <div class="subtitle">Asset Occupancy - Parking Log</div>
             </div>
-        </div>
 
+            <!-- 3. 2D Part Orienting -->
+            <div class="card glass-panel" onclick="openModal('proj-3')">
+                <i class="fas fa-draw-polygon card-icon" style="color: var(--neon-yellow);"></i>
+                <h3>2D PART ORIENTING</h3>
+                <div class="subtitle">Geometry Alignment Output</div>
+            </div>
+
+            <!-- 4. The Turing Jest -->
+            <div class="card glass-panel" onclick="openModal('proj-4')">
+                <i class="fas fa-balance-scale card-icon" style="color: #ff00ff;"></i>
+                <h3>THE TURING JEST</h3>
+                <div class="subtitle">Currency Exchange - Humor Rate</div>
+            </div>
+
+            <!-- 5. Rhymes of Israel -->
+            <div class="card glass-panel" onclick="openModal('proj-5')">
+                <i class="fas fa-file-shield card-icon" style="color: var(--neon-green);"></i>
+                <h3>RHYMES OF ISRAEL</h3>
+                <div class="subtitle">Headline Re-Encryption</div>
+            </div>
+
+            <!-- 6. Meta-Portfolio -->
+            <div class="card glass-panel" onclick="openModal('proj-6')">
+                <i class="fas fa-infinity card-icon" style="color: #fff;"></i>
+                <h3>META-PORTFOLIO</h3>
+                <div class="subtitle">System Self-Diagnostics</div>
+            </div>
+        </main>
+
+        <!-- Sidebar / Control Panel -->
+        <aside class="sidebar">
+            
+            <!-- Resume Slot -->
+            <div class="slot-container glass-panel">
+                <h4 class="term-text" style="margin-bottom: 10px; color: #888;">DOCUMENT RETRIEVAL</h4>
+                <div class="resume-slot"></div>
+                <div class="slot-light"></div>
+                <!-- Receipt Element (Hidden initially) -->
+                <div id="receipt" class="receipt-paper">
+                    <h3>TRANSACTION RECEIPT</h3>
+                    <p style="margin: 10px 0; font-size: 0.8rem;">DATE: <span id="receipt-date"></span></p>
+                    <hr style="border: 1px dashed #000; margin: 10px 0;">
+                    <p>ITEM: RESUME_FULL_PDF</p>
+                    <p>SIZE: 145KB</p>
+                    <p>STATUS: APPROVED</p>
+                    <br>
+                    <a href="#" class="action-btn" style="color: #000; border-color: #000;" onclick="alert('This would link to the actual PDF file.'); return false;">DOWNLOAD NOW</a>
+                    <br><br>
+                    <p style="font-size: 0.7rem;">THANK YOU FOR BANKING WITH GEEKIP</p>
+                    <button style="margin-top:10px; border:none; background:none; text-decoration:underline; cursor:pointer;" onclick="closeReceipt()">[Close Receipt]</button>
+                </div>
+                <button class="btn-neo term-text" style="width: 100%; padding: 15px; margin-top: 10px; font-size: 1.1rem;" onclick="withdrawResume()">WITHDRAW RESUME</button>
+            </div>
+
+            <!-- Check Balance -->
+            <div class="glass-panel" style="padding: 20px; text-align: center;">
+                <button class="btn-neo term-text" style="width: 100%; padding: 15px; color: var(--neon-green);" onclick="openBalance()">CHECK BALANCE</button>
+            </div>
+
+            <!-- Keypad -->
+            <div class="keypad glass-panel">
+                <button class="btn-neo key">1</button>
+                <button class="btn-neo key">2</button>
+                <button class="btn-neo key">3</button>
+                <button class="btn-neo key">4</button>
+                <button class="btn-neo key">5</button>
+                <button class="btn-neo key">6</button>
+                <button class="btn-neo key">7</button>
+                <button class="btn-neo key">8</button>
+                <button class="btn-neo key">9</button>
+                <!-- Social Links mapped to keys -->
+                <a href="https://linkedin.com/in/gevakip" target="_blank" class="btn-neo key action yellow" title="Professional Network">CLR</a>
+                <button class="btn-neo key">0</button>
+                <a href="https://facebook.com/geva.kipper" target="_blank" class="btn-neo key action red" title="Social Exit">CAN</a>
+                <!-- Enter is GitHub -->
+                <a href="https://github.com/gevak" target="_blank" class="btn-neo key action green" style="grid-column: span 3; margin-top: 5px;" title="Commit/Push - Enter">ENTER / GITHUB</a>
+            </div>
+
+        </aside>
     </div>
 
+    <!-- Modals -->
+    <div id="project-modal" class="modal-overlay">
+        <div class="modal-content glass-panel" id="modal-body">
+            <span class="close-modal" onclick="closeModal()">X</span>
+            <div id="modal-inject"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div>INTERFACE GENERATED BY AI MODEL [CLAUDE 3.5 SONNET] // ID: GK-8842</div>
+        <div class="chrono term-text" id="system-clock">00:00:00:00</div>
+    </footer>
+
+    <!-- JavaScript logic -->
     <script>
-        /* 
-         * GENERATIVE TERMINAL SCRIPT
-         * Handles: Matrix Background, Typewriter Logic, Data Rendering, Clock
-         */
+        // ---------------- Dates & Clock ----------------
+        const targetDate = new Date('2026-01-16T01:14:05');
+        const clockEl = document.getElementById('system-clock');
 
-        // --- 1. Matrix Background Effect ---
-        const canvas = document.getElementById('matrix-canvas');
-        const ctx = canvas.getContext('2d');
-
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        const chars = '0123456789ABCDEF';
-        const fontSize = 14;
-        const columns = canvas.width / fontSize;
-        const drops = Array(Math.ceil(columns)).fill(1);
-
-        function drawMatrix() {
-            ctx.fillStyle = 'rgba(13, 17, 23, 0.05)'; // Fade effect
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#58a6ff'; // Cyan text
-            ctx.font = fontSize + 'px monospace';
-
-            for(let i = 0; i < drops.length; i++) {
-                const text = chars.charAt(Math.floor(Math.random() * chars.length));
-                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-
-                if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                    drops[i] = 0;
-                }
-                drops[i]++;
-            }
-        }
-        setInterval(drawMatrix, 50);
-
-
-        // --- 2. Typewriter Effect ---
-        const nameText = "GEVA KIPPER";
-        const roleText = "Software Engineer at Google.";
-        const nameEl = document.getElementById('typewriter-name');
-        const roleEl = document.getElementById('typewriter-role');
-
-        async function typeWriter(text, element, speed = 50) {
-            for (let i = 0; i < text.length; i++) {
-                element.innerHTML += text.charAt(i);
-                await new Promise(r => setTimeout(r, speed));
-            }
-        }
-
-        // --- 3. Project Data & Rendering ---
-        const projects = [
-            {
-                query: "Show me data visualization projects",
-                title: "GlglStats",
-                meta: "DataViz / Python / LZ77",
-                desc: "LZ77 LZ77 compression algorithm visualization. Includes talk from PyData TLV.",
-                linkText: "./run_glglstats.exe",
-                linkUrl: "https://glglstats.geekip.dev",
-                visualClass: "viz_glgl"
-            },
-            {
-                query: "Any efficient scraping tools?",
-                title: "Ahuzat Dibuk",
-                meta: "Scraper / TLV Parking",
-                desc: "The legendary Tel-Aviv parking scraper that made the news.",
-                links: [
-                    { t: "[13TV]", u: "https://13tv.co.il/item/news/domestic/internal/parking-902956407/" },
-                    { t: "[Mako]", u: "https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" },
-                    { t: "[SecretGrp]", u: "https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" }
-                ],
-                visualClass: "viz_ahuzat"
-            },
-            {
-                query: "Display algorithmic geometry libraries",
-                title: "2D Part Orienting",
-                meta: "C++ / Comp. Geometry",
-                desc: "Algorithms for orienting parts. Implementation of C++ CG library.",
-                linkText: "[View Source]",
-                linkUrl: "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/",
-                visualClass: "viz_2d"
-            },
-            {
-                query: "Load entertainment modules",
-                title: "The Turing Jest",
-                meta: "LLM / React",
-                desc: "An arena where Large Language Models compete to make puns.",
-                linkText: "[Enter Arena]",
-                linkUrl: "https://jest.geekip.dev",
-                visualClass: "viz_jest"
-            },
-            {
-                query: "Extension_Chrome --genre=comedy",
-                title: "Rhymes of Israel",
-                meta: "Chrome / Extension",
-                desc: "Transforms boring news headlines into rhymes for comedic effect.",
-                linkText: "[Install Extension]",
-                linkUrl: "https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb",
-                visualClass: "viz_rhymes"
-            },
-            {
-                query: "user.current_location()",
-                title: "The Recursive Portfolio",
-                meta: "Meta / Self-Reference",
-                desc: "Recursion error detected: Self-referencing loop found in current DOM.",
-                linkText: "[ reload_universe() ]",
-                linkUrl: "https://geekip.dev",
-                visualClass: "viz_meta"
-            }
-        ];
-
-        function getVisualHTML(type) {
-            if(type === 'viz_glgl') {
-                return `<div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div>`;
-            } else if (type === 'viz_ahuzat') {
-                return `<div class="heatmap-bg"></div>`;
-            } else if (type === 'viz_2d') {
-                return `<div class="wireframe-poly"></div>`;
-            } else if (type === 'viz_jest') {
-                return `<div class="robot-duel">🤖</div>`;
-            } else if (type === 'viz_rhymes') {
-                return `<div class="note-icon">🎵</div>`;
-            } else if (type === 'viz_meta') {
-                return `<div class="recursive-box"><div class="recursive-inner"></div></div>`;
-            }
-            return '';
-        }
-
-        async function renderStream() {
-            // First animate header
-            await typeWriter(nameText, nameEl, 60);
-            await new Promise(r => setTimeout(r, 300));
-            nameEl.style.borderRight = "none"; 
-            await typeWriter(roleText, roleEl, 30);
-            
-            // Wait before starting stream
-            await new Promise(r => setTimeout(r, 800));
-
-            const container = document.getElementById('stream-container');
-            
-            // Loop with delay for "Streaming" feel
-            for (let project of projects) {
-                // Create User Query
-                const queryDiv = document.createElement('div');
-                queryDiv.className = 'chat-row user-query';
-                queryDiv.innerText = `> User: ${project.query}`;
-                container.appendChild(queryDiv);
-
-                await new Promise(r => setTimeout(r, 400)); // "Thinking" time
-
-                // Create AI Response (Card)
-                const cardRow = document.createElement('div');
-                cardRow.className = 'chat-row ai-response';
-                
-                let actionButtons = '';
-                if (project.links) {
-                    actionButtons = project.links.map(l => `<a href="${l.u}" target="_blank" class="btn-action" style="margin-right:5px; margin-top:5px; display:inline-block;">${l.t}</a>`).join('');
-                } else {
-                    actionButtons = `<a href="${project.linkUrl}" target="_blank" class="btn-action">${project.linkText}</a>`;
-                }
-
-                cardRow.innerHTML = `
-                    <div class="project-card">
-                        <div class="card-header">
-                            <span class="project-title">${project.title}</span>
-                            <span class="project-meta">${project.meta}</span>
-                        </div>
-                        <div class="card-body">
-                            <div class="card-visual">
-                                ${getVisualHTML(project.visualClass)}
-                            </div>
-                            <div class="card-content">
-                                <p class="card-desc">${project.desc}</p>
-                                <div class="card-actions">
-                                    ${actionButtons}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(cardRow);
-
-                await new Promise(r => setTimeout(r, 600)); // Delay between outputs
-            }
-        }
-
-        // --- 4. System Clock (Future Epoch) ---
         function updateClock() {
             const now = new Date();
-            const epoch = new Date('2026-01-15T00:00:00');
-            const diff = epoch - now;
+            const diff = now - targetDate;
+            const absoluteDiff = Math.abs(diff);
 
-            const isFuture = diff > 0;
-            const label = isFuture ? "T-MINUS TO SINGULARITY" : "UPTIME";
-            
-            // Convert to absolute to display time
-            const absDiff = Math.abs(diff);
-            
-            const hours = Math.floor(absDiff / (1000 * 60 * 60));
-            const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((absDiff % (1000 * 60)) / 1000);
-            const ms = Math.floor((absDiff % 1000) / 10); // 2 digits
+            const days = Math.floor(absoluteDiff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((absoluteDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((absoluteDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((absoluteDiff % (1000 * 60)) / 1000);
 
-            // Formatting
-            const h = hours.toString().padStart(2, '0');
-            const m = minutes.toString().padStart(2, '0');
-            const s = seconds.toString().padStart(2, '0');
-            const msStr = ms.toString().padStart(2, '0');
+            const pad = (n) => n.toString().padStart(2, '0');
+            const timeString = `${pad(days)}:${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 
-            const timeString = `${isFuture ? '-' : '+'}${h}:${m}:${s}:${msStr}`;
-            
-            document.getElementById('clock').innerText = timeString;
+            if (diff < 0) {
+                clockEl.innerText = `T-MINUS ${timeString}`;
+                clockEl.style.color = 'var(--neon-yellow)';
+            } else {
+                clockEl.innerText = `UPTIME: ${timeString}`;
+                clockEl.style.color = 'var(--neon-red)';
+            }
         }
 
-        setInterval(updateClock, 30);
-        
-        // Init
-        document.addEventListener('DOMContentLoaded', () => {
-             renderStream();
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // ---------------- Resume Receipt ----------------
+        function withdrawResume() {
+            const receipt = document.getElementById('receipt');
+            const dateSpan = document.getElementById('receipt-date');
+            
+            // Set date on receipt
+            const n = new Date();
+            dateSpan.innerText = `${n.getFullYear()}-${n.getMonth()+1}-${n.getDate()} ${n.getHours()}:${n.getMinutes()}`;
+            
+            // Animate
+            receipt.classList.add('active');
+        }
+
+        function closeReceipt() {
+            document.getElementById('receipt').classList.remove('active');
+        }
+
+        // ---------------- Project Data & Modals ----------------
+        const projects = {
+            'proj-1': {
+                title: 'GLGLSTATS',
+                subtitle: 'Audio Pattern Analysis',
+                content: `
+                    <div style="text-align:center;">
+                        <iframe width="100%" height="315" src="https://www.youtube.com/embed/jrKAtOsj1Lo" title="Security Feed" frameborder="0" style="border: 2px solid var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue);"></iframe>
+                    </div>
+                    <div class="project-details">
+                        <p class="term-text">METRICS: LZ77 REPETITION ALGORITHM DEPLOYED.</p>
+                        <p>Analyzed audio waveforms to detect repetitive patterns in contemporary music. Results indicate high redundancy levels.</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <a href="https://glglstats.geekip.dev" target="_blank" class="action-btn">PRINT REPORT</a>
+                    </div>
+                `
+            },
+            'proj-2': {
+                title: 'AHUZAT DIBUK',
+                subtitle: 'Parking Log Scraping',
+                content: `
+                    <div class="project-details" style="max-height: 200px; overflow-y: auto;">
+                        <p class="term-text" style="color:var(--neon-red);">>> SCANNING ASSETS...</p>
+                        <p>Real-time parking availability tracking in Tel Aviv. Data scraped from municipal APIs and visualized as occupancy heatmaps.</p>
+                        <p class="term-text">>> LOG ENTRY: MEDIA COVERAGE DETECTED.</p>
+                    </div>
+                    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:20px;">
+                        <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="action-btn">RECEIPT: 13TV</a>
+                        <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="action-btn">RECEIPT: MAKO</a>
+                        <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="action-btn">RECEIPT: SOCIAL</a>
+                    </div>
+                `
+            },
+            'proj-3': {
+                title: '2D PART ORIENTING',
+                subtitle: 'Geometry Alignment Output',
+                content: `
+                    <div style="text-align:center; padding: 20px;">
+                        <i class="fas fa-cubes fa-spin" style="font-size: 4rem; color: var(--neon-yellow);"></i>
+                    </div>
+                    <div class="project-details">
+                        <p class="term-text">SYSTEM OPTIMIZATION PROTOCOL</p>
+                        <p>C++ Algorithm implementation for logistical part orientation. Solves geometric alignment with minimal sensor input.</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="action-btn">ACCESS SOURCE CODE</a>
+                    </div>
+                `
+            },
+            'proj-4': {
+                title: 'THE TURING JEST',
+                subtitle: 'Humor Exchange Rate',
+                content: `
+                    <div class="project-details">
+                        <p class="term-text">TRADING FLOOR OPEN</p>
+                        <p>Modeled after the LMSYS arena. Two LLM "tellers" compete to generate the most humorous response. User sentiment determines the "Exchange Rate" of the joke.</p>
+                    </div>
+                    <div style="text-align:center; margin-top:20px;">
+                        <a href="https://jest.geekip.dev" target="_blank" class="action-btn" style="border-color: #ff00ff; color: #ff00ff;">ENTER TRADING FLOOR</a>
+                    </div>
+                `
+            },
+            'proj-5': {
+                title: 'RHYMES OF ISRAEL',
+                subtitle: 'Headline Re-Encryption',
+                content: `
+                    <div style="text-align:center; margin-bottom:15px;">
+                        <i class="fas fa-lock" style="font-size:3rem; color:var(--neon-green);"></i>
+                    </div>
+                    <div class="project-details">
+                        <p>A Chrome Extension that intercepts HTTP text content and re-encrypts news headlines into rhyming couplets.</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="action-btn">INSTALL SOFTWARE PATCH</a>
+                    </div>
+                `
+            },
+            'proj-6': {
+                title: 'META-PORTFOLIO',
+                subtitle: 'System Self-Diagnostics',
+                content: `
+                    <div class="project-details" style="border-color: var(--neon-red);">
+                        <p class="term-text" style="color:var(--neon-red); animation: pulse-glow 0.5s infinite;">WARNING: INFINITE LOOP DETECTED</p>
+                        <p>You are currently viewing the architecture of the system you are inhabiting. Recursive visualization active.</p>
+                    </div>
+                    <div style="text-align:center; margin-top:20px;">
+                        <a href="https://geekip.dev" class="action-btn" style="border-radius:50%; width: 100px; height: 100px; display:inline-flex; align-items:center; justify-content:center;">REBOOT</a>
+                    </div>
+                `
+            },
+            'balance': {
+                title: 'ACCOUNT BALANCE',
+                subtitle: 'Skill Valuation',
+                content: `
+                    <table class="balance-sheet">
+                        <thead>
+                            <tr>
+                                <th>ASSET TYPE</th>
+                                <th>VALUATION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Python</td>
+                                <td class="credit">$10,000 CR</td>
+                            </tr>
+                            <tr>
+                                <td>C++</td>
+                                <td class="asset">HIGH YIELD</td>
+                            </tr>
+                            <tr>
+                                <td>JavaScript/Node</td>
+                                <td class="credit">$8,500 CR</td>
+                            </tr>
+                            <tr>
+                                <td>Cloud Arch (GCP)</td>
+                                <td class="asset">VESTED</td>
+                            </tr>
+                            <tr>
+                                <td>AI/ML Integration</td>
+                                <td class="credit">$12,000 CR</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td style="padding-top:15px;">TOTAL EQUITY</td>
+                                <td style="padding-top:15px; text-align:right; color:#fff;">UNLIMITED</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                `
+            }
+        };
+
+        const modalOverlay = document.getElementById('project-modal');
+        const modalInject = document.getElementById('modal-inject');
+
+        function openModal(id) {
+            const data = projects[id];
+            if (!data) return;
+
+            modalInject.innerHTML = `
+                <h2 style="font-family:var(--font-head); color:var(--neon-blue); border-bottom: 1px solid #333; padding-bottom:10px; margin-bottom:10px;">${data.title}</h2>
+                <h4 class="term-text" style="color:#888;">${data.subtitle}</h4>
+                <div style="margin-top:20px;">
+                    ${data.content}
+                </div>
+            `;
+            modalOverlay.classList.add('open');
+        }
+
+        function openBalance() {
+            openModal('balance');
+        }
+
+        function closeModal() {
+            modalOverlay.classList.remove('open');
+        }
+
+        // Close modal on click outside
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                closeModal();
+            }
         });
 
     </script>
@@ -676,7 +768,7 @@
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260115",
+          pageId: "20260116",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
