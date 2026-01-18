@@ -2,871 +2,897 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MAINFRAME // GEVA_KIPPER</title>
+    <title>Geva Kipper | Cyberpunk Architect</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;700&family=JetBrains+Mono:wght@400;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=share+tech+mono&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --bg-color: #050505;
-            --neon-green: #0f0;
-            --dim-green: rgba(0, 255, 0, 0.1);
-            --neon-cyan: #00f3ff;
-            --neon-amber: #ffae00;
-            --neon-red: #ff003c;
-            --glass-bg: rgba(10, 20, 30, 0.6);
-            --glass-border: rgba(0, 243, 255, 0.3);
-            --font-main: 'Fira Code', monospace;
-            --font-display: 'Share Tech Mono', monospace;
+            --bg-color: #050a10;
+            --glass-bg: rgba(12, 20, 35, 0.7);
+            --glass-border: rgba(100, 255, 218, 0.2);
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --neon-green: #0aff00;
+            --text-color: #e2e8f0;
         }
 
         * {
             box-sizing: border-box;
-            cursor: none; /* Custom cursor handling */
+            margin: 0;
+            padding: 0;
+            user-select: none;
         }
 
         body {
-            margin: 0;
-            padding: 0;
             background-color: var(--bg-color);
-            color: var(--neon-cyan);
-            font-family: var(--font-main);
-            overflow-x: hidden;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* --- VISUAL FX LAYERS --- */
-
-        #canvas-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            opacity: 0.4;
-        }
-
-        .crt-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
+            color: var(--text-color);
+            font-family: 'Share Tech Mono', monospace;
+            overflow: hidden;
             width: 100vw;
             height: 100vh;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none;
-            z-index: 999;
-            animation: flicker 0.15s infinite;
         }
 
-        .scanline {
-            width: 100%;
-            height: 100px;
-            z-index: 999;
-            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(32, 255, 255, 0.04) 50%, rgba(0,0,0,0) 100%);
-            opacity: 0.1;
-            position: absolute;
-            bottom: 100%;
-            animation: scanline 10s linear infinite;
-            pointer-events: none;
-        }
-
-        #cursor {
+        /* --- 3D Canvas --- */
+        #canvas-container {
             position: fixed;
-            width: 20px;
-            height: 20px;
-            border: 1px solid var(--neon-cyan);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 1000;
-            transition: width 0.1s, height 0.1s;
-            mix-blend-mode: difference;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
         }
-        #cursor::after {
-            content: '';
+
+        /* --- Header --- */
+        .glass-panel {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 2px;
-            height: 2px;
-            background: var(--neon-green);
-            transform: translate(-50%, -50%);
-        }
-        body:active #cursor {
-            width: 15px;
-            height: 15px;
-            background-color: rgba(0, 243, 255, 0.2);
-        }
-
-        /* --- LAYOUT --- */
-
-        header {
-            padding: 20px;
-            border-bottom: 1px solid var(--dim-green);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(0,0,0,0.8);
-            position: relative;
+            top: 40px;
+            left: 40px;
+            width: 380px;
+            padding: 25px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-left: 4px solid var(--neon-blue);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
             z-index: 10;
+            transform: perspective(1000px) rotateY(10deg) rotateX(5deg);
+            transition: transform 0.3s ease;
         }
 
-        .identity-block {
-            display: flex;
-            flex-direction: column;
+        .glass-panel:hover {
+            transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+            border-color: var(--neon-blue);
         }
 
-        h1.glitch-name {
-            font-family: var(--font-display);
-            font-size: 2.5rem;
-            margin: 0;
-            color: #fff;
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
             text-transform: uppercase;
             letter-spacing: 2px;
-            text-shadow: 2px 0 var(--neon-red), -2px 0 var(--neon-cyan);
-            position: relative;
-        }
-
-        .status-line {
-            font-size: 0.8rem;
-            color: var(--neon-cyan);
-            display: flex;
-            align-items: center;
-            margin-top: 5px;
-        }
-        .status-indicator {
-            width: 8px;
-            height: 8px;
-            background-color: var(--neon-green);
-            border-radius: 50%;
-            margin-right: 10px;
-            box-shadow: 0 0 8px var(--neon-green);
-            animation: pulse 2s infinite;
-        }
-
-        .system-log {
-            flex-grow: 1;
-            margin-left: 40px;
-            font-size: 0.9rem;
-            color: var(--neon-amber);
-            border-left: 2px solid var(--neon-amber);
-            padding-left: 10px;
-            overflow: hidden;
-            white-space: nowrap;
-            background: rgba(255, 174, 0, 0.05);
-        }
-
-        /* --- GRID CONTENT --- */
-
-        main {
-            flex-grow: 1;
-            padding: 40px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 30px;
-            overflow-y: auto;
-            position: relative;
-            z-index: 5;
-        }
-
-        .module {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            backdrop-filter: blur(4px);
-            border-radius: 4px;
-            position: relative;
-            overflow: hidden;
-            height: 300px;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-
-        .module::before {
-            /* Hover glow corner */
-            content: '';
-            position: absolute;
-            top: 0; left: 0;
-            width: 20px; height: 20px;
-            border-top: 2px solid var(--neon-cyan);
-            border-left: 2px solid var(--neon-cyan);
-            transition: all 0.3s;
-        }
-        .module::after {
-            content: '';
-            position: absolute;
-            bottom: 0; right: 0;
-            width: 20px; height: 20px;
-            border-bottom: 2px solid var(--neon-cyan);
-            border-right: 2px solid var(--neon-cyan);
-            transition: all 0.3s;
-        }
-
-        .module-content {
-            height: 100%;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            position: relative;
-            z-index: 2;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.4s ease;
-        }
-
-        .module-bg {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 1;
-            filter: blur(10px) grayscale(100%);
-            transition: all 0.5s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .lock-overlay {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 3;
-            text-align: center;
-            color: rgba(255,255,255,0.3);
-            transition: opacity 0.3s;
-        }
-        .lock-icon {
-            font-size: 3rem;
-            margin-bottom: 10px;
-            display: block;
-        }
-
-        /* Hover States */
-        .module:hover {
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
-            border-color: var(--neon-cyan);
-        }
-        .module:hover .module-bg {
-            filter: blur(0px) grayscale(0%);
-            opacity: 0.3; /* Dim bg so text is readable */
-        }
-        .module:hover .module-content {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .module:hover .lock-overlay {
-            opacity: 0;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+            margin-bottom: 5px;
         }
 
         h2 {
-            font-size: 1.2rem;
-            margin: 0 0 10px 0;
-            color: #fff;
-            text-shadow: 0 0 5px var(--neon-cyan);
-        }
-        p {
-            font-size: 0.85rem;
-            line-height: 1.4;
-            color: #ccc;
+            font-size: 0.9rem;
+            color: #94a3b8;
             margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
         }
 
-        .actions {
+        #ai-disclaimer {
+            font-size: 0.8rem;
+            color: var(--neon-green);
+            min-height: 40px;
+            line-height: 1.4;
+        }
+
+        .caret {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background: var(--neon-green);
+            animation: blink 1s infinite;
+        }
+
+        /* --- Footer --- */
+        .system-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            background: #020408;
+            border-top: 1px solid #1e293b;
+            z-index: 10;
             display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .footer-left span { color: var(--neon-purple); }
+        .footer-right { font-family: 'Orbitron', monospace; letter-spacing: 1px; color: var(--neon-blue); }
+
+        /* --- Modals --- */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            width: 600px;
+            max-width: 90%;
+            background: #0f172a;
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+            padding: 30px;
+            position: relative;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            color: var(--neon-purple);
+            cursor: pointer;
+        }
+
+        .modal-title {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-blue);
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--neon-green);
+            padding-left: 15px;
+        }
+
+        .modal-body {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .modal-body a {
+            color: var(--neon-green);
+            text-decoration: none;
+            border-bottom: 1px dotted var(--neon-green);
+            transition: 0.2s;
+        }
+        
+        .modal-body a:hover {
+            background: rgba(10, 255, 0, 0.1);
+        }
+
+        .video-container {
+            margin-top: 15px;
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            border: 1px solid #333;
+        }
+        
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
 
         .btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 20px;
             background: transparent;
-            border: 1px solid var(--neon-cyan);
-            color: var(--neon-cyan);
-            padding: 5px 10px;
-            font-family: var(--font-main);
-            font-size: 0.75rem;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
             text-decoration: none;
-            text-transform: uppercase;
-            transition: all 0.2s;
-            position: relative;
-            overflow: hidden;
-        }
-        .btn:hover {
-            background: var(--neon-cyan);
-            color: #000;
-            box-shadow: 0 0 10px var(--neon-cyan);
-        }
-
-        /* --- MODULE SPECIFIC VISUALS --- */
-
-        /* 1. GlglStats */
-        .visual-wave {
-            display: flex;
-            align-items: flex-end;
-            gap: 5px;
-            height: 100px;
-        }
-        .bar {
-            width: 15px;
-            background: linear-gradient(to top, #fff, #005EB8); /* Israeli Flag colors roughly */
-            animation: eq 0.5s infinite ease-in-out alternate;
-        }
-        @keyframes eq { 0% { height: 20%; } 100% { height: 100%; } }
-
-        /* 2. Radar */
-        .visual-radar {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            border: 2px solid var(--dim-green);
-            background: radial-gradient(circle, rgba(0,50,0,0.5) 0%, rgba(0,0,0,0) 70%);
-            position: relative;
-        }
-        .sweep {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            border-radius: 50%;
-            background: conic-gradient(from 0deg, transparent 270deg, var(--neon-green) 360deg);
-            animation: radarSpin 2s linear infinite;
-            opacity: 0.5;
-        }
-
-        /* 3. Blueprint */
-        .visual-poly {
-            width: 100px;
-            height: 100px;
-            border: 1px dashed var(--neon-cyan);
-            transform: rotate(45deg);
-            animation: polyRotate 5s linear infinite;
-            position: relative;
-        }
-        .visual-poly::after {
-            content: '';
-            position: absolute;
-            top: 10px; left: 10px; right: 10px; bottom: 10px;
-            border: 1px solid #fff;
-        }
-
-        /* 4. Chat */
-        .visual-chat {
-            width: 100%; height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 20px;
-        }
-        .chat-bubble {
-            padding: 8px;
-            margin: 5px;
-            max-width: 80%;
-            font-size: 0.7rem;
-            border: 1px solid;
-        }
-        .left { align-self: flex-start; border-color: var(--neon-cyan); color: var(--neon-cyan); }
-        .right { align-self: flex-end; text-align: right; border-color: var(--neon-green); color: var(--neon-green); }
-
-        /* 5. Redacted */
-        .visual-redact {
-            width: 80%;
+            font-family: 'Orbitron';
             font-size: 0.8rem;
-            color: #ccc;
-            line-height: 1.6;
-        }
-        .redacted-line {
-            background: var(--neon-amber);
-            color: #000;
-            padding: 0 4px;
-            animation: textReveal 3s infinite alternate;
-        }
-
-        /* 6. Mirror */
-        .visual-mirror {
-            width: 80%; height: 80%;
-            border: 2px solid #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transform-style: preserve-3d;
-        }
-        .inner-mirror {
-            width: 70%; height: 70%;
-            border: 1px solid var(--neon-cyan);
-            animation: zoom 3s infinite linear;
-        }
-
-        /* --- FOOTER --- */
-
-        footer {
-            height: 60px;
-            background: #000;
-            border-top: 2px solid var(--neon-red);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            font-family: var(--font-display);
-            font-size: 0.9rem;
-            z-index: 10;
-        }
-
-        .social-links {
-            display: flex;
-            gap: 20px;
-        }
-        .social-cmd {
-            color: #888;
-            text-decoration: none;
             transition: 0.3s;
-            position: relative;
-        }
-        .social-cmd:hover {
-            color: var(--neon-cyan);
-        }
-        .social-cmd span {
-            display: none;
-            margin-left: 5px;
-            color: var(--neon-green);
-        }
-        .social-cmd:hover span {
-             display: inline;
-        }
-        .social-cmd:hover i {
-            display: none;
+            cursor: pointer;
+            margin-right: 10px;
         }
 
-        .footer-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            text-align: right;
+        .btn:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 15px var(--neon-blue);
         }
 
-        .timer-block {
-            background: #111;
-            border: 1px solid var(--neon-red);
+        /* Tooltip Helper */
+        #cursor-tooltip {
+            position: absolute;
+            pointer-events: none;
+            background: rgba(0,0,0,0.8);
             padding: 5px 10px;
-            color: var(--neon-red);
-            box-shadow: 0 0 5px var(--neon-red);
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            font-size: 0.7rem;
+            z-index: 50;
+            opacity: 0;
+            transform: translate(15px, 15px);
+            transition: opacity 0.2s;
         }
 
-        /* --- ANIMATIONS --- */
-        @keyframes flicker {
-            0% { opacity: 0.9; }
-            5% { opacity: 0.8; }
-            10% { opacity: 0.9; }
-            100% { opacity: 0.9; }
-        }
-        @keyframes scanline {
-            0% { top: -100px; }
-            100% { top: 100vh; }
-        }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; }
-        }
-        @keyframes radarSpin { from{transform: rotate(0deg);} to{transform: rotate(360deg);} }
-        @keyframes polyRotate { from{transform: rotate(0deg);} to{transform: rotate(360deg);} }
-        @keyframes zoom { 0% { transform: scale(1); opacity: 1;} 100% { transform: scale(0.1); opacity: 0;} }
-        @keyframes textReveal { 0% { background: #000; color: #000; } 50% { background: var(--neon-amber); color: #000;} 100% { background: transparent; color: var(--neon-amber); border-bottom: 1px solid; } }
-
-        /* Media Queries */
-        @media (max-width: 768px) {
-            header { flex-direction: column; align-items: flex-start; }
-            .system-log { margin-left: 0; margin-top: 10px; width: 100%; }
-            footer { flex-direction: column; height: auto; padding: 10px; gap: 10px;}
-            .footer-right { flex-direction: column; width: 100%; align-items: flex-start;}
+        /* Glitch Animation */
+        .glitch {
+            animation: glitch-anim 2.5s infinite;
         }
 
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes glitch-anim {
+            0% { transform: translate(0); }
+            2% { transform: translate(-2px, 1px); }
+            4% { transform: translate(2px, -1px); }
+            6% { transform: translate(0); }
+            100% { transform: translate(0); }
+        }
     </style>
 </head>
 <body>
 
-    <!-- Visual Overlays -->
-    <div class="crt-overlay"></div>
-    <div class="scanline"></div>
-    <div id="cursor"></div>
-    <canvas id="canvas-bg"></canvas>
+    <!-- 3D Scene Container -->
+    <div id="canvas-container"></div>
+    
+    <!-- Custom Cursor Tooltip -->
+    <div id="cursor-tooltip">INTERACT</div>
 
     <!-- Header -->
-    <header>
-        <div class="identity-block">
-            <h1 class="glitch-name" id="userName">INITIALIZING...</h1>
-            <div class="status-line">
-                <div class="status-indicator"></div>
-                <span>Current Status: Active operative at Google</span>
-            </div>
-        </div>
-        <div class="system-log">
-            <marquee scrollamount="10">WARNING: This interface is re-designed daily by AI. System architecture is polymorphic and ever-changing. // UNAUTHORIZED SECTOR DETECTED // ENCRYPTION: ROTATING // </marquee>
+    <header class="glass-panel">
+        <h1>Geva Kipper</h1>
+        <h2>Software Engineer @ Google</h2>
+        <div id="ai-disclaimer">
+            <span id="typewriter-text"></span><span class="caret"></span>
         </div>
     </header>
 
-    <!-- Main Content Grid -->
-    <main>
-
-        <!-- Module 1 -->
-        <div class="module" data-title="GlglStats (The Waveform)">
-            <div class="module-bg">
-                <div class="visual-wave">
-                    <div class="bar" style="animation-delay: 0s;"></div>
-                    <div class="bar" style="animation-delay: 0.1s;"></div>
-                    <div class="bar" style="animation-delay: 0.2s;"></div>
-                    <div class="bar" style="animation-delay: 0.3s; background: #005EB8;"></div>
-                    <div class="bar" style="animation-delay: 0.4s;"></div>
-                </div>
-            </div>
-            <div class="lock-overlay">
-                <div class="lock-icon">🔒</div>
-                <div>LOCKED</div>
-            </div>
-            <div class="module-content">
-                <h2 class="decrypt-target">GlglStats</h2>
-                <p>Python-based LZ77 compression analysis of Israeli pop music. Visualizing cultural waveforms.</p>
-                <div class="actions">
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="btn">Execute Analysis</a>
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn">View Surveillance</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Module 2 -->
-        <div class="module" data-title="Ahuzat Dibuk (The Radar)">
-            <div class="module-bg">
-                <div class="visual-radar">
-                    <div class="sweep"></div>
-                </div>
-            </div>
-            <div class="lock-overlay">
-                <div class="lock-icon">🔒</div>
-                <div>LOCKED</div>
-            </div>
-            <div class="module-content">
-                <h2 class="decrypt-target">Ahuzat Dibuk</h2>
-                <p>Tel-Aviv parking density scraping and visualization. Heatmap operations active.</p>
-                <div class="actions">
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="btn">News_13</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="btn">News_Mako</a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="btn">Transmission</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Module 3 -->
-        <div class="module" data-title="2D Part Orienting">
-            <div class="module-bg">
-                <div class="visual-poly"></div>
-            </div>
-            <div class="lock-overlay">
-                <div class="lock-icon">🔒</div>
-                <div>LOCKED</div>
-            </div>
-            <div class="module-content">
-                <h2 class="decrypt-target">2D Part Orienting</h2>
-                <p>Computational geometry C++. Push-plan algorithm optimization for automated assembly.</p>
-                <div class="actions">
-                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn">Access Source</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Module 4 -->
-        <div class="module" data-title="The Turing Jest">
-            <div class="module-bg">
-                <div class="visual-chat">
-                    <div class="chat-bubble left">01001000</div>
-                    <div class="chat-bubble right">Hahahaha.</div>
-                </div>
-            </div>
-            <div class="lock-overlay">
-                <div class="lock-icon">🔒</div>
-                <div>LOCKED</div>
-            </div>
-            <div class="module-content">
-                <h2 class="decrypt-target">The Turing Jest</h2>
-                <p>LMSYS-style wordplay arena. AI vs AI humor dialogue synthesis.</p>
-                <div class="actions">
-                    <a href="https://jest.geekip.dev" target="_blank" class="btn" style="animation: pulse 1s infinite;">Enter Arena</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Module 5 -->
-        <div class="module" data-title="Rhymes of Israel">
-            <div class="module-bg">
-                <div class="visual-redact">
-                    The yearbook was <span class="redacted-line">redacted</span> by system protocols.
-                </div>
-            </div>
-            <div class="lock-overlay">
-                <div class="lock-icon">🔒</div>
-                <div>LOCKED</div>
-            </div>
-            <div class="module-content">
-                <h2 class="decrypt-target">Rhymes of Israel</h2>
-                <p>Chrome extension payload. Generates rhymes for yearbook signatures automatically.</p>
-                <div class="actions">
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn">download_payload.exe</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Module 6 -->
-        <div class="module" data-title="Meta-Portfolio">
-            <div class="module-bg">
-                <div class="visual-mirror">
-                    <div class="inner-mirror"></div>
-                </div>
-            </div>
-            <div class="lock-overlay">
-                <div class="lock-icon">🔒</div>
-                <div>LOCKED</div>
-            </div>
-            <div class="module-content">
-                <h2 class="decrypt-target">Meta-Portfolio</h2>
-                <p>Recursion detected. Self-referential system analysis. The origin point.</p>
-                <div class="actions">
-                    <a href="https://geekip.dev" target="_blank" class="btn">Loop origin: geekip.dev</a>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
     <!-- Footer -->
-    <footer>
-        <div class="social-links">
-            <a href="https://github.com/gevak" class="social-cmd" target="_blank"><i>GITHUB</i><span>ssh git@github.com:gevak</span></a>
-            <a href="https://linkedin.com/in/gevakip" class="social-cmd" target="_blank"><i>LINKEDIN</i><span>connect -s linkedin/gevakip</span></a>
-            <a href="https://facebook.com/geva.kipper" class="social-cmd" target="_blank"><i>FACEBOOK</i><span>trace facebook/geva.kipper</span></a>
+    <footer class="system-footer">
+        <div class="footer-left">
+            > SOURCE: <span class="glitch">AI_ARCHITECT</span> // SESSION ID: <span id="session-id"></span>
         </div>
         <div class="footer-right">
-            <span>Punt_Protocol_v4 // Interface generated by AI Model</span>
-            <div class="timer-block" id="timer">
-                00:00:00:000
-            </div>
+            T-MINUS: <span id="epoch-timer">00:00:00:000</span>
         </div>
     </footer>
 
-    <script>
-        // --- CUSTOM CURSOR ---
-        const cursor = document.getElementById('cursor');
-        document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-        });
+    <!-- Modals (Hidden by default) -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-close">×</div>
+            <div id="modal-inner">
+                <!-- Content injected via JS -->
+            </div>
+        </div>
+    </div>
 
-        // --- AUDIO ENGINE ---
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
-
-        function playClickSound() {
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
+    <!-- Dependencies -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+                "gsap": "https://unpkg.com/gsap@3.12.5/index.js"
             }
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+        
+        // --- 1. CORE VARIABLES ---
+        
+        let scene, camera, renderer, raycaster, mouse;
+        let interactiveObjects = [];
+        let hoveredObject = null;
+        let clock = new THREE.Clock();
+        
+        // Asset groups
+        let roomGroup, turntable, wallMap, robotArm, arcade, typewriter, monitor, shelfItems;
+        let spotlight; // Mouse follower
+
+        const colors = {
+            dark: 0x1e293b,
+            floor: 0x0f172a,
+            neonBlue: 0x00f3ff,
+            neonPurple: 0xbc13fe,
+            neonGreen: 0x0aff00,
+            neonYellow: 0xffea00
+        };
+
+        const projectData = {
+            'turntable': {
+                title: 'GlglStats',
+                html: `
+                    <p>Analysis of Galgalatz radio station data using LZ77 compression visualization.</p>
+                    <p class="modal-body"><a href="https://glglstats.geekip.dev" target="_blank">Visit Project</a></p>
+                    <div class="video-container">
+                        <iframe src="https://www.youtube.com/embed/jrKAtOsj1Lo" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                `
+            },
+            'wallMap': {
+                title: 'Ahuzat Dibuk',
+                html: `
+                    <p>Scraping Tel Aviv parking lots to visualize congestion heatmaps.</p>
+                    <p><strong>Methodology:</strong> Python scrapers, Facebook Graph API.</p>
+                    <div style="margin-top:15px">
+                        <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="btn">Facebook Post</a>
+                        <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="btn">Ch 13 News</a>
+                        <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="btn">Mako</a>
+                    </div>
+                `
+            },
+            'robotArm': {
+                title: '2D Part Orienting',
+                html: `
+                    <p>Algorithmic robotics: Orienting polygonal parts using a fence without sensors.</p>
+                    <p>Implemented in C++ using "Push Plans".</p>
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn">University Research Page</a>
+                `
+            },
+            'arcade': {
+                title: 'The Turing Jest',
+                html: `
+                    <p>An LMSYS-style arena for Pun-making Large Language Models.</p>
+                    <p>Two models enter, one pun leaves.</p>
+                    <a href="https://jest.geekip.dev" target="_blank" class="btn">Play Now</a>
+                `
+            },
+            'typewriter': {
+                title: 'Rhymes of Israel',
+                html: `
+                    <p>A Chrome Extension that rewrites news headlines into rhymes.</p>
+                    <p>Injects humor into the daily news cycle.</p>
+                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn">Add to Chrome</a>
+                `
+            },
+            'monitor': {
+                title: 'The Meta Portfolio',
+                html: `
+                    <p>You are here. Recursion depth: 1.</p>
+                    <p>Architected by AI, curated by Geva.</p>
+                    <a href="https://geekip.dev" target="_blank" class="btn">geekip.dev</a>
+                `
+            }
+        };
+
+        // --- 2. INITIALIZATION ---
+
+        function init() {
+            // Scene Setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(colors.floor);
+            scene.fog = new THREE.FogExp2(colors.floor, 0.02);
+
+            // Camera (Isometric)
+            const aspect = window.innerWidth / window.innerHeight;
+            const d = 25;
+            camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+            camera.position.set(20, 20, 20); // 45 degree angle
+            camera.lookAt(scene.position);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Interactions
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
             
-            oscillator.type = 'square';
-            oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
-            
-            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.1);
+            // Lights
+            setupLights();
+
+            // Build Room
+            createRoom();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('click', onClick);
+
+            // Animation Loop
+            animate();
         }
 
-        document.addEventListener('mousedown', playClickSound);
+        // --- 3. SCENE BUILDING ---
 
-        // --- BACKGROUND CANVAS (WIRE NET) ---
-        const canvas = document.getElementById('canvas-bg');
-        const ctx = canvas.getContext('2d');
-        let width, height;
-        let nodes = [];
+        function setupLights() {
+            const ambient = new THREE.AmbientLight(0xffffff, 0.2);
+            scene.add(ambient);
 
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-            initNodes();
+            // Mouse follower light (Flashlight)
+            spotlight = new THREE.SpotLight(0xffffff, 3);
+            spotlight.position.set(20, 40, 20);
+            spotlight.angle = 0.3;
+            spotlight.penumbra = 0.5;
+            spotlight.castShadow = true;
+            spotlight.shadow.mapSize.width = 1024;
+            spotlight.shadow.mapSize.height = 1024;
+            scene.add(spotlight);
+            scene.add(spotlight.target);
+
+            // Static Scene Lights (Neon Accents)
+            const deskLight = new THREE.PointLight(colors.neonBlue, 2, 10);
+            deskLight.position.set(0, 5, 0);
+            scene.add(deskLight);
         }
 
-        function initNodes() {
-            nodes = [];
-            const count = Math.floor(window.innerWidth / 30);
-            for(let i=0; i<count; i++) {
-                nodes.push({
-                    x: Math.random() * width,
-                    y: Math.random() * height,
-                    vx: (Math.random() - 0.5) * 0.5,
-                    vy: (Math.random() - 0.5) * 0.5
+        function createRoom() {
+            roomGroup = new THREE.Group();
+            scene.add(roomGroup);
+
+            // 1. Grid Floor
+            const gridHelper = new THREE.GridHelper(100, 50, 0x1e293b, 0x0f172a);
+            gridHelper.position.y = -0.1;
+            roomGroup.add(gridHelper);
+
+            // Floor Plane (for shadows)
+            const planeGeo = new THREE.PlaneGeometry(100, 100);
+            const planeMat = new THREE.MeshStandardMaterial({ 
+                color: colors.floor, 
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            const plane = new THREE.Mesh(planeGeo, planeMat);
+            plane.rotation.x = -Math.PI / 2;
+            plane.receiveShadow = true;
+            roomGroup.add(plane);
+
+            // 2. Desk
+            const deskGeo = new THREE.BoxGeometry(16, 1, 8);
+            const deskMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
+            const desk = new THREE.Mesh(deskGeo, deskMat);
+            desk.position.set(0, 3, 0);
+            desk.castShadow = true;
+            desk.receiveShadow = true;
+            roomGroup.add(desk);
+
+            // Desk Legs
+            const legGeo = new THREE.BoxGeometry(1, 4, 1);
+            [-7, 7].forEach(x => {
+                [-3, 3].forEach(z => {
+                    const leg = new THREE.Mesh(legGeo, deskMat);
+                    leg.position.set(x, 1, z);
+                    desk.add(leg); // Parent to desk slightly wrong pos visually, keep separate
+                    roomGroup.add(leg);
+                    leg.position.set(x, 1, z);
                 });
-            }
-        }
+            });
 
-        function drawBg() {
-            ctx.clearRect(0, 0, width, height);
-            ctx.fillStyle = '#0f0';
-            ctx.strokeStyle = '#0f0';
+            // 3. Monitor (The Meta Portfolio)
+            monitor = createInteractiveObject('monitor', 0, 0, 0); // Placeholder vector
+            const monBase = new THREE.Mesh(new THREE.BoxGeometry(4, 0.2, 2), new THREE.MeshStandardMaterial({color:0x000000}));
+            const monStand = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2, 0.5), new THREE.MeshStandardMaterial({color:0x000000}));
+            const monScreen = new THREE.Mesh(new THREE.BoxGeometry(7, 4, 0.5), new THREE.MeshStandardMaterial({color:0x111111}));
             
-            nodes.forEach(node => {
-                node.x += node.vx;
-                node.y += node.vy;
+            // Screen Face (The recursive effect simulated)
+            const screenFace = new THREE.Mesh(
+                new THREE.PlaneGeometry(6.5, 3.5), 
+                new THREE.MeshStandardMaterial({ 
+                    color: colors.neonBlue, 
+                    emissive: colors.neonBlue, 
+                    emissiveIntensity: 0.2 
+                })
+            );
+            screenFace.position.z = 0.26;
+            monScreen.add(screenFace);
+            
+            monBase.position.y = 3.6;
+            monStand.position.y = 4.6;
+            monScreen.position.y = 6.5;
+            
+            monitor.add(monBase, monStand, monScreen);
+            monitor.userData.hoverY = 0; // No levitation
+            roomGroup.add(monitor);
 
-                if(node.x < 0 || node.x > width) node.vx *= -1;
-                if(node.y < 0 || node.y > height) node.vy *= -1;
 
-                ctx.beginPath();
-                ctx.arc(node.x, node.y, 1, 0, Math.PI * 2);
-                ctx.fill();
+            // 4. Turntable (GlglStats)
+            turntable = createInteractiveObject('turntable', -6, 3.5, 2);
+            const ttBase = new THREE.Mesh(new THREE.BoxGeometry(3, 0.5, 3), new THREE.MeshStandardMaterial({color: 0x885522}));
+            const record = new THREE.Mesh(
+                new THREE.CylinderGeometry(1.2, 1.2, 0.1, 32), 
+                new THREE.MeshStandardMaterial({color: 0x111111})
+            );
+            record.position.y = 0.3;
+            const label = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.4, 0.4, 0.11, 32),
+                new THREE.MeshStandardMaterial({color: colors.neonYellow, emissive: colors.neonYellow, emissiveIntensity: 0.5})
+            );
+            label.position.y = 0.3;
+            // Tonearm
+            const arm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 1.5), new THREE.MeshStandardMaterial({color: 0xcccc}));
+            arm.position.set(1, 0.4, 0);
+            arm.rotation.y = -0.5;
+
+            turntable.add(ttBase, record, label, arm);
+            // Animation hook
+            turntable.userData.animator = (time) => {
+                record.rotation.y = time * 2;
+                label.rotation.y = time * 2;
+            };
+            roomGroup.add(turntable);
+
+            // 5. Arcade (Turing Jest)
+            arcade = createInteractiveObject('arcade', -12, 0, -10);
+            const cabGeo = new THREE.BoxGeometry(5, 12, 5);
+            const cabMat = new THREE.MeshStandardMaterial({color: 0x220033});
+            const cab = new THREE.Mesh(cabGeo, cabMat);
+            cab.position.y = 6;
+            
+            const screenGeo = new THREE.PlaneGeometry(3, 3);
+            const screenMat = new THREE.MeshStandardMaterial({
+                color: colors.neonPurple,
+                emissive: colors.neonPurple,
+                emissiveIntensity: 0.8
             });
+            const arScreen = new THREE.Mesh(screenGeo, screenMat);
+            arScreen.position.set(0, 8, 2.51);
+            
+            // Joystick
+            const stick = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshStandardMaterial({color: 'red'}));
+            stick.position.set(-1, 6.5, 2.5);
+            
+            arcade.add(cab, arScreen, stick);
+            arcade.rotation.y = Math.PI / 4;
+            roomGroup.add(arcade);
 
-            // Draw connections
-            ctx.lineWidth = 0.2;
-            for(let i=0; i<nodes.length; i++) {
-                for(let j=i+1; j<nodes.length; j++) {
-                    const dx = nodes[i].x - nodes[j].x;
-                    const dy = nodes[i].y - nodes[j].y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if(dist < 100) {
-                        ctx.beginPath();
-                        ctx.moveTo(nodes[i].x, nodes[i].y);
-                        ctx.lineTo(nodes[j].x, nodes[j].y);
-                        ctx.stroke();
+            // 6. Wall Map (Ahuzat Dibuk)
+            wallMap = createInteractiveObject('wallMap', 0, 10, -8);
+            const holoPlane = new THREE.Mesh(
+                new THREE.PlaneGeometry(8, 5),
+                new THREE.MeshStandardMaterial({
+                    color: colors.neonGreen,
+                    transparent: true,
+                    opacity: 0.3,
+                    side: THREE.DoubleSide
+                })
+            );
+            // Floating particles visual
+            const mapBorder = new THREE.Mesh(new THREE.BoxGeometry(8.2, 5.2, 0.1), new THREE.MeshStandardMaterial({color: 0x444444}));
+            wallMap.add(mapBorder, holoPlane);
+            roomGroup.add(wallMap);
+
+            // 7. Robot Arm (2D Part Orienting)
+            robotArm = createInteractiveObject('robotArm', 6, 3.5, 0);
+            const yellowMat = new THREE.MeshStandardMaterial({color: 0xffaa00});
+            const rBase = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.2, 0.5), new THREE.MeshStandardMaterial({color: 0x333333}));
+            const rLimb1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 3, 0.5), yellowMat);
+            rLimb1.position.y = 1.5;
+            const rJoint = new THREE.Mesh(new THREE.SphereGeometry(0.6), new THREE.MeshStandardMaterial({color: 0x333333}));
+            rJoint.position.y = 3;
+            const rLimb2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2, 0.4), yellowMat);
+            rLimb2.position.set(0.5, 3.5, 0);
+            rLimb2.rotation.z = -0.5;
+            
+            // The Polygon being held
+            const polygon = new THREE.Mesh(new THREE.OctahedronGeometry(0.5), new THREE.MeshStandardMaterial({color: colors.neonBlue, wireframe: true}));
+            polygon.position.set(1.2, 4.2, 0);
+
+            robotArm.add(rBase, rLimb1, rJoint, rLimb2, polygon);
+            robotArm.userData.animator = (time) => {
+                polygon.rotation.x = time;
+                polygon.rotation.y = time;
+                rLimb2.rotation.z = -0.5 + Math.sin(time) * 0.2;
+                polygon.position.y = 4.2 + Math.sin(time) * 0.1;
+            };
+            roomGroup.add(robotArm);
+
+            // 8. Typewriter (Rhymes)
+            typewriter = createInteractiveObject('typewriter', 5, 3.5, 3);
+            const twBase = new THREE.Mesh(new THREE.BoxGeometry(2, 0.5, 2), new THREE.MeshStandardMaterial({color: 0x222222}));
+            const twPaper = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2), new THREE.MeshStandardMaterial({color: colors.neonBlue, transparent: true, opacity: 0.6, side: THREE.DoubleSide}));
+            twPaper.position.set(0, 1.5, -0.5);
+            twPaper.rotation.x = -0.2;
+            
+            typewriter.add(twBase, twPaper);
+            roomGroup.add(typewriter);
+
+            // 9. Social Shelf
+            createSocialShelf();
+        }
+
+        function createSocialShelf() {
+            // Shelf board
+            const shelf = new THREE.Mesh(new THREE.BoxGeometry(2, 8, 2), new THREE.MeshStandardMaterial({color: 0x333333}));
+            shelf.position.set(14, 2, 0); // Wall side
+            roomGroup.add(shelf); // Static
+
+            // Social Items (Interactive)
+            // GitHub (Octocat abstract - Tetrahedron)
+            const github = createInteractiveObject('github', 14, 5, -2);
+            const gShape = new THREE.Mesh(
+                new THREE.OctahedronGeometry(0.8), 
+                new THREE.MeshStandardMaterial({color: 0xffffff, emissive: 0x333333})
+            );
+            github.add(gShape);
+            github.userData.link = 'https://github.com/gevak';
+            github.userData.animator = (time) => { gShape.rotation.y = time; };
+            roomGroup.add(github);
+
+            // LinkedIn (Blue Block)
+            const linkedin = createInteractiveObject('linkedin', 14, 3, 0);
+            const lShape = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 1, 1), 
+                new THREE.MeshStandardMaterial({color: 0x0077b5, emissive: 0x004488})
+            );
+            linkedin.add(lShape);
+            linkedin.userData.link = 'https://linkedin.com/in/gevakip';
+            linkedin.userData.animator = (time) => { lShape.rotation.x = time * 0.5; lShape.rotation.z = time * 0.5; };
+            roomGroup.add(linkedin);
+
+            // Facebook (Blue Cube F)
+            const fb = createInteractiveObject('facebook', 14, 1, 2);
+            const fShape = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 1, 1), 
+                new THREE.MeshStandardMaterial({color: 0x1877f2, emissive: 0x1877f2, emissiveIntensity: 0.3})
+            );
+            fb.add(fShape);
+            fb.userData.link = 'https://facebook.com/geva.kipper';
+            roomGroup.add(fb);
+        }
+
+        // Helper to make an object interactive
+        function createInteractiveObject(name, x, y, z) {
+            const group = new THREE.Group();
+            group.position.set(x, y, z);
+            group.name = name;
+            group.userData = { 
+                originalY: y,
+                isHovered: false 
+            };
+            interactiveObjects.push(group);
+            return group;
+        }
+
+        // --- 4. LOGIC & ANIMATION ---
+
+        function onMouseMove(event) {
+            // Update Mouse Vector
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            // Update Tooltip position
+            const tooltip = document.getElementById('cursor-tooltip');
+            tooltip.style.left = event.clientX + 'px';
+            tooltip.style.top = event.clientY + 'px';
+
+            // Move Spotlight
+            if(spotlight) {
+                // Project mouse to 3D plane
+                const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+                vector.unproject(camera);
+                const dir = vector.sub(camera.position).normalize();
+                const distance = -camera.position.y / dir.y;
+                const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+                
+                spotlight.target.position.copy(pos);
+            }
+        }
+
+        function onClick(event) {
+            if (event.target.closest('#modal-overlay')) return; // Ignore clicks on modal layer
+            
+            if (hoveredObject) {
+                const name = hoveredObject.name;
+
+                // Handle Social Links (Direct Open)
+                if (['github', 'linkedin', 'facebook'].includes(name)) {
+                    window.open(hoveredObject.userData.link, '_blank');
+                    return;
+                }
+
+                // Handle Modals
+                if (projectData[name]) {
+                    // Special Animation for Monitor
+                    if (name === 'monitor') {
+                        // Zoom effect simulation
+                        import('https://unpkg.com/gsap@3.12.5/index.js').then((module) => {
+                           // Simple GSAP check handled via CDN script tag global
+                           gsap.to(camera, { zoom: 5, duration: 1, onUpdate: () => camera.updateProjectionMatrix() });
+                           setTimeout(() => {
+                               openModal(name);
+                               // Reset zoom after modal opens
+                               gsap.to(camera, { zoom: 1, duration: 0.5, delay: 0.5, onUpdate: () => camera.updateProjectionMatrix() });
+                           }, 1000);
+                        });
+                    } else {
+                        openModal(name);
                     }
                 }
             }
-            requestAnimationFrame(drawBg);
         }
 
-        window.addEventListener('resize', resize);
-        resize();
-        drawBg();
+        function openModal(key) {
+            const data = projectData[key];
+            const inner = document.getElementById('modal-inner');
+            inner.innerHTML = `
+                <h3 class="modal-title">${data.title}</h3>
+                <div class="modal-body">${data.html}</div>
+            `;
+            const overlay = document.getElementById('modal-overlay');
+            overlay.classList.add('active');
+        }
 
-        // --- TYPEWRITER & DECRYPTION EFFECTS ---
-        
-        // Header Name Animation
-        const nameEl = document.getElementById('userName');
-        const finalName = "GEVA KIPPER";
-        const fonts = ['Fira Code', 'Arial', 'Times New Roman', 'Impact', 'Courier New'];
-        let nameInterval;
+        function animate() {
+            requestAnimationFrame(animate);
 
-        function glitchType() {
-            let iterations = 0;
-            clearInterval(nameInterval);
-            nameInterval = setInterval(() => {
-                nameEl.innerText = finalName.split("")
-                    .map((letter, index) => {
-                        if(index < iterations) return finalName[index];
-                        return String.fromCharCode(65 + Math.floor(Math.random() * 26));
-                    })
-                    .join("");
-                
-                // Random font glitch
-                if(Math.random() > 0.7) {
-                    nameEl.style.fontFamily = fonts[Math.floor(Math.random() * fonts.length)];
-                } else {
-                    nameEl.style.fontFamily = "var(--font-display)";
+            const time = clock.getElapsedTime();
+
+            // Raycasting
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(interactiveObjects, true);
+
+            // Reset hover state
+            if (hoveredObject && (!intersects.length || !isDescendant(hoveredObject, intersects[0].object))) {
+                document.body.style.cursor = 'default';
+                document.getElementById('cursor-tooltip').style.opacity = 0;
+                // Reset scale
+                hoveredObject.scale.set(1, 1, 1);
+                hoveredObject = null;
+            }
+
+            if (intersects.length) {
+                // Find the parent group in interactiveObjects
+                let obj = intersects[0].object;
+                while(obj.parent && !interactiveObjects.includes(obj)) {
+                    obj = obj.parent;
                 }
 
-                if(iterations >= finalName.length) clearInterval(nameInterval);
-                iterations += 1/3;
-            }, 30);
-        }
-        
-        setTimeout(glitchType, 500);
-
-        // Hover Decryption
-        const modules = document.querySelectorAll('.module');
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890@#$%&";
-
-        modules.forEach(mod => {
-            mod.addEventListener('mouseenter', () => {
-                // Play sound
-                playClickSound();
-
-                const target = mod.querySelector('.decrypt-target');
-                const originalText = mod.getAttribute('data-title').split(' ')[0]; // Just take first word or full title logic
-                
-                let iteration = 0;
-                let interval = setInterval(() => {
-                    target.innerText = target.innerText.split("")
-                        .map((letter, index) => {
-                            if(index < iteration) {
-                                return mod.querySelector('.decrypt-target').dataset.value[index];
-                            }
-                            return chars[Math.floor(Math.random() * chars.length)]
-                        })
-                        .join("");
+                if (interactiveObjects.includes(obj)) {
+                    hoveredObject = obj;
+                    document.body.style.cursor = 'pointer';
+                    document.getElementById('cursor-tooltip').style.opacity = 1;
                     
-                    if(iteration >= mod.querySelector('.decrypt-target').dataset.value.length){ 
-                        clearInterval(interval);
+                    // Hover Effect
+                    obj.scale.set(1.1, 1.1, 1.1);
+                }
+            }
+
+            // Object-specific animations
+            interactiveObjects.forEach(obj => {
+                // Levitation (Sine wave)
+                if (obj.userData.originalY) {
+                    obj.position.y = obj.userData.originalY + Math.sin(time * 2) * 0.1;
+                    
+                    // Specific complex animations
+                    if (obj.userData.animator) {
+                        obj.userData.animator(time);
                     }
-                    iteration += 1/3; 
-                }, 30);
+                }
             });
-        });
 
-        // Store original text for decryption reference
-        document.querySelectorAll('.decrypt-target').forEach(h2 => {
-            h2.dataset.value = h2.innerText; 
-            // Obfuscate initially? No, CSS blurs it. 
-        });
+            // Ahuzat Dibuk - Hologram Pulse
+            if(wallMap) {
+                wallMap.children[1].material.opacity = 0.3 + Math.sin(time * 5) * 0.1;
+            }
 
+            renderer.render(scene, camera);
+        }
 
-        // --- CHRONOMETER ---
-        const timerEl = document.getElementById('timer');
-        // Target: 2026-01-17 01:10:26
-        // Scenario: We are in the future. Counter counts UP.
-        // We calculate absolute diff from now to date.
-        
-        const targetDate = new Date("2026-01-17T01:10:26").getTime();
+        // Helper to check object hierarchy
+        function isDescendant(parent, child) {
+            let node = child;
+            while (node != null) {
+                if (node === parent) return true;
+                node = node.parent;
+            }
+            return false;
+        }
+
+        function onWindowResize() {
+            const aspect = window.innerWidth / window.innerHeight;
+            const d = 25;
+            camera.left = -d * aspect;
+            camera.right = d * aspect;
+            camera.top = d;
+            camera.bottom = -d;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- 5. UI LOGIC (Typewriter & Timer) ---
+
+        // Typewriter Effect
+        const typeText = "This digital architecture is hallucinated daily by AI. Its form is ephemeral.";
+        const typeEl = document.getElementById('typewriter-text');
+        let typeIdx = 0;
+
+        function typeWriter() {
+            if (typeIdx < typeText.length) {
+                typeEl.innerHTML += typeText.charAt(typeIdx);
+                typeIdx++;
+                setTimeout(typeWriter, 50 + Math.random() * 50);
+            } else {
+                // Glitch effect loop
+                setInterval(() => {
+                    typeEl.classList.add('glitch');
+                    setTimeout(() => typeEl.classList.remove('glitch'), 200);
+                }, 4000);
+            }
+        }
+
+        // Countdown Timer relative to 2026-01-18 01:18:43
+        const targetDate = new Date('2026-01-18T01:18:43').getTime();
+        const timerEl = document.getElementById('epoch-timer');
 
         function updateTimer() {
             const now = new Date().getTime();
-            // Assuming "Time Elapsed Since" means we are viewing this logically after the date.
-            // But biologically we are before. 
-            // To make it look cool "Elapsed Since Incident", let's show the delta relative to the incident.
-            // If now < 2026, it acts as a countdown (negative replaced by weird logic)
-            // If now > 2026, it counts up.
-            // To fulfill "Counting Upwards" and "Elapsed", we simulate that we are 'years' ahead or just show absolute delta growing.
-            // Let's just do absolute difference and format it.
+            const distance = now - targetDate; // Elapsed (if positive) or Remaining (if negative)
             
-            const diff = Math.abs(now - targetDate);
+            const isFuture = distance < 0;
+            const absDist = Math.abs(distance);
             
-            /* 
-               To mimic "Counting Upwards" visibly on screen even if real time is linear:
-               The milliseconds race.
-            */
+            const days = Math.floor(absDist / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((absDist % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((absDist % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((absDist % (1000 * 60)) / 1000);
+            const ms = Math.floor((absDist % 1000));
 
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-            const ms = Math.floor((diff % 1000));
+            const prefix = isFuture ? "T-MINUS " : "ELAPSED +";
+            timerEl.innerText = `${prefix}${days}:${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}.${ms.toString().padStart(3,'0')}`;
 
-            timerEl.innerText = 
-                `T+ [${days}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${ms.toString().padStart(3, '0')}]`;
+            requestAnimationFrame(updateTimer);
         }
 
-        setInterval(updateTimer, 31); // ~30fps update for MS
+        // Session ID Logic
+        document.getElementById('session-id').innerText = '0x' + Math.floor(Math.random()*16777215).toString(16).toUpperCase();
+
+        // Close Modal Logic
+        document.querySelector('.modal-close').addEventListener('click', () => {
+            document.getElementById('modal-overlay').classList.remove('active');
+        });
+
+        // Start
+        init();
+        setTimeout(typeWriter, 1000);
+        updateTimer();
 
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260117",
+          pageId: "20260118",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
