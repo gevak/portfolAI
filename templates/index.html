@@ -2,860 +2,690 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper // The Infinite Punch Card Stream</title>
+    <title>Geva Kipper | The Syntax Press</title>
     
-    <!-- Fonts -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Share+Tech+Mono&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Playfair+Display:ital,wght@1,400&family=Roboto+Slab:wght@700;900&family=Special+Elite&display=swap" rel="stylesheet">
 
     <style>
+        /* --- 1. SETTINGS & VARIABLES --- */
         :root {
-            --void: #0a0a0a;
-            --phosphor: #00ff41;
-            --cream: #fdfbf7;
-            --laser: #ff0055;
-            --glass: rgba(253, 251, 247, 0.08);
-            --glass-border: rgba(253, 251, 247, 0.2);
-            --chad-dim: #1a1a1a;
-            --chad-lit: #333333;
+            --paper-cream: #f4f1ea;
+            --soot-black: #1a1a1b;
+            --ink-black: #2b2b2b;
+            --error-red: #b83b3b;
+            --shadow-hard: 0 4px 6px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.2);
+            --shadow-pressed: inset 2px 2px 5px rgba(0,0,0,0.6), inset -1px -1px 2px rgba(255,255,255,0.3);
+            --metal-border: 4px solid #4a4a4a;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            cursor: crosshair;
-        }
+        /* --- 2. GLOBAL AESTHETICS --- */
+        * { box-sizing: border-box; }
 
         body {
-            background-color: var(--void);
-            color: var(--cream);
-            font-family: 'Share Tech Mono', monospace;
+            margin: 0;
+            padding: 0;
+            background-color: var(--paper-cream);
+            color: var(--soot-black);
+            font-family: 'Roboto Slab', serif;
             overflow-x: hidden;
-            min-height: 100vh;
+            /* Fibrous Paper Texture via CSS noise */
+            background-image: 
+                radial-gradient(#d4cfc3 1px, transparent 0),
+                repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 2px, transparent 2px, transparent 4px);
+            background-size: 20px 20px, 10px 10px;
         }
 
-        /* --- Background Canvas --- */
-        #punch-stream {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            pointer-events: none;
-        }
+        a { text-decoration: none; color: inherit; }
 
-        /* --- Laser Scan Line --- */
-        .scan-line {
-            position: fixed;
-            top: 50%;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: var(--laser);
-            box-shadow: 0 0 10px var(--laser), 0 0 20px var(--laser);
-            z-index: 100;
-            transform: translateY(-50%);
+        /* Animation Classes */
+        .scramble-text {
+            /* Initial state handled by JS */
             opacity: 0.8;
-            pointer-events: none;
+        }
+
+        /* --- 3. THE PRESS ANIMATION OVERLAY --- */
+        #press-machinery {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100vh;
+            background: linear-gradient(180deg, #222 0%, #444 80%, #111 100%);
+            z-index: 9999;
+            transform: translateY(-100%);
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.8);
+            border-bottom: 20px solid #111;
         }
         
-        .scan-readout {
-            position: absolute;
-            right: 20px;
-            top: -25px;
-            color: var(--laser);
-            font-size: 10px;
-            text-transform: uppercase;
-            animation: blink 0.5s infinite;
-        }
-
-        /* --- Header --- */
-        header {
-            height: 80vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            position: relative;
-            z-index: 2;
-        }
-
-        .ai-disclaimer {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            font-family: 'Courier Prime', monospace;
-            font-size: 0.8rem;
-            color: #555;
-            font-style: italic;
-            z-index: 10;
-        }
-
-        h1 {
-            font-family: 'Syncopate', sans-serif;
-            font-size: 4rem;
-            text-transform: uppercase;
-            color: transparent;
-            background-image: radial-gradient(circle, var(--cream) 2px, transparent 2.5px);
-            background-size: 6px 6px;
-            background-clip: text;
-            -webkit-background-clip: text;
-            transition: all 2s ease-out;
-            margin-bottom: 20px;
-            letter-spacing: -2px;
-        }
-
-        h1.decoded {
-            color: var(--cream);
-            text-shadow: 0 0 15px rgba(253, 251, 247, 0.5);
-            background-image: none;
+        #press-machinery::after {
+            content: "HEIDELBERG :: COMPILER TYPE-IV";
+            color: rgba(255,255,255,0.2);
+            font-family: 'Fira Code', monospace;
+            font-size: 2rem;
+            margin-bottom: 50px;
             letter-spacing: 5px;
         }
 
-        .status-line {
-            font-size: 1.2rem;
-            color: var(--phosphor);
+        @keyframes screenShake {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(-5px, 5px) rotate(-1deg); }
+            50% { transform: translate(5px, -5px) rotate(1deg); }
+            75% { transform: translate(-5px, 5px) rotate(0deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
         }
 
-        .cursor::after {
-            content: "█";
-            animation: blink 1s step-end infinite;
-            margin-left: 5px;
+        .shake-active {
+            animation: screenShake 0.3s cubic-bezier(.36,.07,.19,.97) both;
         }
 
-        /* --- Project Stream Layout --- */
-        .stream-container {
-            padding-bottom: 20vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 300px; /* Space for scrolling */
-        }
-
-        .sector {
-            width: 90%;
-            max-width: 800px;
-            min-height: 400px;
+        /* --- 4. HEADER SECTION --- */
+        header {
+            padding: 80px 20px 60px;
+            max-width: 1200px;
+            margin: 0 auto;
             position: relative;
-            transition: transform 0.3s ease-out;
-            perspective: 1000px;
-            opacity: 0.3; /* Default dim state */
-            filter: grayscale(1);
         }
 
-        /* The Card Appearance */
-        .card {
-            background: var(--glass);
-            backdrop-filter: blur(8px);
-            border: 1px solid var(--glass-border);
-            padding: 40px;
-            border-radius: 4px;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            transform: rotateX(20deg) scale(0.9);
-            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Active State (When hitting Laser) */
-        .sector.active {
-            opacity: 1;
-            filter: grayscale(0);
-        }
-
-        .sector.active .card {
-            transform: rotateX(0deg) scale(1);
-            border-color: var(--phosphor);
-            box-shadow: 0 0 30px rgba(0, 255, 65, 0.1);
-        }
-
-        h2 {
-            font-family: 'Syncopate', sans-serif;
-            font-size: 1.5rem;
-            border-bottom: 2px solid var(--glass-border);
-            padding-bottom: 15px;
-            margin-bottom: 10px;
-            color: var(--cream);
-        }
-
-        p {
-            font-size: 1.1rem;
-            line-height: 1.6;
-            color: #ccc;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            border: 1px solid var(--phosphor);
-            color: var(--phosphor);
-            text-decoration: none;
+        h1.name-plate {
+            font-size: clamp(3rem, 8vw, 6rem);
+            margin: 0;
+            line-height: 0.9;
             text-transform: uppercase;
-            font-weight: bold;
-            font-size: 0.9rem;
-            transition: all 0.2s;
-            background: rgba(0, 255, 65, 0.05);
-            text-align: center;
-            align-self: flex-start;
+            letter-spacing: -2px;
+            /* Distressed Ink Effect */
+            background: linear-gradient(to top, rgba(26,26,27,0.9), rgba(26,26,27,1));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; 
+            filter: contrast(150%) brightness(90%);
+            mask-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 100' xmlns='http://www.w3.org/2000/svg'><filter id='noise'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23noise)' opacity='0.5'/></svg>");
         }
 
-        .btn:hover {
-            background: var(--phosphor);
-            color: var(--void);
-            box-shadow: 0 0 15px var(--phosphor);
-        }
-
-        /* --- Specific Project Visuals --- */
-
-        /* 1. GlglStats */
-        #card-1 .bg-fx {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            display: flex;
-            align-items: flex-end;
-            opacity: 0.1;
-            pointer-events: none;
-        }
-        .bar {
-            flex: 1;
-            background: var(--cream);
-            animation: equalizer 1s infinite ease-in-out alternate;
-        }
-        .crt-frame {
-            border: 4px solid #333;
-            border-radius: 10px;
-            overflow: hidden;
-            position: relative;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
-            margin-top: 20px;
-        }
-        .crt-content {
-            width: 100%;
-            aspect-ratio: 16/9;
-            display: block;
-        }
-        .stats-loop {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            border: 1px dashed var(--phosphor);
-            border-radius: 50%;
-            animation: spin 4s linear infinite;
-        }
-
-        /* 2. Ahuzat Dibuk */
-        #card-2.active .card {
-            background: linear-gradient(135deg, rgba(0,255,65,0.1) 0%, rgba(255,0,85,0.1) 100%);
-            border-color: var(--laser);
-        }
-        .news-ticker {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .news-btn {
-            border: 1px solid var(--cream);
-            color: var(--cream);
-            padding: 5px 10px;
-            font-size: 0.8rem;
-            text-decoration: none;
-        }
-        .news-btn:hover {
-            background: var(--cream);
-            color: var(--void);
-        }
-
-        /* 3. 2D Part */
-        #card-3 svg {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            opacity: 0.2;
-            width: 80%;
-            height: 80%;
-            z-index: -1;
-            transition: transform 0.1s linear;
-        }
-        #card-3:hover .custom-cursor {
-            opacity: 1;
-        }
-
-        /* 4. Turing Jest */
-        .duel-split {
-            display: flex;
-            gap: 20px;
-            margin-top: 10px;
-        }
-        .half {
-            flex: 1;
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 10px;
-            font-size: 0.8rem;
-        }
-        .pun-bg {
-            position: absolute;
-            font-size: 4rem;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-10deg);
-            opacity: 0.05;
-            white-space: nowrap;
-            pointer-events: none;
-        }
-        .arena-btn {
-            width: 100%;
-            text-align: center;
-            font-size: 1.2rem;
-            border-color: var(--laser);
-            color: var(--laser);
-        }
-        .arena-btn:hover {
-            background: var(--laser);
-            color: var(--cream);
-        }
-
-        /* 5. Rhymes */
-        #card-5 .card {
-            font-family: 'Courier Prime', serif;
-        }
-        .headline-box {
-            background: #222;
-            padding: 10px;
-            font-family: 'Times New Roman', serif;
-            font-style: italic;
-            margin-bottom: 20px;
-            border-left: 3px solid var(--phosphor);
-        }
-        .headline-text {
-            color: var(--cream);
-        }
-        .chrome-tab {
-            background: #333;
-            border-radius: 10px 10px 0 0;
+        .tagline {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.1rem;
+            margin-top: 15px;
+            border-top: 2px solid var(--soot-black);
             display: inline-block;
-            padding: 8px 20px;
-            color: white;
-            font-sans-serif;
-            font-size: 0.8rem;
-            margin-top: auto;
-            text-decoration: none;
+            padding-top: 10px;
         }
 
-        /* 6. Portfolio */
-        .droste-container {
+        .ai-stamp {
             position: absolute;
-            top: 0; right: 0;
-            width: 150px;
-            height: 150px;
-            perspective: 500px;
-            overflow: hidden;
-            border-left: 1px solid #444;
-            border-bottom: 1px solid #444;
+            top: 60px;
+            right: 20px;
+            border: 3px solid var(--error-red);
+            color: var(--error-red);
+            padding: 10px 20px;
+            font-family: 'Special Elite', cursive;
+            font-weight: bold;
+            transform: rotate(15deg);
+            border-radius: 4px 255px 3px 25px / 255px 5px 225px 5px; /* Irregular border */
+            opacity: 0.8;
+            mix-blend-mode: multiply;
         }
-        .droste-layer {
-            width: 100%;
-            height: 100%;
-            background: var(--void);
-            border: 1px solid var(--phosphor);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: absolute;
-        }
-        /* Nested visuals handled in HTML structure/CSS animation */
 
-        /* --- Socials --- */
-        #socials {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            margin-top: 100px;
-            margin-bottom: 100px;
+        /* --- 5. THE MAIN GRID --- */
+        .layout-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto 80px;
+            padding: 0 20px;
         }
-        .holo-icon {
-            width: 60px;
-            height: 60px;
-            border: 2px dotted var(--cream);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            color: var(--cream);
-            text-decoration: none;
-            transition: all 0.3s;
+
+        .project-card {
+            background: var(--paper-cream);
+            border: 1px solid rgba(0,0,0,0.1);
             position: relative;
-        }
-        .holo-icon:hover {
-            border-style: solid;
-            border-color: var(--phosphor);
-            color: var(--phosphor);
-            text-shadow: 0 0 10px var(--phosphor);
-            background: rgba(0, 255, 65, 0.1);
-        }
-
-        /* --- Footer --- */
-        footer {
-            height: 40vh;
-            border-top: 4px solid var(--cream);
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.1), -1px -1px 2px rgba(255,255,255,0.5);
+            padding: 20px;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: #000;
-            position: relative;
+            transition: transform 0.2s;
+        }
+        
+        .project-card:hover { /* Subtle lift on hover */
+            transform: translateY(-2px);
+        }
+
+        /* Metal Furniture Border simulation */
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border: 8px solid transparent;
+            border-image: repeating-linear-gradient(45deg, #bbb, #ddd 2px, #999 4px) 10;
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .card-header {
+            font-family: 'Roboto Slab', serif;
+            font-size: 1.5rem;
+            border-bottom: 2px solid var(--soot-black);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
             z-index: 2;
         }
 
-        .nixie-clock {
-            display: flex;
-            gap: 15px;
+        .card-body {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            flex-grow: 1;
+            z-index: 2;
+        }
+
+        .card-footer {
             margin-top: 20px;
-        }
-        .tube {
-            background: #111;
-            border: 1px solid #444;
-            border-radius: 20px 20px 5px 5px;
-            width: 50px;
-            height: 80px;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: #ff4500;
-            text-shadow: 0 0 10px #ff4500, 0 0 20px #ff0000;
-            font-family: monospace;
-            box-shadow: inset 0 0 15px black;
+            gap: 10px;
+            flex-wrap: wrap;
+            z-index: 2;
         }
-        .time-label {
+
+        /* --- PROJECT SPECIFIC STYLES --- */
+
+        /* 1. GlglStats */
+        .card-glgl {
+            background-color: #f7f3e8;
+        }
+        .card-glgl .bg-overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            opacity: 0.05;
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='10' y='20' font-family='monospace' font-size='10'%3E&#x266B;%3C/text%3E%3Ctext x='25' y='35' font-family='monospace' font-size='8'%3E01%3C/text%3E%3C/svg%3E");
+        }
+        .film-frame {
+            border: 6px dashed #1a1a1a;
+            padding: 5px;
+            background: #000;
+            margin-bottom: 10px;
+        }
+        .film-frame img { display: block; width: 100%; filter: grayscale(1); transition: filter 0.3s; }
+        .film-frame:hover img { filter: grayscale(0); }
+        .ticket-stub {
+            background: #e0d8c8;
+            padding: 8px 12px;
+            font-weight: bold;
             font-size: 0.8rem;
-            letter-spacing: 3px;
-            color: #777;
+            border: 1px dashed #666;
+            border-bottom: 2px dotted #000;
+            position: relative;
+            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 95% 90%, 90% 100%, 85% 90%, 80% 100%, 75% 90%, 70% 100%, 65% 90%, 60% 100%, 55% 90%, 50% 100%, 45% 90%, 40% 100%, 35% 90%, 30% 100%, 25% 90%, 20% 100%, 15% 90%, 10% 100%, 5% 90%, 0% 100%);
         }
-        .ai-credit {
-            margin-top: 30px;
+
+        /* 2. Ahuzat Dibuk */
+        .card-map { position: relative; }
+        .map-bg {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background-image: repeating-linear-gradient(90deg, transparent 0, transparent 19px, #ddd 20px), repeating-linear-gradient(0deg, transparent 0, transparent 19px, #ddd 20px);
+            opacity: 0.4;
+        }
+        .heat-spot {
+            position: absolute;
+            width: 80px; height: 80px;
+            background: radial-gradient(circle, rgba(26,26,27,0.4) 0%, transparent 70%);
+            border-radius: 50%;
+            top: 40%; left: 30%;
+        }
+        .newspaper-clip {
+            background: #fff;
+            padding: 5px 8px;
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+            transform: rotate(-2deg);
+            border: 1px solid #ccc;
+            margin-right: 5px;
+        }
+        .newspaper-clip:hover { transform: scale(1.05) rotate(0deg); }
+
+        /* 3. 2D Part Orienting */
+        .card-canvas { position: relative; }
+        #polygonCanvas {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            z-index: 1;
+            opacity: 0.3;
+        }
+        .card-canvas .card-body { position: relative; z-index: 2; pointer-events: none; }
+        .tech-stack {
+            font-size: 0.7rem; color: #555; margin-top: 5px; display: block;
+        }
+
+        /* 4. The Turing Jest */
+        .card-arena {
+            border: 4px double var(--soot-black);
+            background-image: linear-gradient(rgba(244, 241, 234, 0.9), rgba(244, 241, 234, 0.9)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="%23eee"/><rect width="1" height="1" fill="%23ccc"/></svg>');
+        }
+        .arena-title span:first-child { font-family: 'Playfair Display', serif; font-size: 1.2em; }
+        .arena-title span:last-child { font-family: 'Fira Code', monospace; font-weight: bold; letter-spacing: -1px;}
+        .arena-btn {
+            background: var(--soot-black);
+            color: #fff;
+            padding: 8px 20px;
+            font-family: 'Special Elite';
+            text-transform: uppercase;
+            border-radius: 2px;
+        }
+
+        /* 5. Rhymes of Israel */
+        .card-comic {
+            /* Halftone pattern */
+            background-image: radial-gradient(#aaa 15%, transparent 16%), radial-gradient(#aaa 15%, transparent 16%);
+            background-size: 10px 10px;
+            background-position: 0 0, 5px 5px;
+            background-color: #fff;
+        }
+        .card-comic .content-box {
+            background: #fff;
+            border: 2px solid #000;
+            padding: 10px;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+        }
+        .sticker-link {
+            background: #ffcc00;
+            color: #000;
+            padding: 5px 10px;
+            border-radius: 50%;
             font-size: 0.7rem;
-            color: #444;
-            font-family: 'Courier Prime', monospace;
+            font-weight: bold;
+            display: inline-block;
+            transform: rotate(10deg);
+            border: 1px solid #000;
         }
 
-        /* Animations */
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-        @keyframes equalizer { 0% { height: 10%; } 100% { height: 80%; } }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        /* Media Queries */
-        @media (max-width: 768px) {
-            h1 { font-size: 2rem; }
-            .card { padding: 20px; }
-            .duel-split { flex-direction: column; }
-            .nixie-clock { transform: scale(0.7); }
+        /* 6. Portfolio (Meta) */
+        .card-meta {
+            overflow: hidden;
+            background: #e8e8e8;
         }
+        /* CSS Recursion Simulation */
+        .meta-layer {
+            border: 1px solid #555;
+            background: var(--paper-cream);
+            padding: 5%;
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+        }
+        .meta-layer .header-mock { height: 10%; background: #333; margin-bottom: 5px; }
+        .meta-layer .grid-mock { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; flex-grow: 1; }
+        .meta-layer .box-mock { border: 1px solid #ccc; }
+        .recursion-container {
+            width: 80px; height: 100px;
+            position: absolute; right: 10px; bottom: 10px;
+            transform: rotate(-5deg);
+            opacity: 0.6;
+        }
+
+        /* --- 6. SOCIAL FOOTER --- */
+        .social-plate {
+            background: #e6e2d8;
+            padding: 40px 0;
+            border-top: 4px double var(--soot-black);
+            text-align: center;
+        }
+        .social-grid {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+        }
+        .social-stamp {
+            width: 60px; height: 60px;
+            background: #b83b3b; /* Red Wax */
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: rgba(255,255,255,0.9);
+            box-shadow: var(--shadow-hard);
+            border: 2px dashed rgba(0,0,0,0.3);
+            font-size: 1.5rem;
+            transition: all 0.2s;
+        }
+        .social-stamp:hover {
+            transform: scale(0.95);
+            box-shadow: var(--shadow-pressed);
+        }
+        .social-stamp svg { width: 24px; height: 24px; fill: currentColor; }
+
+        /* --- 7. BOTTOM FOOTER & CLOCK --- */
+        footer {
+            background: var(--soot-black);
+            color: #888;
+            padding: 30px 20px;
+            border-top: 6px double #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+        }
+
+        .split-flap {
+            display: flex;
+            gap: 5px;
+            margin-top: 15px;
+            font-size: 1.2rem;
+            color: #eee;
+        }
+        .flap-char {
+            background: #222;
+            padding: 5px 8px;
+            border-radius: 4px;
+            border-bottom: 1px solid #000;
+            box-shadow: 0 1px 0 #333;
+            position: relative;
+        }
+        .flap-char::after {
+            content:''; position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: rgba(0,0,0,0.8);
+        }
+        
     </style>
 </head>
 <body>
 
-    <div class="ai-disclaimer">/* v.2024.x | This interface is hallucinogenic geometry re-generated daily by AI. */</div>
-    
-    <canvas id="punch-stream"></canvas>
-    
-    <div class="scan-line"><div class="scan-readout">SCANNING...</div></div>
+    <!-- MACHINERY OVERLAY (Animation) -->
+    <div id="press-machinery"></div>
 
     <header>
-        <h1 id="hero-name">GEVA KIPPER</h1>
-        <div class="status-line">
-            <span id="typewriter"></span><span class="cursor"></span>
+        <h1 class="name-plate scramble-text" data-text="GEVA KIPPER">01010110</h1>
+        <div class="tagline scramble-text" data-text="Software Engineer at Google, building systems that scale.">Loading binary...</div>
+        <div class="ai-stamp">
+            GENERATED BY AI<br>
+            <span style="font-size:0.7em">ITERATION #294</span>
         </div>
     </header>
 
-    <main class="stream-container">
+    <main class="layout-grid">
 
         <!-- 1. GlglStats -->
-        <section class="sector" id="card-1">
-            <div class="card">
-                <div class="bg-fx">
-                    <!-- Audio spectrum bars auto-generated by JS ideally, manual here for simplicity -->
-                    <div class="bar" style="animation-duration: 0.5s"></div>
-                    <div class="bar" style="animation-duration: 0.7s"></div>
-                    <div class="bar" style="animation-duration: 0.3s"></div>
-                    <div class="bar" style="animation-duration: 1.1s"></div>
-                    <div class="bar" style="animation-duration: 0.9s"></div>
-                    <div class="bar" style="animation-duration: 0.9s"></div>
-                    <div class="bar" style="animation-duration: 1.1s"></div>
-                    <div class="bar" style="animation-duration: 0.3s"></div>
-                    <div class="bar" style="animation-duration: 0.7s"></div>
-                    <div class="bar" style="animation-duration: 0.5s"></div>
-                </div>
-                <div class="stats-loop"></div>
-                <h2>01 // GlglStats</h2>
-                <p>Frequency visualizer using Python & LZ77 algorithm to analyze repetition patterns in pop music.</p>
-                
-                <div class="crt-frame">
-                    <iframe class="crt-content" src="https://www.youtube.com/embed/jrKAtOsj1Lo?controls=0&mute=1" title="GlglStats Presentation" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                </div>
-                
-                <a href="https://glglstats.geekip.dev" target="_blank" class="btn">Execute Program</a>
-            </div>
-        </section>
-
-        <!-- 2. Ahuzat Dibuk -->
-        <section class="sector" id="card-2">
-            <div class="card">
-                <h2>02 // 'Ahuzat Dibuk'</h2>
-                <p>Tel-Aviv parking scraper logic visualized as opacity heatmaps. Because finding parking is NP-Hard.</p>
-                <div class="news-ticker">
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="news-btn">CH13 NEWS</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="news-btn">MAKO</a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="news-btn">SECRET TLV</a>
-                </div>
-            </div>
-        </section>
-
-        <!-- 3. 2D Part Orienting -->
-        <section class="sector" id="card-3">
-            <div class="card">
-                <!-- Decorative SVG Wireframe -->
-                <svg viewBox="0 0 100 100" id="geo-engine">
-                    <polygon points="50,15 90,85 10,85" fill="none" stroke="#fff" stroke-width="0.5" />
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="#00ff41" stroke-width="0.2" stroke-dasharray="2,2"/>
-                </svg>
-
-                <h2>03 // 2D Part Orienting</h2>
-                <p>C++ Computational geometry implementation for orienting polygonal parts on a feeder grid.</p>
-                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn">View Paper</a>
-            </div>
-        </section>
-
-        <!-- 4. The Turing Jest -->
-        <section class="sector" id="card-4">
-            <div class="card">
-                <span class="pun-bg" id="pun-display">I'm reading a book on anti-gravity.</span>
-                <h2>04 // The Turing Jest</h2>
-                <p>Two LLMs enter, one pun leaves. A generative battle arena.</p>
-                <div class="duel-split">
-                    <div class="half" style="color: cyan;">MODEL A: "Why did the developer go broke?"</div>
-                    <div class="half" style="color: magenta;">MODEL B: "Because he used up all his cache."</div>
-                </div>
-                <a href="https://jest.geekip.dev" target="_blank" class="btn arena-btn">ENTER ARENA</a>
-            </div>
-        </section>
-
-        <!-- 5. Rhymes of Israel -->
-        <section class="sector" id="card-5">
-            <div class="card">
-                <h2>05 // Rhymes of Israel</h2>
-                <p>Chrome extension converting boring news headlines into whimsical rhymes in real-time.</p>
-                <div class="headline-box">
-                    <span id="news-source">YNET: </span>
-                    <span class="headline-text" id="rhyme-target">Government approves budget...</span>
-                </div>
-                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="chrome-tab">Install Extension</a>
-            </div>
-        </section>
-
-        <!-- 6. Portfolio -->
-        <section class="sector" id="card-6">
-            <div class="card">
-                <div class="droste-container">
-                    <div class="droste-layer" style="transform: scale(0.8);">
-                        <div class="droste-layer" style="transform: scale(0.8);">
-                            <div class="droste-layer" style="transform: scale(0.8);">
-                                <div class="droste-layer" style="transform: scale(0.8);"></div>
-                            </div>
-                        </div>
+        <article class="project-card card-glgl">
+            <div class="bg-overlay"></div>
+            <div class="card-header scramble-text" data-text="GlglStats">...</div>
+            <div class="card-body">
+                <div class="film-frame">
+                    <!-- YouTube Thumbnail Fallback/Simulation -->
+                    <div style="background:#333; height: 100px; display:flex; align-items:center; justify-content:center; color:#fff;">
+                        [ VIDEO FRAME ]
                     </div>
                 </div>
-                <h2>06 // Recursive Self</h2>
-                <p>Meta-analysis: This website. Built to simulate tactile computing data streams.</p>
-                <a href="https://geekip.dev" class="btn" style="animation: pulse 1s infinite">geekip.dev</a>
+                Detailed stats and visualizations for Israel's radio charts.
             </div>
-        </section>
+            <div class="card-footer">
+                <a href="https://glglstats.geekip.dev" class="ticket-stub" target="_blank">VISIT SITE</a>
+                <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" class="ticket-stub" target="_blank">WATCH TALK</a>
+            </div>
+        </article>
 
-        <!-- 7. Social Data Port -->
-        <section id="socials">
-            <a href="https://github.com/gevak" target="_blank" class="holo-icon" title="GitHub">&lt;/&gt;</a>
-            <a href="https://linkedin.com/in/gevakip" target="_blank" class="holo-icon" title="LinkedIn">in</a>
-            <a href="https://facebook.com/geva.kipper" target="_blank" class="holo-icon" title="Facebook">f</a>
-        </section>
+        <!-- 2. Ahuzat Dibuk -->
+        <article class="project-card card-map">
+            <div class="map-bg"></div>
+            <div class="heat-spot"></div>
+            <div class="card-header scramble-text" data-text="Ahuzat Dibuk">...</div>
+            <div class="card-body">
+                <p>Reverse-engineered a private parking lot API to visualize occupancy in real-time. Tel Aviv's parking crisis, mapped.</p>
+            </div>
+            <div class="card-footer">
+                <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" class="newspaper-clip" target="_blank">Ch.13 News</a>
+                <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" class="newspaper-clip" target="_blank">Mako</a>
+                <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" class="newspaper-clip" target="_blank">FB Post</a>
+            </div>
+        </article>
+
+        <!-- 3. 2D Part Orienting -->
+        <article class="project-card card-canvas" id="card-orienting">
+            <canvas id="polygonCanvas"></canvas>
+            <div class="card-header scramble-text" data-text="2D Part Orienting">...</div>
+            <div class="card-body">
+                Algorithms for sensorless manipulation of parts using a flat fence.
+                <span class="tech-stack">&lt;C++ / Computational Geometry /&gt;</span>
+            </div>
+            <div class="card-footer">
+                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" style="font-family:'Fira Code'; text-decoration: underline;" target="_blank">View Research & Code</a>
+            </div>
+        </article>
+
+        <!-- 4. The Turing Jest -->
+        <article class="project-card card-arena">
+            <div class="card-header arena-title">
+                <span>The Human</span> vs <span>THE LLM</span>
+            </div>
+            <div class="card-body">
+                A digital arena where human wit clashes with machine humor. A pun generation competition judged by the masses.
+            </div>
+            <div class="card-footer">
+                <a href="https://jest.geekip.dev" class="arena-btn" target="_blank">Enter Arena</a>
+            </div>
+        </article>
+
+        <!-- 5. Rhymes of Israel -->
+        <article class="project-card card-comic">
+            <div class="content-box">
+                <div class="card-header scramble-text" data-text="Rhymes of Israel">...</div>
+                <div class="card-body" style="font-style: italic;">
+                    "The news is bleak,<br>
+                    the headlines scream,<br>
+                    so I built a bot,<br>
+                    to make them dream."
+                    <br><br>
+                    Chrome extension turning news sites into rhythmic verse.
+                </div>
+                <div class="card-footer">
+                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" class="sticker-link" target="_blank">GET IT CHROME</a>
+                </div>
+            </div>
+        </article>
+
+        <!-- 6. Portfolio (Meta) -->
+        <article class="project-card card-meta">
+            <div class="card-header scramble-text" data-text="Recursive">...</div>
+            <div class="card-body">
+                A website designed by AI, explaining that it is designed by AI.
+                <br><br>
+                <a href="https://geekip.dev" style="color:var(--error-red); text-shadow: 0 0 5px rgba(184,59,59,0.5);">geekip.dev</a>
+            </div>
+            <!-- CSS Representation of Recursion -->
+            <div class="recursion-container">
+                <div class="meta-layer">
+                    <div class="header-mock"></div>
+                    <div class="grid-mock">
+                        <div class="box-mock"></div><div class="box-mock"></div>
+                        <div class="box-mock"></div>
+                        <div class="meta-layer" style="transform: scale(0.5); border-color: red;"></div>
+                    </div>
+                </div>
+            </div>
+        </article>
 
     </main>
 
-    <footer>
-        <div class="time-label" id="time-label">TIME TO SINGULARITY</div>
-        <div class="nixie-clock">
-            <div class="tube" id="d-d">00</div>
-            :
-            <div class="tube" id="d-h">00</div>
-            :
-            <div class="tube" id="d-m">00</div>
-            :
-            <div class="tube" id="d-s">00</div>
-            .
-            <div class="tube" id="d-ms" style="font-size: 1.5rem">00</div>
+    <!-- Social Footer -->
+    <div class="social-plate">
+        <div class="social-grid">
+            <a href="https://github.com/gevak" class="social-stamp" title="GitHub" target="_blank">
+                <!-- Simple SVG Icon -->
+                <svg viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            </a>
+            <a href="https://linkedin.com/in/gevakip" class="social-stamp" title="LinkedIn" target="_blank">
+                <svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+            </a>
+            <a href="https://facebook.com/geva.kipper" class="social-stamp" title="Facebook" target="_blank">
+                <svg viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+            </a>
         </div>
-        <div class="ai-credit">
-            Architecture designated by Large Language Model Instance components.
+    </div>
+
+    <footer>
+        <div>Site architecture conceived by [DeepSeek R1].</div>
+        <div style="margin-top:20px; text-transform:uppercase; letter-spacing: 2px;">Time Until Initiation</div>
+        <div class="split-flap" id="countdown">
+            <span class="flap-char">00</span>:<span class="flap-char">00</span>:<span class="flap-char">00</span>
         </div>
     </footer>
 
     <script>
-        // --- 1. Canvas Punch Card Stream Background ---
-        const canvas = document.getElementById('punch-stream');
-        const ctx = canvas.getContext('2d');
-        
-        let width, height;
-        let scrollY = 0;
-        
-        // Configuration
-        const colWidth = 20;
-        const rowHeight = 12;
-        const gap = 2;
-        let cols, rows;
-        let dataMap = []; // Store which holes are "data" (lit up)
-
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-            cols = Math.ceil(width / colWidth);
-            rows = Math.ceil(height / rowHeight) + 2; // +2 for buffer
+        /* --- 1. THE PRESS ANIMATION --- */
+        window.onload = function() {
+            const pressOverlay = document.getElementById('press-machinery');
             
-            // Regenerate data map
-            dataMap = [];
-            for(let r=0; r<rows; r++) {
-                let rowData = [];
-                for(let c=0; c<cols; c++) {
-                    // 10% chance to be "data" (lit), 90% dim
-                    rowData.push(Math.random() > 0.95); 
-                }
-                dataMap.push(rowData);
-            }
-        }
-
-        function draw() {
-            ctx.fillStyle = '#0a0a0a'; // Clear with void
-            ctx.fillRect(0, 0, width, height);
-
-            // Calculate vertical offset based on scroll
-            const offset = scrollY % rowHeight;
-            const startRowIndex = Math.floor(scrollY / rowHeight);
-
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    // Determine visual Y position
-                    let y = (r * rowHeight) - offset;
-                    let x = c * colWidth;
-
-                    // Pseudo-random data scrolling logic to make the stream feel infinite
-                    // utilizing the r index + startRowIndex for noise consistency
-                    const isLit = (Math.sin((r + startRowIndex) * 0.5) * Math.cos(c * 0.3) > 0.8) || (Math.random() > 0.995);
-
-                    ctx.fillStyle = isLit ? '#222' : '#111';
-                    
-                    // Interaction logic: if card is active, nearby holes glow green
-                    // Simplified for performance: random scattered green
-                    if(isLit && Math.random() > 0.7) {
-                        ctx.fillStyle = '#1a2a1a'; // slight green tint
-                    }
-
-                    // Draw the chad
-                    ctx.fillRect(x + gap, y + gap, colWidth - gap*2, rowHeight - gap*2);
-                }
-            }
-            
-            requestAnimationFrame(draw);
-        }
-
-        window.addEventListener('resize', resize);
-        window.addEventListener('scroll', () => {
-            scrollY = window.scrollY;
-        });
-        
-        resize();
-        requestAnimationFrame(draw);
-
-        // --- 2. Header Typing Effect ---
-        const typeText = "Software Engineer at Google // System Status: Operational";
-        const typeEl = document.getElementById('typewriter');
-        let typeIdx = 0;
-
-        function typeWriter() {
-            if (typeIdx < typeText.length) {
-                typeEl.innerHTML += typeText.charAt(typeIdx);
-                typeIdx++;
-                setTimeout(typeWriter, 50); // Typing speed
-            }
-        }
-        
-        // Trigger header animation on load
-        window.onload = () => {
-            // Text fill effect
-            const hero = document.getElementById('hero-name');
+            // Animation Sequencing
             setTimeout(() => {
-                hero.classList.add('decoded');
+                // 1. Drop down
+                pressOverlay.style.transition = "transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1)";
+                pressOverlay.style.transform = "translateY(0%)";
+                
+                // 2. The Thud
+                setTimeout(() => {
+                    document.body.classList.add('shake-active');
+                    
+                    // 3. Lift up
+                    setTimeout(() => {
+                        pressOverlay.style.transition = "transform 1s ease-in";
+                        pressOverlay.style.transform = "translateY(-100%)";
+                        document.body.classList.remove('shake-active');
+                        
+                        // 4. Trigger Text Coalescence
+                        startScrambleEffect();
+                    }, 500);
+
+                }, 400);
             }, 500);
-            
-            // Start typing
-            setTimeout(typeWriter, 1500);
+
+            initClock();
+            initPolygonCanvas();
         };
 
-        // --- 3. The Laser Scan & Decoder Logic ---
-        const sectors = document.querySelectorAll('.sector');
-        
-        function checkScan() {
-            const scanLineY = window.innerHeight / 2;
-            const threshold = 150; // Distance from center to trigger
-
-            sectors.forEach(sector => {
-                const rect = sector.getBoundingClientRect();
-                const center = rect.top + (rect.height / 2);
-                const dist = Math.abs(center - scanLineY);
-
-                if (dist < threshold) {
-                    if (!sector.classList.contains('active')) {
-                        sector.classList.add('active');
-                        // Trigger specific effects if needed
-                        if(sector.id === 'card-3') triggerGeo(true);
-                        if(sector.id === 'card-5') triggerRhyme();
+        /* --- 2. CODE-TO-INK SCRAMBLER --- */
+        function startScrambleEffect() {
+            const elements = document.querySelectorAll('.scramble-text');
+            const chars = "10{};/<>";
+            
+            elements.forEach(el => {
+                const finalText = el.getAttribute('data-text');
+                const length = finalText.length;
+                let iteration = 0;
+                
+                // Set initial mono style
+                el.style.fontFamily = "'Fira Code', monospace";
+                
+                const interval = setInterval(() => {
+                    el.innerText = finalText
+                        .split("")
+                        .map((letter, index) => {
+                            if(index < iteration) return finalText[index];
+                            return chars[Math.floor(Math.random() * chars.length)]
+                        })
+                        .join("");
+                    
+                    if(iteration >= length){ 
+                        clearInterval(interval);
+                        // Reset font to original styling generally, but keep monospace for specific elements if needed
+                        if(el.classList.contains('name-plate')) el.style.fontFamily = "'Roboto Slab', serif";
+                        if(el.classList.contains('card-header')) el.style.fontFamily = "'Roboto Slab', serif";
                     }
-                } else {
-                    // Optional: Remove active class to make it re-scan when scrolling back?
-                    // Let's keep it active once scanned for better UX, or toggle for effect. 
-                    // Spec implies "As user scrolls... morph", implies continuous.
-                    if (dist > threshold + 100) {
-                       sector.classList.remove('active');
-                       if(sector.id === 'card-3') triggerGeo(false);
-                    }
-                }
+                    
+                    iteration += 1/3; // Speed of resolve
+                }, 30);
             });
         }
 
-        window.addEventListener('scroll', checkScan);
-
-        // --- 4. Project Specific Logic ---
-
-        // Project 3: Geometry Rotation
-        const geoSvg = document.getElementById('geo-engine');
-        function triggerGeo(active) {
-            // Can add specific animation start/stop here
-        }
-        document.getElementById('card-3').addEventListener('mousemove', (e) => {
-            if(!document.getElementById('card-3').classList.contains('active')) return;
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = e.clientX - rect.left - (rect.width/2);
-            const y = e.clientY - rect.top - (rect.height/2);
-            const angle = Math.atan2(y, x) * (180 / Math.PI);
-            geoSvg.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
-        });
-
-        // Project 4: Puns
-        const puns = [
-            "I'm reading a book on anti-gravity.",
-            "Impossible to put down.",
-            "I'd tell you a UDP joke...",
-            "But you might not get it.",
-            "There are 10 types of people.",
-            "Bits, please."
-        ];
-        setInterval(() => {
-            const el = document.getElementById('pun-display');
-            // Fade out
-            el.style.opacity = 0;
-            setTimeout(() => {
-                el.innerText = puns[Math.floor(Math.random() * puns.length)];
-                el.style.opacity = 0.05;
-            }, 1000);
-        }, 4000);
-
-        // Project 5: Rhymes
-        const headlines = [
-            { raw: "Government approves budget", rhyme: "Government approves, nobody moves." },
-            { raw: "Heatwave hits the coast", rhyme: "Heatwave hits, everyone quits." },
-            { raw: "Tech stocks tumble down", rhyme: "Tech stocks tumble, investors mumble." }
-        ];
-        function triggerRhyme() {
-            // Logic handled by interval mostly
-        }
-        
-        let rhymeIdx = 0;
-        setInterval(() => {
-            if (!document.getElementById('card-5').classList.contains('active')) return;
+        /* --- 3. COUNTDOWN CLOCK --- */
+        function initClock() {
+            const targetDate = new Date("2026-01-26T01:19:19").getTime();
+            const clockEl = document.getElementById('countdown');
             
-            const rawEl = document.getElementById('news-source');
-            const targetEl = document.getElementById('rhyme-target');
-            
-            const item = headlines[rhymeIdx];
-            
-            // "Type" raw
-            targetEl.style.color = '#ccc';
-            targetEl.innerText = item.raw + "...";
-            
-            setTimeout(() => {
-                // "Scan" effect -> replace
-                targetEl.style.color = 'var(--phosphor)';
-                targetEl.innerHTML = item.rhyme;
+            setInterval(() => {
+                const now = new Date().getTime();
+                const distance = targetDate - now;
                 
-                rhymeIdx = (rhymeIdx + 1) % headlines.length;
-            }, 1500);
-        }, 4000);
-
-        // --- 5. Footer Chronometer ---
-        const targetDate = new Date('2026-01-25T06:19:51').getTime();
-        const tubes = {
-            d: document.getElementById('d-d'),
-            h: document.getElementById('d-h'),
-            m: document.getElementById('d-m'),
-            s: document.getElementById('d-s'),
-            ms: document.getElementById('d-ms')
-        };
-        const label = document.getElementById('time-label');
-
-        function updateClock() {
-            const now = new Date().getTime();
-            let distance = targetDate - now;
-            let title = "TIME TO SINGULARITY";
-
-            if (distance < 0) {
-                distance = Math.abs(distance);
-                title = "TEMPORAL DISPLACEMENT";
-            }
-            
-            label.innerText = title;
-
-            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-            const ms = Math.floor((distance % 1000) / 10); // 2 digits
-
-            tubes.d.innerText = days.toString().padStart(2, '0');
-            tubes.h.innerText = hours.toString().padStart(2, '0');
-            tubes.m.innerText = minutes.toString().padStart(2, '0');
-            tubes.s.innerText = seconds.toString().padStart(2, '0');
-            tubes.ms.innerText = ms.toString().padStart(2, '0');
-
-            requestAnimationFrame(updateClock);
+                // If future passed, count up (Time Since Initiation)
+                const effectiveDistance = Math.abs(distance);
+                
+                const days = Math.floor(effectiveDistance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((effectiveDistance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((effectiveDistance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((effectiveDistance % (1000 * 60)) / 1000);
+                
+                // Simple formatting
+                const pad = (n) => n < 10 ? '0'+n : n;
+                
+                clockEl.innerHTML = `
+                    <span class="flap-char">${days}d</span>
+                    <span class="flap-char">${pad(hours)}</span>
+                    <span class="flap-char">${pad(minutes)}</span>
+                    <span class="flap-char">${pad(seconds)}</span>
+                `;
+            }, 1000);
         }
-        updateClock();
 
+        /* --- 4. INTERACTIVE CANVAS (2D PART ORIENTING) --- */
+        function initPolygonCanvas() {
+            const canvas = document.getElementById('polygonCanvas');
+            if(!canvas) return;
+            
+            const card = document.getElementById('card-orienting');
+            const ctx = canvas.getContext('2d');
+            
+            // Resize handler
+            const resize = () => {
+                canvas.width = card.offsetWidth;
+                canvas.height = card.offsetHeight;
+            };
+            resize();
+            window.addEventListener('resize', resize);
+
+            let rotation = 0;
+            let targetRotation = 0;
+            
+            // Interaction
+            card.addEventListener('mouseenter', () => { targetRotation = Math.PI / 2; }); // Snap horizontal
+            card.addEventListener('mouseleave', () => { targetRotation = 0; });
+
+            function draw() {
+                // Linear interpolation for smooth animation
+                rotation += (targetRotation - rotation) * 0.1;
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+                
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(rotation + Math.PI/4); // Initial offset
+                
+                // Draw irregular polygon
+                ctx.beginPath();
+                ctx.moveTo(-40, -30);
+                ctx.lineTo(40, -30);
+                ctx.lineTo(60, 20);
+                ctx.lineTo(0, 50);
+                ctx.lineTo(-50, 20);
+                ctx.closePath();
+                
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = "#1a1a1a";
+                ctx.stroke();
+                
+                // "Ink" fill
+                ctx.fillStyle = "rgba(26,26,27,0.1)";
+                ctx.fill();
+                
+                ctx.restore();
+                requestAnimationFrame(draw);
+            }
+            draw();
+        }
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260125",
+          pageId: "20260126",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
