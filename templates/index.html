@@ -2,690 +2,836 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | The Syntax Press</title>
+    <title>Geva Kipper | The Rabbit Hole</title>
     
-    <!-- Google Fonts -->
+    <!-- Fonts: High-end Serif (Alice-style) and Pixel Monospace -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Playfair+Display:ital,wght@1,400&family=Roboto+Slab:wght@700;900&family=Special+Elite&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,700;1,900&family=VT323&display=swap" rel="stylesheet">
 
     <style>
-        /* --- 1. SETTINGS & VARIABLES --- */
+        /* --- CSS VARIABLES & RESET --- */
         :root {
-            --paper-cream: #f4f1ea;
-            --soot-black: #1a1a1b;
-            --ink-black: #2b2b2b;
-            --error-red: #b83b3b;
-            --shadow-hard: 0 4px 6px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.2);
-            --shadow-pressed: inset 2px 2px 5px rgba(0,0,0,0.6), inset -1px -1px 2px rgba(255,255,255,0.3);
-            --metal-border: 4px solid #4a4a4a;
+            --bg-void: #0a0215;
+            --bg-black: #000000;
+            --neon-teal: #00f3ff;
+            --neon-magenta: #ff00ff;
+            --electric-white: #f0f0f0;
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --font-serif: 'Playfair Display', serif;
+            --font-mono: 'VT323', monospace;
         }
 
-        /* --- 2. GLOBAL AESTHETICS --- */
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+            cursor: none; /* Hide default cursor */
+        }
 
         body {
             margin: 0;
             padding: 0;
-            background-color: var(--paper-cream);
-            color: var(--soot-black);
-            font-family: 'Roboto Slab', serif;
+            background-color: var(--bg-void);
+            background: linear-gradient(to bottom, var(--bg-void) 0%, var(--bg-black) 100%);
+            color: var(--electric-white);
+            font-family: var(--font-mono);
             overflow-x: hidden;
-            /* Fibrous Paper Texture via CSS noise */
-            background-image: 
-                radial-gradient(#d4cfc3 1px, transparent 0),
-                repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 2px, transparent 2px, transparent 4px);
-            background-size: 20px 20px, 10px 10px;
+            min-height: 100vh;
         }
 
-        a { text-decoration: none; color: inherit; }
-
-        /* Animation Classes */
-        .scramble-text {
-            /* Initial state handled by JS */
-            opacity: 0.8;
+        a {
+            text-decoration: none;
+            color: inherit;
+            cursor: none;
         }
 
-        /* --- 3. THE PRESS ANIMATION OVERLAY --- */
-        #press-machinery {
+        /* --- GLOBAL EFFECTS (Overlay, Dust, Scrollbar) --- */
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-black);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--neon-teal);
+            border-radius: 4px;
+        }
+
+        /* CRT Scanlines Overlay */
+        .scanlines {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100vh;
-            background: linear-gradient(180deg, #222 0%, #444 80%, #111 100%);
-            z-index: 9999;
-            transform: translateY(-100%);
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            box-shadow: 0 50px 100px rgba(0,0,0,0.8);
-            border-bottom: 20px solid #111;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 999;
+            animation: flicker 0.15s infinite;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.95; }
+            100% { opacity: 1; }
+        }
+
+        /* Dust Particles */
+        .dust-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            perspective: 600px;
+        }
+        .dust {
+            position: absolute;
+            background: var(--neon-teal);
+            width: 2px; height: 2px;
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: driftUp 10s linear infinite;
+        }
+
+        @keyframes driftUp {
+            0% { transform: translateY(100vh) translateZ(0); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-10vh) translateZ(100px); opacity: 0; }
+        }
+
+        /* --- CUSTOM CURSOR --- */
+        #cursor-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 10000;
         }
         
-        #press-machinery::after {
-            content: "HEIDELBERG :: COMPILER TYPE-IV";
-            color: rgba(255,255,255,0.2);
-            font-family: 'Fira Code', monospace;
-            font-size: 2rem;
-            margin-bottom: 50px;
-            letter-spacing: 5px;
-        }
-
-        @keyframes screenShake {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            25% { transform: translate(-5px, 5px) rotate(-1deg); }
-            50% { transform: translate(5px, -5px) rotate(1deg); }
-            75% { transform: translate(-5px, 5px) rotate(0deg); }
-            100% { transform: translate(0, 0) rotate(0deg); }
-        }
-
-        .shake-active {
-            animation: screenShake 0.3s cubic-bezier(.36,.07,.19,.97) both;
-        }
-
-        /* --- 4. HEADER SECTION --- */
-        header {
-            padding: 80px 20px 60px;
-            max-width: 1200px;
-            margin: 0 auto;
-            position: relative;
-        }
-
-        h1.name-plate {
-            font-size: clamp(3rem, 8vw, 6rem);
-            margin: 0;
-            line-height: 0.9;
-            text-transform: uppercase;
-            letter-spacing: -2px;
-            /* Distressed Ink Effect */
-            background: linear-gradient(to top, rgba(26,26,27,0.9), rgba(26,26,27,1));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent; 
-            filter: contrast(150%) brightness(90%);
-            mask-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 100' xmlns='http://www.w3.org/2000/svg'><filter id='noise'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23noise)' opacity='0.5'/></svg>");
-        }
-
-        .tagline {
-            font-family: 'Fira Code', monospace;
-            font-size: 1.1rem;
-            margin-top: 15px;
-            border-top: 2px solid var(--soot-black);
-            display: inline-block;
-            padding-top: 10px;
-        }
-
-        .ai-stamp {
-            position: absolute;
-            top: 60px;
-            right: 20px;
-            border: 3px solid var(--error-red);
-            color: var(--error-red);
-            padding: 10px 20px;
-            font-family: 'Special Elite', cursive;
-            font-weight: bold;
-            transform: rotate(15deg);
-            border-radius: 4px 255px 3px 25px / 255px 5px 225px 5px; /* Irregular border */
-            opacity: 0.8;
-            mix-blend-mode: multiply;
-        }
-
-        /* --- 5. THE MAIN GRID --- */
-        .layout-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 30px;
-            max-width: 1200px;
-            margin: 0 auto 80px;
-            padding: 0 20px;
-        }
-
-        .project-card {
-            background: var(--paper-cream);
-            border: 1px solid rgba(0,0,0,0.1);
-            position: relative;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.1), -1px -1px 2px rgba(255,255,255,0.5);
-            padding: 20px;
-            overflow: hidden;
+        /* --- HERO SECTION --- */
+        .hero {
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            transition: transform 0.2s;
-        }
-        
-        .project-card:hover { /* Subtle lift on hover */
-            transform: translateY(-2px);
-        }
-
-        /* Metal Furniture Border simulation */
-        .project-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            border: 8px solid transparent;
-            border-image: repeating-linear-gradient(45deg, #bbb, #ddd 2px, #999 4px) 10;
-            opacity: 0.3;
-            pointer-events: none;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
             z-index: 10;
         }
 
-        .card-header {
-            font-family: 'Roboto Slab', serif;
-            font-size: 1.5rem;
-            border-bottom: 2px solid var(--soot-black);
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-            z-index: 2;
-        }
-
-        .card-body {
-            font-family: 'Fira Code', monospace;
-            font-size: 0.85rem;
-            line-height: 1.5;
-            flex-grow: 1;
-            z-index: 2;
-        }
-
-        .card-footer {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            z-index: 2;
-        }
-
-        /* --- PROJECT SPECIFIC STYLES --- */
-
-        /* 1. GlglStats */
-        .card-glgl {
-            background-color: #f7f3e8;
-        }
-        .card-glgl .bg-overlay {
-            position: absolute; top:0; left:0; width:100%; height:100%;
-            opacity: 0.05;
-            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='10' y='20' font-family='monospace' font-size='10'%3E&#x266B;%3C/text%3E%3Ctext x='25' y='35' font-family='monospace' font-size='8'%3E01%3C/text%3E%3C/svg%3E");
-        }
-        .film-frame {
-            border: 6px dashed #1a1a1a;
-            padding: 5px;
-            background: #000;
-            margin-bottom: 10px;
-        }
-        .film-frame img { display: block; width: 100%; filter: grayscale(1); transition: filter 0.3s; }
-        .film-frame:hover img { filter: grayscale(0); }
-        .ticket-stub {
-            background: #e0d8c8;
-            padding: 8px 12px;
-            font-weight: bold;
-            font-size: 0.8rem;
-            border: 1px dashed #666;
-            border-bottom: 2px dotted #000;
-            position: relative;
-            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 95% 90%, 90% 100%, 85% 90%, 80% 100%, 75% 90%, 70% 100%, 65% 90%, 60% 100%, 55% 90%, 50% 100%, 45% 90%, 40% 100%, 35% 90%, 30% 100%, 25% 90%, 20% 100%, 15% 90%, 10% 100%, 5% 90%, 0% 100%);
-        }
-
-        /* 2. Ahuzat Dibuk */
-        .card-map { position: relative; }
-        .map-bg {
-            position: absolute; top:0; left:0; width:100%; height:100%;
-            background-image: repeating-linear-gradient(90deg, transparent 0, transparent 19px, #ddd 20px), repeating-linear-gradient(0deg, transparent 0, transparent 19px, #ddd 20px);
-            opacity: 0.4;
-        }
-        .heat-spot {
-            position: absolute;
-            width: 80px; height: 80px;
-            background: radial-gradient(circle, rgba(26,26,27,0.4) 0%, transparent 70%);
-            border-radius: 50%;
-            top: 40%; left: 30%;
-        }
-        .newspaper-clip {
-            background: #fff;
-            padding: 5px 8px;
-            font-family: 'Playfair Display', serif;
+        .glitch-name {
+            font-family: var(--font-serif);
+            font-size: 5rem;
+            font-weight: 900;
             font-style: italic;
-            box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-            transform: rotate(-2deg);
-            border: 1px solid #ccc;
-            margin-right: 5px;
-        }
-        .newspaper-clip:hover { transform: scale(1.05) rotate(0deg); }
-
-        /* 3. 2D Part Orienting */
-        .card-canvas { position: relative; }
-        #polygonCanvas {
-            position: absolute; top:0; left:0; width:100%; height:100%;
-            z-index: 1;
-            opacity: 0.3;
-        }
-        .card-canvas .card-body { position: relative; z-index: 2; pointer-events: none; }
-        .tech-stack {
-            font-size: 0.7rem; color: #555; margin-top: 5px; display: block;
+            position: relative;
+            color: var(--electric-white);
+            text-shadow: 2px 2px var(--neon-magenta), -2px -2px var(--neon-teal);
+            margin-bottom: 20px;
         }
 
-        /* 4. The Turing Jest */
-        .card-arena {
-            border: 4px double var(--soot-black);
-            background-image: linear-gradient(rgba(244, 241, 234, 0.9), rgba(244, 241, 234, 0.9)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="%23eee"/><rect width="1" height="1" fill="%23ccc"/></svg>');
-        }
-        .arena-title span:first-child { font-family: 'Playfair Display', serif; font-size: 1.2em; }
-        .arena-title span:last-child { font-family: 'Fira Code', monospace; font-weight: bold; letter-spacing: -1px;}
-        .arena-btn {
-            background: var(--soot-black);
-            color: #fff;
-            padding: 8px 20px;
-            font-family: 'Special Elite';
-            text-transform: uppercase;
-            border-radius: 2px;
-        }
-
-        /* 5. Rhymes of Israel */
-        .card-comic {
-            /* Halftone pattern */
-            background-image: radial-gradient(#aaa 15%, transparent 16%), radial-gradient(#aaa 15%, transparent 16%);
-            background-size: 10px 10px;
-            background-position: 0 0, 5px 5px;
-            background-color: #fff;
-        }
-        .card-comic .content-box {
-            background: #fff;
-            border: 2px solid #000;
-            padding: 10px;
-            box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
-        }
-        .sticker-link {
-            background: #ffcc00;
-            color: #000;
-            padding: 5px 10px;
-            border-radius: 50%;
-            font-size: 0.7rem;
-            font-weight: bold;
-            display: inline-block;
-            transform: rotate(10deg);
-            border: 1px solid #000;
-        }
-
-        /* 6. Portfolio (Meta) */
-        .card-meta {
-            overflow: hidden;
-            background: #e8e8e8;
-        }
-        /* CSS Recursion Simulation */
-        .meta-layer {
-            border: 1px solid #555;
-            background: var(--paper-cream);
-            padding: 5%;
+        /* Glitch Animation Keyframes */
+        .glitch-name::before, .glitch-name::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0;
             width: 100%; height: 100%;
-            display: flex; flex-direction: column;
+            background: var(--bg-void);
         }
-        .meta-layer .header-mock { height: 10%; background: #333; margin-bottom: 5px; }
-        .meta-layer .grid-mock { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; flex-grow: 1; }
-        .meta-layer .box-mock { border: 1px solid #ccc; }
-        .recursion-container {
-            width: 80px; height: 100px;
-            position: absolute; right: 10px; bottom: 10px;
-            transform: rotate(-5deg);
-            opacity: 0.6;
+        .glitch-name::before {
+            left: 2px;
+            text-shadow: -1px 0 var(--neon-magenta);
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim-1 5s infinite linear alternate-reverse;
+        }
+        .glitch-name::after {
+            left: -2px;
+            text-shadow: -1px 0 var(--neon-teal);
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim-2 5s infinite linear alternate-reverse;
         }
 
-        /* --- 6. SOCIAL FOOTER --- */
-        .social-plate {
-            background: #e6e2d8;
-            padding: 40px 0;
-            border-top: 4px double var(--soot-black);
-            text-align: center;
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(20px, 9999px, 80px, 0); }
+            5% { clip: rect(90px, 9999px, 100px, 0); }
+            100% { clip: rect(10px, 9999px, 30px, 0); }
         }
-        .social-grid {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(60px, 9999px, 70px, 0); }
+            5% { clip: rect(10px, 9999px, 20px, 0); }
+            100% { clip: rect(80px, 9999px, 90px, 0); }
         }
-        .social-stamp {
-            width: 60px; height: 60px;
-            background: #b83b3b; /* Red Wax */
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            color: rgba(255,255,255,0.9);
-            box-shadow: var(--shadow-hard);
-            border: 2px dashed rgba(0,0,0,0.3);
+
+        .hero-bio {
+            font-family: var(--font-mono);
             font-size: 1.5rem;
-            transition: all 0.2s;
+            color: var(--neon-teal);
+            margin-bottom: 40px;
+            min-height: 1.5em;
         }
-        .social-stamp:hover {
-            transform: scale(0.95);
-            box-shadow: var(--shadow-pressed);
-        }
-        .social-stamp svg { width: 24px; height: 24px; fill: currentColor; }
+        .cursor-blink { animation: blink 1s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
 
-        /* --- 7. BOTTOM FOOTER & CLOCK --- */
-        footer {
-            background: var(--soot-black);
-            color: #888;
-            padding: 30px 20px;
-            border-top: 6px double #333;
+        .ai-alert {
+            max-width: 600px;
+            padding: 15px;
+            border: 2px solid #ffff00;
+            background: repeating-linear-gradient(
+                45deg,
+                #000,
+                #000 10px,
+                #ffff00 10px,
+                #ffff00 20px
+            );
+            position: relative;
+            transform: rotate(-1deg);
+            box-shadow: 0 0 15px #ffff00;
+        }
+
+        .ai-alert-inner {
+            background: #000;
+            color: #ffff00;
+            padding: 10px;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            border: 1px solid #ffff00;
+        }
+
+        /* --- THE SPIRAL TUNNEL LAYOUT --- */
+        #spiral-container {
+            position: relative;
+            height: 400vh; /* creates scroll space */
+            transform-style: preserve-3d;
+            perspective: 1000px;
+            overflow: hidden; /* Hide overflow of fixed wrapper */
+        }
+
+        .tunnel-fixed-wrapper {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 800px;
+            pointer-events: none; /* Allow scroll through */
+            z-index: 5;
+        }
+
+        .tunnel-pivot {
+            position: relative;
+            width: 100%; height: 100%;
+            transform-style: preserve-3d;
+            /* Main transformation driven by JS */
+        }
+
+        .project-card {
+            position: absolute;
+            left: 50%; top: 50%;
+            width: 500px; height: 320px;
+            margin-left: -250px; margin-top: -160px;
+            background: rgba(10, 2, 21, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 0 20px rgba(0,243,255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            pointer-events: auto;
+            transition: box-shadow 0.3s, border-color 0.3s;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            font-family: 'Fira Code', monospace;
-            font-size: 0.8rem;
+            backface-visibility: hidden;
         }
 
-        .split-flap {
-            display: flex;
-            gap: 5px;
-            margin-top: 15px;
-            font-size: 1.2rem;
-            color: #eee;
+        .project-card:hover {
+            border-color: var(--neon-magenta);
+            box-shadow: 5px 5px 0px var(--neon-teal), -5px -5px 0px var(--neon-magenta);
+            z-index: 100;
         }
-        .flap-char {
-            background: #222;
-            padding: 5px 8px;
-            border-radius: 4px;
-            border-bottom: 1px solid #000;
-            box-shadow: 0 1px 0 #333;
+        
+        /* Card Cracking Glitch Effect */
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 10 L50 50 L20 80' stroke='rgba(255,255,255,0.2)' fill='none' stroke-width='1' /%3E%3C/svg%3E");
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .project-card:hover::before {
+            opacity: 1;
+        }
+
+        .card-header {
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border-bottom: 1px solid var(--glass-border);
+            font-family: var(--font-serif);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-content {
+            flex: 1;
+            padding: 15px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .card-description {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            color: #ccc;
+        }
+        .card-links {
+            margin-top: auto;
+            font-size: 0.8rem;
+        }
+        .card-links a {
+            color: var(--neon-teal);
+            margin-right: 15px;
+            text-transform: uppercase;
+        }
+        .card-links a:hover {
+            background: var(--neon-teal);
+            color: #000;
+        }
+
+        /* --- SPECIFIC CARD STYLES --- */
+
+        /* Box 1: GlglStats (VHS) */
+        .vhs-wrapper {
+            width: 100%; height: 140px;
+            background: #000;
+            overflow: hidden;
             position: relative;
         }
-        .flap-char::after {
-            content:''; position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: rgba(0,0,0,0.8);
+        .vhs-filter {
+            width: 100%; height: 100%;
+            filter: sepia(0.3) blur(0.5px) contrast(1.2);
+        }
+        .sound-wave {
+            position: absolute;
+            bottom: 10px; left: 0; width: 100%; height: 20px;
+            background: repeating-linear-gradient(90deg, transparent, transparent 2px, lime 2px, lime 4px);
+            animation: expandWave 0.5s infinite alternate;
+            transform-origin: bottom;
+        }
+        .project-card:hover .sound-wave { transform: scaleY(3); filter: hue-rotate(90deg); }
+
+        /* Box 2: Ahuzat Dibuk (Heatmap) */
+        .heatmap-visual {
+            background: #111;
+            /* Simple CSS abstract map */
+            background-image: radial-gradient(circle at 30% 40%, rgba(255,0,0,0.6) 0%, transparent 40%),
+                              radial-gradient(circle at 70% 60%, rgba(255,0,0,0.4) 0%, transparent 30%);
+            width: 100%; height: 120px;
+            animation: pulseHeat 2s infinite;
+        }
+        @keyframes pulseHeat { 0% { opacity: 0.7;} 50% { opacity: 1; } 100% { opacity: 0.7; } }
+        .redacted {
+            background: #fff;
+            color: #fff;
+            padding: 0 4px;
+            transition: 0.3s;
+        }
+        .card-links a:hover .redacted, .redacted:hover {
+            background: transparent;
+            color: var(--neon-teal);
+        }
+
+        /* Box 3: 2D Geometry */
+        .geo-visual {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 120px;
+        }
+        .polygon {
+            width: 60px; height: 60px;
+            border: 2px solid var(--neon-teal);
+            transform: rotate(15deg);
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        .project-card:hover .polygon {
+            transform: rotate(0deg) scale(1.1);
+            border-color: var(--neon-magenta);
+            box-shadow: 0 0 10px var(--neon-magenta);
+        }
+
+        /* Box 4: Turing Jest (Chat) */
+        .chat-visual {
+            display: flex;
+            height: 120px;
+            border: 1px solid #333;
+        }
+        .side-red { flex: 1; background: rgba(255,0,0,0.1); border-right: 1px solid #333; display: grid; place-items: center; color: red; }
+        .side-blue { flex: 1; background: rgba(0,0,255,0.1); display: grid; place-items: center; color: cyan; }
+        .chat-log { font-size: 0.7rem; padding: 5px; font-family: monospace; }
+
+        /* Box 5: Rhymes (Newspaper) */
+        .newspaper-header {
+            font-family: "Times New Roman", serif;
+            font-size: 1.5rem;
+            text-align: center;
+            transition: 0.3s;
+        }
+        .project-card:hover .newspaper-header {
+            font-family: "Comic Sans MS", "Comic Sans", cursive;
+            color: yellow;
+            transform: rotate(-5deg) scale(1.1);
+        }
+
+        /* Box 6: Meta Portfolio (Droste) */
+        .infinite-wrapper {
+            position: relative;
+            width: 100%; height: 100px;
+            background: var(--bg-void);
+            border: 1px solid var(--neon-teal);
+            display: grid; place-items: center;
+            overflow: hidden;
+        }
+        .infinite-child {
+            width: 70%; height: 70%;
+            border: 1px solid var(--neon-magenta);
+            display: grid; place-items: center;
+        }
+        .infinite-grandchild {
+            width: 50%; height: 50%;
+            border: 1px solid #fff;
+        }
+        .recursion-link { animation: glowPulse 1s infinite alternate; }
+        @keyframes glowPulse { from {text-shadow: 0 0 5px #fff;} to {text-shadow: 0 0 20px var(--neon-magenta);} }
+
+        /* --- SOCIALS (POTIONS) --- */
+        #socials-section {
+            padding: 100px 20px;
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .potion {
+            width: 80px; height: 100px;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 40px 40px 10px 10px; /* Bottle shape */
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s;
+            overflow: hidden;
+            background: rgba(255,255,255,0.05);
+        }
+        .potion:hover { transform: translateY(-10px); }
+        
+        .potion::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; width: 100%; height: 40%;
+            z-index: -1;
+        }
+        .potion-github::after { background: var(--neon-teal); box-shadow: 0 0 20px var(--neon-teal); }
+        .potion-linkedin::after { background: #0077b5; box-shadow: 0 0 20px #0077b5; }
+        .potion-facebook::after { background: #1877f2; box-shadow: 0 0 20px #1877f2; }
+
+        .potion-icon { font-size: 2rem; z-index: 2; text-shadow: 0 2px 5px #000; }
+
+        /* --- FOOTER --- */
+        footer {
+            background: #000;
+            padding: 40px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #333;
+            position: relative;
+            z-index: 20;
+        }
+        .footer-left {
+            font-size: 0.8rem;
+            color: #555;
+        }
+        .footer-clock {
+            text-align: right;
+        }
+        .timer-display {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 2rem;
+            color: red;
+            font-weight: bold;
+            text-shadow: 0 0 10px red;
+        }
+        .timer-label {
+            font-size: 0.7rem;
+            color: #555;
+            letter-spacing: 2px;
+        }
+
+        /* --- MEDIA QUERIES --- */
+        @media (max-width: 768px) {
+            .glitch-name { font-size: 3rem; }
+            .project-card { 
+                width: 90%; 
+                height: auto; 
+                margin: 0;
+                left: 5%;
+                top: 0;
+                position: relative;
+                margin-bottom: 20px;
+                transform: none !important; /* Flatten spiral for mobile */
+            }
+            #spiral-container { height: auto; overflow: visible; }
+            .tunnel-fixed-wrapper { position: relative; height: auto; display: block; perspective: none; }
+            .tunnel-pivot { display: flex; flex-direction: column; padding-top: 50px; }
+            #socials-section { flex-direction: column; align-items: center; gap: 20px; }
         }
         
     </style>
 </head>
 <body>
 
-    <!-- MACHINERY OVERLAY (Animation) -->
-    <div id="press-machinery"></div>
+    <!-- CRT Overlay -->
+    <div class="scanlines"></div>
+    
+    <!-- Canvas for Rabbit Cursor & Trail -->
+    <canvas id="cursor-layer"></canvas>
 
-    <header>
-        <h1 class="name-plate scramble-text" data-text="GEVA KIPPER">01010110</h1>
-        <div class="tagline scramble-text" data-text="Software Engineer at Google, building systems that scale.">Loading binary...</div>
-        <div class="ai-stamp">
-            GENERATED BY AI<br>
-            <span style="font-size:0.7em">ITERATION #294</span>
+    <!-- Floating Dust -->
+    <div class="dust-container" id="dust-container"></div>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <h1 class="glitch-name" data-text="GEVA KIPPER">GEVA KIPPER</h1>
+        <div class="hero-bio" id="typing-bio"></div>
+        <div class="cursor-blink">_</div>
+        
+        <div class="ai-alert" style="margin-top: 30px;">
+            <div class="ai-alert-inner">
+                ⚠ System Alert: This interface is re-architected daily by an autonomous AI. Structure is unstable.
+            </div>
         </div>
+        <p style="margin-top: 20px; font-size: 0.8rem; color: #555;">[SCROLL DOWN TO ENTER RABBIT HOLE]</p>
     </header>
 
-    <main class="layout-grid">
-
-        <!-- 1. GlglStats -->
-        <article class="project-card card-glgl">
-            <div class="bg-overlay"></div>
-            <div class="card-header scramble-text" data-text="GlglStats">...</div>
-            <div class="card-body">
-                <div class="film-frame">
-                    <!-- YouTube Thumbnail Fallback/Simulation -->
-                    <div style="background:#333; height: 100px; display:flex; align-items:center; justify-content:center; color:#fff;">
-                        [ VIDEO FRAME ]
+    <!-- The Spiral / Projects -->
+    <main id="spiral-container">
+        <div class="tunnel-fixed-wrapper">
+            <div class="tunnel-pivot" id="tunnel-pivot">
+                
+                <!-- Box 1 -->
+                <div class="project-card" data-z="0" data-rot="0">
+                    <div class="card-header">
+                        <span>SYS.ID: 001</span>
+                        <span>GLGLSTATS</span>
+                    </div>
+                    <div class="card-content">
+                        <div class="vhs-wrapper">
+                            <div class="sound-wave"></div>
+                            <!-- Embed placeholder/image -->
+                            <div class="vhs-filter" style="display:flex; align-items:center; justify-content:center; color:#555;">[VIDEO SIGNAL DETECTED]</div>
+                        </div>
+                        <p class="card-description">Audio wave compression & analysis. VHS filtered output.</p>
+                        <div class="card-links">
+                            <a href="https://glglstats.geekip.dev" target="_blank">Access Site</a>
+                            <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">Watch Tape</a>
+                        </div>
                     </div>
                 </div>
-                Detailed stats and visualizations for Israel's radio charts.
-            </div>
-            <div class="card-footer">
-                <a href="https://glglstats.geekip.dev" class="ticket-stub" target="_blank">VISIT SITE</a>
-                <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" class="ticket-stub" target="_blank">WATCH TALK</a>
-            </div>
-        </article>
 
-        <!-- 2. Ahuzat Dibuk -->
-        <article class="project-card card-map">
-            <div class="map-bg"></div>
-            <div class="heat-spot"></div>
-            <div class="card-header scramble-text" data-text="Ahuzat Dibuk">...</div>
-            <div class="card-body">
-                <p>Reverse-engineered a private parking lot API to visualize occupancy in real-time. Tel Aviv's parking crisis, mapped.</p>
-            </div>
-            <div class="card-footer">
-                <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" class="newspaper-clip" target="_blank">Ch.13 News</a>
-                <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" class="newspaper-clip" target="_blank">Mako</a>
-                <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" class="newspaper-clip" target="_blank">FB Post</a>
-            </div>
-        </article>
-
-        <!-- 3. 2D Part Orienting -->
-        <article class="project-card card-canvas" id="card-orienting">
-            <canvas id="polygonCanvas"></canvas>
-            <div class="card-header scramble-text" data-text="2D Part Orienting">...</div>
-            <div class="card-body">
-                Algorithms for sensorless manipulation of parts using a flat fence.
-                <span class="tech-stack">&lt;C++ / Computational Geometry /&gt;</span>
-            </div>
-            <div class="card-footer">
-                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" style="font-family:'Fira Code'; text-decoration: underline;" target="_blank">View Research & Code</a>
-            </div>
-        </article>
-
-        <!-- 4. The Turing Jest -->
-        <article class="project-card card-arena">
-            <div class="card-header arena-title">
-                <span>The Human</span> vs <span>THE LLM</span>
-            </div>
-            <div class="card-body">
-                A digital arena where human wit clashes with machine humor. A pun generation competition judged by the masses.
-            </div>
-            <div class="card-footer">
-                <a href="https://jest.geekip.dev" class="arena-btn" target="_blank">Enter Arena</a>
-            </div>
-        </article>
-
-        <!-- 5. Rhymes of Israel -->
-        <article class="project-card card-comic">
-            <div class="content-box">
-                <div class="card-header scramble-text" data-text="Rhymes of Israel">...</div>
-                <div class="card-body" style="font-style: italic;">
-                    "The news is bleak,<br>
-                    the headlines scream,<br>
-                    so I built a bot,<br>
-                    to make them dream."
-                    <br><br>
-                    Chrome extension turning news sites into rhythmic verse.
-                </div>
-                <div class="card-footer">
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" class="sticker-link" target="_blank">GET IT CHROME</a>
-                </div>
-            </div>
-        </article>
-
-        <!-- 6. Portfolio (Meta) -->
-        <article class="project-card card-meta">
-            <div class="card-header scramble-text" data-text="Recursive">...</div>
-            <div class="card-body">
-                A website designed by AI, explaining that it is designed by AI.
-                <br><br>
-                <a href="https://geekip.dev" style="color:var(--error-red); text-shadow: 0 0 5px rgba(184,59,59,0.5);">geekip.dev</a>
-            </div>
-            <!-- CSS Representation of Recursion -->
-            <div class="recursion-container">
-                <div class="meta-layer">
-                    <div class="header-mock"></div>
-                    <div class="grid-mock">
-                        <div class="box-mock"></div><div class="box-mock"></div>
-                        <div class="box-mock"></div>
-                        <div class="meta-layer" style="transform: scale(0.5); border-color: red;"></div>
+                <!-- Box 2 -->
+                <div class="project-card" data-z="600" data-rot="60">
+                    <div class="card-header">
+                        <span>SYS.ID: 002</span>
+                        <span>AHUZAT DIBUK</span>
+                    </div>
+                    <div class="card-content">
+                        <div class="heatmap-visual"></div>
+                        <p class="card-description">Tel-Aviv thermal activity. Data sources heavily redacted.</p>
+                        <div class="card-links">
+                            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank"><span class="redacted">MEDIA_01</span></a>
+                            <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank"><span class="redacted">SOC_LNK</span></a>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </article>
 
+                <!-- Box 3 -->
+                <div class="project-card" data-z="1200" data-rot="120">
+                    <div class="card-header">
+                        <span>SYS.ID: 003</span>
+                        <span>2D ORIENTING</span>
+                    </div>
+                    <div class="card-content">
+                        <div class="geo-visual">
+                            <div class="polygon"></div>
+                        </div>
+                        <p class="card-description">Algorithmic geometry alignment. Attempts to resolve chaos.</p>
+                        <div class="card-links">
+                            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">University Archives</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Box 4 -->
+                <div class="project-card" data-z="1800" data-rot="180">
+                    <div class="card-header">
+                        <span>SYS.ID: 004</span>
+                        <span>THE TURING JEST</span>
+                    </div>
+                    <div class="card-content">
+                        <div class="chat-visual">
+                            <div class="side-red">LLM_A</div>
+                            <div class="side-blue">LLM_B</div>
+                        </div>
+                        <p class="card-description">AI vs AI comedy battle arena. Logic processors overheating.</p>
+                        <div class="card-links">
+                            <a href="https://jest.geekip.dev" target="_blank">Enter Arena</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Box 5 -->
+                <div class="project-card" data-z="2400" data-rot="240">
+                    <div class="card-header">
+                        <span>SYS.ID: 005</span>
+                        <span>RHYMES OF ISRAEL</span>
+                    </div>
+                    <div class="card-content">
+                        <h2 class="newspaper-header">THE DAILY RHYME</h2>
+                        <p class="card-description">Browser extension converting news to comedic stanzas.</p>
+                        <div class="card-links">
+                            <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank">Chrome Store</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Box 6 -->
+                <div class="project-card" data-z="3000" data-rot="300">
+                    <div class="card-header">
+                        <span>SYS.ID: 006</span>
+                        <span>META PORTFOLIO</span>
+                    </div>
+                    <div class="card-content">
+                        <div class="infinite-wrapper">
+                            <div class="infinite-child">
+                                <div class="infinite-grandchild"></div>
+                            </div>
+                        </div>
+                        <p class="card-description">Recursive self-reference. Infinite loop detected.</p>
+                        <div class="card-links">
+                            <a href="https://geekip.dev" class="recursion-link">LOOP(CURRENT)</a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
     </main>
 
-    <!-- Social Footer -->
-    <div class="social-plate">
-        <div class="social-grid">
-            <a href="https://github.com/gevak" class="social-stamp" title="GitHub" target="_blank">
-                <!-- Simple SVG Icon -->
-                <svg viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-            </a>
-            <a href="https://linkedin.com/in/gevakip" class="social-stamp" title="LinkedIn" target="_blank">
-                <svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-            </a>
-            <a href="https://facebook.com/geva.kipper" class="social-stamp" title="Facebook" target="_blank">
-                <svg viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
-            </a>
-        </div>
+    <!-- Socials Section -->
+    <div id="socials-section">
+        <a href="https://github.com/gevak" target="_blank" class="potion potion-github">
+            <span class="potion-icon">&lt;/&gt;</span>
+        </a>
+        <a href="https://linkedin.com/in/gevakip" target="_blank" class="potion potion-linkedin">
+            <span class="potion-icon">in</span>
+        </a>
+        <a href="https://facebook.com/geva.kipper" target="_blank" class="potion potion-facebook">
+            <span class="potion-icon">👍</span>
+        </a>
     </div>
 
+    <!-- Footer -->
     <footer>
-        <div>Site architecture conceived by [DeepSeek R1].</div>
-        <div style="margin-top:20px; text-transform:uppercase; letter-spacing: 2px;">Time Until Initiation</div>
-        <div class="split-flap" id="countdown">
-            <span class="flap-char">00</span>:<span class="flap-char">00</span>:<span class="flap-char">00</span>
+        <div class="footer-left">
+            > Site Architecture Generated by: GPT-4<br>
+            > Status: Unstable<br>
+            > Location: Rock Bottom
+        </div>
+        <div class="footer-clock">
+            <div class="timer-label">TIME SINCE SINGULARITY (2026-01-27)</div>
+            <div class="timer-display" id="singularity-timer">00:00:00:000</div>
         </div>
     </footer>
 
+    <!-- JavaScript Implementation -->
     <script>
-        /* --- 1. THE PRESS ANIMATION --- */
-        window.onload = function() {
-            const pressOverlay = document.getElementById('press-machinery');
+        document.addEventListener('DOMContentLoaded', () => {
             
-            // Animation Sequencing
-            setTimeout(() => {
-                // 1. Drop down
-                pressOverlay.style.transition = "transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1)";
-                pressOverlay.style.transform = "translateY(0%)";
-                
-                // 2. The Thud
-                setTimeout(() => {
-                    document.body.classList.add('shake-active');
-                    
-                    // 3. Lift up
-                    setTimeout(() => {
-                        pressOverlay.style.transition = "transform 1s ease-in";
-                        pressOverlay.style.transform = "translateY(-100%)";
-                        document.body.classList.remove('shake-active');
-                        
-                        // 4. Trigger Text Coalescence
-                        startScrambleEffect();
-                    }, 500);
+            // --- 1. DUST PARTICLES GENERATION ---
+            const dustContainer = document.getElementById('dust-container');
+            for(let i=0; i<50; i++) {
+                const dust = document.createElement('div');
+                dust.classList.add('dust');
+                dust.style.left = Math.random() * 100 + 'vw';
+                dust.style.top = Math.random() * 100 + 'vh';
+                dust.style.animationDelay = Math.random() * 5 + 's';
+                dust.style.opacity = Math.random();
+                dustContainer.appendChild(dust);
+            }
 
-                }, 400);
-            }, 500);
-
-            initClock();
-            initPolygonCanvas();
-        };
-
-        /* --- 2. CODE-TO-INK SCRAMBLER --- */
-        function startScrambleEffect() {
-            const elements = document.querySelectorAll('.scramble-text');
-            const chars = "10{};/<>";
+            // --- 2. HERO TYPING EFFECT ---
+            const bioText = "Currently engineering the future at Google.";
+            const typingEl = document.getElementById('typing-bio');
+            let typeIndex = 0;
             
-            elements.forEach(el => {
-                const finalText = el.getAttribute('data-text');
-                const length = finalText.length;
-                let iteration = 0;
-                
-                // Set initial mono style
-                el.style.fontFamily = "'Fira Code', monospace";
-                
-                const interval = setInterval(() => {
-                    el.innerText = finalText
-                        .split("")
-                        .map((letter, index) => {
-                            if(index < iteration) return finalText[index];
-                            return chars[Math.floor(Math.random() * chars.length)]
-                        })
-                        .join("");
-                    
-                    if(iteration >= length){ 
-                        clearInterval(interval);
-                        // Reset font to original styling generally, but keep monospace for specific elements if needed
-                        if(el.classList.contains('name-plate')) el.style.fontFamily = "'Roboto Slab', serif";
-                        if(el.classList.contains('card-header')) el.style.fontFamily = "'Roboto Slab', serif";
-                    }
-                    
-                    iteration += 1/3; // Speed of resolve
-                }, 30);
-            });
-        }
+            function typeBio() {
+                if (typeIndex < bioText.length) {
+                    typingEl.textContent += bioText.charAt(typeIndex);
+                    typeIndex++;
+                    setTimeout(typeBio, Math.random() * 50 + 50);
+                }
+            }
+            setTimeout(typeBio, 1000);
 
-        /* --- 3. COUNTDOWN CLOCK --- */
-        function initClock() {
-            const targetDate = new Date("2026-01-26T01:19:19").getTime();
-            const clockEl = document.getElementById('countdown');
-            
-            setInterval(() => {
-                const now = new Date().getTime();
-                const distance = targetDate - now;
-                
-                // If future passed, count up (Time Since Initiation)
-                const effectiveDistance = Math.abs(distance);
-                
-                const days = Math.floor(effectiveDistance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((effectiveDistance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((effectiveDistance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((effectiveDistance % (1000 * 60)) / 1000);
-                
-                // Simple formatting
-                const pad = (n) => n < 10 ? '0'+n : n;
-                
-                clockEl.innerHTML = `
-                    <span class="flap-char">${days}d</span>
-                    <span class="flap-char">${pad(hours)}</span>
-                    <span class="flap-char">${pad(minutes)}</span>
-                    <span class="flap-char">${pad(seconds)}</span>
-                `;
-            }, 1000);
-        }
-
-        /* --- 4. INTERACTIVE CANVAS (2D PART ORIENTING) --- */
-        function initPolygonCanvas() {
-            const canvas = document.getElementById('polygonCanvas');
-            if(!canvas) return;
-            
-            const card = document.getElementById('card-orienting');
+            // --- 3. CUSTOM CURSOR (Rabbit + Binary Trail) ---
+            const canvas = document.getElementById('cursor-layer');
             const ctx = canvas.getContext('2d');
             
-            // Resize handler
-            const resize = () => {
-                canvas.width = card.offsetWidth;
-                canvas.height = card.offsetHeight;
-            };
-            resize();
-            window.addEventListener('resize', resize);
+            let width = window.innerWidth;
+            let height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
 
-            let rotation = 0;
-            let targetRotation = 0;
-            
-            // Interaction
-            card.addEventListener('mouseenter', () => { targetRotation = Math.PI / 2; }); // Snap horizontal
-            card.addEventListener('mouseleave', () => { targetRotation = 0; });
+            let mouse = { x: width/2, y: height/2 };
+            let trail = [];
 
-            function draw() {
-                // Linear interpolation for smooth animation
-                rotation += (targetRotation - rotation) * 0.1;
+            window.addEventListener('resize', () => {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+            });
 
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
                 
-                const cx = canvas.width / 2;
-                const cy = canvas.height / 2;
-                
+                // Add binary to trail
+                trail.push({
+                    x: mouse.x,
+                    y: mouse.y,
+                    val: Math.random() > 0.5 ? '1' : '0',
+                    life: 1.0
+                });
+            });
+
+            // Draw Rabbit
+            const rabbitPath = new Path2D("M15,30 C5,30 5,10 15,10 C18,10 20,15 20,15 C20,15 22,10 25,10 C35,10 35,30 25,30 Z M15,30 L15,40 M25,30 L25,40");
+
+            function animateCursor() {
+                ctx.clearRect(0, 0, width, height);
+
+                // Draw trail
+                ctx.font = "12px monospace";
+                for (let i = 0; i < trail.length; i++) {
+                    const t = trail[i];
+                    ctx.fillStyle = `rgba(0, 243, 255, ${t.life})`;
+                    ctx.fillText(t.val, t.x + (Math.random()*10-5), t.y + (Math.random()*10-5));
+                    t.life -= 0.02; // Fade out
+                    t.y -= 1; // Float up
+                }
+                // Remove dead particles
+                trail = trail.filter(t => t.life > 0);
+
+                // Draw Rabbit Wireframe cursor
                 ctx.save();
-                ctx.translate(cx, cy);
-                ctx.rotate(rotation + Math.PI/4); // Initial offset
-                
-                // Draw irregular polygon
-                ctx.beginPath();
-                ctx.moveTo(-40, -30);
-                ctx.lineTo(40, -30);
-                ctx.lineTo(60, 20);
-                ctx.lineTo(0, 50);
-                ctx.lineTo(-50, 20);
-                ctx.closePath();
-                
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = "#1a1a1a";
-                ctx.stroke();
-                
-                // "Ink" fill
-                ctx.fillStyle = "rgba(26,26,27,0.1)";
-                ctx.fill();
-                
+                ctx.translate(mouse.x - 20, mouse.y - 20);
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 1;
+                ctx.stroke(rabbitPath);
                 ctx.restore();
-                requestAnimationFrame(draw);
+
+                requestAnimationFrame(animateCursor);
             }
-            draw();
-        }
+            animateCursor();
+
+            // --- 4. SCROLL SPIRAL LOGIC ---
+            // Only apply 3D effect on desktop sizes
+            const pivot = document.getElementById('tunnel-pivot');
+            const cards = document.querySelectorAll('.project-card');
+            const spiralContainer = document.getElementById('spiral-container');
+
+            function updateScroll() {
+                if(window.innerWidth <= 768) return; // Disable on mobile
+
+                const scrollY = window.pageYOffset;
+                // Determine progress within the spiral container
+                const spiralTop = spiralContainer.offsetTop;
+                let relScroll = scrollY - spiralTop + (window.innerHeight/2);
+                
+                if (relScroll < 0) relScroll = 0;
+                
+                // Move the camera continuously deeper (translateZ)
+                const cameraZ = relScroll * 2.5; 
+
+                // Current spiral rotation
+                const currentRot = relScroll * 0.1;
+                
+                pivot.style.transform = `translateZ(${cameraZ}px) rotateZ(${-currentRot}deg)`;
+
+                // Position cards along Z axis
+                cards.forEach((card) => {
+                    const zPos = parseFloat(card.dataset.z);
+                    const rotY = parseFloat(card.dataset.rot);
+                    
+                    // The trick: Place them far apart on Z, rotate them on Y to face center
+                    // translateZ puts them deep in tunnel. translateX pushes them to wall of tunnel
+                    card.style.transform = `rotateY(${rotY}deg) translateX(400px) rotateY(-90deg) translateZ(${-zPos}px)`;
+                    
+                    // Simple Opacity distance logic
+                    // Relative distance to camera
+                    const dist = zPos - cameraZ;
+                    if(dist < -500) {
+                        card.style.opacity = 0; // Behind camera
+                    } else if (dist < 800) {
+                        card.style.opacity = 1;
+                    } else {
+                        card.style.opacity = 0; // Too far
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', updateScroll);
+            updateScroll(); // init
+
+            // --- 5. SINGULARITY TIMER ---
+            const timerEl = document.getElementById('singularity-timer');
+            const singularityDate = new Date("2026-01-27T01:18:35").getTime();
+
+            function updateTimer() {
+                const now = new Date().getTime();
+                const diff = singularityDate - now;
+                
+                const absDiff = Math.abs(diff);
+                const hrs = Math.floor((absDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)); // Ignoring days for pure urgency or include days? Spec said HH:MM:SS. Let's calculate total hours.
+                const totalHours = Math.floor(absDiff / (1000 * 60 * 60));
+                
+                const mins = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((absDiff % (1000 * 60)) / 1000);
+                const ms = Math.floor(absDiff % 1000);
+
+                const sign = diff < 0 ? "+" : "-";
+
+                timerEl.textContent = `${sign}${String(totalHours).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}:${String(ms).padStart(3,'0')}`;
+                
+                requestAnimationFrame(updateTimer);
+            }
+            updateTimer();
+        });
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260126",
+          pageId: "20260127",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
