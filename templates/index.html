@@ -2,546 +2,624 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | Software Engineer</title>
-    <!-- Fonts -->
+    <title>Geva Kipper | Living Code IDE</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --bg-deep: #020b1c;
-            --glass-bg: rgba(20, 30, 50, 0.6);
+            /* Palette: Tokyo Night / Cyberpunk inspired */
+            --bg-obsidian: #1a1b26;
+            --bg-card: #24283b;
+            --text-main: #a9b1d6;
+            --text-muted: #565f89;
+            --syntax-cyan: #7dcfff;
+            --syntax-magenta: #bb9af7;
+            --syntax-lime: #9ece6a;
+            --syntax-yellow: #e0af68;
+            --syntax-red: #f7768e;
+            --grid-line: rgba(122, 162, 247, 0.05);
             --glass-border: rgba(255, 255, 255, 0.1);
-            --glass-highlight: rgba(255, 255, 255, 0.05);
-            --text-main: #e0faff;
-            --text-muted: #8a9bb8;
-            --accent-cyan: #00f2ff;
-            --accent-purple: #bd34fe;
-            --accent-red: #ff3c3c;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            cursor: default;
+        }
 
         body {
-            background-color: var(--bg-deep);
+            background-color: var(--bg-obsidian);
             color: var(--text-main);
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
+            font-family: 'JetBrains Mono', monospace;
             height: 100vh;
             width: 100vw;
+            overflow: hidden; /* Prevent scroll until interaction */
+            display: flex;
+            flex-direction: column;
             position: relative;
         }
 
-        /* --- The Frost Layer --- */
-        #frost-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 100;
-            cursor: crosshair;
-            touch-action: none;
-        }
-
-        /* --- Background Decoration --- */
-        .ambient-glow {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80vw;
-            height: 80vh;
-            background: radial-gradient(circle, rgba(0, 242, 255, 0.03) 0%, transparent 70%);
+        /* Animated Background Grid */
+        .bg-grid {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px;
             z-index: 0;
+            animation: breathe 8s ease-in-out infinite;
             pointer-events: none;
         }
 
-        /* --- Main Layout: The Bento Grid --- */
-        .container {
-            position: relative;
-            z-index: 1;
-            max-width: 1200px;
-            margin: 0 auto;
-            min-height: 100vh;
+        @keyframes breathe {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
+
+        /* --- Syntax Classes --- */
+        .kwd { color: var(--syntax-magenta); font-weight: bold; } /* Keyword */
+        .str { color: var(--syntax-lime); } /* String */
+        .fn { color: var(--syntax-cyan); } /* Function/Class */
+        .obj { color: var(--syntax-yellow); } /* Object key */
+        .cmt { color: var(--text-muted); font-style: italic; } /* Comment */
+        .op { color: var(--syntax-cyan); } /* Operator */
+
+        /* --- Stage 1: The Seed Line --- */
+        #intro-stage {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 2rem;
-            /* Hidden initially to prevent flash before canvas load, though canvas covers it */
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-auto-rows: minmax(220px, auto);
-            gap: 20px;
-            margin-bottom: 60px; /* Space for footer */
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 900px) {
-            .grid { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (max-width: 600px) {
-            .grid { grid-template-columns: 1fr; }
-        }
-
-        /* --- Glassmorphism Card Style --- */
-        .card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            position: relative;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 242, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.25);
-        }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-        }
-
-        /* Typography inside cards */
-        .card h3 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            color: #fff;
-        }
-        .card p {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            line-height: 1.5;
-            flex-grow: 1;
-        }
-
-        /* Visual Containers */
-        .visual-area {
-            height: 80px;
-            width: 100%;
-            margin-bottom: 1rem;
-            border-radius: 8px;
-            overflow: hidden;
-            position: relative;
-            background: rgba(0,0,0,0.2);
-            display: flex;
             align-items: center;
-            justify-content: center;
+            z-index: 10;
+            transition: all 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
         }
 
-        /* Actions */
-        .actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 8px 16px;
-            border-radius: 50px;
-            font-size: 0.8rem;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            border: 1px solid transparent;
+        .seed-line {
+            font-size: 1.5rem;
+            position: relative;
+            padding: 20px;
             cursor: pointer;
+            transition: text-shadow 0.3s;
         }
 
-        .btn-primary {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
+        .seed-line:hover .brace {
+            text-shadow: 0 0 10px var(--syntax-cyan);
+            color: var(--syntax-cyan);
         }
-        .btn-primary:hover {
-            background: #fff;
-            color: #000;
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.5rem;
+            background-color: var(--syntax-yellow);
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .seed-subtitle {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            opacity: 1;
+            transition: opacity 0.5s;
+        }
+
+        /* Animation states for expansion */
+        body.expanded #intro-stage {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(2); 
+            filter: blur(10px);
         }
         
-        .btn-modal {
-            background: rgba(255, 0, 0, 0.2);
-            color: #ffcccc;
-        }
-        .btn-modal:hover { background: #ff0000; color: #fff; }
-
-        /* --- Specific Box Visuals --- */
-
-        /* Box 1: GlglStats (Waveform) */
-        .waveform { display: flex; gap: 3px; align-items: flex-end; height: 40px; }
-        .bar { width: 6px; background: cyan; animation: bounce 1s infinite alternate; }
-        .bar:nth-child(2) { animation-delay: 0.2s; background: purple; }
-        .bar:nth-child(3) { animation-delay: 0.4s; background: blue; }
-        .bar:nth-child(4) { animation-delay: 0.1s; background: white; }
-        .bar:nth-child(5) { animation-delay: 0.5s; background: cyan; }
-        @keyframes bounce { 0% { height: 10%; } 100% { height: 100%; } }
-
-        /* Box 2: Heatmap */
-        .map-wrapper { width: 100%; height: 100%; background: #1a1a1a; position: relative; }
-        .heat-blob {
-            width: 60px; height: 60px; background: radial-gradient(circle, red, yellow, green, transparent);
-            position: absolute; top: 20%; left: 30%; filter: blur(10px); opacity: 0.7;
-            animation: pulseMap 4s infinite;
-        }
-        @keyframes pulseMap { 0%, 100% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.2); opacity: 0.4; } }
-
-        /* Box 3: 2D Part Orienting */
-        .poly-container { width: 40px; height: 40px; border: 2px dashed cyan; display: flex; align-items: center; justify-content: center; }
-        .polygon { width: 20px; height: 20px; background: transparent; border: 2px solid white; transform: rotate(0deg); animation: orient 3s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite; }
-        @keyframes orient { 0% { transform: rotate(45deg); } 100% { transform: rotate(0deg); } }
-
-        /* Box 4: Jest */
-        .jest-icon { font-size: 2rem; display: flex; }
-        .jest-circuit { color: cyan; clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%); }
-        .jest-hat { color: #bd34fe; margin-left: -1em; clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%); }
-
-        /* Box 5: Rhymes */
-        .rhyme-text { font-family: 'Times New Roman', serif; font-size: 1.5rem; animation: glitchFont 3s infinite steps(1); }
-        @keyframes glitchFont { 
-            0% { font-family: 'Times New Roman', serif; text-shadow: none; }
-            90% { font-family: 'Comic Sans MS', cursive; text-shadow: 2px 0 red, -2px 0 blue; color: yellow; }
-            95% { font-family: 'Courier New', monospace; } 
+        body.expanded {
+            overflow-y: auto;
         }
 
-        /* Box 6: Meta */
-        .mirror-box { width: 90%; height: 80%; border: 1px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; }
-        .mirror-inner { width: 70%; height: 70%; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); }
-
-        /* Box 7: Connectivity */
-        .social-grid { display: flex; width: 100%; justify-content: space-around; align-items: center; height: 100%; }
-        .social-link { font-size: 2.5rem; color: #fff; transition: 0.3s; opacity: 0.7; }
-        .social-link:hover { opacity: 1; transform: scale(1.2); }
-        .social-link.gh:hover { color: #bd34fe; text-shadow: 0 0 15px #bd34fe; }
-        .social-link.li:hover { color: #0077b5; text-shadow: 0 0 15px #0077b5; }
-        .social-link.fb:hover { color: #1877f2; text-shadow: 0 0 15px #1877f2; }
-
-        /* --- Footer & Chronometer --- */
-        .terminal-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
+        /* --- Stage 2: The Main Interface --- */
+        #main-interface {
+            display: none; /* Hidden primarily */
+            flex-direction: column;
+            height: 100vh;
             width: 100%;
-            padding: 10px 20px;
-            background: rgba(0,0,0,0.8);
-            border-top: 1px solid var(--accent-cyan);
-            font-family: 'JetBrains Mono', monospace;
+            z-index: 5;
+            padding: 20px 40px 60px 40px; /* Space for footer */
+            opacity: 0;
+            transition: opacity 1s ease-in;
+        }
+
+        body.expanded #main-interface {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Logo & Ending moved positions */
+        .ide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            font-size: 1.2rem;
+        }
+
+        /* The Grid */
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 20px;
+            flex-grow: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Cards */
+        .code-card {
+            background: rgba(26, 27, 38, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, border-color 0.3s;
+            cursor: pointer;
+            min-height: 250px;
+        }
+
+        .code-card:hover {
+            border-color: var(--syntax-cyan);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+        }
+
+        /* Card Content Layering */
+        .card-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            padding: 20px;
+            transition: opacity 0.4s ease;
+        }
+
+        .code-view {
+            opacity: 1;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            z-index: 2;
+        }
+
+        .visual-view {
+            opacity: 0;
+            z-index: 3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--bg-card);
+            flex-direction: column;
+        }
+
+        .code-card:hover .code-view { opacity: 0.1; }
+        .code-card:hover .visual-view { opacity: 1; }
+
+        a { text-decoration: none; color: inherit; width: 100%; height: 100%; display: block;}
+
+        /* --- Specific Project Visualizations --- */
+
+        /* 1. GlglStats Visual */
+        .visual-audio {
+            display: flex;
+            align-items: flex-end;
+            gap: 5px;
+            height: 100px;
+            width: 100px;
+            position: relative;
+            z-index: 10;
+        }
+        .bar {
+            width: 10px;
+            background: var(--syntax-magenta);
+            animation: bounce 0.5s infinite ease-in-out alternate;
+        }
+        .bar:nth-child(1) { animation-delay: 0.1s; height: 40%; }
+        .bar:nth-child(2) { animation-delay: 0.3s; height: 80%; background: var(--syntax-cyan); }
+        .bar:nth-child(3) { animation-delay: 0.5s; height: 50%; }
+        .bar:nth-child(4) { animation-delay: 0.2s; height: 90%; background: var(--syntax-yellow); }
+        .bar:nth-child(5) { animation-delay: 0.4s; height: 60%; }
+        
+        @keyframes bounce { to { height: 10%; } }
+        
+        .yt-overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            opacity: 0.3;
+            pointer-events: none;
+            mix-blend-mode: luminosity;
+        }
+
+        /* 2. Ahuzat Dibuk Visual */
+        .visual-map {
+            width: 100%; height: 100%;
+            background: 
+                linear-gradient(#333 1px, transparent 1px),
+                linear-gradient(90deg, #333 1px, transparent 1px);
+            background-size: 20px 20px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .heatmap-overlay {
+            width: 150px; height: 150px;
+            background: radial-gradient(circle, rgba(247,118,142,0.8) 0%, rgba(158,206,106,0.2) 70%, transparent 100%);
+            border-radius: 50%;
+            animation: pulse-heat 3s infinite;
+            position: absolute;
+            top: 20%;
+        }
+        @keyframes pulse-heat { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 0.5; } }
+        
+        .import-buttons {
+            margin-top: 80px; z-index: 5; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+        }
+        .code-btn {
+            background: rgba(0,0,0,0.5); padding: 5px 10px; font-size: 0.7rem; color: var(--text-main);
+            border: 1px solid var(--syntax-cyan); border-radius: 4px; display: inline-block;
+        }
+        .code-btn:hover { background: var(--syntax-cyan); color: #000; }
+
+        /* 3. 2D Part Orienting */
+        .poly-container svg {
+            width: 100px; height: 100px;
+            fill: none; stroke: var(--syntax-yellow); stroke-width: 2;
+            animation: rotatePoly 4s linear infinite;
+        }
+        @keyframes rotatePoly { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* 4. Turing Jest */
+        .chat-ui { display: flex; width: 100%; justify-content: space-between; padding: 0 20px; align-items: center; }
+        .robot { font-size: 2rem; }
+        .score-board { font-size: 1.5rem; color: var(--syntax-red); font-weight: bold; }
+        .pun-bubble { 
+            position: absolute; top: 20px; width: 100%; text-align: center; 
+            font-size: 0.8rem; color: var(--syntax-lime); 
+        }
+
+        /* 5. Rhymes of Israel */
+        .glitch-text {
+            font-family: 'Courier New', cursive;
+            font-size: 1.2rem;
+            color: var(--syntax-magenta);
+            position: relative;
+        }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; opacity: 0.8;
+        }
+        .glitch-text::before { color: var(--syntax-cyan); z-index: -1; animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite; }
+        .glitch-text::after { color: var(--syntax-red); z-index: -2; animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) reverse both infinite; }
+        
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+        
+        .install-badge {
+            margin-top: 15px; padding: 8px 16px; background: var(--syntax-cyan); 
+            color: #000; font-weight: bold; border-radius: 4px; font-size: 0.9rem;
+        }
+
+        /* 6. Meta Portfolio */
+        .droste-frame {
+            width: 80%; height: 80%; border: 1px solid var(--text-muted);
+            transform: scale(0.9); opacity: 0.7;
+            background: #000;
+        }
+
+        /* --- Footer Imports & Terminal --- */
+        .imports-section {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 0.9rem;
+        }
+        .import-link {
+            color: var(--text-muted);
+            transition: color 0.3s;
+        }
+        .import-link:hover { color: var(--syntax-orange); text-decoration: underline;}
+        .import-link span.mod { color: var(--syntax-magenta); }
+        .import-link span.str { color: var(--syntax-lime); }
+
+        .terminal-bar {
+            position: fixed;
+            bottom: 0; left: 0;
+            width: 100%;
+            background: #15161e;
+            border-top: 1px solid var(--glass-border);
+            padding: 5px 20px;
             font-size: 0.75rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            z-index: 50; /* Below canvas, revealed on wipe */
+            z-index: 100;
         }
-        .chrono { color: var(--accent-red); text-shadow: 0 0 5px red; }
+        .term-left { color: var(--text-muted); }
+        .term-right { color: var(--syntax-red); font-weight: bold; text-shadow: 0 0 5px rgba(247, 118, 142, 0.5); }
 
-        /* --- Modal --- */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
+        /* Mobile Responsive */
+        @media (max-width: 900px) {
+            .project-grid { grid-template-columns: 1fr 1fr; }
         }
-        .modal-content {
-            width: 90%; max-width: 800px; aspect-ratio: 16/9;
-            background: #000;
-            border: 1px solid var(--accent-cyan);
-        }
-        .close-modal {
-            position: absolute; top: 20px; right: 20px;
-            color: #fff; font-size: 2rem; cursor: pointer;
+        @media (max-width: 600px) {
+            .project-grid { grid-template-columns: 1fr; }
+            .seed-line { font-size: 1rem; }
+            .ide-header { font-size: 0.9rem; }
+            #main-interface { padding: 10px 10px 50px 10px; }
+            .terminal-bar { font-size: 0.6rem; flex-direction: column; gap: 2px;}
         }
 
     </style>
 </head>
 <body>
 
-    <!-- Generative Frost Overlay -->
-    <canvas id="frost-canvas"></canvas>
+    <!-- Background -->
+    <div class="bg-grid"></div>
 
-    <!-- Background Ambience -->
-    <div class="ambient-glow"></div>
-
-    <!-- Main Content (Revealed under ice) -->
-    <div class="container">
-        
-        <div class="grid">
-            <!-- Box 1: GlglStats -->
-            <div class="card" style="grid-column: span 2;">
-                <div class="visual-area">
-                    <div class="waveform">
-                        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-                        <div class="bar" style="height: 40%"></div><div class="bar" style="height: 70%"></div>
-                    </div>
-                </div>
-                <h3>GlglStats</h3>
-                <p>Advanced statistical analysis using a Python/LZ77 algorithm implementation. Visualizing complex datasets with high efficiency.</p>
-                <div class="actions">
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="btn btn-primary">Visit Site</a>
-                    <button onclick="openModal()" class="btn btn-modal"><i class="fab fa-youtube"></i> PyData Talk</button>
-                </div>
-            </div>
-
-            <!-- Box 2: Ahuzat Dibuk -->
-            <div class="card">
-                <div class="visual-area">
-                    <div class="map-wrapper">
-                        <div class="heat-blob"></div>
-                    </div>
-                </div>
-                <h3>Ahuzat Dibuk</h3>
-                <p>Tel Aviv parking logic scraper. Analyzes municipal data to visualize high-density zones.</p>
-                <div class="actions">
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="btn btn-primary"><i class="fas fa-tv"></i> CH13</a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="btn btn-primary"><i class="fas fa-users"></i> Community</a>
-                </div>
-            </div>
-
-            <!-- Box 3: 2D Part Orienting -->
-            <div class="card">
-                <div class="visual-area">
-                    <div class="poly-container"><div class="polygon"></div></div>
-                </div>
-                <h3>2D Part Orienting</h3>
-                <p>C++ Computational Geometry. Algorithms for robotic part alignment/push plans.</p>
-                <div class="actions">
-                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn btn-primary">View on TAU CGL</a>
-                </div>
-            </div>
-
-            <!-- Box 4: The Turing Jest -->
-            <div class="card">
-                <div class="visual-area">
-                    <div class="jest-icon">
-                        <i class="fas fa-microchip jest-circuit"></i>
-                        <i class="fas fa-hat-wizard jest-hat"></i>
-                    </div>
-                </div>
-                <h3>The Turing Jest</h3>
-                <p>LMSYS-style pun arena. Evaluating AI humor capabilities in a comparative interface.</p>
-                <div class="actions">
-                    <a href="https://jest.geekip.dev" target="_blank" class="btn btn-primary">Enter Arena</a>
-                </div>
-            </div>
-
-            <!-- Box 5: Rhymes of Israel -->
-            <div class="card">
-                <div class="visual-area">
-                    <span class="rhyme-text">HEADLINE</span>
-                </div>
-                <h3>Rhymes of Israel</h3>
-                <p>LLM-powered Chrome extension transforming browser text into rhyming schemes.</p>
-                <div class="actions">
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn btn-primary"><i class="fab fa-chrome"></i> Get Extension</a>
-                </div>
-            </div>
-
-            <!-- Box 6: The Meta Portfolio -->
-            <div class="card">
-                <div class="visual-area">
-                    <div class="mirror-box"><div class="mirror-inner"></div></div>
-                </div>
-                <h3>The Meta Portfolio</h3>
-                <p>You are here. A recursive look at this generative interface.</p>
-                <div class="actions">
-                    <button onclick="location.reload()" class="btn btn-primary"><i class="fas fa-sync-alt"></i> Re-Freeze</button>
-                    <a href="https://geekip.dev" class="btn btn-primary" style="opacity:0.6">geekip.dev</a>
-                </div>
-            </div>
-
-            <!-- Box 7: Connectivity -->
-            <div class="card" style="grid-column: span 3;">
-                <div class="social-grid">
-                    <a href="https://github.com/gevak" target="_blank" class="social-link gh"><i class="fab fa-github"></i></a>
-                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-link li"><i class="fab fa-linkedin"></i></a>
-                    <a href="https://facebook.com/geva.kipper" target="_blank" class="social-link fb"><i class="fab fa-facebook"></i></a>
-                </div>
-            </div>
+    <!-- STAGE 1: Seed Line -->
+    <div id="intro-stage">
+        <div class="seed-line" id="seed-trigger">
+            <span class="kwd">const</span> <span class="fn">developer</span> <span class="op">=</span> <span class="kwd">new</span> <span class="fn">GevaKipper</span><span class="brace">({</span> <span class="obj">currentRole:</span> <span class="str">"Google"</span> <span class="brace">});</span><span class="cursor"></span>
+        </div>
+        <div class="seed-subtitle">
+            // v.2024.1: This interface is re-dreamed daily by an AI. Design creates itself.
         </div>
     </div>
 
-    <!-- Terminal Footer -->
-    <div class="terminal-footer">
-        <span>> SITE_ARCH: GENERATED_BY_GPT-O1 | CREDIT: GEVA KIPPER</span>
-        <span class="chrono" id="chronometer">CALCULATING TEMPORAL DRIFT...</span>
+    <!-- STAGE 2: IDE Layout -->
+    <div id="main-interface">
+        
+        <header class="ide-header">
+            <div class="logo">
+                <span class="kwd">const</span> <span class="fn">developer</span>
+            </div>
+            <div class="closer">
+                <span class="brace">});</span>
+            </div>
+        </header>
+
+        <main class="project-grid">
+
+            <!-- 1. GlglStats -->
+            <div class="code-card">
+                <a href="https://glglstats.geekip.dev" target="_blank">
+                <div class="card-layer code-view">
+<span class="kwd">class</span> <span class="fn">GlglStats</span>(Project):<br>
+&nbsp;&nbsp;<span class="obj">meta</span> = {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"type"</span>: <span class="str">"Data Viz"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"engine"</span>: <span class="str">"Python/LZ77"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"output"</span>: <span class="str">"Pop Chart Analysis"</span><br>
+&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;<span class="kwd">def</span> <span class="fn">render</span>(self):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">return</span> <span class="fn">analyze_music()</span>
+                </div>
+                <div class="card-layer visual-view">
+                    <div class="yt-overlay">
+                        <!-- Simulated overlay -->
+                    </div>
+                    <div class="visual-audio">
+                        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                    </div>
+                    <p style="margin-top:10px; font-size:0.8rem; color:var(--text-main);">Compiling Audio Patterns...</p>
+                </div>
+                </a>
+            </div>
+
+            <!-- 2. Ahuzat Dibuk -->
+            <div class="code-card">
+                <div class="card-layer code-view">
+<span class="kwd">const</span> <span class="fn">AhuzatDibuk</span> = {<br>
+&nbsp;&nbsp;<span class="obj">location</span>: <span class="str">"Tel Aviv"</span>,<br>
+&nbsp;&nbsp;<span class="obj">dataset</span>: <span class="str">"Parking Sensors"</span>,<br>
+&nbsp;&nbsp;<span class="obj">status</span>: <span class="str">"Viral"</span>,<br>
+&nbsp;&nbsp;<span class="obj">imports</span>: [<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"News_13"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"Mako_Nexter"</span><br>
+&nbsp;&nbsp;]<br>
+};
+                </div>
+                <div class="card-layer visual-view">
+                    <div class="visual-map">
+                        <div class="heatmap-overlay"></div>
+                    </div>
+                    <div class="import-buttons">
+                        <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="code-btn">Import News_13</a>
+                        <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="code-btn">Import Mako</a>
+                        <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="code-btn">Import FB_Source</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 2D Part Orienting -->
+            <div class="code-card">
+                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">
+                <div class="card-layer code-view">
+<span class="cmt">// CGL Research Project</span><br>
+<span class="kwd">Polygon</span>* <span class="fn">orientPart</span>(Shape &s) {<br>
+&nbsp;&nbsp;<span class="kwd">while</span>(!aligned) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;s.<span class="fn">rotate</span>(PHY_GRAVITY);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;s.<span class="fn">push_wall</span>();<br>
+&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;<span class="kwd">return</span> s;<br>
+}
+                </div>
+                <div class="card-layer visual-view">
+                    <div class="poly-container">
+                        <svg viewBox="0 0 100 100">
+                            <polygon points="50,15 90,85 10,85" />
+                        </svg>
+                    </div>
+                    <p style="margin-top:10px; font-size:0.8rem; color: #fff;">Aligning Geometry...</p>
+                </div>
+                </a>
+            </div>
+
+            <!-- 4. The Turing Jest -->
+            <div class="code-card turing-card">
+                <a href="https://jest.geekip.dev" target="_blank">
+                <div class="card-layer code-view">
+<span class="kwd">let</span> chatLog = [<br>
+&nbsp;&nbsp;{ <span class="obj">bot</span>: <span class="str">"A"</span>, <span class="obj">msg</span>: <span class="str">"PunGen"</span> },<br>
+&nbsp;&nbsp;{ <span class="obj">bot</span>: <span class="str">"B"</span>, <span class="obj">msg</span>: <span class="str">"LOL"</span> }<br>
+];<br>
+<span class="fn">startBattle</span>(chatLog);
+                </div>
+                <div class="card-layer visual-view">
+                     <div class="pun-bubble" id="pun-text">"Why did the functional programmer get thrown out of school?"</div>
+                    <div class="chat-ui">
+                        <span class="robot">🤖</span>
+                        <div class="score-board" id="score-val">0</div>
+                        <span class="robot">👾</span>
+                    </div>
+                </div>
+                </a>
+            </div>
+
+            <!-- 5. Rhymes of Israel -->
+            <div class="code-card">
+                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank">
+                <div class="card-layer code-view">
+<span class="file">manifest.json</span><br>
+{<br>
+&nbsp;&nbsp;<span class="obj">"name"</span>: <span class="str">"Rhymes of Israel"</span>,<br>
+&nbsp;&nbsp;<span class="obj">"permissions"</span>: [<span class="str">"activeTab"</span>],<br>
+&nbsp;&nbsp;<span class="obj">"action"</span>: <span class="str">"makehappy"</span><br>
+}
+                </div>
+                <div class="card-layer visual-view">
+                    <div style="text-align:center;">
+                        <p style="font-size:0.7rem; text-decoration: line-through; color: #666;">Serious News Headline</p>
+                        <h3 class="glitch-text" data-text="A Whimsical Rhoam!">A Whimsical Rhyme!</h3>
+                        <div class="install-badge">INSTALL EXTENSION</div>
+                    </div>
+                </div>
+                </a>
+            </div>
+
+            <!-- 6. Meta Portfolio -->
+            <div class="code-card">
+                <a href="https://geekip.dev">
+                <div class="card-layer code-view">
+<span class="kwd">function</span> <span class="fn">renderPortfolio</span>() {<br>
+&nbsp;&nbsp;<span class="cmt">/* Recursion Depth: ∞ */</span><br>
+&nbsp;&nbsp;<span class="kwd">return</span> <span class="fn">renderPortfolio</span>();<br>
+}
+                </div>
+                <div class="card-layer visual-view">
+                    <iframe src="https://geekip.dev" class="droste-frame" title="Recursion"></iframe>
+                    <p style="position:absolute; bottom: 10px; font-size:0.7rem; background:#000;">Object.selfReference()</p>
+                </div>
+                </a>
+            </div>
+
+        </main>
+
+        <section class="imports-section">
+            <a href="https://linkedin.com/in/gevakip" class="import-link" target="_blank">
+                <span class="kwd">import</span> { <span class="fn">Profile</span> } <span class="kwd">from</span> <span class="str">"linkedin/gevakip"</span>
+            </a>
+            <a href="https://github.com/gevak" class="import-link" target="_blank">
+                <span class="kwd">import</span> { <span class="fn">Repos</span> } <span class="kwd">from</span> <span class="str">"github/gevak"</span>
+            </a>
+            <a href="https://facebook.com/geva.kipper" class="import-link" target="_blank">
+                <span class="kwd">import</span> { <span class="fn">Social</span> } <span class="kwd">from</span> <span class="str">"facebook/geva.kipper"</span>
+            </a>
+        </section>
     </div>
 
-    <!-- YouTube Modal -->
-    <div class="modal" id="videoModal">
-        <div class="close-modal" onclick="closeModal()">&times;</div>
-        <div class="modal-content">
-            <iframe width="100%" height="100%" src="" id="videoFrame" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    <!-- TERMINAL FOOTER -->
+    <div class="terminal-bar">
+        <div class="term-left">
+            > Created by AI Model [G-K_LLM_v4]. Rendering complete. <span style="animation:blink 1s infinite">_</span>
+        </div>
+        <div class="term-right" id="anomaly-timer">
+            CALCULATING TEMPORAL SHIFT...
         </div>
     </div>
 
     <script>
-        // --- 1. THE FROST SYSTEM ---
-        const canvas = document.getElementById('frost-canvas');
-        const ctx = canvas.getContext('2d');
-        
-        let width, height;
+        // --- Interaction Logic ---
+        const seedTrigger = document.getElementById('seed-trigger');
+        const body = document.body;
 
-        function resize() {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            canvas.width = width;
-            canvas.height = height;
-            initFrost();
-        }
-
-        function initFrost() {
-            // Fill with white "base"
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.fillStyle = 'rgba(230, 245, 255, 0.96)'; // Opaque frost color
-            ctx.fillRect(0, 0, width, height);
-
-            // Add Noise Texture logic (Simplified for performance)
-            for (let i = 0; i < 5000; i++) {
-                ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.5})`;
-                const x = Math.random() * width;
-                const y = Math.random() * height;
-                const s = Math.random() * 3;
-                ctx.fillRect(x, y, s, s);
-            }
-
-            // Draw Etched Text (This is part of the frost layer, so it gets erased)
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            
-            // Name
-            ctx.fillStyle = 'rgba(0, 40, 60, 0.8)'; // Dark etch color
-            ctx.font = '900 4rem Inter';
-            if(width < 600) ctx.font = '900 2.5rem Inter';
-            ctx.fillText('GEVA KIPPER', width / 2, height / 2 - 20);
-
-            // Subheader
-            ctx.font = '400 1.5rem Inter';
-            if(width < 600) ctx.font = '400 1rem Inter';
-            ctx.fillStyle = 'rgba(0, 40, 60, 0.6)';
-            ctx.fillText('Software Engineer at Google', width / 2, height / 2 + 30);
-
-            // Disclaimer
-            const today = new Date().toLocaleDateString('en-GB');
-            ctx.font = '400 0.8rem JetBrains Mono';
-            ctx.fillStyle = 'rgba(0, 40, 60, 0.4)';
-            ctx.fillText(`[ This interface is re-designed daily by AI. Current variation: ${today} ]`, width / 2, height / 2 + 80);
-        }
-
-        // Wipe Logic
-        function wipe(x, y) {
-            ctx.globalCompositeOperation = 'destination-out';
-            
-            // Create a gradient brush for soft edges
-            const radius = 60;
-            const gradient = ctx.createRadialGradient(x, y, radius * 0.2, x, y, radius);
-            gradient.addColorStop(0, 'rgba(0,0,0,1)'); // Fully transparent result
-            gradient.addColorStop(1, 'rgba(0,0,0,0)'); // No change at edge
-
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.arc(x, y, radius, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        // Input Listeners
-        window.addEventListener('resize', resize);
-        
-        let isDrawing = false; // For better control
-
-        document.addEventListener('mousemove', (e) => {
-            wipe(e.clientX, e.clientY);
+        seedTrigger.addEventListener('click', () => {
+            // Trigger Expansion
+            body.classList.add('expanded');
         });
 
-        document.addEventListener('touchmove', (e) => {
-            const touch = e.touches[0];
-            wipe(touch.clientX, touch.clientY);
-        }, { passive: true });
+        // --- Turing Jest Score Simulator ---
+        const scoreVal = document.getElementById('score-val');
+        const turingCard = document.querySelector('.turing-card');
+        let tmr;
+        let score = 0;
+        
+        turingCard.addEventListener('mouseenter', () => {
+             tmr = setInterval(() => {
+                 score += Math.floor(Math.random() * 10) + 1;
+                 scoreVal.innerText = score;
+             }, 200);
+        });
+        
+        turingCard.addEventListener('mouseleave', () => {
+             clearInterval(tmr);
+        });
 
-        // Initialize
-        resize();
+        // --- Temporal Anomaly Countdown ---
+        // Target: 2026-01-31 01:21:17
+        const targetDate = new Date('2026-01-31T01:21:17').getTime();
+        const infoEl = document.getElementById('anomaly-timer');
 
+        function updateTimer() {
+            const now = new Date().getTime();
+            const distance = targetDate - now;
 
-        // --- 2. CHRONOMETER (Temporal Anomaly) ---
-        const chronoElement = document.getElementById('chronometer');
-        // Target: 2026-01-30 01:23:50 UTC roughly
-        const targetDate = new Date('2026-01-30T01:23:50').getTime();
-
-        function updateTime() {
-            const now = Date.now();
-            const diff = now - targetDate; 
-            
-            // Since we are likely BEFORE 2026, diff is negative.
-            // Prompt says: "Count upwards in bright red, implying site traveled back in time"
-            // or "Time passed since". 
-            // Implementation: T-Minus countdown seems most logical for "Negative", 
-            // but let's strictly follow the "Anomaly" feel.
-            // Let's display the difference in DD:HH:MM:SS.
-
-            const isFuture = diff < 0;
-            const absDiff = Math.abs(diff);
-
-            const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((absDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((absDiff % (1000 * 60)) / 1000);
-
-            const pad = (n) => n.toString().padStart(2, '0');
-            const prefix = isFuture ? 'T-MINUS' : 'T-PLUS';
-            
-            chronoElement.innerText = `${prefix} ${days}:${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-        }
-
-        setInterval(updateTime, 1000);
-        updateTime();
-
-
-        // --- 3. VIDEO MODAL ---
-        const modal = document.getElementById('videoModal');
-        const iframe = document.getElementById('videoFrame');
-        const videoUrl = "https://www.youtube.com/embed/jrKAtOsj1Lo?autoplay=1";
-
-        function openModal() {
-            modal.style.display = 'flex';
-            iframe.src = videoUrl;
-        }
-
-        function closeModal() {
-            modal.style.display = 'none';
-            iframe.src = ""; // Stop audio
-        }
-
-        // Close on background click
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                closeModal();
+            if (distance < 0) {
+                // If we passed the date (unlikely given prompt specific future date)
+                infoEl.innerHTML = "TEMPORAL CONVERGENCE REACHED";
+                return;
             }
+
+            // Calculations
+            const hours = Math.floor(distance / (1000 * 60 * 60)); // Total hours
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            // Format numbers
+            const hStr = hours.toLocaleString(); // Add commas
+            
+            infoEl.innerHTML = `T-Minus: ${hStr}h ${minutes}m ${seconds}s`;
         }
+
+        setInterval(updateTimer, 1000);
+        updateTimer(); // Initial call
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260130",
+          pageId: "20260131",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
