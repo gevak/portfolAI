@@ -2,624 +2,764 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | Living Code IDE</title>
+    <title>GEVA KIPPER | SYSTEM_OVERRIDE</title>
+    
+    <!-- Fonts: Inter (Clean) and Fira Code/VT323 (Glitch) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;700&family=Inter:wght@300;800&family=VT323&display=swap" rel="stylesheet">
+
     <style>
         :root {
-            /* Palette: Tokyo Night / Cyberpunk inspired */
-            --bg-obsidian: #1a1b26;
-            --bg-card: #24283b;
-            --text-main: #a9b1d6;
-            --text-muted: #565f89;
-            --syntax-cyan: #7dcfff;
-            --syntax-magenta: #bb9af7;
-            --syntax-lime: #9ece6a;
-            --syntax-yellow: #e0af68;
-            --syntax-red: #f7768e;
-            --grid-line: rgba(122, 162, 247, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --bg-void: #050505;
+            --neon-green: #39ff14;
+            --neon-purple: #b026ff;
+            --neon-cyan: #00ffff;
+            --err-red: #ff003c;
+            --font-glitch: 'VT323', monospace;
+            --font-clean: 'Inter', sans-serif;
+            --font-code: 'Fira Code', monospace;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            cursor: default;
-        }
-
+        /* --- GLOBAL RESET & CORE VISUALS --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; cursor: none; }
+        
         body {
-            background-color: var(--bg-obsidian);
-            color: var(--text-main);
-            font-family: 'JetBrains Mono', monospace;
-            height: 100vh;
+            background-color: var(--bg-void);
+            color: #eee;
+            font-family: var(--font-clean);
+            overflow-x: hidden;
             width: 100vw;
-            overflow: hidden; /* Prevent scroll until interaction */
-            display: flex;
-            flex-direction: column;
-            position: relative;
         }
 
-        /* Animated Background Grid */
-        .bg-grid {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-image: 
-                linear-gradient(var(--grid-line) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-            background-size: 40px 40px;
-            z-index: 0;
-            animation: breathe 8s ease-in-out infinite;
-            pointer-events: none;
-        }
-
-        @keyframes breathe {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 0.8; }
-        }
-
-        /* --- Syntax Classes --- */
-        .kwd { color: var(--syntax-magenta); font-weight: bold; } /* Keyword */
-        .str { color: var(--syntax-lime); } /* String */
-        .fn { color: var(--syntax-cyan); } /* Function/Class */
-        .obj { color: var(--syntax-yellow); } /* Object key */
-        .cmt { color: var(--text-muted); font-style: italic; } /* Comment */
-        .op { color: var(--syntax-cyan); } /* Operator */
-
-        /* --- Stage 1: The Seed Line --- */
-        #intro-stage {
+        /* Custom Cursor */
+        #cursor {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0; left: 0;
+            width: 20px; height: 20px;
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: difference;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #cursor::after {
+            content: '_';
+            font-family: var(--font-glitch);
+            font-size: 24px;
+            color: var(--neon-green);
+            animation: blink 0.1s infinite;
+        }
+
+        /* CRT Scanline Overlay */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 9000;
+            animation: scroll-scan 10s linear infinite;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-void); }
+        ::-webkit-scrollbar-thumb { background: var(--neon-purple); border-radius: 3px; box-shadow: 0 0 10px var(--neon-purple); }
+
+        /* --- TYPOGRAPHY & STATES --- */
+        .glitch-text { position: relative; display: inline-block; }
+        
+        /* State: Encrypted (Before Scroll) */
+        .encrypted {
+            font-family: var(--font-glitch);
+            color: var(--neon-green);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.7;
+            text-shadow: 2px 0 var(--err-red), -2px 0 var(--neon-cyan);
+            transform: skewX(-10deg);
+            filter: blur(1px);
+        }
+
+        /* State: Decrypted (In View) */
+        .decrypted {
+            font-family: var(--font-clean);
+            color: #fff;
+            opacity: 1;
+            transform: skewX(0);
+            filter: blur(0);
+            transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        /* Glitch Animation Keyframes */
+        @keyframes twitch {
+            0% { transform: translate(0,0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0,0); }
+        }
+        @keyframes scroll-scan { 0% {background-position: 0 0;} 100% {background-position: 0 100%;} }
+        @keyframes blink { 0%,100% {opacity:1;} 50% {opacity:0;} }
+
+        /* --- SECTION 1: HERO --- */
+        #hero {
+            height: 100vh;
+            width: 100%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 10;
-            transition: all 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-        }
-
-        .seed-line {
-            font-size: 1.5rem;
             position: relative;
-            padding: 20px;
-            cursor: pointer;
-            transition: text-shadow 0.3s;
-        }
-
-        .seed-line:hover .brace {
-            text-shadow: 0 0 10px var(--syntax-cyan);
-            color: var(--syntax-cyan);
-        }
-
-        .cursor {
-            display: inline-block;
-            width: 10px;
-            height: 1.5rem;
-            background-color: var(--syntax-yellow);
-            animation: blink 1s step-end infinite;
-            vertical-align: middle;
-            margin-left: 5px;
-        }
-
-        @keyframes blink { 50% { opacity: 0; } }
-
-        .seed-subtitle {
-            margin-top: 1rem;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            opacity: 1;
-            transition: opacity 0.5s;
-        }
-
-        /* Animation states for expansion */
-        body.expanded #intro-stage {
-            opacity: 0;
-            pointer-events: none;
-            transform: scale(2); 
-            filter: blur(10px);
-        }
-        
-        body.expanded {
-            overflow-y: auto;
-        }
-
-        /* --- Stage 2: The Main Interface --- */
-        #main-interface {
-            display: none; /* Hidden primarily */
-            flex-direction: column;
-            height: 100vh;
-            width: 100%;
-            z-index: 5;
-            padding: 20px 40px 60px 40px; /* Space for footer */
-            opacity: 0;
-            transition: opacity 1s ease-in;
-        }
-
-        body.expanded #main-interface {
-            display: flex;
-            opacity: 1;
-        }
-
-        /* Logo & Ending moved positions */
-        .ide-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            font-size: 1.2rem;
-        }
-
-        /* The Grid */
-        .project-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 20px;
-            flex-grow: 1;
-            max-width: 1400px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        /* Cards */
-        .code-card {
-            background: rgba(26, 27, 38, 0.6);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.3s ease, border-color 0.3s;
-            cursor: pointer;
-            min-height: 250px;
-        }
-
-        .code-card:hover {
-            border-color: var(--syntax-cyan);
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
-        }
-
-        /* Card Content Layering */
-        .card-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            padding: 20px;
-            transition: opacity 0.4s ease;
-        }
-
-        .code-view {
-            opacity: 1;
-            font-size: 0.85rem;
-            line-height: 1.6;
             z-index: 2;
         }
 
-        .visual-view {
-            opacity: 0;
-            z-index: 3;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: var(--bg-card);
-            flex-direction: column;
-        }
-
-        .code-card:hover .code-view { opacity: 0.1; }
-        .code-card:hover .visual-view { opacity: 1; }
-
-        a { text-decoration: none; color: inherit; width: 100%; height: 100%; display: block;}
-
-        /* --- Specific Project Visualizations --- */
-
-        /* 1. GlglStats Visual */
-        .visual-audio {
-            display: flex;
-            align-items: flex-end;
-            gap: 5px;
-            height: 100px;
-            width: 100px;
-            position: relative;
-            z-index: 10;
-        }
-        .bar {
-            width: 10px;
-            background: var(--syntax-magenta);
-            animation: bounce 0.5s infinite ease-in-out alternate;
-        }
-        .bar:nth-child(1) { animation-delay: 0.1s; height: 40%; }
-        .bar:nth-child(2) { animation-delay: 0.3s; height: 80%; background: var(--syntax-cyan); }
-        .bar:nth-child(3) { animation-delay: 0.5s; height: 50%; }
-        .bar:nth-child(4) { animation-delay: 0.2s; height: 90%; background: var(--syntax-yellow); }
-        .bar:nth-child(5) { animation-delay: 0.4s; height: 60%; }
-        
-        @keyframes bounce { to { height: 10%; } }
-        
-        .yt-overlay {
-            position: absolute; top:0; left:0; width:100%; height:100%;
-            opacity: 0.3;
-            pointer-events: none;
-            mix-blend-mode: luminosity;
-        }
-
-        /* 2. Ahuzat Dibuk Visual */
-        .visual-map {
-            width: 100%; height: 100%;
-            background: 
-                linear-gradient(#333 1px, transparent 1px),
-                linear-gradient(90deg, #333 1px, transparent 1px);
-            background-size: 20px 20px;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        .heatmap-overlay {
-            width: 150px; height: 150px;
-            background: radial-gradient(circle, rgba(247,118,142,0.8) 0%, rgba(158,206,106,0.2) 70%, transparent 100%);
-            border-radius: 50%;
-            animation: pulse-heat 3s infinite;
+        #hero-canvas {
             position: absolute;
-            top: 20%;
-        }
-        @keyframes pulse-heat { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 0.5; } }
-        
-        .import-buttons {
-            margin-top: 80px; z-index: 5; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
-        }
-        .code-btn {
-            background: rgba(0,0,0,0.5); padding: 5px 10px; font-size: 0.7rem; color: var(--text-main);
-            border: 1px solid var(--syntax-cyan); border-radius: 4px; display: inline-block;
-        }
-        .code-btn:hover { background: var(--syntax-cyan); color: #000; }
-
-        /* 3. 2D Part Orienting */
-        .poly-container svg {
-            width: 100px; height: 100px;
-            fill: none; stroke: var(--syntax-yellow); stroke-width: 2;
-            animation: rotatePoly 4s linear infinite;
-        }
-        @keyframes rotatePoly { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        /* 4. Turing Jest */
-        .chat-ui { display: flex; width: 100%; justify-content: space-between; padding: 0 20px; align-items: center; }
-        .robot { font-size: 2rem; }
-        .score-board { font-size: 1.5rem; color: var(--syntax-red); font-weight: bold; }
-        .pun-bubble { 
-            position: absolute; top: 20px; width: 100%; text-align: center; 
-            font-size: 0.8rem; color: var(--syntax-lime); 
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            opacity: 0.4;
         }
 
-        /* 5. Rhymes of Israel */
-        .glitch-text {
-            font-family: 'Courier New', cursive;
+        .hero-title {
+            font-size: 5rem;
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .hero-role {
+            font-family: var(--font-code);
             font-size: 1.2rem;
-            color: var(--syntax-magenta);
+            color: var(--neon-cyan);
+            margin-bottom: 2rem;
+            border-right: 2px solid var(--neon-cyan);
+            padding-right: 5px;
+            animation: blink 1s steps(2) infinite;
+        }
+
+        .sys-alert {
+            background: rgba(255, 0, 60, 0.1);
+            border: 1px solid var(--err-red);
+            padding: 1rem;
+            font-family: var(--font-glitch);
+            font-size: 1.1rem;
+            color: var(--err-red);
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(255, 0, 60, 0.2);
             position: relative;
         }
-        .glitch-text::before, .glitch-text::after {
-            content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; opacity: 0.8;
-        }
-        .glitch-text::before { color: var(--syntax-cyan); z-index: -1; animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite; }
-        .glitch-text::after { color: var(--syntax-red); z-index: -2; animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) reverse both infinite; }
-        
-        @keyframes glitch {
-            0% { transform: translate(0) }
-            20% { transform: translate(-2px, 2px) }
-            40% { transform: translate(-2px, -2px) }
-            60% { transform: translate(2px, 2px) }
-            80% { transform: translate(2px, -2px) }
-            100% { transform: translate(0) }
-        }
-        
-        .install-badge {
-            margin-top: 15px; padding: 8px 16px; background: var(--syntax-cyan); 
-            color: #000; font-weight: bold; border-radius: 4px; font-size: 0.9rem;
+        .sys-alert::before {
+            content: '!';
+            position: absolute;
+            top: -10px; left: -10px;
+            background: var(--err-red);
+            color: #000;
+            width: 20px; height: 20px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold;
         }
 
-        /* 6. Meta Portfolio */
-        .droste-frame {
-            width: 80%; height: 80%; border: 1px solid var(--text-muted);
-            transform: scale(0.9); opacity: 0.7;
+        /* --- SECTION 2,3,4: GRID & CARDS --- */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 2rem;
+            padding: 4rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .project-card {
+            background: rgba(20, 20, 25, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform 0.3s, border-color 0.3s;
+            position: relative;
+        }
+        
+        .project-card:hover {
+            border-color: var(--neon-purple);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(176, 38, 255, 0.1);
+        }
+
+        .card-visual {
+            flex: 2;
+            position: relative;
             background: #000;
-        }
-
-        /* --- Footer Imports & Terminal --- */
-        .imports-section {
-            margin-top: 20px;
+            overflow: hidden;
             display: flex;
-            justify-content: center;
-            gap: 30px;
-            font-size: 0.9rem;
-        }
-        .import-link {
-            color: var(--text-muted);
-            transition: color 0.3s;
-        }
-        .import-link:hover { color: var(--syntax-orange); text-decoration: underline;}
-        .import-link span.mod { color: var(--syntax-magenta); }
-        .import-link span.str { color: var(--syntax-lime); }
-
-        .terminal-bar {
-            position: fixed;
-            bottom: 0; left: 0;
-            width: 100%;
-            background: #15161e;
-            border-top: 1px solid var(--glass-border);
-            padding: 5px 20px;
-            font-size: 0.75rem;
-            display: flex;
-            justify-content: space-between;
             align-items: center;
-            z-index: 100;
-        }
-        .term-left { color: var(--text-muted); }
-        .term-right { color: var(--syntax-red); font-weight: bold; text-shadow: 0 0 5px rgba(247, 118, 142, 0.5); }
-
-        /* Mobile Responsive */
-        @media (max-width: 900px) {
-            .project-grid { grid-template-columns: 1fr 1fr; }
-        }
-        @media (max-width: 600px) {
-            .project-grid { grid-template-columns: 1fr; }
-            .seed-line { font-size: 1rem; }
-            .ide-header { font-size: 0.9rem; }
-            #main-interface { padding: 10px 10px 50px 10px; }
-            .terminal-bar { font-size: 0.6rem; flex-direction: column; gap: 2px;}
+            justify-content: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
+        .card-content {
+            flex: 1;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-title { font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem; }
+        .card-desc { font-size: 0.9rem; color: #aaa; line-height: 1.5; font-family: var(--font-clean); }
+
+        .btn-group { display: flex; gap: 10px; margin-top: auto; }
+        .cyber-btn {
+            background: transparent;
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            font-family: var(--font-code);
+            padding: 8px 16px;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+        .cyber-btn:hover {
+            background: var(--neon-green);
+            color: #000;
+            box-shadow: 0 0 15px var(--neon-green);
+        }
+        .btn-cyan { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+        .btn-cyan:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 15px var(--neon-cyan); }
+
+        /* --- SPECIFIC VISUAL FX --- */
+        /* GlglStats */
+        #visual-glgl canvas { width: 100%; height: 100%; }
+
+        /* Ahuzat */
+        .map-grid { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; height: 100%; }
+        .map-tile { background: #222; border: 1px solid #111; transition: all 1s ease-out; position: relative; }
+        .map-tile::after { content: ''; position: absolute; inset: 2px; background: #333; }
+        .map-active .map-tile.heat-high::after { background: var(--err-red); }
+        .map-active .map-tile.heat-med::after { background: orange; }
+        .map-active .map-tile.heat-low::after { background: var(--neon-green); }
+
+        /* 2D Poly */
+        .poly-container { width: 100px; height: 100px; position: relative; }
+        .poly { 
+            position: absolute; width: 100%; height: 100%; 
+            border: 2px solid var(--neon-cyan); 
+            transition: transform 1s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        } 
+        /* Turing */
+        .hallucination { font-family: var(--font-glitch); color: #aaa; word-break: break-all; }
+
+        /* Rhymes */
+        .headline { font-size: 2rem; font-weight: 900; transition: 0.2s; }
+
+        /* Meta Mirror */
+        .mirror-box {
+            width: 80%; height: 60%;
+            border: 2px solid #555;
+            background: #111;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative;
+        }
+        .mirror-box div {
+            width: 60%; height: 60%;
+            border: 1px solid var(--neon-purple);
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* --- FOOTER --- */
+        footer {
+            border-top: 2px solid var(--neon-green);
+            background: #000;
+            padding: 4rem 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            align-items: center;
+            font-family: var(--font-code);
+            text-align: center;
+        }
+
+        .social-cluster { display: flex; gap: 2rem; }
+        .social-link {
+            font-size: 2rem; 
+            color: #fff; 
+            text-decoration: none; 
+            transition: 0.2s;
+            position: relative;
+        }
+        .social-link:hover { 
+            text-shadow: 3px 0 var(--err-red), -3px 0 var(--neon-cyan);
+            color: var(--neon-green);
+        }
+
+        .temporal-timer {
+            border: 1px dashed var(--err-red);
+            padding: 1rem;
+            color: var(--err-red);
+            background: rgba(255,0,0,0.05);
+        }
+        .timer-val { font-size: 1.5rem; font-weight: bold; display: block; margin-top: 5px; }
+
+        @media (max-width: 768px) {
+            .hero-title { font-size: 3rem; }
+            .grid-container { grid-template-columns: 1fr; padding: 2rem 1rem; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- Background -->
-    <div class="bg-grid"></div>
+    <div class="scanlines"></div>
+    <div id="cursor"></div>
 
-    <!-- STAGE 1: Seed Line -->
-    <div id="intro-stage">
-        <div class="seed-line" id="seed-trigger">
-            <span class="kwd">const</span> <span class="fn">developer</span> <span class="op">=</span> <span class="kwd">new</span> <span class="fn">GevaKipper</span><span class="brace">({</span> <span class="obj">currentRole:</span> <span class="str">"Google"</span> <span class="brace">});</span><span class="cursor"></span>
+    <!-- HERO SECTION -->
+    <section id="hero">
+        <canvas id="hero-canvas"></canvas>
+        <h1 class="hero-title encrypted" data-text="GEVA KIPPER">G3V4 K1PP3R</h1>
+        <div class="hero-role">Software Engineer @ Google_</div>
+        <div class="sys-alert">
+            <span class="encrypted" data-text="System Alert: This interface is re-designed daily by AI. Current Build: Unstable.">
+                SYS_ERR: RENDER_FAIL. RETRY...
+            </span>
         </div>
-        <div class="seed-subtitle">
-            // v.2024.1: This interface is re-dreamed daily by an AI. Design creates itself.
-        </div>
-    </div>
+    </section>
 
-    <!-- STAGE 2: IDE Layout -->
-    <div id="main-interface">
+    <!-- PROJECT GRID -->
+    <main class="grid-container">
+
+        <!-- 1. GlglStats -->
+        <article class="project-card observe-me">
+            <div class="card-visual" id="visual-glgl">
+                <canvas id="wave-canvas"></canvas>
+            </div>
+            <div class="card-content">
+                <div>
+                    <h3 class="card-title encrypted" data-text="GlglStats">G1g1_St4ts</h3>
+                    <p class="card-desc encrypted" data-text="An analysis of Israeli pop-charts using LZ77 compression visualization to map patterns in music.">
+                        [DATA CORRUPTED SEGMENT 0x4F]
+                    </p>
+                </div>
+                <div class="btn-group">
+                    <a href="https://glglstats.geekip.dev" target="_blank" class="cyber-btn">access_site</a>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="cyber-btn btn-cyan">play_talk</a>
+                </div>
+            </div>
+        </article>
+
+        <!-- 2. Ahuzat Dibuk -->
+        <article class="project-card observe-me" id="card-ahuzat">
+            <div class="card-visual">
+                <div class="map-grid" id="map-grid">
+                    <!-- JS fills this -->
+                </div>
+            </div>
+            <div class="card-content">
+                <div>
+                    <h3 class="card-title encrypted" data-text="Ahuzat Dibuk">Ahuz4t_D1buk</h3>
+                    <p class="card-desc encrypted" data-text="Parking Heat Map generator for Tel Aviv visualized through scraped data.">
+                        [MAP RENDER FAILED]
+                    </p>
+                </div>
+                <div class="btn-group">
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="cyber-btn">Source_Log</a>
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="cyber-btn btn-cyan">Press_Data</a>
+                </div>
+            </div>
+        </article>
+
+        <!-- 3. 2D Part Orienting -->
+        <article class="project-card observe-me" id="card-poly">
+            <div class="card-visual">
+                <div class="poly-container">
+                    <div class="poly" style="transform: rotate(45deg);"></div>
+                    <div class="poly" style="width:70%; height: 70%; top:15%; left:15%; border-color: var(--neon-purple); transform: rotate(-20deg);"></div>
+                </div>
+            </div>
+            <div class="card-content">
+                <div>
+                    <h3 class="card-title encrypted" data-text="2D Part Orienting">2D_P4rt_Or1</h3>
+                    <p class="card-desc encrypted" data-text="C++ Computational Geometry library implementing the 'push plan' algorithm for part orientation.">
+                        01000101010 POLY_ERR
+                    </p>
+                </div>
+                <div class="btn-group">
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="cyber-btn">Execute Algorithm</a>
+                </div>
+            </div>
+        </article>
+
+        <!-- 4. The Turing Jest -->
+        <article class="project-card observe-me" id="card-turing">
+            <div class="card-visual">
+                <div class="hallucination" id="turing-text" style="padding: 20px; font-size: 0.8rem;">
+                    Generating humor... 
+                </div>
+            </div>
+            <div class="card-content">
+                <div>
+                    <h3 class="card-title encrypted" data-text="The Turing Jest">The_Tur1ng_J3st</h3>
+                    <p class="card-desc encrypted" data-text="An LMSYS-style arena for human evaluation of LLM-generated puns.">
+                        LLM HALLUCINATION DETECTED
+                    </p>
+                </div>
+                <div class="btn-group">
+                    <a href="https://jest.geekip.dev" target="_blank" class="cyber-btn btn-cyan">Human_Evaluation_Required</a>
+                </div>
+            </div>
+        </article>
+
+        <!-- 5. Rhymes of Israel -->
+        <article class="project-card observe-me" id="card-rhymes">
+            <div class="card-visual">
+                <div class="headline" style="color:white; font-family:'Times New Roman', serif;">BREAKING NEWS</div>
+            </div>
+            <div class="card-content">
+                <div>
+                    <h3 class="card-title encrypted" data-text="Rhymes of Israel">Rhym3s_0f_IL</h3>
+                    <p class="card-desc encrypted" data-text="Chrome extension that transforms serious news headlines into comedic rhymes.">
+                        CRITICAL FONT FAILURE
+                    </p>
+                </div>
+                <div class="btn-group">
+                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="cyber-btn">Download Extension</a>
+                </div>
+            </div>
+        </article>
+
+        <!-- 6. Meta Portfolio -->
+        <article class="project-card observe-me">
+            <div class="card-visual">
+                <div class="mirror-box">
+                    <div>
+                        <div>
+                            <div style="width:20px; height:20px; background:white;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-content">
+                <div>
+                    <h3 class="card-title encrypted" data-text="Portfolio v2.0">P0rtf0l10_v2</h3>
+                    <p class="card-desc encrypted" data-text="This website itself. A recursive exploration of glitch aesthetics and DOM manipulation.">
+                        STACK OVERFLOW RECURSION
+                    </p>
+                </div>
+                <div class="btn-group">
+                    <a href="https://geekip.dev" target="_blank" class="cyber-btn btn-cyan">Recursion_Loop</a>
+                </div>
+            </div>
+        </article>
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="social-cluster">
+            <a href="https://github.com/gevak" class="social-link">&lt;GitHub/&gt;</a>
+            <a href="https://linkedin.com/in/gevakip" class="social-link">[LinkedIn]</a>
+            <a href="https://facebook.com/geva.kipper" class="social-link">{Facebook}</a>
+        </div>
         
-        <header class="ide-header">
-            <div class="logo">
-                <span class="kwd">const</span> <span class="fn">developer</span>
-            </div>
-            <div class="closer">
-                <span class="brace">});</span>
-            </div>
-        </header>
-
-        <main class="project-grid">
-
-            <!-- 1. GlglStats -->
-            <div class="code-card">
-                <a href="https://glglstats.geekip.dev" target="_blank">
-                <div class="card-layer code-view">
-<span class="kwd">class</span> <span class="fn">GlglStats</span>(Project):<br>
-&nbsp;&nbsp;<span class="obj">meta</span> = {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"type"</span>: <span class="str">"Data Viz"</span>,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"engine"</span>: <span class="str">"Python/LZ77"</span>,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"output"</span>: <span class="str">"Pop Chart Analysis"</span><br>
-&nbsp;&nbsp;}<br>
-&nbsp;&nbsp;<span class="kwd">def</span> <span class="fn">render</span>(self):<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">return</span> <span class="fn">analyze_music()</span>
-                </div>
-                <div class="card-layer visual-view">
-                    <div class="yt-overlay">
-                        <!-- Simulated overlay -->
-                    </div>
-                    <div class="visual-audio">
-                        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-                    </div>
-                    <p style="margin-top:10px; font-size:0.8rem; color:var(--text-main);">Compiling Audio Patterns...</p>
-                </div>
-                </a>
-            </div>
-
-            <!-- 2. Ahuzat Dibuk -->
-            <div class="code-card">
-                <div class="card-layer code-view">
-<span class="kwd">const</span> <span class="fn">AhuzatDibuk</span> = {<br>
-&nbsp;&nbsp;<span class="obj">location</span>: <span class="str">"Tel Aviv"</span>,<br>
-&nbsp;&nbsp;<span class="obj">dataset</span>: <span class="str">"Parking Sensors"</span>,<br>
-&nbsp;&nbsp;<span class="obj">status</span>: <span class="str">"Viral"</span>,<br>
-&nbsp;&nbsp;<span class="obj">imports</span>: [<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"News_13"</span>,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"Mako_Nexter"</span><br>
-&nbsp;&nbsp;]<br>
-};
-                </div>
-                <div class="card-layer visual-view">
-                    <div class="visual-map">
-                        <div class="heatmap-overlay"></div>
-                    </div>
-                    <div class="import-buttons">
-                        <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="code-btn">Import News_13</a>
-                        <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="code-btn">Import Mako</a>
-                        <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="code-btn">Import FB_Source</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3. 2D Part Orienting -->
-            <div class="code-card">
-                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">
-                <div class="card-layer code-view">
-<span class="cmt">// CGL Research Project</span><br>
-<span class="kwd">Polygon</span>* <span class="fn">orientPart</span>(Shape &s) {<br>
-&nbsp;&nbsp;<span class="kwd">while</span>(!aligned) {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;s.<span class="fn">rotate</span>(PHY_GRAVITY);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;s.<span class="fn">push_wall</span>();<br>
-&nbsp;&nbsp;}<br>
-&nbsp;&nbsp;<span class="kwd">return</span> s;<br>
-}
-                </div>
-                <div class="card-layer visual-view">
-                    <div class="poly-container">
-                        <svg viewBox="0 0 100 100">
-                            <polygon points="50,15 90,85 10,85" />
-                        </svg>
-                    </div>
-                    <p style="margin-top:10px; font-size:0.8rem; color: #fff;">Aligning Geometry...</p>
-                </div>
-                </a>
-            </div>
-
-            <!-- 4. The Turing Jest -->
-            <div class="code-card turing-card">
-                <a href="https://jest.geekip.dev" target="_blank">
-                <div class="card-layer code-view">
-<span class="kwd">let</span> chatLog = [<br>
-&nbsp;&nbsp;{ <span class="obj">bot</span>: <span class="str">"A"</span>, <span class="obj">msg</span>: <span class="str">"PunGen"</span> },<br>
-&nbsp;&nbsp;{ <span class="obj">bot</span>: <span class="str">"B"</span>, <span class="obj">msg</span>: <span class="str">"LOL"</span> }<br>
-];<br>
-<span class="fn">startBattle</span>(chatLog);
-                </div>
-                <div class="card-layer visual-view">
-                     <div class="pun-bubble" id="pun-text">"Why did the functional programmer get thrown out of school?"</div>
-                    <div class="chat-ui">
-                        <span class="robot">🤖</span>
-                        <div class="score-board" id="score-val">0</div>
-                        <span class="robot">👾</span>
-                    </div>
-                </div>
-                </a>
-            </div>
-
-            <!-- 5. Rhymes of Israel -->
-            <div class="code-card">
-                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank">
-                <div class="card-layer code-view">
-<span class="file">manifest.json</span><br>
-{<br>
-&nbsp;&nbsp;<span class="obj">"name"</span>: <span class="str">"Rhymes of Israel"</span>,<br>
-&nbsp;&nbsp;<span class="obj">"permissions"</span>: [<span class="str">"activeTab"</span>],<br>
-&nbsp;&nbsp;<span class="obj">"action"</span>: <span class="str">"makehappy"</span><br>
-}
-                </div>
-                <div class="card-layer visual-view">
-                    <div style="text-align:center;">
-                        <p style="font-size:0.7rem; text-decoration: line-through; color: #666;">Serious News Headline</p>
-                        <h3 class="glitch-text" data-text="A Whimsical Rhoam!">A Whimsical Rhyme!</h3>
-                        <div class="install-badge">INSTALL EXTENSION</div>
-                    </div>
-                </div>
-                </a>
-            </div>
-
-            <!-- 6. Meta Portfolio -->
-            <div class="code-card">
-                <a href="https://geekip.dev">
-                <div class="card-layer code-view">
-<span class="kwd">function</span> <span class="fn">renderPortfolio</span>() {<br>
-&nbsp;&nbsp;<span class="cmt">/* Recursion Depth: ∞ */</span><br>
-&nbsp;&nbsp;<span class="kwd">return</span> <span class="fn">renderPortfolio</span>();<br>
-}
-                </div>
-                <div class="card-layer visual-view">
-                    <iframe src="https://geekip.dev" class="droste-frame" title="Recursion"></iframe>
-                    <p style="position:absolute; bottom: 10px; font-size:0.7rem; background:#000;">Object.selfReference()</p>
-                </div>
-                </a>
-            </div>
-
-        </main>
-
-        <section class="imports-section">
-            <a href="https://linkedin.com/in/gevakip" class="import-link" target="_blank">
-                <span class="kwd">import</span> { <span class="fn">Profile</span> } <span class="kwd">from</span> <span class="str">"linkedin/gevakip"</span>
-            </a>
-            <a href="https://github.com/gevak" class="import-link" target="_blank">
-                <span class="kwd">import</span> { <span class="fn">Repos</span> } <span class="kwd">from</span> <span class="str">"github/gevak"</span>
-            </a>
-            <a href="https://facebook.com/geva.kipper" class="import-link" target="_blank">
-                <span class="kwd">import</span> { <span class="fn">Social</span> } <span class="kwd">from</span> <span class="str">"facebook/geva.kipper"</span>
-            </a>
-        </section>
-    </div>
-
-    <!-- TERMINAL FOOTER -->
-    <div class="terminal-bar">
-        <div class="term-left">
-            > Created by AI Model [G-K_LLM_v4]. Rendering complete. <span style="animation:blink 1s infinite">_</span>
+        <div>
+            <p>Architected by AI Model. Rendering Engine: HTML5.</p>
         </div>
-        <div class="term-right" id="anomaly-timer">
-            CALCULATING TEMPORAL SHIFT...
+
+        <div class="temporal-timer">
+            <div>T-MINUS / TEMPORAL OVERFLOW ERR</div>
+            <div class="timer-val" id="countdown">CALCULATING...</div>
         </div>
-    </div>
+    </footer>
 
     <script>
-        // --- Interaction Logic ---
-        const seedTrigger = document.getElementById('seed-trigger');
-        const body = document.body;
+        /* --- UTILS --- */
+        const randomChar = () => {
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:<>,.?/";
+            return chars[Math.floor(Math.random() * chars.length)];
+        };
 
-        seedTrigger.addEventListener('click', () => {
-            // Trigger Expansion
-            body.classList.add('expanded');
+        // Text Decryption Effect
+        class Decryptor {
+            constructor(el) {
+                this.el = el;
+                this.targetText = el.getAttribute('data-text');
+                this.currentText = el.innerText.split('');
+                this.iterations = 0;
+                this.isDone = false;
+            }
+            
+            animate() {
+                if(this.isDone) return;
+                
+                let output = '';
+                let completed = 0;
+
+                for (let i = 0; i < this.targetText.length; i++) {
+                    // Once a character matches target, keep it
+                    if (i < this.iterations / 3) {
+                        output += this.targetText[i];
+                        completed++;
+                    } else {
+                        // Otherwise, junk
+                        output += randomChar();
+                    }
+                }
+
+                this.el.innerText = output;
+                this.iterations++;
+
+                if (completed === this.targetText.length) {
+                    this.isDone = true;
+                    this.el.classList.remove('encrypted');
+                    this.el.classList.add('decrypted');
+                    this.el.innerText = this.targetText; // Ensure clean final state
+                } else {
+                    requestAnimationFrame(() => this.animate());
+                }
+            }
+        }
+
+        /* --- CURSOR --- */
+        const cursor = document.getElementById('cursor');
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
         });
 
-        // --- Turing Jest Score Simulator ---
-        const scoreVal = document.getElementById('score-val');
-        const turingCard = document.querySelector('.turing-card');
-        let tmr;
-        let score = 0;
+        /* --- HERO CANVAS (Matrix Particles) --- */
+        const heroCanvas = document.getElementById('hero-canvas');
+        const heroCtx = heroCanvas.getContext('2d');
+        let particles = [];
+        let mouseX = 0, mouseY = 0;
+
+        function resizeHero() {
+            heroCanvas.width = window.innerWidth;
+            heroCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeHero);
+        resizeHero();
+
+        document.addEventListener('mousemove', e => { 
+            mouseX = e.clientX; 
+            mouseY = e.clientY; 
+        });
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * heroCanvas.width;
+                this.y = Math.random() * heroCanvas.height;
+                this.size = Math.random() * 2 + 1;
+                this.speedY = Math.random() * 2 + 0.5;
+                this.chars = "01";
+                this.char = this.chars[Math.floor(Math.random() * 2)];
+            }
+            update() {
+                // Determine distance to mouse
+                const dx = this.x - mouseX;
+                const dy = this.y - mouseY;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+                
+                // Mouse repulsion
+                if (distance < 150) {
+                    const force = (150 - distance) / 150;
+                    const mx = dx / distance;
+                    const my = dy / distance;
+                    this.x += mx * force * 5;
+                    this.y += my * force * 5;
+                }
+
+                this.y += this.speedY;
+                if (this.y > heroCanvas.height) this.y = 0;
+            }
+            draw() {
+                heroCtx.fillStyle = '#114411';
+                heroCtx.font = this.size * 5 + 'px monospace';
+                heroCtx.fillText(this.char, this.x, this.y);
+            }
+        }
+
+        for (let i = 0; i < 150; i++) particles.push(new Particle());
+
+        function animateHero() {
+            heroCtx.clearRect(0, 0, heroCanvas.width, heroCanvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animateHero);
+        }
+        animateHero();
+
+        /* --- SCROLL OBSERVER --- */
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const target = entry.target;
+                    
+                    // Decrypt Text
+                    target.querySelectorAll('.encrypted').forEach(el => {
+                        new Decryptor(el).animate();
+                    });
+
+                    // Trigger Project Specific Animations
+                    triggerProjectAnimation(target);
+                }
+            });
+        }, { threshold: 0.4 }); // Trigger when 40% visible
+
+        document.querySelectorAll('.observe-me').forEach(el => observer.observe(el));
         
-        turingCard.addEventListener('mouseenter', () => {
-             tmr = setInterval(() => {
-                 score += Math.floor(Math.random() * 10) + 1;
-                 scoreVal.innerText = score;
-             }, 200);
-        });
+        // Hero text auto-decrypt on load
+        setTimeout(() => {
+            document.querySelectorAll('#hero .encrypted').forEach(el => new Decryptor(el).animate());
+        }, 500);
+
+        /* --- PROJECT ANIMATIONS --- */
         
-        turingCard.addEventListener('mouseleave', () => {
-             clearInterval(tmr);
-        });
+        // 1. GLGL Stats Wave
+        const waveCanvas = document.getElementById('wave-canvas');
+        const waveCtx = waveCanvas.getContext('2d');
+        let waveTime = 0;
+        let isWaveStable = false;
 
-        // --- Temporal Anomaly Countdown ---
-        // Target: 2026-01-31 01:21:17
-        const targetDate = new Date('2026-01-31T01:21:17').getTime();
-        const infoEl = document.getElementById('anomaly-timer');
+        function animateWave() {
+            waveCanvas.width = 400; waveCanvas.height = 300; // Intrinsic size
+            waveCtx.clearRect(0, 0, 400, 300);
+            waveCtx.beginPath();
+            waveCtx.strokeStyle = isWaveStable ? '#39ff14' : '#ff003c';
+            waveCtx.lineWidth = 2;
 
-        function updateTimer() {
-            const now = new Date().getTime();
-            const distance = targetDate - now;
+            for (let x = 0; x < 400; x++) {
+                let y;
+                if(isWaveStable) {
+                    y = 150 + Math.sin(x * 0.05 + waveTime) * 50; 
+                } else {
+                    y = 150 + (Math.random() - 0.5) * 100;
+                }
+                if (x === 0) waveCtx.moveTo(x, y);
+                else waveCtx.lineTo(x, y);
+            }
+            waveCtx.stroke();
+            waveTime += 0.1;
+            requestAnimationFrame(animateWave);
+        }
+        animateWave();
 
-            if (distance < 0) {
-                // If we passed the date (unlikely given prompt specific future date)
-                infoEl.innerHTML = "TEMPORAL CONVERGENCE REACHED";
+        // 2. Map Tiles
+        const mapGrid = document.getElementById('map-grid');
+        for(let i=0; i<16; i++) {
+            const div = document.createElement('div');
+            div.className = 'map-tile';
+            // Random initial transform
+            div.style.transform = `translate(${(Math.random()-0.5)*200}%, ${(Math.random()-0.5)*200}%) rotate(${Math.random()*90}deg)`;
+            mapGrid.appendChild(div);
+        }
+
+        // 4. Turing Text
+        const turingEl = document.getElementById('turing-text');
+        const puns = ["Why did the developer go broke? Because he used up all his cache.", "To C or not to C, that is the structure.", "Generating witticism..."];
+        let punIndex = 0;
+        
+        function glitchTuring() {
+            if(Math.random() > 0.9) {
+                 turingEl.innerText = "lorem ipsum dolor sit amet segmentation fault";
+                 turingEl.style.color = "var(--err-red)";
+            } else {
+                turingEl.innerText = puns[punIndex % puns.length];
+                punIndex++;
+                turingEl.style.color = "#aaa";
+            }
+            setTimeout(glitchTuring, 2000);
+        }
+        glitchTuring();
+
+        function triggerProjectAnimation(element) {
+            // GlglStats
+            if(element.querySelector('#wave-canvas')) {
+                isWaveStable = true;
+            }
+
+            // Ahuzat Map
+            if(element.id === 'card-ahuzat') {
+                const tiles = element.querySelectorAll('.map-tile');
+                element.querySelector('.map-grid').classList.add('map-active');
+                
+                tiles.forEach((t, i) => {
+                    t.style.transform = "translate(0,0) rotate(0deg)";
+                    // Simulate heat map colors
+                    if(i % 5 === 0) t.classList.add('heat-high');
+                    else if (i % 3 === 0) t.classList.add('heat-med');
+                    else t.classList.add('heat-low');
+                });
+            }
+
+            // Poly
+            if(element.id === 'card-poly') {
+                const polys = element.querySelectorAll('.poly');
+                polys[0].style.transform = "rotate(0deg)";
+                polys[1].style.transform = "rotate(0deg) scale(0.6)";
+                polys[1].style.borderColor = "white";
+            }
+
+            // Rhymes
+            if(element.id === 'card-rhymes') {
+                const hl = element.querySelector('.headline');
+                setTimeout(() => {
+                    hl.style.fontFamily = "'Comic Sans MS', cursive"; 
+                    hl.innerText = "BREAKING MUSE / IN THE NEWS";
+                    hl.style.color = "var(--neon-green)";
+                }, 500);
+            }
+        }
+
+        /* --- FOOTER TIMER (Temporal Anomaly) --- */
+        const timerEl = document.getElementById('countdown');
+        const targetDate = new Date('2026-02-01T00:00:00').getTime();
+
+        setInterval(() => {
+            const now = Date.now();
+            let distance = targetDate - now;
+
+            // Glitch effect: sometimes show random nonsense
+            if (Math.random() > 0.95) {
+                timerEl.innerText = "ERR: NaN DETECTED";
                 return;
             }
 
-            // Calculations
-            const hours = Math.floor(distance / (1000 * 60 * 60)); // Total hours
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-            // Format numbers
-            const hStr = hours.toLocaleString(); // Add commas
+            // Calculate negative time overflow relative to target
+            // Prompt requested "YEARS: -xx", implying counting UP to the date as negatives
+            // Or technically, if Now is before 2026, distance is positive. 
+            // To make it look like "Temporal Overflow Error" (Future bugs), let's render it as negative.
             
-            infoEl.innerHTML = `T-Minus: ${hStr}h ${minutes}m ${seconds}s`;
-        }
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
 
-        setInterval(updateTimer, 1000);
-        updateTimer(); // Initial call
+            // Format: T-MINUS YEARS: 0 [BUG] DAYS: ...
+            // Simplified for visual impact per spec:
+            timerEl.innerText = `DAYS: -${days} : HRS: -${hours} : MIN: -${minutes}`;
+        }, 100);
+
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260131",
+          pageId: "20260201",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
