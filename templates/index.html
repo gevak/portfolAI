@@ -2,545 +2,779 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | Engineering</title>
+    <title>Geva Kipper | Software Engineer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;500&family=Inter:wght@300;400;700;900&family=VT323&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-color: #050505;
-            --text-main: #e0e0e0;
-            --text-dim: rgba(255, 255, 255, 0.1);
-            --font-main: 'JetBrains Mono', monospace;
-            --font-clock: 'Share Tech Mono', monospace;
-            --cursor-x: 50vw;
-            --cursor-y: 50vh;
+            --bg-obsidian: #0a0a12;
+            --bg-void: #050505;
+            --neon-blue: #00f3ff;
+            --syntax-green: #00ff41;
+            --error-red: #ff0055;
+            --glass-bg: rgba(20, 20, 30, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-white: #ffffff;
         }
 
         * {
             box-sizing: border-box;
-            cursor: none; /* Hide default cursor */
+            margin: 0;
+            padding: 0;
+            cursor: none; /* Custom cursor implementation below */
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: var(--font-main);
+            background-color: var(--bg-obsidian);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-white);
             overflow-x: hidden;
-            height: 100vh;
             width: 100vw;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            min-height: 100vh;
         }
 
-        /* --- The Dark Room Overlay --- */
-        /* This creates the flashlight effect. 
-           Radial gradient: Transparent center (light) -> Dark edge. */
-        #flashlight-overlay {
+        /* Custom Cursor */
+        #cursor-dot, #cursor-ring {
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 9999;
+            border-radius: 50%;
+        }
+
+        #cursor-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--neon-blue);
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        #cursor-ring {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--neon-blue);
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+            transform: translate(-16px, -16px);
+        }
+
+        /* Canvas Background */
+        #liquid-canvas {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            pointer-events: none;
-            z-index: 100;
-            background: radial-gradient(
-                circle 300px at var(--cursor-x) var(--cursor-y), 
-                rgba(5, 5, 5, 0.1) 0%, 
-                rgba(5, 5, 5, 0.4) 30%, 
-                rgba(5, 5, 5, 0.98) 100%
-            );
-            mix-blend-mode: hard-light;
-        }
-        
-        /* Custom Cursor Dot */
-        #cursor-dot {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 8px;
-            height: 8px;
-            background: white;
-            border-radius: 50%;
-            transform: translate3d(calc(var(--cursor-x) - 4px), calc(var(--cursor-y) - 4px), 0);
-            z-index: 101;
-            pointer-events: none;
-            mix-blend-mode: difference;
+            z-index: -1;
         }
 
-        /* --- Header --- */
-        header {
-            text-align: center;
-            margin-top: 5vh;
-            margin-bottom: 2rem;
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
             z-index: 10;
+        }
+
+        /* Header */
+        header {
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
             position: relative;
         }
 
         h1 {
-            font-size: 2.5rem;
-            margin: 0;
+            font-size: 5rem;
+            font-weight: 900;
             letter-spacing: -2px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .role {
-            font-size: 1rem;
-            opacity: 0.8;
-            margin: 0.5rem 0;
-        }
-
-        .ai-disclaimer {
-            font-size: 0.75rem;
-            color: #4af626; /* Terminal Green */
-            opacity: 0.7;
-            text-shadow: 0 0 5px #4af626;
-            animation: flicker 3s infinite;
-        }
-
-        @keyframes flicker {
-            0% { opacity: 0.7; }
-            5% { opacity: 0.3; }
-            10% { opacity: 0.7; }
-            40% { opacity: 0.7; }
-            45% { opacity: 0.2; }
-            50% { opacity: 0.7; }
-            100% { opacity: 0.7; }
-        }
-
-        /* --- Main Grid --- */
-        main {
-            flex-grow: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            padding: 20px;
-            z-index: 5;
-        }
-
-        .bento-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 220px);
-            gap: 20px;
-            max-width: 1000px;
-            width: 100%;
-        }
-
-        .card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05); /* Invisible normally */
-            border-radius: 12px;
-            padding: 20px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
             position: relative;
-            overflow: hidden;
-            transition: border-color 0.2s;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            backdrop-filter: blur(10px);
-            text-decoration: none;
-            color: inherit;
-        }
-
-        /* Specific borders light up via JS proximity, but we set a transition */
-        .card:hover {
-            border-color: rgba(255, 255, 255, 0.5);
-        }
-
-        .card h3 {
-            margin: 0;
-            font-size: 1.2rem;
             z-index: 2;
         }
 
-        .card p, .card .meta {
-            font-size: 0.8rem;
-            color: #aaa;
-            z-index: 2;
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 300;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 20px;
         }
 
-        .card-bg {
+        .glitch-subtitle {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            color: var(--syntax-green);
+            opacity: 0.8;
+            position: relative;
+            display: inline-block;
+        }
+
+        .glitch-subtitle::before, .glitch-subtitle::after {
+            content: "This interface is designed daily by AI; the liquid state is ever-changing.";
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 1;
-            opacity: 0.2;
-            transition: opacity 0.3s;
+            background: var(--bg-obsidian);
         }
 
-        .card:hover .card-bg {
-            opacity: 0.5;
+        .glitch-subtitle::before {
+            left: 2px;
+            text-shadow: -1px 0 var(--error-red);
+            animation: glitch-anim-1 2s infinite linear alternate-reverse;
+            clip-path: inset(40% 0 61% 0);
         }
 
-        /* Card Themes */
-        #card-glgl .card-bg {
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            background-size: 20px 100%;
-            opacity: 0.1;
-        }
-        
-        #card-ahuzat .card-bg {
-            background-image: radial-gradient(circle, #333 1px, transparent 1px);
-            background-size: 20px 20px;
+        .glitch-subtitle::after {
+            left: -2px;
+            text-shadow: -1px 0 var(--neon-blue);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+            clip-path: inset(10% 0 30% 0);
         }
 
-        #card-2d .card-bg {
-            /* Geometric shapes using clip-path could act as background elements, simplified here with CSS pattern */
-            background-image: linear-gradient(30deg, #111 12%, transparent 12.5%, transparent 87%, #111 87.5%, #111), linear-gradient(150deg, #111 12%, transparent 12.5%, transparent 87%, #111 87.5%, #111), linear-gradient(30deg, #111 12%, transparent 12.5%, transparent 87%, #111 87.5%, #111), linear-gradient(150deg, #111 12%, transparent 12.5%, transparent 87%, #111 87.5%, #111), linear-gradient(60deg, #222 25%, transparent 25.5%, transparent 75%, #222 75%, #222), linear-gradient(60deg, #222 25%, transparent 25.5%, transparent 75%, #222 75%, #222);
-            background-size: 40px 70px;
+        /* Project Grid */
+        .grid-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            padding-bottom: 100px;
         }
 
-        #card-turing .card-bg {
-            /* Chat bubble motif */
-            background: 
-                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 10px, transparent 11px),
-                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 15px, transparent 16px);
-        }
-
-        #card-rhymes {
-            background: #111; /* Darker base */
-        }
-        #card-rhymes .card-bg {
-            background-image: linear-gradient(#222 1px, transparent 1px), linear-gradient(90deg, #222 1px, transparent 1px);
-            background-size: 10px 10px;
-        }
-
-        #card-meta {
-            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
-            box-shadow: inset 0 0 20px rgba(255,255,255,0.05);
-        }
-
-        /* --- Footer --- */
-        footer {
-            width: 100%;
-            padding: 2rem;
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.1s linear, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
             display: flex;
+            flex-direction: column;
             justify-content: space-between;
-            align-items: flex-end;
-            z-index: 10;
+            min-height: 350px;
         }
 
-        .socials {
-            display: flex;
-            gap: 20px;
-        }
-
-        .social-icon {
-            width: 40px;
-            height: 40px;
-            fill: #333; /* Dark by default */
-            transition: fill 0.3s, transform 0.3s;
+        .glass-card:hover {
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.15);
+            border-color: rgba(0, 243, 255, 0.4);
         }
         
-        /* Light up logic handled by CSS proximity + hover */
-        .social-link:hover .social-icon {
-            transform: scale(1.1);
+        .card-visual {
+            height: 100px;
+            width: 100%;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .timer-container {
-            text-align: right;
-            font-family: var(--font-clock);
+        /* Specific Card Visuals */
+        /* Card 1: GlglStats (Audio Waves) */
+        .bars {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+        .bar {
+            width: 8px;
+            background: var(--neon-blue);
+            animation: bounce 1.2s infinite ease-in-out;
+        }
+        .bar:nth-child(2) { animation-delay: 0.1s; height: 40px; }
+        .bar:nth-child(3) { animation-delay: 0.3s; height: 60px; }
+        .bar:nth-child(4) { animation-delay: 0.2s; height: 30px; }
+        
+        /* Card 2: Ahuzat (Heatmap) */
+        .heatmap-bg {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 0, 85, 0.4), transparent),
+                        radial-gradient(circle at 70% 70%, rgba(0, 255, 65, 0.4), transparent);
+            animation: heat-shift 4s infinite alternate;
         }
 
-        .timer-credit {
-            font-size: 0.6rem;
-            opacity: 0.5;
-            margin-bottom: 5px;
-            font-family: var(--font-main);
+        /* Card 3: Polygon */
+        .poly-shape {
+            width: 60px;
+            height: 60px;
+            border: 2px solid var(--text-white);
+            transform: rotate(45deg);
+            animation: rotate-poly 10s linear infinite;
         }
 
-        .stopwatch {
-            font-size: 2rem;
-            color: #ff3333;
-            text-shadow: 0 0 10px rgba(255, 51, 51, 0.5);
-            background: #110000;
-            padding: 5px 10px;
-            border-radius: 4px;
-            border: 1px solid #330000;
+        /* Card 4: Chat */
+        .chat-ui {
+            width: 80%;
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+        }
+        .cursor-blink { animation: blink 1s step-end infinite; }
+
+        /* Card 5: Rhymes */
+        .rhyme-text span {
             display: inline-block;
+            transition: transform 0.2s;
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: var(--neon-blue);
+        }
+        .glass-card:hover .rhyme-text span:nth-child(odd) { transform: translateY(-5px); }
+        .glass-card:hover .rhyme-text span:nth-child(even) { transform: translateY(5px); }
+
+        /* Card 6: Recursive */
+        .droste {
+            width: 60px;
+            height: 40px;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .droste div {
+            width: 60%;
+            height: 60%;
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 2px;
         }
 
-        /* Links area inside cards */
-        .card-links {
-            z-index: 5;
-            margin-top: 10px;
+        /* Card Content */
+        .card-title {
+            font-weight: 700;
+            font-size: 1.25rem;
+            margin-bottom: 10px;
+        }
+
+        .card-desc {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        .btn-group {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
+            margin-top: auto;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 100%;
+            background: var(--neon-blue);
+            z-index: -1;
+            transition: width 0.3s ease;
+        }
+
+        .btn:hover::before { width: 100%; }
+        .btn:hover { color: var(--bg-obsidian); cursor: none !important; }
+
+        /* Social Section */
+        .social-section {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 80px;
+            padding: 20px;
+        }
+
+        .magnetic-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: white;
+            transition: color 0.3s;
+            position: relative;
         }
         
-        .c-btn {
-            padding: 4px 8px;
-            font-size: 0.7rem;
-            border: 1px solid #444;
-            color: #fff;
-            text-decoration: none;
-            background: rgba(0,0,0,0.5);
-            transition: 0.2s;
-        }
-        .c-btn:hover { background: #fff; color: #000; }
+        .magnetic-btn svg { width: 24px; height: 24px; fill: currentColor; }
+        .magnetic-btn:hover { color: var(--neon-blue); border-color: var(--neon-blue); }
 
-        /* Responsive */
-        @media (max-width: 800px) {
-            .bento-grid {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto;
-            }
-            body { height: auto; min-height: 100vh; }
-            footer { flex-direction: column; align-items: center; gap: 20px; }
-            h1 { font-size: 1.8rem; }
+        /* Footer */
+        footer {
+            text-align: center;
+            padding-bottom: 60px;
+        }
+
+        .ai-note {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stopwatch {
+            font-family: 'VT323', monospace;
+            font-size: 2rem;
+            color: var(--syntax-green);
+            background: #000;
+            padding: 5px 15px;
+            border-radius: 4px;
+            display: inline-block;
+            border: 1px solid #1a1a1a;
+            min-width: 300px;
+        }
+
+        .time-label {
+            font-size: 0.8rem;
+            color: var(--error-red);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* Animations */
+        @keyframes glitch-anim-1 {
+            0% { clip-path: inset(20% 0 80% 0); }
+            20% { clip-path: inset(60% 0 10% 0); }
+            100% { clip-path: inset(10% 0 50% 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip-path: inset(10% 0 30% 0); }
+            50% { clip-path: inset(80% 0 5% 0); }
+            100% { clip-path: inset(30% 0 20% 0); }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: scaleY(0.5); }
+            50% { transform: scaleY(1); }
+        }
+        @keyframes heat-shift {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.8; }
+        }
+        @keyframes rotate-poly {
+            100% { transform: rotate(405deg); }
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 3rem; }
+            .grid-section { grid-template-columns: 1fr; }
+            #cursor-dot, #cursor-ring { display: none; }
+            * { cursor: auto; }
         }
     </style>
 </head>
 <body>
 
+    <!-- Custom Cursor -->
     <div id="cursor-dot"></div>
-    <div id="flashlight-overlay"></div>
+    <div id="cursor-ring"></div>
 
-    <header>
-        <h1>Geva Kipper</h1>
-        <div class="role">Currently engineering solutions at Google</div>
-        <div class="ai-disclaimer">&lt;system&gt; Layout generated by AI Model 01 &lt;/system&gt;</div>
-    </header>
+    <!-- Background Canvas -->
+    <canvas id="liquid-canvas"></canvas>
 
-    <main>
-        <div class="bento-grid">
-            <!-- 1. GlglStats -->
-            <a href="https://glglstats.geekip.dev" target="_blank" class="card" id="card-glgl">
-                <div class="card-bg"></div>
-                <h3>GlglStats</h3>
-                <p>Data visualization platform for Glgalatz music charts.</p>
-                <div class="card-links">
-                    <object><a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="c-btn">Watch Talk</a></object>
-                </div>
-            </a>
-
-            <!-- 2. Ahuzat Dibuk -->
-            <div class="card" id="card-ahuzat">
-                <div class="card-bg"></div>
-                <h3>Ahuzat Dibuk</h3>
-                <p>An investigation into urban legends using geospatial analysis.</p>
-                <div class="card-links">
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="c-btn">Publication</a>
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="c-btn">Ch13 News</a>
-                </div>
+    <div class="container">
+        <!-- Header -->
+        <header id="header-area">
+            <h1>GEVA KIPPER</h1>
+            <h2>Software Engineer at Google</h2>
+            <div class="glitch-subtitle" title="AI Generated">
+                This interface is designed daily by AI; the liquid state is ever-changing.
             </div>
+        </header>
 
-            <!-- 3. 2D Part Orienting -->
-            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="card" id="card-2d">
-                <div class="card-bg"></div>
-                <h3>2D Part Orienting</h3>
-                <p>Algorithmic robotics: Orienting polygonal parts with fences.</p>
-                <span class="meta">Tel-Aviv Univ. Research</span>
-            </a>
-
-            <!-- 4. The Turing Jest -->
-            <a href="https://jest.geekip.dev" target="_blank" class="card" id="card-turing">
-                <div class="card-bg"></div>
-                <h3>The Turing Jest</h3>
-                <p>Can AI be funny? A computational humor experiment.</p>
-                <div class="card-links">
-                    <span class="c-btn">> Prompt: Tell joke</span>
+        <!-- Project Grid -->
+        <section class="grid-section">
+            
+            <!-- Card 1 -->
+            <article class="glass-card" data-tilt>
+                <div class="card-visual">
+                    <div class="bars">
+                        <div class="bar" style="height: 20px"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar" style="height: 25px"></div>
+                        <div class="bar" style="height: 45px"></div>
+                    </div>
                 </div>
-            </a>
+                <h3 class="card-title">GlglStats</h3>
+                <p class="card-desc">Comprehensive analysis of Israeli pop charts using LZ77 compression visualization to show repetition in production music.</p>
+                <div class="btn-group">
+                    <a href="https://glglstats.geekip.dev" class="btn" target="_blank">View Visualization</a>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" class="btn" target="_blank">Watch PyData Talk</a>
+                </div>
+            </article>
 
-            <!-- 5. Rhymes of Israel -->
-            <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="card" id="card-rhymes">
-                <div class="card-bg"></div>
-                <h3>Rhymes of Israel</h3>
-                <p>Browser extension utility for linguistic analysis.</p>
-                <div class="card-links"><span class="c-btn">Download Ext</span></div>
-            </a>
+            <!-- Card 2 -->
+            <article class="glass-card" data-tilt>
+                <div class="card-visual">
+                    <div class="heatmap-bg"></div>
+                </div>
+                <h3 class="card-title">Ahuzat Dibuk</h3>
+                <p class="card-desc">Tel-Aviv parking availability scraper and transparency tool. Exposed hidden parking data patterns influencing city infrastructure.</p>
+                <div class="btn-group">
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" class="btn" target="_blank">13TV News</a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" class="btn" target="_blank">Mako News</a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" class="btn" target="_blank">Original Post</a>
+                </div>
+            </article>
 
-            <!-- 6. Meta Portfolio -->
-            <a href="https://geekip.dev" class="card" id="card-meta">
-                <div class="card-bg"></div>
-                <h3>Meta</h3>
-                <p>You are here.<br>Recursive reference to self.</p>
-            </a>
-        </div>
-    </main>
+            <!-- Card 3 -->
+            <article class="glass-card" data-tilt>
+                <div class="card-visual">
+                    <div class="poly-shape"></div>
+                </div>
+                <h3 class="card-title">2D Part Orienting</h3>
+                <p class="card-desc">Algorithmic implementation for C++ push plans. Geometric manipulation to orient parts on assembly lines without sensors.</p>
+                <div class="btn-group">
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" class="btn" target="_blank">View Project & Code</a>
+                </div>
+            </article>
 
-    <footer>
-        <div class="socials">
-            <!-- GitHub (Purple on light) -->
-            <a href="https://github.com/gevak" target="_blank" class="social-link" data-color="#9b59b6">
-                <svg class="social-icon" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-            </a>
-            <!-- LinkedIn (Blue) -->
-            <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-link" data-color="#0077b5">
-                <svg class="social-icon" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-            </a>
-            <!-- Facebook (Blue) -->
-            <a href="https://facebook.com/geva.kipper" target="_blank" class="social-link" data-color="#1877f2">
-                <svg class="social-icon" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
-            </a>
-        </div>
+            <!-- Card 4 -->
+            <article class="glass-card" data-tilt>
+                <div class="card-visual">
+                    <div class="chat-ui">
+                        > Pun detected. <br>
+                        > Calculating wit...<span class="cursor-blink">|</span>
+                    </div>
+                </div>
+                <h3 class="card-title">The Turing Jest</h3>
+                <p class="card-desc">An arena for computational humor. Can machines detect a pun? An experiment in LLM linguistic nuance.</p>
+                <div class="btn-group">
+                    <a href="https://jest.geekip.dev" class="btn" target="_blank">Enter the Arena</a>
+                </div>
+            </article>
 
-        <div class="timer-container">
-            <div class="timer-credit">Site architecture generated by AI Model o1</div>
-            <div class="stopwatch" id="clock">00:00:00</div>
-        </div>
-    </footer>
+            <!-- Card 5 -->
+            <article class="glass-card" data-tilt>
+                <div class="card-visual">
+                    <div class="rhyme-text">
+                        <span>R</span><span>h</span><span>y</span><span>m</span><span>e</span><span>s</span>
+                    </div>
+                </div>
+                <h3 class="card-title">Rhymes of Israel</h3>
+                <p class="card-desc">A playful Chrome extension that finds accidental rhymes in live news headlines across major Israeli portals.</p>
+                <div class="btn-group">
+                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" class="btn" target="_blank">Add to Chrome</a>
+                </div>
+            </article>
+
+            <!-- Card 6 -->
+            <article class="glass-card" data-tilt>
+                <div class="card-visual">
+                    <div class="droste">
+                        <div><div></div></div>
+                    </div>
+                </div>
+                <h3 class="card-title">Portfolio (Meta)</h3>
+                <p class="card-desc">An infinite recursion. You are currently here. A self-referential exploration of web identity.</p>
+                <div class="btn-group">
+                    <a href="https://geekip.dev" class="btn" target="_blank">Visit GeekIP</a>
+                </div>
+            </article>
+
+        </section>
+
+        <!-- Social Buttons -->
+        <section class="social-section">
+            <a href="https://github.com/gevak" class="magnetic-btn" target="_blank">
+                <svg viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            </a>
+            <a href="https://linkedin.com/in/gevakip" class="magnetic-btn" target="_blank">
+                <svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+            </a>
+            <a href="https://facebook.com/geva.kipper" class="magnetic-btn" target="_blank">
+                <svg viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+            </a>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="ai-note">Site architecture and design generated by AI Model</div>
+            <div class="stopwatch">
+                <span class="time-label">T-MINUS / DILATION COUNT</span>
+                <span id="countdown">CALCULATING...</span>
+            </div>
+        </footer>
+    </div>
 
     <script>
-        // --- 1. Physics & Flashlight Logic ---
-        const overlay = document.getElementById('flashlight-overlay');
-        const cursorDot = document.getElementById('cursor-dot');
-        const cards = document.querySelectorAll('.card');
-        const socialLinks = document.querySelectorAll('.social-link');
+        // --- 1. Canvas & Particle System ---
+        const canvas = document.getElementById('liquid-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
 
-        // Target (Real mouse) vs Current (Interpolated)
-        let mouseX = window.innerWidth / 2;
-        let mouseY = window.innerHeight / 2;
-        let curX = mouseX;
-        let curY = mouseY;
+        // Configuration
+        const symbols = ['{', '}', ';', '=>', '*', 'def', '</>', '[]', '&&', '||'];
+        const colors = ['#00f3ff', '#00ff41', '#ffffff', '#222233'];
+        let particles = [];
+        const particleCount = window.innerWidth < 768 ? 150 : 800;
         
-        let isMobile = false;
-
-        // Mouse Move Event
-        document.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-            isMobile = false;
+        // Mouse State
+        const mouse = { x: -1000, y: -1000 };
+        const headerRect = { x: 0, y: 0, width: 0, height: 0 };
+        document.getElementById('header-area').addEventListener('mouseenter', () => {
+            const rect = document.getElementById('header-area').getBoundingClientRect();
+            headerRect.x = rect.left + rect.width/2;
+            headerRect.y = rect.top + rect.height/2;
+            headerRect.active = true;
+        });
+        document.getElementById('header-area').addEventListener('mouseleave', () => {
+            headerRect.active = false;
         });
 
-        // Touch handling (Mobile)
-        document.addEventListener('touchmove', (e) => {
-            isMobile = true;
-            mouseX = e.touches[0].clientX;
-            mouseY = e.touches[0].clientY;
-        }, { passive: true });
+        // Resize Handling
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
 
-        // Auto-wandering light for idle/mobile states if no input
-        let time = 0;
-        function autoWander() {
-            if(isMobile) return; // If user touching, don't wander
-            // Only wander if no recent mouse movement? 
-            // For now, let's just stick to mouse tracking, and if mobile, simple follow.
+        class Particle {
+            constructor() {
+                this.reset();
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+            }
+
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 1;
+                this.vy = (Math.random() - 0.5) * 1;
+                this.size = Math.random() * 14 + 8;
+                this.symbol = symbols[Math.floor(Math.random() * symbols.length)];
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.alpha = Math.random() * 0.5 + 0.1;
+                this.friction = 0.96;
+                this.returnSpeed = 0.05;
+                
+                // For header snap
+                this.targetX = null;
+                this.targetY = null;
+            }
+
+            update(boilingZones) {
+                // Basic Flow
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Mouse Repulsion / Attraction
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                const force = 1000;
+
+                // Header Snap Logic (Simplified "Magnetic" effect)
+                if (headerRect.active) {
+                    const hdx = headerRect.x - this.x;
+                    const hdy = headerRect.y - this.y;
+                    const hDist = Math.sqrt(hdx*hdx + hdy*hdy);
+                    
+                    if (hDist < 400) {
+                        this.vx += hdx * 0.002;
+                        this.vy += hdy * 0.002;
+                    }
+                }
+
+                if (dist < 200) {
+                    const angle = Math.atan2(dy, dx);
+                    // Push away gently
+                    this.vx -= Math.cos(angle) * 0.5;
+                    this.vy -= Math.sin(angle) * 0.5;
+                }
+
+                // Boiling Effect over active cards
+                boilingZones.forEach(zone => {
+                    if (this.x > zone.left && this.x < zone.right && this.y > zone.top && this.y < zone.bottom) {
+                        this.vx += (Math.random() - 0.5) * 2;
+                        this.vy += (Math.random() - 0.5) * 2;
+                        this.alpha = 1; // Flash brighter
+                    }
+                });
+
+                // Wrap around edges
+                if (this.x > width) this.x = 0;
+                if (this.x < 0) this.x = width;
+                if (this.y > height) this.y = 0;
+                if (this.y < 0) this.y = height;
+
+                // Dampen velocity to keep "Liquid" feel
+                this.vx = Math.max(Math.min(this.vx, 3), -3);
+                this.vy = Math.max(Math.min(this.vy, 3), -3);
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.alpha;
+                ctx.font = `${this.size}px 'Fira Code'`;
+                ctx.fillText(this.symbol, this.x, this.y);
+            }
         }
 
-        function lerp(start, end, factor) {
-            return start + (end - start) * factor;
+        // Init Particles
+        for(let i=0; i<particleCount; i++) {
+            particles.push(new Particle());
         }
 
-        function updatePhysics() {
-            // Smooth "weighty" movement
-            curX = lerp(curX, mouseX, 0.1);
-            curY = lerp(curY, mouseY, 0.1);
+        function animate() {
+            // Semi-transparent clear for trails/blur
+            ctx.fillStyle = 'rgba(10, 10, 18, 0.2)';
+            ctx.fillRect(0, 0, width, height);
 
-            // Update CSS variables for Global access
-            document.documentElement.style.setProperty('--cursor-x', `${curX}px`);
-            document.documentElement.style.setProperty('--cursor-y', `${curY}px`);
-
-            // 1. Update Flashlight Overlay in CSS is handled by vars
-
-            // 2. Dynamic Shadows on Cards
+            // Determine active hover zones
+            const cards = document.querySelectorAll('.glass-card:hover');
+            let boilingZones = [];
             cards.forEach(card => {
                 const rect = card.getBoundingClientRect();
-                const cardCenterX = rect.left + rect.width / 2;
-                const cardCenterY = rect.top + rect.height / 2;
-
-                // Vector from Light to Card
-                const dx = cardCenterX - curX;
-                const dy = cardCenterY - curY;
-                
-                // Distance for shadow intensity styling
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                
-                // Shadow pushes AWAY from light: so shadow offset is (dx, dy) normalized * factor
-                // Limit shadow length
-                const shadowX = (dx / 15);
-                const shadowY = (dy / 15);
-
-                const opacity = Math.max(0, 1 - (dist / 800)); // Visible mainly when light is near
-
-                // Apply dynamic shadow
-                if (dist < 600) {
-                    card.style.boxShadow = `${shadowX}px ${shadowY}px 20px rgba(0,0,0, ${0.5 + opacity})`;
-                    
-                    // Light up border based on proximity
-                    let borderOpacity = Math.max(0.05, 1 - (dist / 300));
-                    card.style.borderColor = `rgba(255,255,255, ${borderOpacity})`;
-                } else {
-                    card.style.boxShadow = 'none';
-                    card.style.borderColor = 'rgba(255,255,255, 0.05)';
-                }
+                boilingZones.push(rect);
             });
 
-            // 3. Social Icons Color Reveal
-            socialLinks.forEach(link => {
-                const rect = link.getBoundingClientRect();
-                const cx = rect.left + rect.width/2;
-                const cy = rect.top + rect.height/2;
-                const d = Math.sqrt(Math.pow(cx - curX, 2) + Math.pow(cy - curY, 2));
-                const icon = link.querySelector('svg');
-                const brandColor = link.getAttribute('data-color');
-
-                if (d < 100) {
-                    icon.style.fill = brandColor;
-                } else {
-                    icon.style.fill = '#333';
-                }
+            particles.forEach(p => {
+                p.update(boilingZones);
+                p.draw();
             });
 
-            requestAnimationFrame(updatePhysics);
+            requestAnimationFrame(animate);
         }
+        animate();
 
-        requestAnimationFrame(updatePhysics);
+        // --- 2. Custom Cursor & Social Physics ---
+        const cursorDot = document.getElementById('cursor-dot');
+        const cursorRing = document.getElementById('cursor-ring');
+        
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
 
-        // --- 2. The Timekeeper ---
-        const clockEl = document.getElementById('clock');
-        const targetDate = new Date('2026-02-02T01:28:28').getTime();
-
-        function updateClock() {
-            const now = Date.now();
-            let diff = now - targetDate;
+            // Simple cursor logic
+            cursorDot.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
             
-            // If the date is in the future, we count UP (meaning we show negative time or T-minus)
-            // The prompt says "Counts upwards... starting from 2026".
-            // Since 2026 is future, let's treat it as the Zero hour.
-            // If Before 2026: T-Minus. If After 2026: T-Plus.
+            // Delayed ring
+            setTimeout(() => {
+                cursorRing.style.transform = `translate(${e.clientX - 20}px, ${e.clientY - 20}px)`;
+            }, 50);
+
+            // Magnetic Button Logic
+            document.querySelectorAll('.magnetic-btn').forEach(btn => {
+                const rect = btn.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const distX = e.clientX - centerX;
+                const distY = e.clientY - centerY;
+                const dist = Math.sqrt(distX*distX + distY*distY);
+
+                if (dist < 80) {
+                    btn.style.transform = `translate(${distX * 0.4}px, ${distY * 0.4}px)`;
+                } else {
+                    btn.style.transform = `translate(0px, 0px)`;
+                }
+            });
+        });
+
+        // --- 3. Card Parallax (Tilt Effect) ---
+        const cards = document.querySelectorAll('.glass-card');
+        
+        cards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotateX = ((y - centerY) / centerY) * -5; // max rotation deg
+                const rotateY = ((x - centerX) / centerX) * 5;
+
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = `perspective(1000px) rotateX(0) rotateY(0) scale(1)`;
+            });
+        });
+
+        // --- 4. Stopwatch ---
+        // Target: 2026-02-03 01:28:35
+        const targetDate = new Date('2026-02-03T01:28:35').getTime();
+        const timerEl = document.getElementById('countdown');
+
+        setInterval(() => {
+            const now = new Date().getTime();
+            const distance = targetDate - now;
             
-            const isFuture = diff < 0;
-            let absDiff = Math.abs(diff);
+            // Format logic
+            const isNegative = distance < 0;
+            const absDist = Math.abs(distance);
+            
+            const days = Math.floor(absDist / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((absDist % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((absDist % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((absDist % (1000 * 60)) / 1000);
+            const ms = Math.floor((absDist % 1000));
 
-            let hours = Math.floor(absDiff / (1000 * 60 * 60));
-            let mins = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
-            let secs = Math.floor((absDiff % (1000 * 60)) / 1000);
+            const sign = isNegative ? "+" : "-";
+            
+            // Pad numbers
+            const f = (n) => n < 10 ? '0'+n : n;
+            const fms = (n) => n < 10 ? '00'+n : (n < 100 ? '0'+n : n);
 
-            // Pad with zeros
-            const fH = String(hours).padStart(2, '0');
-            const fM = String(mins).padStart(2, '0');
-            const fS = String(secs).padStart(2, '0');
+            timerEl.innerText = `${sign} ${days}d : ${f(hours)}h : ${f(minutes)}m : ${f(seconds)}s : ${fms(ms)}`;
+            
+            // Color shift based on polarity
+            if(isNegative) {
+                timerEl.style.color = '#00f3ff'; // Blue for past
+            } else {
+                timerEl.style.color = '#00ff41'; // Green for future
+            }
 
-            clockEl.textContent = `${isFuture ? '-' : ''}${fH}:${fM}:${fS}`;
-        }
-
-        setInterval(updateClock, 1000);
-        updateClock();
-
-        // --- 3. Mobile Fallback ---
-        // If device orientation is available (requires permission on iOS), use it.
-        // Simplified: The Touch event listener above handles dragging on mobile.
-        // But for visual flair, let's make the light pulse if idle?
-        // (Skipped to keep interaction strictly user-driven per prompt "user's cursor")
+        }, 33); // High refresh rate for MS
 
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260202",
+          pageId: "20260203",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
