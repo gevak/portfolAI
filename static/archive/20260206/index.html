@@ -2,1346 +2,1262 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>geva_kipper_portfolio.life — Debugger</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+<title>GEVA KIPPER — Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after {
-  box-sizing: border-box;
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
-:root {
-  --base: #1e1e2e;
-  --surface: #313244;
-  --overlay: #45475a;
-  --text: #cdd6f4;
-  --subtext: #a6adc8;
-  --subtext0: #6c7086;
-  --teal: #89dceb;
-  --lavender: #cba6f7;
-  --yellow: #f9e2af;
-  --magenta: #f38ba8;
-  --green: #a6e3a1;
-  --blue: #89b4fa;
-  --orange: #fab387;
-  --red: #f38ba8;
-  --rosewater: #f5e0dc;
-  --flamingo: #f2cdcd;
-  --sky: #89dceb;
-  --sapphire: #74c7ec;
-  --maroon: #eba0ac;
-  --peach: #fab387;
-  --mauve: #cba6f7;
-  --pink: #f5c2e7;
-  --gutter-bg: #181825;
-  --line-highlight: #27273a;
-  --error-red: #f44747;
-  --success-green: #4ec9b0;
-  --terminal-bg: #0e0e16;
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #000;
+}
+::-webkit-scrollbar-thumb {
+  background: #00FF41;
+  box-shadow: 0 0 8px #00FF41;
+  border-radius: 0;
 }
 
 html {
-  scroll-behavior: smooth;
+  scrollbar-color: #00FF41 #000;
+  scrollbar-width: thin;
 }
 
 body {
-  background: var(--base);
-  color: var(--text);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 14px;
-  line-height: 1.7;
+  background: #000;
+  color: #00FF41;
+  font-family: 'Fira Code', monospace;
   overflow-x: hidden;
+  min-height: 100vh;
 }
 
-/* Progress bar */
-#progress-bar-container {
+#matrix-canvas {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  height: 3px;
-  z-index: 1000;
-  background: var(--surface);
-}
-
-#progress-bar {
+  width: 100%;
   height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, var(--red), var(--yellow), var(--green));
-  transition: width 0.5s ease;
+  z-index: 0;
+  pointer-events: none;
 }
 
-#bug-counter {
+#overlay {
   position: fixed;
-  top: 6px;
-  right: 16px;
-  z-index: 1001;
-  font-size: 11px;
-  color: var(--red);
-  transition: color 0.3s;
-}
-
-#bug-counter.done {
-  color: var(--green);
-}
-
-/* Title bar */
-#title-bar {
-  position: sticky;
-  top: 3px;
-  z-index: 999;
-  background: var(--surface);
-  height: 38px;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  z-index: 1000;
   display: flex;
-  align-items: center;
-  padding: 0 12px;
-  border-bottom: 1px solid var(--overlay);
-}
-
-.window-dots {
-  display: flex;
-  gap: 6px;
-}
-
-.dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.dot.red { background: #ff5f57; }
-.dot.yellow { background: #febc2e; }
-.dot.green { background: #28c840; }
-
-.title-filename {
-  flex: 1;
-  text-align: center;
-  font-size: 12px;
-  color: var(--subtext);
-}
-
-.title-tab {
-  background: var(--base);
-  padding: 4px 16px;
-  border-radius: 6px 6px 0 0;
-  font-size: 12px;
-  color: var(--text);
-  display: inline-block;
-  border: 1px solid var(--overlay);
-  border-bottom: none;
-  position: relative;
-  top: 1px;
-}
-
-/* Toolbar */
-#toolbar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--overlay);
-  padding: 4px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-#skip-btn {
-  background: var(--overlay);
-  color: var(--green);
-  border: 1px solid var(--green);
-  padding: 3px 12px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  cursor: pointer;
-  border-radius: 3px;
-  transition: all 0.2s;
-}
-
-#skip-btn:hover {
-  background: var(--green);
-  color: var(--base);
-}
-
-#toolbar-info {
-  font-size: 11px;
-  color: var(--subtext0);
-}
-
-/* Main layout */
-#editor {
-  display: flex;
-  min-height: calc(100vh - 80px);
-}
-
-#gutter {
-  width: 50px;
-  background: var(--gutter-bg);
-  text-align: right;
-  padding-right: 8px;
-  user-select: none;
-  flex-shrink: 0;
-  border-right: 1px solid var(--overlay);
-}
-
-.line-num {
-  font-size: 12px;
-  color: var(--subtext0);
-  height: 23.8px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  position: relative;
-}
-
-.line-num .gutter-icon {
-  position: absolute;
-  left: 4px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  display: none;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
-  font-weight: bold;
+  transition: opacity 1s ease;
 }
 
-.line-num .gutter-icon.error {
-  display: flex;
-  background: var(--error-red);
-  color: var(--base);
+#overlay.fade-out {
+  opacity: 0;
+  pointer-events: none;
 }
 
-.line-num .gutter-icon.success {
-  display: flex;
-  background: var(--success-green);
-  color: var(--base);
+#assembly-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 999;
+  pointer-events: none;
 }
 
-#code-area {
-  flex: 1;
-  padding: 0 16px 60px 16px;
-  overflow-x: auto;
+#content {
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px 80px;
 }
 
-.code-line {
-  min-height: 23.8px;
-  padding-left: 8px;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+#content.visible {
+  opacity: 1;
 }
 
-.code-line.highlight {
-  background: var(--line-highlight);
+.header {
+  text-align: center;
+  margin-bottom: 60px;
+  padding-top: 40px;
 }
 
-/* Syntax colors */
-.kw { color: var(--magenta); }
-.fn { color: var(--blue); }
-.str { color: var(--green); }
-.cm { color: var(--subtext0); font-style: italic; }
-.tl { color: var(--teal); }
-.lv { color: var(--lavender); }
-.yl { color: var(--yellow); }
-.og { color: var(--orange); }
-.wh { color: var(--text); }
-.num { color: var(--peach); }
-.op { color: var(--sky); }
-
-/* Hero comment block */
-.hero-block .code-line {
-  background: var(--line-highlight);
-}
-
-.hero-name {
-  color: var(--teal);
-  font-size: 28px;
+.header-name {
+  font-size: 4rem;
   font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #00FF41;
+  text-shadow: 0 0 20px rgba(0,255,65,0.5), 0 -20px 40px rgba(0,255,65,0.15);
+  position: relative;
+  display: inline-block;
 }
 
-.hero-desc {
-  color: var(--lavender);
-  font-size: 13px;
+.header-name .char {
+  display: inline-block;
+  position: relative;
 }
 
-.hero-notice {
-  color: var(--yellow);
-  font-style: italic;
-  font-size: 12px;
+.header-name .char::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  width: 1px;
+  height: 25px;
+  background: linear-gradient(to bottom, transparent, rgba(0,255,65,0.4));
+  transform: translateX(-50%);
+}
+
+.header-role {
+  font-size: 1rem;
+  color: #4A7A5A;
+  margin-top: 10px;
   animation: pulse-opacity 3s ease-in-out infinite;
 }
 
+.header-role::after {
+  content: '█';
+  animation: blink-cursor 1s step-end infinite;
+  margin-left: 4px;
+}
+
 @keyframes pulse-opacity {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
-/* Bug line styling */
-.bug-line {
-  position: relative;
-  cursor: pointer;
-  transition: background 0.2s;
+@keyframes blink-cursor {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
 }
 
-.bug-line:hover {
-  background: rgba(244, 71, 71, 0.08);
+.header-line {
+  width: 0;
+  height: 1px;
+  background: #00FF41;
+  margin: 20px auto;
+  box-shadow: 0 0 8px rgba(0,255,65,0.5);
+  animation: draw-line 2s ease forwards;
+  animation-delay: 4s;
 }
 
-.bug-text {
-  text-decoration: underline wavy var(--error-red);
-  text-underline-offset: 3px;
+@keyframes draw-line {
+  to { width: 300px; }
 }
 
-.bug-line.fixed .bug-text {
-  text-decoration: none;
+.header-subtitle {
+  font-size: 0.85rem;
+  color: #80FF80;
+  font-style: italic;
+  margin-top: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.error-badge {
+.infinity-symbol {
   display: inline-block;
-  background: var(--error-red);
-  color: var(--base);
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 8px;
-  margin-left: 12px;
-  font-weight: 600;
-  transition: all 0.3s;
+  animation: rotate-infinity 6s linear infinite;
+  font-size: 1.2rem;
 }
 
-.error-badge.fixed {
-  background: var(--success-green);
+@keyframes rotate-infinity {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-/* Blocked content overlay */
-.section-content {
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 40px;
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .header-name {
+    font-size: 2.2rem;
+  }
+}
+
+.card {
+  background: #050505;
+  border: 1px solid #1A3A1A;
+  padding: 24px;
   position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  transform: translateY(0);
+  opacity: 0;
+  transform: translateY(20px);
 }
 
-.section-content.blocked .content-inner {
-  filter: blur(5px);
-  opacity: 0.3;
-  transform: translateY(10px);
-  pointer-events: none;
-  transition: all 0.6s ease-out;
-}
-
-.section-content.unblocked .content-inner {
-  filter: blur(0);
+.card.visible {
   opacity: 1;
   transform: translateY(0);
 }
 
-.blocked-overlay {
+.card::before {
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,255,65,0.02) 2px,
+    rgba(0,255,65,0.02) 4px
+  );
   pointer-events: none;
+  z-index: 1;
 }
 
-.blocked-overlay span {
-  color: var(--error-red);
-  font-style: italic;
-  font-size: 13px;
-  background: rgba(30, 30, 46, 0.85);
-  padding: 6px 14px;
-  border-radius: 4px;
+.card > * {
+  position: relative;
+  z-index: 2;
 }
 
-.section-content.unblocked .blocked-overlay {
-  display: none;
+.card:hover {
+  border-color: #00FF41;
+  box-shadow: 0 0 15px rgba(0,255,65,0.3);
+  transform: translateY(-4px);
 }
 
-.green-flash {
+.card.meta-card {
+  border: 2px solid #1A3A1A;
+}
+
+.card.meta-card:hover {
+  border-color: #00FF41;
+}
+
+.card-rain-overlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(166, 227, 161, 0.1);
+  overflow: hidden;
   pointer-events: none;
-  animation: flash-green 0.6s ease-out forwards;
-  z-index: 5;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.5s ease;
 }
 
-@keyframes flash-green {
-  0% { opacity: 1; }
-  100% { opacity: 0; }
+.card:hover .card-rain-overlay {
+  opacity: 1;
 }
 
-/* Quick-fix tooltip */
-.quickfix-popup {
+.card-rain-char {
   position: absolute;
-  top: 100%;
-  left: 20px;
-  background: var(--surface);
-  border: 1px solid var(--overlay);
-  border-radius: 6px;
-  padding: 8px 0;
-  z-index: 100;
-  min-width: 280px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-  display: none;
+  color: rgba(0,255,65,0.1);
+  font-size: 10px;
+  animation: card-rain-fall linear infinite;
 }
 
-.quickfix-popup.show {
-  display: block;
-  animation: popup-in 0.2s ease-out;
+@keyframes card-rain-fall {
+  0% { transform: translateY(-20px); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(300px); opacity: 0; }
 }
 
-@keyframes popup-in {
-  0% { opacity: 0; transform: translateY(-4px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-.quickfix-header {
-  padding: 4px 12px;
-  font-size: 11px;
-  color: var(--subtext0);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.quickfix-option {
-  padding: 6px 12px;
-  font-size: 12px;
-  color: var(--text);
-  cursor: pointer;
-  transition: background 0.15s;
+.card-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #00FF41;
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.quickfix-option:hover {
-  background: var(--overlay);
+.card-title .icon {
+  font-size: 1.1rem;
 }
 
-.quickfix-option .fix-icon {
-  color: var(--yellow);
+.card-desc {
+  font-size: 0.8rem;
+  color: #4A7A5A;
+  line-height: 1.6;
+  margin-bottom: 16px;
 }
 
-/* Divider line */
-.divider-line {
-  color: var(--subtext0);
-  opacity: 0.4;
-}
-
-/* Links */
-a.code-link {
-  color: var(--blue);
+.card-link {
+  display: inline-block;
+  color: #00FF41;
   text-decoration: underline;
-  text-decoration-style: dotted;
-  text-underline-offset: 2px;
-  transition: all 0.2s;
+  font-size: 0.8rem;
+  transition: color 0.2s, text-shadow 0.2s;
+  cursor: pointer;
+  margin-top: 6px;
+}
+
+.card-link:hover {
+  color: #7DFDAA;
+  text-shadow: 0 0 8px rgba(0,255,65,0.5);
+}
+
+.card-link .arrow {
+  animation: blink-cursor 1.5s step-end infinite;
+}
+
+.terminal-links {
+  list-style: none;
+  font-size: 0.8rem;
+}
+
+.terminal-links li {
+  margin: 6px 0;
   position: relative;
-}
-
-a.code-link:hover {
-  text-shadow: 0 0 8px rgba(137, 180, 250, 0.5);
-  text-decoration-style: solid;
-}
-
-/* Terminal output areas */
-.terminal-panel {
-  background: var(--terminal-bg);
-  border: 1px solid var(--overlay);
-  border-radius: 4px;
-  padding: 10px 14px;
-  margin: 8px 0;
-  font-size: 12px;
-}
-
-.terminal-panel .term-prompt {
-  color: var(--green);
-}
-
-.terminal-panel .term-output {
-  color: #ccc;
-}
-
-/* Compression bar */
-.compression-bar-container {
-  width: 200px;
-  height: 12px;
-  background: var(--overlay);
-  border-radius: 6px;
   overflow: hidden;
+}
+
+.terminal-links a {
+  color: #00FF41;
+  text-decoration: none;
+  transition: color 0.2s, text-shadow 0.2s;
   display: inline-block;
-  vertical-align: middle;
-  margin-left: 8px;
-}
-
-.compression-bar {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, var(--green), var(--yellow), var(--red));
-  border-radius: 6px;
-  transition: width 1.5s ease-out;
-}
-
-/* Heatmap grid */
-.heatmap-grid {
-  display: inline-grid;
-  grid-template-columns: repeat(5, 18px);
-  grid-template-rows: repeat(5, 18px);
-  gap: 2px;
-  margin: 8px 0;
-}
-
-.heatmap-cell {
-  border-radius: 2px;
-  transition: background-color 2s ease;
-}
-
-/* SVG animation for polygon */
-.polygon-demo {
-  display: inline-block;
-  margin: 8px 0;
-}
-
-.polygon-demo svg {
-  width: 120px;
-  height: 60px;
-}
-
-/* Chat bubbles */
-.chat-bubbles {
-  margin: 8px 0;
-}
-
-.chat-bubble {
-  background: var(--surface);
-  border: 1px solid var(--overlay);
-  border-radius: 8px;
-  padding: 6px 10px;
-  margin: 4px 0;
-  font-size: 11px;
-  display: inline-block;
-}
-
-.chat-bubble.left {
-  border-left: 3px solid var(--teal);
-}
-
-.chat-bubble.right {
-  border-left: 3px solid var(--peach);
-  margin-left: 20px;
-}
-
-/* Rhyme animation */
-.rhyme-demo {
-  margin: 8px 0;
-  min-height: 24px;
   position: relative;
 }
 
-.rhyme-text {
+.terminal-links a::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0,255,65,0.15), transparent);
+  transition: left 0.4s ease;
+}
+
+.terminal-links a:hover {
+  color: #7DFDAA;
+  text-shadow: 0 0 8px rgba(0,255,65,0.5);
+}
+
+.terminal-links a:hover::after {
+  left: 100%;
+}
+
+.video-thumb {
+  background: #0a0a0a;
+  border: 1px solid #1A3A1A;
+  padding: 20px;
+  text-align: center;
+  margin: 12px 0;
+  cursor: pointer;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.video-thumb:hover {
+  border-color: #00FF41;
+  box-shadow: 0 0 10px rgba(0,255,65,0.2);
+}
+
+.play-icon {
+  font-size: 2rem;
+  color: #00FF41;
+}
+
+.video-label {
+  font-size: 0.7rem;
+  color: #4A7A5A;
+  margin-top: 6px;
+}
+
+.rotating-polygon {
+  display: inline-block;
+  animation: slow-rotate 8s linear infinite;
+}
+
+@keyframes slow-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.pun-battle {
+  font-size: 0.7rem;
+  color: #4A7A5A;
+  margin-top: 12px;
+  min-height: 3em;
+  border-top: 1px solid #1A3A1A;
+  padding-top: 8px;
+}
+
+.pun-line {
+  margin: 4px 0;
   transition: opacity 0.5s;
 }
 
-/* Mini browser */
-.mini-browser {
-  width: 160px;
-  height: 100px;
-  background: var(--base);
-  border: 1px solid var(--overlay);
-  border-radius: 6px;
-  overflow: hidden;
-  transform: perspective(400px) rotateY(-5deg) rotateX(2deg);
-  box-shadow: 4px 4px 16px rgba(0,0,0,0.4);
-  margin: 8px 0;
+.headline-demo {
+  font-size: 0.7rem;
+  color: #4A7A5A;
+  margin-top: 12px;
+  min-height: 2.5em;
+  border-top: 1px solid #1A3A1A;
+  padding-top: 8px;
 }
 
-.mini-browser-bar {
-  background: var(--surface);
-  height: 16px;
+.social-card {
+  text-align: center;
+}
+
+.social-card .card-title {
+  justify-content: center;
+  font-size: 1rem;
+  color: #4A7A5A;
+}
+
+.social-btn {
+  display: block;
+  margin: 12px auto;
+  padding: 10px 30px;
+  border: 1px solid #1A3A1A;
+  color: #00FF41;
+  text-decoration: none;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.9rem;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+  max-width: 240px;
+  background: transparent;
+}
+
+.social-btn::before {
+  content: attr(data-label);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   align-items: center;
-  padding: 0 4px;
-  gap: 3px;
+  justify-content: center;
+  background: #050505;
+  color: #00FF41;
+  opacity: 0;
+  transition: opacity 0.15s;
 }
 
-.mini-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
+.social-btn:hover {
+  border-color: #00FF41;
+  box-shadow: 0 0 15px rgba(0,255,65,0.3);
+  text-shadow: 0 0 8px rgba(0,255,65,0.5);
 }
 
-.mini-browser-content {
-  padding: 4px;
-  font-size: 3px;
-  line-height: 1.4;
-  color: var(--subtext0);
-  overflow: hidden;
+.social-btn:hover::before {
+  animation: glitch-btn 0.4s steps(1) forwards;
 }
 
-/* Social link hover */
-.social-line {
-  padding: 2px 8px;
-  border-radius: 3px;
-  transition: background 0.2s;
+@keyframes glitch-btn {
+  0% { opacity: 1; content: 'ア カ サ タ'; }
+  20% { opacity: 1; content: '█ ░ ▓ █ ░'; }
+  40% { opacity: 1; content: 'マ ヤ ラ ワ'; }
+  60% { opacity: 0; }
+  100% { opacity: 0; }
 }
 
-.social-line:hover {
-  background: var(--line-highlight);
+.footer {
+  text-align: center;
+  margin-top: 80px;
+  position: relative;
+  z-index: 1;
 }
 
-.social-icon {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  vertical-align: middle;
-  margin-right: 4px;
-  transition: all 0.3s;
-}
-
-.social-icon.gh { color: var(--subtext0); }
-.social-line:hover .social-icon.gh { color: #f0f6fc; }
-.social-icon.li { color: var(--subtext0); }
-.social-line:hover .social-icon.li { color: #0077b5; }
-.social-icon.fb { color: var(--subtext0); }
-.social-line:hover .social-icon.fb { color: #1877f2; }
-
-/* Toast notification */
-.toast {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: var(--terminal-bg);
-  border: 1px solid var(--success-green);
-  color: var(--success-green);
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-size: 12px;
-  z-index: 2000;
-  transform: translateX(120%);
-  transition: transform 0.3s ease-out;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-}
-
-.toast.show {
-  transform: translateX(0);
-}
-
-/* Terminal footer */
-#terminal-footer {
-  background: var(--terminal-bg);
-  border-top: 1px solid var(--overlay);
-  padding: 12px 16px;
-  font-size: 12px;
-  min-height: 60px;
-}
-
-.terminal-title {
-  color: var(--subtext0);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid var(--overlay);
-  padding-bottom: 4px;
-}
-
-.cursor-blink {
-  animation: blink 1s step-end infinite;
-}
-
-@keyframes blink {
-  50% { opacity: 0; }
-}
-
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 12px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--gutter-bg);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--overlay);
-  border-radius: 4px;
-  border: 2px solid var(--gutter-bg);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--subtext0);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  body { font-size: 12px; }
-  
-  #gutter { width: 32px; padding-right: 4px; }
-  .line-num { font-size: 10px; }
-  .line-num .gutter-icon { display: none !important; }
-  
-  .window-dots { display: none; }
-  
-  #code-area { padding: 0 8px 40px 8px; }
-  
-  .hero-name { font-size: 20px; }
-  
-  .quickfix-popup {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    top: auto;
-    border-radius: 12px 12px 0 0;
-    min-width: auto;
-  }
-  
-  .compression-bar-container { width: 120px; }
-  
-  #bug-counter { font-size: 9px; right: 8px; }
-}
-
-/* Accessibility */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
+.footer-line {
+  width: 0;
   height: 1px;
+  background: #00FF41;
+  margin: 0 auto 20px;
+  box-shadow: 0 0 8px rgba(0,255,65,0.3);
+}
+
+.footer-line.animate {
+  animation: draw-footer-line 1.5s ease forwards;
+}
+
+@keyframes draw-footer-line {
+  to { width: 80%; }
+}
+
+.footer-credit {
+  font-size: 0.7rem;
+  color: #1A3A1A;
+}
+
+.stopwatch {
+  font-size: 1.1rem;
+  color: #00FF41;
+  margin-top: 16px;
+  text-shadow: 0 0 10px rgba(0,255,65,0.4);
+  letter-spacing: 0.1em;
+  padding-bottom: 40px;
+}
+
+.stopwatch .digit {
+  display: inline-block;
+  min-width: 0.7em;
+  text-align: center;
+  transition: text-shadow 0.1s;
+}
+
+.stopwatch .digit.tick {
+  text-shadow: 0 0 20px rgba(0,255,65,0.8);
+}
+
+.shimmer-text {
+  display: inline;
+}
+
+/* Card entry rain animation */
+.card-entry-rain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  pointer-events: none;
   overflow: hidden;
-  clip: rect(0,0,0,0);
-  white-space: nowrap;
+}
+
+.card-entry-char {
+  position: absolute;
+  color: #00FF41;
+  font-size: 12px;
+  font-family: 'Fira Code', monospace;
+  transition: all 1s ease;
 }
 </style>
 </head>
 <body>
 
-<!-- Progress Bar -->
-<div id="progress-bar-container">
-  <div id="progress-bar"></div>
-</div>
-<div id="bug-counter">Bugs remaining: 6</div>
+<canvas id="matrix-canvas"></canvas>
+<div id="overlay"></div>
+<canvas id="assembly-canvas"></canvas>
 
-<!-- Title Bar -->
-<div id="title-bar">
-  <div class="window-dots">
-    <div class="dot red"></div>
-    <div class="dot yellow"></div>
-    <div class="dot green"></div>
-  </div>
-  <div class="title-filename">
-    <span class="title-tab">geva_kipper_portfolio.life</span>
-  </div>
-  <div style="width: 54px;"></div>
-</div>
+<div id="content">
+  <header class="header">
+    <h1 class="header-name" id="header-name"></h1>
+    <p class="header-role">Software Engineer at Google</p>
+    <div class="header-line"></div>
+    <p class="header-subtitle">
+      <span id="subtitle-text">Redesigned daily by AI — an ever-changing artifact</span>
+      <span class="infinity-symbol">∞</span>
+    </p>
+  </header>
 
-<!-- Toolbar -->
-<div id="toolbar">
-  <div id="toolbar-info">PROBLEMS: <span id="problem-count" style="color:var(--red)">6</span> &nbsp;|&nbsp; OUTPUT &nbsp;|&nbsp; TERMINAL</div>
-  <button id="skip-btn" onclick="skipDebugging()">Run Without Debugging ▶</button>
-</div>
+  <div class="grid" id="card-grid">
+    <!-- Card 1: GlglStats -->
+    <div class="card" data-card="0">
+      <div class="card-rain-overlay" id="rain-0"></div>
+      <div class="card-title"><span class="icon">♪</span> GlglStats</div>
+      <div class="card-desc">A Python project measuring repetitiveness of Israeli pop-chart songs using LZ77 compression, visualizing repetition patterns of famous songs across decades.</div>
+      <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" rel="noopener" class="video-thumb">
+        <div class="play-icon">▶</div>
+        <div class="video-label">PyData TLV Talk</div>
+      </a>
+      <a href="https://glglstats.geekip.dev" target="_blank" rel="noopener" class="card-link"><span class="arrow">→</span> Explore GlglStats</a>
+    </div>
 
-<!-- Toast Notification -->
-<div class="toast" id="toast">> Build succeeded. Section rendered.</div>
+    <!-- Card 2: Ahuzat Dibuk -->
+    <div class="card" data-card="1">
+      <div class="card-rain-overlay" id="rain-1"></div>
+      <div class="card-title"><span class="icon">🅿</span> Ahuzat Dibuk</div>
+      <div class="card-desc">A Python scraping and data visualization project collecting Tel-Aviv parking lot occupancy statistics and generating heatmaps for residents.</div>
+      <ul class="terminal-links">
+        <li><a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" rel="noopener">&gt; Channel 13 News Coverage</a></li>
+        <li><a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" rel="noopener">&gt; Mako News Coverage</a></li>
+        <li><a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" rel="noopener">&gt; Original Post (Facebook)</a></li>
+      </ul>
+    </div>
 
-<!-- Main Editor -->
-<div id="editor">
-  <div id="gutter"></div>
-  <div id="code-area"></div>
-</div>
+    <!-- Card 3: 2D Part Orienting -->
+    <div class="card" data-card="2">
+      <div class="card-rain-overlay" id="rain-2"></div>
+      <div class="card-title">
+        <span class="icon rotating-polygon">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00FF41" stroke-width="1.5">
+            <polygon points="10,1 18,7 15,18 5,18 2,7"/>
+          </svg>
+        </span>
+        2D Part Orienting
+      </div>
+      <div class="card-desc">A C++ implementation in an open-source computational geometry library of an efficient algorithm for constructing a push plan to orient a given polygon.</div>
+      <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" rel="noopener" class="card-link"><span class="arrow">→</span> Project & Code</a>
+    </div>
 
-<!-- Terminal Footer -->
-<div id="terminal-footer">
-  <div class="terminal-title">TERMINAL</div>
-  <div>
-    <span style="color:var(--subtext0)">$ node geva_kipper_portfolio.life</span>
+    <!-- Card 4: The Turing Jest -->
+    <div class="card" data-card="3">
+      <div class="card-rain-overlay" id="rain-3"></div>
+      <div class="card-title"><span class="icon">😂</span> The Turing Jest</div>
+      <div class="card-desc">An LMSYS-style arena where LLMs compete at making and explaining puns, with answers rated by users in head-to-head matchups.</div>
+      <a href="https://jest.geekip.dev" target="_blank" rel="noopener" class="card-link"><span class="arrow">→</span> Enter the Arena</a>
+      <div class="pun-battle" id="pun-battle">
+        <div class="pun-line" id="pun-a"></div>
+        <div class="pun-line" id="pun-b"></div>
+      </div>
+    </div>
+
+    <!-- Card 5: Rhymes of Israel -->
+    <div class="card" data-card="4">
+      <div class="card-rain-overlay" id="rain-4"></div>
+      <div class="card-title">
+        <span class="icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00FF41" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="4"/>
+            <line x1="21.17" y1="8" x2="15.87" y2="8"/>
+            <line x1="8.13" y1="8" x2="2.83" y2="8"/>
+            <line x1="21.17" y1="16" x2="15.87" y2="16"/>
+            <line x1="8.13" y1="16" x2="2.83" y2="16"/>
+          </svg>
+        </span>
+        Rhymes of Israel
+      </div>
+      <div class="card-desc">A Chrome extension that uses an LLM to rewrite Israeli news headlines into comedic rhymes in the style of a high school yearbook.</div>
+      <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" rel="noopener" class="card-link"><span class="arrow">→</span> Install Extension</a>
+      <div class="headline-demo" id="headline-demo"></div>
+    </div>
+
+    <!-- Card 6: geekip.dev (Meta) -->
+    <div class="card meta-card" data-card="5" id="meta-card">
+      <div class="card-rain-overlay" id="rain-5"></div>
+      <div class="card-title"><span class="icon">🪞</span> geekip.dev</div>
+      <div class="card-desc">You're looking at it. This portfolio site is redesigned daily by AI — an ever-changing digital artifact, never the same twice.</div>
+      <a href="#" class="card-link" id="meta-link"><span class="arrow">→</span> You are here</a>
+    </div>
+
+    <!-- Card 7: Social Links -->
+    <div class="card social-card" data-card="6">
+      <div class="card-rain-overlay" id="rain-6"></div>
+      <div class="card-title">///</div>
+      <a href="https://github.com/gevak" target="_blank" rel="noopener" class="social-btn" data-label="GitHub">[ GitHub ]</a>
+      <a href="https://linkedin.com/in/gevakip" target="_blank" rel="noopener" class="social-btn" data-label="LinkedIn">[ LinkedIn ]</a>
+      <a href="https://facebook.com/geva.kipper" target="_blank" rel="noopener" class="social-btn" data-label="Facebook">[ Facebook ]</a>
+    </div>
   </div>
-  <div style="margin-top: 4px;">
-    <span style="color:var(--green)">> </span>
-    <span style="color:var(--subtext)">Uptime since 2026-02-06 00:06:00 — </span>
-    <span id="uptime-hours" style="color:var(--teal)">0</span><span style="color:var(--subtext)">h </span>
-    <span id="uptime-minutes" style="color:var(--yellow)">0</span><span style="color:var(--subtext)">m </span>
-    <span id="uptime-seconds" style="color:var(--green);transition:all 0.3s">0</span><span style="color:var(--subtext)">s</span>
-    <span class="cursor-blink" style="color:var(--text)">_</span>
-  </div>
-  <div style="margin-top:12px; color:var(--subtext0); font-style:italic; font-size:11px;">
-    /* Generated by Claude, an AI by Anthropic. This design was conceived and described for Geva Kipper's ever-changing portfolio. */
-  </div>
+
+  <footer class="footer">
+    <div class="footer-line" id="footer-line"></div>
+    <div class="footer-credit">Designed by Claude (Anthropic) · <span id="current-date"></span></div>
+    <div class="stopwatch" id="stopwatch"></div>
+  </footer>
 </div>
 
 <script>
-// Console Easter Egg
-console.log("%cHey, a fellow debugger! 🐛%c\nYou're already in the right place.\n— Geva", "color:#89dceb;font-size:20px;font-weight:bold;font-family:monospace;", "color:#cba6f7;font-size:14px;font-family:monospace;");
-
-// State
-let bugsFixed = 0;
-const totalBugs = 6;
-let allRevealed = false;
-let currentLine = 1;
-let gutterLines = [];
-
-// Line tracking
-function L() {
-  return currentLine++;
+// ==================== MATRIX CHARACTERS ====================
+const matrixChars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+function randomChar() {
+  return matrixChars[Math.floor(Math.random() * matrixChars.length)];
 }
 
-// Build the page content
-function buildPage() {
-  const codeArea = document.getElementById('code-area');
-  const gutter = document.getElementById('gutter');
-  let html = '';
-  let gutterHtml = '';
+// ==================== BACKGROUND MATRIX RAIN ====================
+const canvas = document.getElementById('matrix-canvas');
+const ctx = canvas.getContext('2d');
+let columns, drops;
+let matrixFontSize = 14;
+const isMobile = window.innerWidth < 640;
+
+function initCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  columns = Math.floor(canvas.width / matrixFontSize);
+  if (isMobile) columns = Math.floor(columns * 0.5);
+  drops = new Array(columns).fill(1);
+}
+initCanvas();
+window.addEventListener('resize', initCanvas);
+
+let bgRainOpacity = 0;
+let bgRainTargetOpacity = 0.25;
+
+function drawMatrixRain() {
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   
-  function addLine(content, classes = '', id = '', gutterExtra = '') {
-    const ln = L();
-    gutterHtml += `<div class="line-num" id="gutter-${ln}">${gutterExtra}<span>${ln}</span></div>`;
-    html += `<div class="code-line ${classes}" id="line-${ln}" data-line="${ln}">${content}</div>`;
-    return ln;
+  ctx.fillStyle = `rgba(0, 255, 65, ${bgRainOpacity})`;
+  ctx.font = matrixFontSize + 'px Fira Code, monospace';
+  
+  for (let i = 0; i < drops.length; i++) {
+    const text = randomChar();
+    ctx.fillText(text, i * matrixFontSize, drops[i] * matrixFontSize);
+    
+    if (drops[i] * matrixFontSize > canvas.height && Math.random() > 0.975) {
+      drops[i] = 0;
+    }
+    drops[i]++;
   }
-
-  function addGutterIcon(lineNum, type) {
-    setTimeout(() => {
-      const el = document.getElementById(`gutter-${lineNum}`);
-      if (el) {
-        const icon = el.querySelector('.gutter-icon');
-        if (icon) {
-          icon.className = `gutter-icon ${type}`;
-          icon.textContent = type === 'error' ? '✕' : '✓';
-        }
-      }
-    }, 0);
-  }
-
-  // Hero Comment Block (lines 1-8)
-  addLine('<span class="cm">/*</span>', 'highlight');
-  addLine('<span class="cm"> * @author</span> <span class="hero-name">Geva Kipper</span>', 'highlight');
-  addLine('<span class="cm"> *</span>', 'highlight');
-  addLine('<span class="cm"> * @description</span> <span class="hero-desc">"Software Engineer at Google, building large-scale systems that touch billions of users."</span>', 'highlight');
-  addLine('<span class="cm"> *</span>', 'highlight');
-  addLine('<span class="cm"> * @notice</span> <span class="hero-notice">"This portfolio is redesigned each day by AI — what you see today will never appear again."</span>', 'highlight');
-  addLine('<span class="cm"> *</span>', 'highlight');
-  addLine('<span class="cm"> */</span>', 'highlight');
-  
-  // Empty line
-  addLine('');
-  
-  // Function declaration
-  addLine('<span class="kw">function</span> <span class="fn">loadPortfolio</span><span class="wh">() {</span>');
-  addLine('');
-
-  // === SECTION 1: GlglStats ===
-  const bug1Line = L();
-  gutterHtml += `<div class="line-num" id="gutter-${bug1Line}"><div class="gutter-icon error" id="gicon-1">✕</div><span>${bug1Line}</span></div>`;
-  html += `<div class="code-line bug-line" id="bugline-1" data-bug="1" data-line="${bug1Line}" onclick="showQuickfix(1)">
-    &nbsp;&nbsp;<span class="bug-text" id="bugtext-1"><span class="kw">cosnt</span></span> <span class="wh">project_1</span> <span class="op">=</span> <span class="kw">new</span> <span class="tl">Project</span><span class="wh">({</span>
-    <span class="error-badge" id="badge-1">1 error</span>
-    <div class="quickfix-popup" id="qf-1">
-      <div class="quickfix-header">💡 Quick Fix</div>
-      <div class="quickfix-option" onclick="fixBug(1, event)"><span class="fix-icon">→</span> Fix typo: <code>cosnt</code> → <code>const</code></div>
-    </div>
-  </div>`;
-
-  html += `<div class="section-content blocked" id="section-1"><div class="blocked-overlay"><span>// CONTENT BLOCKED — runtime error on line ${bug1Line}</span></div><div class="content-inner">`;
-  
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">name:</span> <span class="str">"GlglStats"</span><span class="wh">,</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">description:</span> <span class="str">"A Python project measuring repetitiveness of Israeli pop-chart songs using LZ77 compression."</span><span class="wh">,</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">tech:</span> <span class="wh">[</span><span class="og">"Python"</span><span class="wh">,</span> <span class="og">"LZ77"</span><span class="wh">,</span> <span class="og">"Data Visualization"</span><span class="wh">],</span>');
-  
-  // Terminal output
-  addLine(`&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm">// Sample output:</span>`);
-  addLine(`&nbsp;&nbsp;&nbsp;&nbsp;<div class="terminal-panel"><span class="term-prompt">$ </span><span class="term-output">python glglstats.py --analyze "Song Example"</span><br><span class="term-output">Repetitiveness: <span style="color:var(--yellow)">73.2%</span></span> <div class="compression-bar-container"><div class="compression-bar" id="comp-bar"></div></div></div>`);
-  
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">website:</span> <a class="code-link" href="https://glglstats.geekip.dev" target="_blank"><span class="fn">"glglstats.geekip.dev"</span></a><span class="wh">,</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">talk:</span> <a class="code-link" href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank"><span class="fn">▶ "Watch the PyData TLV Conference Talk →"</span></a>');
-  addLine('&nbsp;&nbsp;<span class="wh">});</span>');
-  
-  html += `</div></div>`;
-
-  // Divider
-  addLine('');
-  addLine('&nbsp;&nbsp;<span class="divider-line">// ————————————————————————————————————</span>');
-  addLine('');
-
-  // === SECTION 2: Ahuzat Dibuk ===
-  const bug2Line = L();
-  gutterHtml += `<div class="line-num" id="gutter-${bug2Line}"><div class="gutter-icon error" id="gicon-2">✕</div><span>${bug2Line}</span></div>`;
-  html += `<div class="code-line bug-line" id="bugline-2" data-bug="2" data-line="${bug2Line}" onclick="showQuickfix(2)">
-    &nbsp;&nbsp;<span class="kw">const</span> <span class="wh">project_2</span> <span class="op">=</span> <span class="kw">new</span> <span class="tl">Project</span><span class="wh">({</span> &nbsp;<span class="cm">// </span><span class="bug-text" id="bugtext-2"><span class="kw">if</span> <span class="wh">(parking.status</span> <span style="color:var(--error-red)">=</span> <span class="str">"full"</span><span class="wh">)</span></span>
-    <span class="error-badge" id="badge-2">1 error</span>
-    <div class="quickfix-popup" id="qf-2">
-      <div class="quickfix-header">💡 Quick Fix</div>
-      <div class="quickfix-option" onclick="fixBug(2, event)"><span class="fix-icon">→</span> Change <code>=</code> to <code>==</code> (comparison operator)</div>
-    </div>
-  </div>`;
-
-  html += `<div class="section-content blocked" id="section-2"><div class="blocked-overlay"><span>// CONTENT BLOCKED — runtime error on line ${bug2Line}</span></div><div class="content-inner">`;
-  
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">name:</span> <span class="str">"Ahuzat Dibuk"</span><span class="wh">,</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">description:</span> <span class="str">"Real-time parking data visualization for Tel Aviv, with scraped occupancy data and media coverage."</span><span class="wh">,</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">tech:</span> <span class="wh">[</span><span class="og">"Data Scraping"</span><span class="wh">,</span> <span class="og">"Visualization"</span><span class="wh">,</span> <span class="og">"Public Data"</span><span class="wh">],</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">media:</span> <span class="wh">[</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="og">source:</span> <span class="str">"Channel 13"</span>, <span class="og">url:</span> <a class="code-link" href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank"><span class="fn">"13tv.co.il/..."</span></a> },');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="og">source:</span> <span class="str">"Mako"</span>, <span class="og">url:</span> <a class="code-link" href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank"><span class="fn">"mako.co.il/..."</span></a> },');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="og">source:</span> <span class="str">"Facebook"</span>, <span class="og">url:</span> <a class="code-link" href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank"><span class="fn">"facebook.com/..."</span></a> }');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">],</span>');
-  
-  // Heatmap
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm">// Parking occupancy heatmap:</span>');
-  let heatmapHtml = '&nbsp;&nbsp;&nbsp;&nbsp;<div class="heatmap-grid" id="heatmap">';
-  for (let i = 0; i < 25; i++) {
-    heatmapHtml += `<div class="heatmap-cell" id="hcell-${i}" style="background:#a6e3a1;"></div>`;
-  }
-  heatmapHtml += '</div>';
-  addLine(heatmapHtml);
-  addLine('&nbsp;&nbsp;<span class="wh">});</span>');
-  
-  html += `</div></div>`;
-
-  // Divider
-  addLine('');
-  addLine('&nbsp;&nbsp;<span class="divider-line">// ————————————————————————————————————</span>');
-  addLine('');
-
-  // === SECTION 3: 2D Part Orienting ===
-  const bug3Line = L();
-  gutterHtml += `<div class="line-num" id="gutter-${bug3Line}"><div class="gutter-icon error" id="gicon-3">✕</div><span>${bug3Line}</span></div>`;
-  html += `<div class="code-line bug-line" id="bugline-3" data-bug="3" data-line="${bug3Line}" onclick="showQuickfix(3)">
-    &nbsp;&nbsp;<span class="kw">const</span> <span class="wh">project_3</span> <span class="op">=</span> <span class="kw">new</span> <span class="tl">Project</span><span class="wh">({</span> &nbsp;<span class="cm">// </span><span class="bug-text" id="bugtext-3"><span class="wh">polygon.vertices[</span><span class="num">n</span><span class="wh">]</span></span>
-    <span class="error-badge" id="badge-3">1 error</span>
-    <div class="quickfix-popup" id="qf-3">
-      <div class="quickfix-header">💡 Quick Fix</div>
-      <div class="quickfix-option" onclick="fixBug(3, event)"><span class="fix-icon">→</span> Fix off-by-one: <code>vertices[n]</code> → <code>vertices[n-1]</code></div>
-    </div>
-  </div>`;
-
-  html += `<div class="section-content blocked" id="section-3"><div class="blocked-overlay"><span>// CONTENT BLOCKED — runtime error on line ${bug3Line}</span></div><div class="content-inner">`;
-  
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">name:</span> <span class="str">"2D Part Orienting"</span><span class="wh">,</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">description:</span> <span class="str">"A C++ computational geometry project for orienting 2D polygonal parts on a conveyor belt using push operations."</span><span class="wh">,</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">tech:</span> <span class="wh">[</span><span class="og">"C++"</span><span class="wh">,</span> <span class="og">"Computational Geometry"</span><span class="wh">,</span> <span class="og">"CGAL"</span><span class="wh">],</span>');
-  
-  // Polygon SVG
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm">// Polygon orienting demo:</span>');
-  addLine(`&nbsp;&nbsp;&nbsp;&nbsp;<div class="polygon-demo"><svg viewBox="0 0 120 60">
-    <line x1="0" y1="50" x2="120" y2="50" stroke="#45475a" stroke-width="2"/>
-    <g id="poly-anim">
-      <animateTransform attributeName="transform" type="translate" values="0,0; 80,0; 80,0; 0,0" dur="4s" repeatCount="indefinite"/>
-      <polygon points="10,30 25,15 40,25 35,45 15,45" fill="none" stroke="#89dceb" stroke-width="1.5">
-        <animateTransform attributeName="transform" type="rotate" values="0 25 35; 0 25 35; 45 25 35; 45 25 35; 0 25 35" dur="4s" repeatCount="indefinite"/>
-      </polygon>
-    </g>
-    <line x1="90" y1="10" x2="90" y2="50" stroke="#f38ba8" stroke-width="1" stroke-dasharray="3,3"/>
-  </svg></div>`);
-  
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">link:</span> <a class="code-link" href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank"><span class="fn">"TAU Computational Geometry Lab"</span></a>');
-  addLine('&nbsp;&nbsp;<span class="wh">});</span>');
-  
-  html += `</div></div>`;
-
-  // Divider
-  addLine('');
-  addLine('&nbsp;&nbsp;<span class="divider-line">// ————————————————————————————————————</span>');
-  addLine('');
-
-  // === SECTION 4: The Turing Jest ===
-  const bug4Line = L();
-  gutterHtml += `<div class="line-num" id="gutter-${bug4Line}"><div class="gutter-icon error" id="gicon-4">✕</div><span>${bug4Line}</span></div>`;
-  html += `<div class="code-line bug-line" id="bugline-4" data-bug="4" data-line="${bug4Line}" onclick="showQuickfix(4)">
-    &nbsp;&nbsp;<span class="kw">const</span> <span class="wh">project_4</span> <span class="op">=</span> <span class="kw">new</span> <span class="tl">Project</span><span class="wh">({</span> &nbsp;<span class="cm">// desc: </span><span class="bug-text" id="bugtext-4"><span class="str">"LMsS arena for pmun comeptitions"</span></span>
-    <span class="error-badge" id="badge-4">1 error</span>
-    <div class="quickfix-popup" id="qf-4">
-      <div class="quickfix-header">💡 Quick Fix</div>
-      <div class="quickfix-option" onclick="fixBug(4, event)"><span class="fix-icon">→</span> Fix garbled text → <code>"LMSYS arena for pun competitions"</code></div>
-    </div>
-  </div>`;
-
-  html += `<div class="section-content blocked" id="section-4"><div class="blocked-overlay"><span>// CONTENT BLOCKED — runtime error on line ${bug4Line}</span></div><div class="content-inner">`;
-  
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">name:</span> <span class="str">"The Turing Jest"</span><span class="wh">,</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">description:</span> <span class="str">"An LMSYS-style arena where LLMs compete head-to-head in pun battles, rated by humans."</span><span class="wh">,</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">tech:</span> <span class="wh">[</span><span class="og">"LLMs"</span><span class="wh">,</span> <span class="og">"ELO Rating"</span><span class="wh">,</span> <span class="og">"Web App"</span><span class="wh">],</span>');
-  
-  // Chat bubbles
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm">// Sample pun battle:</span>');
-  addLine(`&nbsp;&nbsp;&nbsp;&nbsp;<div class="chat-bubbles">
-    <div class="chat-bubble left"><span style="color:var(--teal)">GPT-4:</span> I'm reading a book about anti-gravity. It's impossible to put down! <span style="color:var(--yellow)">⭐⭐⭐⭐</span></div><br>
-    <div class="chat-bubble right"><span style="color:var(--peach)">Claude:</span> I told my computer I needed a break. Now it won't stop sending me KitKat ads. <span style="color:var(--yellow)">⭐⭐⭐⭐⭐</span></div>
-  </div>`);
-  
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">website:</span> <a class="code-link" href="https://jest.geekip.dev" target="_blank"><span class="fn">"jest.geekip.dev"</span></a>');
-  addLine('&nbsp;&nbsp;<span class="wh">});</span>');
-  
-  html += `</div></div>`;
-
-  // Divider
-  addLine('');
-  addLine('&nbsp;&nbsp;<span class="divider-line">// ————————————————————————————————————</span>');
-  addLine('');
-
-  // === SECTION 5: Rhymes of Israel ===
-  const bug5Line = L();
-  gutterHtml += `<div class="line-num" id="gutter-${bug5Line}"><div class="gutter-icon error" id="gicon-5">✕</div><span>${bug5Line}</span></div>`;
-  html += `<div class="code-line bug-line" id="bugline-5" data-bug="5" data-line="${bug5Line}" onclick="showQuickfix(5)">
-    &nbsp;&nbsp;<span class="kw">const</span> <span class="wh">project_5</span> <span class="op">=</span> <span class="kw">new</span> <span class="tl">Project</span><span class="wh">({</span> &nbsp;<span class="cm">// </span><span class="bug-text" id="bugtext-5"><span class="wh">headlines.map(h => rewrite(h</span><span style="color:var(--error-red)">⚠ missing )</span></span>
-    <span class="error-badge" id="badge-5">1 error</span>
-    <div class="quickfix-popup" id="qf-5">
-      <div class="quickfix-header">💡 Quick Fix</div>
-      <div class="quickfix-option" onclick="fixBug(5, event)"><span class="fix-icon">→</span> Add missing closing parenthesis <code>)</code></div>
-    </div>
-  </div>`;
-
-  html += `<div class="section-content blocked" id="section-5"><div class="blocked-overlay"><span>// CONTENT BLOCKED — runtime error on line ${bug5Line}</span></div><div class="content-inner">`;
-  
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">name:</span> <span class="str">"Rhymes of Israel"</span><span class="wh">,</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">description:</span> <span class="str">"A Chrome extension that rewrites news headlines into rhyming verse, adding whimsy to the daily news."</span><span class="wh">,</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">tech:</span> <span class="wh">[</span><span class="og">"Chrome Extension"</span><span class="wh">,</span> <span class="og">"NLP"</span><span class="wh">,</span> <span class="og">"JavaScript"</span><span class="wh">],</span>');
-  
-  // Rhyme demo
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm">// Live demo:</span>');
-  addLine(`&nbsp;&nbsp;&nbsp;&nbsp;<div class="rhyme-demo" id="rhyme-demo">
-    <span style="color:var(--subtext0);text-decoration:line-through;" id="rhyme-original">"Government Approves New Budget Plan"</span>
-    <span style="color:var(--green)" id="rhyme-rewrite"> ✨ "The budget plan's approved, a fiscal song and dance"</span>
-  </div>`);
-  
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">store:</span> 🌐 <a class="code-link" href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank"><span class="fn">"Chrome Web Store →"</span></a>');
-  addLine('&nbsp;&nbsp;<span class="wh">});</span>');
-  
-  html += `</div></div>`;
-
-  // Divider
-  addLine('');
-  addLine('&nbsp;&nbsp;<span class="divider-line">// ————————————————————————————————————</span>');
-  addLine('');
-
-  // === SECTION 6: Portfolio Website ===
-  const bug6Line = L();
-  gutterHtml += `<div class="line-num" id="gutter-${bug6Line}"><div class="gutter-icon error" id="gicon-6">✕</div><span>${bug6Line}</span></div>`;
-  html += `<div class="code-line bug-line" id="bugline-6" data-bug="6" data-line="${bug6Line}" onclick="showQuickfix(6)">
-    &nbsp;&nbsp;<span class="kw">const</span> <span class="wh">project_6</span> <span class="op">=</span> <span class="bug-text" id="bugtext-6"><span class="wh">portfolio.render(portfolio.render(portfolio.render(</span><span style="color:var(--error-red)">...</span><span class="wh">)))</span></span>
-    <span class="error-badge" id="badge-6">1 error</span>
-    <div class="quickfix-popup" id="qf-6">
-      <div class="quickfix-header">💡 Quick Fix</div>
-      <div class="quickfix-option" onclick="fixBug(6, event)"><span class="fix-icon">→</span> Break recursion: add base case <code>if (depth > 0) return;</code></div>
-    </div>
-  </div>`;
-
-  html += `<div class="section-content blocked" id="section-6"><div class="blocked-overlay"><span>// CONTENT BLOCKED — runtime error on line ${bug6Line} (stack overflow)</span></div><div class="content-inner">`;
-  
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">name:</span> <span class="str">"Portfolio Website"</span><span class="wh">,</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">description:</span> <span class="str">"You\'re looking at it. A debugger-themed portfolio, redesigned daily by AI. How meta."</span><span class="wh">,</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">tech:</span> <span class="wh">[</span><span class="og">"HTML"</span><span class="wh">,</span> <span class="og">"CSS"</span><span class="wh">,</span> <span class="og">"JavaScript"</span><span class="wh">,</span> <span class="og">"AI"</span><span class="wh">,</span> <span class="og">"Meta-humor"</span><span class="wh">],</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">website:</span> <a class="code-link" href="https://geekip.dev" target="_blank"><span class="fn">"geekip.dev"</span></a><span class="wh">,</span>');
-  
-  // Mini browser
-  addLine(`&nbsp;&nbsp;&nbsp;&nbsp;<div class="mini-browser">
-    <div class="mini-browser-bar"><div class="mini-dot" style="background:#ff5f57"></div><div class="mini-dot" style="background:#febc2e"></div><div class="mini-dot" style="background:#28c840"></div></div>
-    <div class="mini-browser-content">
-      <div style="color:var(--teal);font-size:5px;">/* geva_kipper_portfolio.life */</div>
-      <div style="color:var(--subtext0);">function loadPortfolio() {</div>
-      <div style="color:var(--green);margin-left:4px;">const project_1 = ...</div>
-      <div style="color:var(--green);margin-left:4px;">const project_2 = ...</div>
-      <div style="color:var(--subtext0);">}</div>
-      <div style="color:var(--subtext0);">loadPortfolio();</div>
-    </div>
-  </div>`);
-  
-  addLine('&nbsp;&nbsp;<span class="wh">});</span>');
-  
-  html += `</div></div>`;
-
-  // Divider
-  addLine('');
-  addLine('&nbsp;&nbsp;<span class="divider-line">// ————————————————————————————————————</span>');
-  addLine('');
-
-  // === SECTION 7: Social Links ===
-  addLine('&nbsp;&nbsp;<span class="kw">module</span><span class="wh">.exports</span> <span class="op">=</span> <span class="wh">{</span>');
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">social:</span> <span class="wh">[</span>');
-  
-  // GitHub
-  addLine(`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div class="social-line">{ <span class="og">platform:</span> <span class="str">"GitHub"</span>, <span class="og">url:</span> <svg class="social-icon gh" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.694.825.576C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12"/></svg> <a class="code-link" href="https://github.com/gevak" target="_blank"><span class="fn">"github.com/gevak"</span></a> }</div>`);
-  
-  // LinkedIn
-  addLine(`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div class="social-line">{ <span class="og">platform:</span> <span class="str">"LinkedIn"</span>, <span class="og">url:</span> <svg class="social-icon li" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> <a class="code-link" href="https://linkedin.com/in/gevakip" target="_blank"><span class="fn">"linkedin.com/in/gevakip"</span></a> }</div>`);
-  
-  // Facebook
-  addLine(`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div class="social-line">{ <span class="og">platform:</span> <span class="str">"Facebook"</span>, <span class="og">url:</span> <svg class="social-icon fb" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg> <a class="code-link" href="https://facebook.com/geva.kipper" target="_blank"><span class="fn">"facebook.com/geva.kipper"</span></a> }</div>`);
-  
-  addLine('&nbsp;&nbsp;&nbsp;&nbsp;<span class="wh">]</span>');
-  addLine('&nbsp;&nbsp;<span class="wh">};</span>');
-
-  // Closing
-  addLine('');
-  addLine('<span class="wh">}</span>');
-  addLine('');
-  addLine('<span class="fn">loadPortfolio</span><span class="wh">();</span>');
-  addLine('');
-  addLine('<span class="divider-line">// ════════════════════════════════════════</span>');
-  addLine('<span class="divider-line">// End of file</span>');
-  addLine('<span class="divider-line">// ════════════════════════════════════════</span>');
-
-  codeArea.innerHTML = html;
-  gutter.innerHTML = gutterHtml;
 }
 
-// Quick-fix popup management
-let activePopup = null;
-
-function showQuickfix(bugId) {
-  if (document.getElementById(`bugline-${bugId}`).classList.contains('fixed')) return;
-  
-  // Close any open popup
-  if (activePopup !== null) {
-    document.getElementById(`qf-${activePopup}`).classList.remove('show');
-  }
-  
-  const popup = document.getElementById(`qf-${bugId}`);
-  popup.classList.toggle('show');
-  activePopup = popup.classList.contains('show') ? bugId : null;
+let matrixInterval;
+function startBackgroundRain() {
+  matrixInterval = setInterval(drawMatrixRain, 33); // ~30fps
 }
 
-// Close popups on outside click
-document.addEventListener('click', (e) => {
-  if (activePopup !== null && !e.target.closest('.bug-line')) {
-    document.getElementById(`qf-${activePopup}`).classList.remove('show');
-    activePopup = null;
+// ==================== OPENING SEQUENCE ====================
+const overlay = document.getElementById('overlay');
+const assemblyCanvas = document.getElementById('assembly-canvas');
+const actx = assemblyCanvas.getContext('2d');
+assemblyCanvas.width = window.innerWidth;
+assemblyCanvas.height = window.innerHeight;
+
+// Phase 1: Full-screen intense rain
+let openingDrops = [];
+let openingColumns = Math.floor(window.innerWidth / 14);
+for (let i = 0; i < openingColumns; i++) {
+  openingDrops.push({
+    x: i * 14,
+    y: Math.random() * -500,
+    speed: 4 + Math.random() * 8,
+    chars: []
+  });
+}
+
+let openingPhase = 0; // 0 = rain, 1 = assembling, 2 = done
+let openingStart = Date.now();
+const openingDuration = isMobile ? 2000 : 3000;
+const assemblyDuration = 1500;
+
+// Target text to assemble
+const targetName = "GEVA KIPPER";
+let targetChars = [];
+
+function calculateTargetPositions() {
+  const fontSize = Math.min(window.innerWidth / 8, 64);
+  actx.font = `700 ${fontSize}px Fira Code, monospace`;
+  const metrics = actx.measureText(targetName);
+  const startX = (window.innerWidth - metrics.width) / 2;
+  const startY = window.innerHeight / 2;
+  
+  targetChars = [];
+  let xOffset = 0;
+  for (let i = 0; i < targetName.length; i++) {
+    const charMetrics = actx.measureText(targetName[i]);
+    targetChars.push({
+      char: targetName[i],
+      targetX: startX + xOffset,
+      targetY: startY,
+      currentX: Math.random() * window.innerWidth,
+      currentY: -50 - Math.random() * 500,
+      currentChar: randomChar(),
+      settled: false,
+      fontSize: fontSize
+    });
+    xOffset += charMetrics.width;
   }
+}
+
+calculateTargetPositions();
+
+function drawOpeningRain() {
+  actx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+  actx.fillRect(0, 0, assemblyCanvas.width, assemblyCanvas.height);
+  
+  actx.font = '14px Fira Code, monospace';
+  actx.fillStyle = '#00FF41';
+  
+  for (let drop of openingDrops) {
+    const ch = randomChar();
+    actx.fillText(ch, drop.x, drop.y);
+    drop.y += drop.speed;
+    if (drop.y > assemblyCanvas.height) {
+      drop.y = Math.random() * -100;
+    }
+  }
+}
+
+function drawAssembly(progress) {
+  actx.clearRect(0, 0, assemblyCanvas.width, assemblyCanvas.height);
+  
+  // Draw remaining rain chars dimming out
+  actx.font = '14px Fira Code, monospace';
+  actx.fillStyle = `rgba(0, 255, 65, ${0.3 * (1 - progress)})`;
+  for (let drop of openingDrops) {
+    actx.fillText(randomChar(), drop.x, drop.y);
+    drop.y += drop.speed * (1 - progress * 0.8);
+    drop.x += (Math.random() - 0.5) * progress * 4;
+  }
+  
+  // Draw assembling characters
+  for (let tc of targetChars) {
+    const eased = easeOutCubic(Math.min(progress * 1.2, 1));
+    tc.currentX += (tc.targetX - tc.currentX) * eased * 0.15;
+    tc.currentY += (tc.targetY - tc.currentY) * eased * 0.15;
+    
+    const dist = Math.hypot(tc.currentX - tc.targetX, tc.currentY - tc.targetY);
+    
+    if (dist < 5) {
+      tc.currentChar = tc.char;
+      tc.settled = true;
+    } else if (Math.random() > 0.7) {
+      tc.currentChar = randomChar();
+    }
+    
+    actx.font = `700 ${tc.fontSize}px Fira Code, monospace`;
+    actx.fillStyle = tc.settled ? '#00FF41' : `rgba(0, 255, 65, ${0.5 + progress * 0.5})`;
+    if (tc.settled) {
+      actx.shadowColor = '#00FF41';
+      actx.shadowBlur = 20;
+    }
+    actx.fillText(tc.currentChar, tc.currentX, tc.currentY);
+    actx.shadowBlur = 0;
+  }
+}
+
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+let openingAnimId;
+function animateOpening() {
+  const elapsed = Date.now() - openingStart;
+  
+  if (openingPhase === 0) {
+    drawOpeningRain();
+    if (elapsed > openingDuration) {
+      openingPhase = 1;
+      openingStart = Date.now();
+    }
+  } else if (openingPhase === 1) {
+    const progress = Math.min((Date.now() - openingStart) / assemblyDuration, 1);
+    drawAssembly(progress);
+    if (progress >= 1) {
+      openingPhase = 2;
+      openingStart = Date.now();
+    }
+  } else if (openingPhase === 2) {
+    // Hold for a moment then fade
+    const holdTime = Date.now() - openingStart;
+    if (holdTime > 800) {
+      assemblyCanvas.style.transition = 'opacity 1s ease';
+      assemblyCanvas.style.opacity = '0';
+      overlay.classList.add('fade-out');
+      document.getElementById('content').classList.add('visible');
+      bgRainOpacity = bgRainTargetOpacity;
+      startBackgroundRain();
+      startShimmer();
+      startSubtitleAnimation();
+      startPunBattle();
+      startHeadlineDemo();
+      initCardObserver();
+      setTimeout(() => {
+        assemblyCanvas.remove();
+        overlay.remove();
+      }, 1200);
+      return;
+    }
+    drawAssembly(1);
+  }
+  
+  openingAnimId = requestAnimationFrame(animateOpening);
+}
+
+animateOpening();
+
+// ==================== HEADER NAME WITH GLOW TRAILS ====================
+const headerNameEl = document.getElementById('header-name');
+const nameText = "GEVA KIPPER";
+nameText.split('').forEach(ch => {
+  const span = document.createElement('span');
+  span.className = 'char shimmer-text';
+  span.textContent = ch;
+  span.dataset.original = ch;
+  headerNameEl.appendChild(span);
 });
 
-function fixBug(bugId, event) {
-  event.stopPropagation();
-  
-  const bugLine = document.getElementById(`bugline-${bugId}`);
-  const bugText = document.getElementById(`bugtext-${bugId}`);
-  const badge = document.getElementById(`badge-${bugId}`);
-  const section = document.getElementById(`section-${bugId}`);
-  const popup = document.getElementById(`qf-${bugId}`);
-  const gIcon = document.getElementById(`gicon-${bugId}`);
-  
-  // Close popup
-  popup.classList.remove('show');
-  activePopup = null;
-  
-  // Fix the bug visually
-  bugLine.classList.add('fixed');
-  
-  // Update bug text based on which bug
-  const fixes = {
-    1: '<span class="kw">const</span>',
-    2: '<span class="kw">if</span> <span class="wh">(parking.status</span> <span class="op">==</span> <span class="str">"full"</span><span class="wh">)</span>',
-    3: '<span class="wh">polygon.vertices[</span><span class="num">n-1</span><span class="wh">]</span>',
-    4: '<span class="str">"LMSYS arena for pun competitions"</span>',
-    5: '<span class="wh">headlines.map(h => rewrite(h))</span>',
-    6: '<span class="wh">portfolio.render() </span><span class="cm">// base case added</span>'
-  };
-  
-  bugText.innerHTML = fixes[bugId];
-  
-  // Update badge
-  badge.textContent = '0 errors';
-  badge.classList.add('fixed');
-  
-  // Update gutter icon
-  gIcon.className = 'gutter-icon success';
-  gIcon.textContent = '✓';
-  
-  // Unblock section
-  section.classList.remove('blocked');
-  section.classList.add('unblocked');
-  
-  // Green flash
-  const flash = document.createElement('div');
-  flash.className = 'green-flash';
-  section.appendChild(flash);
-  setTimeout(() => flash.remove(), 700);
-  
-  // Trigger section-specific animations
-  triggerSectionAnimation(bugId);
-  
-  // Update counter
-  bugsFixed++;
-  updateProgress();
-  
-  // Show toast
-  showToast(bugId);
-}
-
-function triggerSectionAnimation(bugId) {
-  if (bugId === 1) {
-    // Animate compression bar
-    setTimeout(() => {
-      const bar = document.getElementById('comp-bar');
-      if (bar) bar.style.width = '73.2%';
-    }, 400);
-  }
-  if (bugId === 2) {
-    // Animate heatmap
-    startHeatmap();
-  }
-  if (bugId === 5) {
-    // Rhyme animation
-    startRhymeAnimation();
-  }
-}
-
-function startHeatmap() {
-  const colors = ['#a6e3a1', '#f9e2af', '#fab387', '#f38ba8'];
-  function updateHeatmap() {
-    for (let i = 0; i < 25; i++) {
-      const cell = document.getElementById(`hcell-${i}`);
-      if (cell) {
-        cell.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+// ==================== TEXT SHIMMER EFFECT ====================
+function startShimmer() {
+  setInterval(() => {
+    const shimmerEls = document.querySelectorAll('.shimmer-text');
+    shimmerEls.forEach(el => {
+      if (Math.random() < 0.015) {
+        const orig = el.dataset.original;
+        el.textContent = randomChar();
+        setTimeout(() => {
+          el.textContent = orig;
+        }, 80);
       }
+    });
+  }, 100);
+}
+
+// ==================== SUBTITLE DISSOLVE/REASSEMBLE ====================
+const subtitleEl = document.getElementById('subtitle-text');
+const subtitleOriginal = subtitleEl.textContent;
+
+function startSubtitleAnimation() {
+  setInterval(() => {
+    dissolveAndReassemble(subtitleEl, subtitleOriginal);
+  }, 20000);
+}
+
+function dissolveAndReassemble(el, text) {
+  let chars = text.split('');
+  let indices = chars.map((_, i) => i);
+  
+  // Shuffle indices for dissolve order
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  
+  let dissolved = [...chars];
+  let step = 0;
+  
+  // Dissolve
+  const dissolveInterval = setInterval(() => {
+    if (step < indices.length) {
+      dissolved[indices[step]] = randomChar();
+      el.textContent = dissolved.join('');
+      step++;
+    } else {
+      clearInterval(dissolveInterval);
+      
+      // Reassemble
+      let rstep = 0;
+      const reassembleInterval = setInterval(() => {
+        if (rstep < indices.length) {
+          dissolved[indices[rstep]] = chars[indices[rstep]];
+          el.textContent = dissolved.join('');
+          rstep++;
+        } else {
+          clearInterval(reassembleInterval);
+        }
+      }, 30);
+    }
+  }, 30);
+}
+
+// ==================== CARD ENTRY ANIMATIONS ====================
+function initCardObserver() {
+  const cards = document.querySelectorAll('.card');
+  
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !entry.target.classList.contains('visible')) {
+        animateCardEntry(entry.target);
+      }
+    });
+  }, { threshold: 0.2 });
+  
+  cards.forEach(card => observer.observe(card));
+}
+
+function animateCardEntry(card) {
+  const rainOverlay = document.createElement('div');
+  rainOverlay.className = 'card-entry-rain';
+  card.appendChild(rainOverlay);
+  
+  // Hide real content briefly
+  const children = Array.from(card.children).filter(c => !c.classList.contains('card-entry-rain') && !c.classList.contains('card-rain-overlay'));
+  children.forEach(c => c.style.opacity = '0');
+  
+  // Create mini rain chars
+  const rect = card.getBoundingClientRect();
+  const numChars = Math.floor((rect.width * rect.height) / 400);
+  const chars = [];
+  
+  for (let i = 0; i < numChars; i++) {
+    const span = document.createElement('span');
+    span.className = 'card-entry-char';
+    span.textContent = randomChar();
+    span.style.left = Math.random() * 100 + '%';
+    span.style.top = -20 - Math.random() * 100 + 'px';
+    span.style.opacity = '0.8';
+    rainOverlay.appendChild(span);
+    chars.push(span);
+  }
+  
+  // Animate rain fall
+  let startTime = Date.now();
+  function animateRain() {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / 600, 1);
+    
+    chars.forEach((span, i) => {
+      const targetY = (i / numChars) * rect.height * 0.8 + 10;
+      const currentY = -20 + (targetY + 20) * easeOutCubic(progress);
+      span.style.top = currentY + 'px';
+      
+      if (Math.random() > 0.7) {
+        span.textContent = randomChar();
+      }
+    });
+    
+    if (progress < 1) {
+      requestAnimationFrame(animateRain);
+    } else {
+      // Fade out rain, show content
+      rainOverlay.style.transition = 'opacity 0.5s';
+      rainOverlay.style.opacity = '0';
+      children.forEach(c => {
+        c.style.transition = 'opacity 0.5s';
+        c.style.opacity = '1';
+      });
+      card.classList.add('visible');
+      
+      setTimeout(() => rainOverlay.remove(), 600);
     }
   }
-  updateHeatmap();
-  setInterval(updateHeatmap, 2000);
+  
+  requestAnimationFrame(animateRain);
+  
+  // Also make card visible via CSS
+  setTimeout(() => card.classList.add('visible'), 50);
 }
 
-let rhymeInterval;
-function startRhymeAnimation() {
-  const headlines = [
-    { orig: '"Government Approves New Budget Plan"', rhyme: ' ✨ "The budget plan\'s approved, a fiscal song and dance"' },
-    { orig: '"Traffic Delays Expected on Highway 6"', rhyme: ' ✨ "Highway six is stuck, a parking-lot of tricks"' },
-    { orig: '"Weather Forecast: Rain Expected Tomorrow"', rhyme: ' ✨ "Tomorrow brings the rain, a cloudy day of sorrow"' }
-  ];
-  let idx = 0;
+// ==================== CARD HOVER RAIN ====================
+document.querySelectorAll('.card').forEach((card, index) => {
+  const rainOverlay = card.querySelector('.card-rain-overlay') || document.getElementById('rain-' + index);
+  if (!rainOverlay) return;
   
-  if (rhymeInterval) clearInterval(rhymeInterval);
-  rhymeInterval = setInterval(() => {
-    idx = (idx + 1) % headlines.length;
-    const orig = document.getElementById('rhyme-original');
-    const rewrite = document.getElementById('rhyme-rewrite');
-    if (orig && rewrite) {
-      orig.style.opacity = '0';
-      rewrite.style.opacity = '0';
-      setTimeout(() => {
-        orig.textContent = headlines[idx].orig;
-        rewrite.textContent = headlines[idx].rhyme;
-        orig.style.opacity = '1';
-        rewrite.style.opacity = '1';
-      }, 500);
-    }
-  }, 4000);
-}
-
-function updateProgress() {
-  const pct = (bugsFixed / totalBugs) * 100;
-  document.getElementById('progress-bar').style.width = pct + '%';
-  
-  const counter = document.getElementById('bug-counter');
-  const remaining = totalBugs - bugsFixed;
-  const problemCount = document.getElementById('problem-count');
-  
-  if (remaining === 0) {
-    counter.textContent = 'Bugs remaining: 0 — Build successful! ✓';
-    counter.classList.add('done');
-    problemCount.textContent = '0';
-    problemCount.style.color = 'var(--green)';
-  } else {
-    counter.textContent = `Bugs remaining: ${remaining}`;
-    problemCount.textContent = remaining;
+  // Pre-populate rain chars
+  for (let i = 0; i < 15; i++) {
+    const span = document.createElement('span');
+    span.className = 'card-rain-char';
+    span.textContent = randomChar();
+    span.style.left = Math.random() * 100 + '%';
+    span.style.animationDuration = (2 + Math.random() * 3) + 's';
+    span.style.animationDelay = Math.random() * 2 + 's';
+    rainOverlay.appendChild(span);
   }
-}
-
-function showToast(bugId) {
-  const toast = document.getElementById('toast');
-  const messages = {
-    1: '> Build succeeded. GlglStats rendered.',
-    2: '> Build succeeded. Ahuzat Dibuk rendered.',
-    3: '> Build succeeded. 2D Part Orienting rendered.',
-    4: '> Build succeeded. The Turing Jest rendered.',
-    5: '> Build succeeded. Rhymes of Israel rendered.',
-    6: '> Build succeeded. Portfolio Website rendered.'
-  };
-  toast.textContent = messages[bugId] || '> Build succeeded. Section rendered.';
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 3000);
-}
-
-function skipDebugging() {
-  if (allRevealed) return;
-  allRevealed = true;
   
-  for (let i = 1; i <= 6; i++) {
+  // Refresh rain chars periodically
+  setInterval(() => {
+    rainOverlay.querySelectorAll('.card-rain-char').forEach(span => {
+      span.textContent = randomChar();
+    });
+  }, 500);
+});
+
+// ==================== PUN BATTLE ANIMATION ====================
+const puns = [
+  { a: "LLM-1: I'm reading a book on anti-gravity — it's impossible to put down!", b: "LLM-2: I used to hate math, but then I realized decimals have a point. ⭐" },
+  { a: "LLM-1: Why do programmers prefer dark mode? Less bugs. ⭐", b: "LLM-2: Parallel lines have so much in common — shame they'll never meet." },
+  { a: "LLM-1: I told my compiler a joke. It didn't C the humor.", b: "LLM-2: I'd tell you a UDP joke but you might not get it. ⭐" }
+];
+
+let punIndex = 0;
+function startPunBattle() {
+  const punA = document.getElementById('pun-a');
+  const punB = document.getElementById('pun-b');
+  
+  function showPun() {
+    const pun = puns[punIndex % puns.length];
+    punA.style.opacity = '0';
+    punB.style.opacity = '0';
+    
     setTimeout(() => {
-      if (!document.getElementById(`bugline-${i}`).classList.contains('fixed')) {
-        fixBugSilent(i);
-      }
-    }, i * 200);
+      punA.textContent = pun.a;
+      punA.style.opacity = '1';
+    }, 300);
+    
+    setTimeout(() => {
+      punB.textContent = pun.b;
+      punB.style.opacity = '1';
+    }, 800);
+    
+    punIndex++;
   }
   
-  document.getElementById('skip-btn').textContent = 'Running... ✓';
-  document.getElementById('skip-btn').style.borderColor = 'var(--green)';
-  document.getElementById('skip-btn').style.color = 'var(--green)';
+  showPun();
+  setInterval(showPun, 5000);
 }
 
-function fixBugSilent(bugId) {
-  const bugLine = document.getElementById(`bugline-${bugId}`);
-  const bugText = document.getElementById(`bugtext-${bugId}`);
-  const badge = document.getElementById(`badge-${bugId}`);
-  const section = document.getElementById(`section-${bugId}`);
-  const popup = document.getElementById(`qf-${bugId}`);
-  const gIcon = document.getElementById(`gicon-${bugId}`);
+// ==================== HEADLINE DEMO ANIMATION ====================
+const headlines = [
+  { before: "Traffic jam on Highway 1", after: "♪ Cars in a line, what a sign, stuck on One, no fun ♪" },
+  { before: "New café opens in Florentin", after: "♪ Florentin's got a brand new bean, the hippest café ever seen ♪" },
+  { before: "Humidity breaks new record", after: "♪ The air is thick, the sweat is quick, humidity's mean trick ♪" }
+];
+
+let headlineIndex = 0;
+function startHeadlineDemo() {
+  const el = document.getElementById('headline-demo');
   
-  popup.classList.remove('show');
-  bugLine.classList.add('fixed');
+  function showHeadline() {
+    const hl = headlines[headlineIndex % headlines.length];
+    el.textContent = hl.before;
+    
+    setTimeout(() => {
+      // Dissolve to random chars
+      let text = hl.before.split('');
+      let step = 0;
+      const dissolve = setInterval(() => {
+        if (step < text.length) {
+          text[step] = randomChar();
+          el.textContent = text.join('');
+          step++;
+        } else {
+          clearInterval(dissolve);
+          
+          // Reassemble into rhyme
+          let rhyme = hl.after.split('');
+          let rebuilt = new Array(rhyme.length).fill(null).map(() => randomChar());
+          el.textContent = rebuilt.join('');
+          
+          let rstep = 0;
+          const reassemble = setInterval(() => {
+            if (rstep < rhyme.length) {
+              rebuilt[rstep] = rhyme[rstep];
+              el.textContent = rebuilt.join('');
+              rstep++;
+            } else {
+              clearInterval(reassemble);
+            }
+          }, 25);
+        }
+      }, 25);
+    }, 1500);
+    
+    headlineIndex++;
+  }
   
-  const fixes = {
-    1: '<span class="kw">const</span>',
-    2: '<span class="kw">if</span> <span class="wh">(parking.status</span> <span class="op">==</span> <span class="str">"full"</span><span class="wh">)</span>',
-    3: '<span class="wh">polygon.vertices[</span><span class="num">n-1</span><span class="wh">]</span>',
-    4: '<span class="str">"LMSYS arena for pun competitions"</span>',
-    5: '<span class="wh">headlines.map(h => rewrite(h))</span>',
-    6: '<span class="wh">portfolio.render() </span><span class="cm">// base case added</span>'
-  };
-  
-  bugText.innerHTML = fixes[bugId];
-  badge.textContent = '0 errors';
-  badge.classList.add('fixed');
-  gIcon.className = 'gutter-icon success';
-  gIcon.textContent = '✓';
-  
-  section.classList.remove('blocked');
-  section.classList.add('unblocked');
-  
-  triggerSectionAnimation(bugId);
-  
-  bugsFixed++;
-  updateProgress();
+  showHeadline();
+  setInterval(showHeadline, 6000);
 }
 
-// Uptime stopwatch
-function updateUptime() {
-  const start = new Date('2026-02-06T00:06:00Z');
+// ==================== META CARD CLICK — FULL PAGE RAIN RESET ====================
+document.getElementById('meta-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  
+  const content = document.getElementById('content');
+  content.style.transition = 'opacity 0.8s';
+  content.style.opacity = '0';
+  
+  // Temporarily boost rain
+  bgRainOpacity = 0.8;
+  
+  setTimeout(() => {
+    bgRainOpacity = bgRainTargetOpacity;
+    content.style.opacity = '1';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 2000);
+});
+
+// ==================== STOPWATCH ====================
+const stopwatchEl = document.getElementById('stopwatch');
+const startDate = new Date('2026-02-06T01:25:00Z');
+
+function updateStopwatch() {
   const now = new Date();
-  let diff = Math.floor((now - start) / 1000);
+  let diff = Math.max(0, Math.floor((now - startDate) / 1000));
   
-  if (diff < 0) diff = 0;
-  
+  const days = Math.floor(diff / 86400);
+  diff %= 86400;
   const hours = Math.floor(diff / 3600);
-  const minutes = Math.floor((diff % 3600) / 60);
+  diff %= 3600;
+  const minutes = Math.floor(diff / 60);
   const seconds = diff % 60;
   
-  document.getElementById('uptime-hours').textContent = hours.toLocaleString();
-  document.getElementById('uptime-minutes').textContent = minutes;
-  document.getElementById('uptime-seconds').textContent = seconds;
+  const daysStr = String(days).padStart(5, '0');
+  const hoursStr = String(hours).padStart(2, '0');
+  const minutesStr = String(minutes).padStart(2, '0');
+  const secondsStr = String(seconds).padStart(2, '0');
+  
+  const timeStr = `${daysStr}:${hoursStr}:${minutesStr}:${secondsStr}`;
+  
+  let html = '';
+  for (let i = 0; i < timeStr.length; i++) {
+    const ch = timeStr[i];
+    if (ch === ':') {
+      html += '<span class="digit">:</span>';
+    } else {
+      // On second change, briefly show random chars
+      html += `<span class="digit">${ch}</span>`;
+    }
+  }
+  
+  stopwatchEl.innerHTML = html;
 }
 
-setInterval(updateUptime, 1000);
-updateUptime();
+// Add digit flicker effect on each second
+let lastSecond = -1;
+function updateStopwatchWithFlicker() {
+  const now = new Date();
+  const currentSecond = now.getSeconds();
+  
+  if (currentSecond !== lastSecond) {
+    lastSecond = currentSecond;
+    
+    // Show random chars briefly
+    const digits = stopwatchEl.querySelectorAll('.digit');
+    digits.forEach(d => {
+      if (d.textContent !== ':' && Math.random() > 0.5) {
+        const orig = d.textContent;
+        d.textContent = Math.floor(Math.random() * 10).toString();
+        d.classList.add('tick');
+        setTimeout(() => {
+          d.classList.remove('tick');
+        }, 200);
+      }
+    });
+    
+    setTimeout(updateStopwatch, 120);
+  }
+  
+  requestAnimationFrame(updateStopwatchWithFlicker);
+}
 
-// Initialize
-buildPage();
+updateStopwatch();
+requestAnimationFrame(updateStopwatchWithFlicker);
+setInterval(updateStopwatch, 1000);
+
+// ==================== FOOTER LINE ANIMATION ====================
+const footerLine = document.getElementById('footer-line');
+const footerObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('animate');
+    }
+  });
+}, { threshold: 0.5 });
+footerObserver.observe(footerLine);
+
+// ==================== CURRENT DATE ====================
+document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+});
+
+// ==================== PARALLAX EFFECT ====================
+let scrollY = 0;
+window.addEventListener('scroll', () => {
+  scrollY = window.scrollY;
+  canvas.style.transform = `translateY(${scrollY * 0.15}px)`;
+}, { passive: true });
 </script>
+
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
