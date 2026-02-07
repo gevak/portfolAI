@@ -2,1267 +2,1506 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GEVA KIPPER — Portfolio</title>
-<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<title>Geva Kipper — Debug Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #1a1a2e;
+  --bg-card: #12121f;
+  --bg-card-resolved: #1e1e32;
+  --yellow: #e2b714;
+  --green: #4ec957;
+  --red: #e74c3c;
+  --blue: #48a9fe;
+  --teal: #0f3460;
+  --text: #d4d4d8;
+  --muted: #6a6a7a;
+  --pill-bg: #2a2a3e;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #000;
-}
-::-webkit-scrollbar-thumb {
-  background: #00FF41;
-  box-shadow: 0 0 8px #00FF41;
-  border-radius: 0;
-}
-
-html {
-  scrollbar-color: #00FF41 #000;
-  scrollbar-width: thin;
-}
+html { scroll-behavior: smooth; }
 
 body {
-  background: #000;
-  color: #00FF41;
-  font-family: 'Fira Code', monospace;
-  overflow-x: hidden;
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
   min-height: 100vh;
+  overflow-x: hidden;
+  opacity: 0;
+  transition: opacity 0.6s ease;
 }
 
+body.loaded { opacity: 1; }
+
+/* Matrix rain background */
 #matrix-canvas {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   pointer-events: none;
+  z-index: 0;
+  opacity: 0.15;
 }
 
-#overlay {
-  position: fixed;
+.page-wrapper {
+  position: relative;
+  z-index: 1;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 20px 40px;
+}
+
+/* Debug Toolbar */
+.debug-toolbar {
+  position: sticky;
   top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: #000;
-  z-index: 1000;
+  z-index: 100;
+  background: #16162a;
+  border-bottom: 1px solid #2a2a3e;
+  padding: 8px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.debug-toolbar.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toolbar-btn {
+  width: 28px; height: 28px;
+  background: none;
+  border: 1px solid #333;
+  border-radius: 4px;
+  cursor: default;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 1s ease;
+  transition: opacity 0.3s;
 }
 
-#overlay.fade-out {
-  opacity: 0;
-  pointer-events: none;
+.toolbar-btn svg {
+  width: 14px; height: 14px;
+  fill: var(--yellow);
 }
 
-#assembly-canvas {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 999;
-  pointer-events: none;
+.toolbar-btn.pulsing {
+  animation: toolPulse 0.4s ease;
 }
 
-#content {
-  position: relative;
-  z-index: 1;
-  opacity: 0;
-  transition: opacity 0.8s ease;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 40px 20px 80px;
-}
-
-#content.visible {
-  opacity: 1;
-}
-
-.header {
-  text-align: center;
-  margin-bottom: 60px;
-  padding-top: 40px;
-}
-
-.header-name {
-  font-size: 4rem;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  color: #00FF41;
-  text-shadow: 0 0 20px rgba(0,255,65,0.5), 0 -20px 40px rgba(0,255,65,0.15);
-  position: relative;
-  display: inline-block;
-}
-
-.header-name .char {
-  display: inline-block;
-  position: relative;
-}
-
-.header-name .char::before {
-  content: '';
-  position: absolute;
-  top: -30px;
-  left: 50%;
-  width: 1px;
-  height: 25px;
-  background: linear-gradient(to bottom, transparent, rgba(0,255,65,0.4));
-  transform: translateX(-50%);
-}
-
-.header-role {
-  font-size: 1rem;
-  color: #4A7A5A;
-  margin-top: 10px;
-  animation: pulse-opacity 3s ease-in-out infinite;
-}
-
-.header-role::after {
-  content: '█';
-  animation: blink-cursor 1s step-end infinite;
-  margin-left: 4px;
-}
-
-@keyframes pulse-opacity {
+@keyframes toolPulse {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 }
 
-@keyframes blink-cursor {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
-}
-
-.header-line {
-  width: 0;
-  height: 1px;
-  background: #00FF41;
-  margin: 20px auto;
-  box-shadow: 0 0 8px rgba(0,255,65,0.5);
-  animation: draw-line 2s ease forwards;
-  animation-delay: 4s;
-}
-
-@keyframes draw-line {
-  to { width: 300px; }
-}
-
-.header-subtitle {
-  font-size: 0.85rem;
-  color: #80FF80;
-  font-style: italic;
-  margin-top: 15px;
+.debug-indicator {
+  margin-left: auto;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 6px;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
 }
 
-.infinity-symbol {
-  display: inline-block;
-  animation: rotate-infinity 6s linear infinite;
-  font-size: 1.2rem;
+.debug-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: blink 1s infinite;
 }
 
-@keyframes rotate-infinity {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.debug-dot.complete {
+  background: var(--green);
+  animation: none;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-top: 40px;
+.debug-indicator-text { color: var(--red); }
+.debug-indicator-text.complete { color: var(--green); }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
 }
 
-@media (max-width: 1024px) {
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-  .header-name {
-    font-size: 2.2rem;
-  }
-}
-
-.card {
-  background: #050505;
-  border: 1px solid #1A3A1A;
-  padding: 24px;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  transform: translateY(0);
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.card.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0,255,65,0.02) 2px,
-    rgba(0,255,65,0.02) 4px
-  );
-  pointer-events: none;
-  z-index: 1;
-}
-
-.card > * {
-  position: relative;
-  z-index: 2;
-}
-
-.card:hover {
-  border-color: #00FF41;
-  box-shadow: 0 0 15px rgba(0,255,65,0.3);
-  transform: translateY(-4px);
-}
-
-.card.meta-card {
-  border: 2px solid #1A3A1A;
-}
-
-.card.meta-card:hover {
-  border-color: #00FF41;
-}
-
-.card-rain-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
+/* Header */
+.header-section {
+  text-align: center;
+  padding: 50px 0 30px;
   opacity: 0;
   transition: opacity 0.5s ease;
 }
 
-.card:hover .card-rain-overlay {
-  opacity: 1;
-}
+.header-section.visible { opacity: 1; }
 
-.card-rain-char {
-  position: absolute;
-  color: rgba(0,255,65,0.1);
-  font-size: 10px;
-  animation: card-rain-fall linear infinite;
-}
-
-@keyframes card-rain-fall {
-  0% { transform: translateY(-20px); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateY(300px); opacity: 0; }
-}
-
-.card-title {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #00FF41;
-  margin-bottom: 12px;
-  display: flex;
+.watch-expression {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-}
-
-.card-title .icon {
-  font-size: 1.1rem;
-}
-
-.card-desc {
-  font-size: 0.8rem;
-  color: #4A7A5A;
-  line-height: 1.6;
+  gap: 12px;
+  background: #12121f;
+  border: 1px solid #2a2a3e;
+  border-radius: 4px;
+  padding: 12px 24px;
   margin-bottom: 16px;
 }
 
-.card-link {
+.watch-arrow {
+  color: var(--muted);
+  font-size: 0.8rem;
+  user-select: none;
+}
+
+.watch-name {
+  font-size: 4rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+}
+
+.watch-type {
+  color: var(--muted);
+  font-size: 1rem;
+  align-self: flex-end;
+  margin-bottom: 8px;
+}
+
+.comment-line {
+  color: #4a9e5c;
+  font-size: 1rem;
+  margin-top: 12px;
+  min-height: 1.4em;
+}
+
+.comment-line .cursor {
   display: inline-block;
-  color: #00FF41;
-  text-decoration: underline;
-  font-size: 0.8rem;
-  transition: color 0.2s, text-shadow 0.2s;
-  cursor: pointer;
-  margin-top: 6px;
+  width: 2px;
+  height: 1.1em;
+  background: var(--green);
+  vertical-align: text-bottom;
+  animation: cursorBlink 0.8s infinite;
+  margin-left: 2px;
 }
 
-.card-link:hover {
-  color: #7DFDAA;
-  text-shadow: 0 0 8px rgba(0,255,65,0.5);
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
-.card-link .arrow {
-  animation: blink-cursor 1.5s step-end infinite;
+.doc-comment {
+  color: #9a7bca;
+  font-style: italic;
+  font-size: 0.85rem;
+  margin-top: 12px;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  animation: shimmer 4s ease-in-out infinite;
 }
 
-.terminal-links {
-  list-style: none;
-  font-size: 0.8rem;
+@keyframes shimmer {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
-.terminal-links li {
-  margin: 6px 0;
+/* Progress Bar */
+.progress-section {
+  margin: 20px 0 30px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.progress-section.visible { opacity: 1; }
+
+.progress-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+  letter-spacing: 0.1em;
+}
+
+.progress-bar {
+  display: flex;
+  gap: 4px;
+  height: 6px;
+  transition: box-shadow 0.5s ease;
+}
+
+.progress-bar.glow {
+  box-shadow: 0 0 20px var(--green);
+}
+
+.progress-segment {
+  flex: 1;
+  background: #2a2a3e;
+  border-radius: 2px;
+  transition: background 0.4s ease;
+}
+
+.progress-segment.filled {
+  background: var(--green);
+}
+
+/* Bug Grid */
+.bug-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.bug-card {
+  background: var(--bg-card);
+  border-radius: 8px;
+  border-left: 4px solid var(--red);
+  padding: 24px;
   position: relative;
+  transition: all 0.6s ease, box-shadow 0.2s ease, border-color 0.6s ease, background 0.6s ease;
+  opacity: 0;
+  transform: translateY(10px);
   overflow: hidden;
 }
 
-.terminal-links a {
-  color: #00FF41;
-  text-decoration: none;
-  transition: color 0.2s, text-shadow 0.2s;
-  display: inline-block;
-  position: relative;
+.bug-card.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.terminal-links a::after {
-  content: '';
+.bug-card:hover {
+  box-shadow: 0 0 15px rgba(231, 76, 60, 0.15);
+}
+
+.bug-card.resolved {
+  border-left-color: var(--green);
+  background: var(--bg-card-resolved);
+}
+
+.bug-card.resolved:hover {
+  box-shadow: 0 0 15px rgba(78, 201, 87, 0.15);
+}
+
+.resolved-badge {
   position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(0,255,65,0.15), transparent);
-  transition: left 0.4s ease;
+  top: 12px;
+  right: 12px;
+  display: none;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.65rem;
+  color: var(--green);
+  letter-spacing: 0.1em;
 }
 
-.terminal-links a:hover {
-  color: #7DFDAA;
-  text-shadow: 0 0 8px rgba(0,255,65,0.5);
+.bug-card.resolved .resolved-badge { display: flex; }
+
+.resolved-badge svg {
+  width: 14px; height: 14px;
+  fill: var(--green);
 }
 
-.terminal-links a:hover::after {
-  left: 100%;
+.error-msg {
+  font-size: 0.75rem;
+  color: var(--red);
+  background: rgba(231,76,60,0.1);
+  border: 1px solid rgba(231,76,60,0.2);
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  font-family: 'JetBrains Mono', monospace;
 }
 
-.video-thumb {
-  background: #0a0a0a;
-  border: 1px solid #1A3A1A;
-  padding: 20px;
-  text-align: center;
-  margin: 12px 0;
+.bug-content { position: relative; }
+
+.fix-btn {
+  background: var(--green);
+  color: #000;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  transition: background 0.2s, transform 0.1s;
 }
 
-.video-thumb:hover {
-  border-color: #00FF41;
-  box-shadow: 0 0 10px rgba(0,255,65,0.2);
+.fix-btn:hover { background: #5fd968; transform: scale(1.02); }
+.fix-btn:active { transform: scale(0.98); }
+
+/* Resolved content */
+.resolved-content { display: none; }
+
+.bug-card.resolved .bug-content { display: none; }
+.bug-card.resolved .resolved-content { display: block; }
+
+.project-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--yellow);
+  margin-bottom: 12px;
 }
 
-.play-icon {
-  font-size: 2rem;
-  color: #00FF41;
+.project-title .bracket { color: var(--muted); }
+
+.project-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text);
+  margin-bottom: 16px;
 }
+
+.link-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.link-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--pill-bg);
+  color: var(--blue);
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  transition: background 0.2s, color 0.2s;
+}
+
+.link-pill:hover {
+  background: var(--blue);
+  color: #fff;
+}
+
+.link-pill svg {
+  width: 12px; height: 12px;
+  fill: currentColor;
+}
+
+/* Video preview */
+.video-preview {
+  display: block;
+  background: linear-gradient(135deg, #1a1a2e 0%, #2a1a3e 100%);
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 30px;
+  text-align: center;
+  text-decoration: none;
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+
+.video-preview:hover { border-color: var(--blue); }
+
+.video-play-icon {
+  width: 50px; height: 50px;
+  margin: 0 auto 10px;
+}
+
+.video-play-icon svg { fill: var(--red); width: 50px; height: 50px; }
 
 .video-label {
-  font-size: 0.7rem;
-  color: #4A7A5A;
-  margin-top: 6px;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: 'Inter', sans-serif;
 }
 
-.rotating-polygon {
-  display: inline-block;
-  animation: slow-rotate 8s linear infinite;
+/* Bug 1: Syntax Error */
+.code-editor-mini {
+  background: #0d0d1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 4px;
+  margin: 12px 0;
 }
 
-@keyframes slow-rotate {
+.code-editor-mini textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  resize: none;
+  outline: none;
+  line-height: 1.6;
+  padding: 8px;
+}
+
+.scrambled-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+/* Bug 2: Null Reference */
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 3px;
+  margin-bottom: 12px;
+}
+
+.heatmap-cell {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.heatmap-cell.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.null-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(18, 18, 31, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  transition: opacity 0.5s ease;
+  z-index: 2;
+  border-radius: 8px;
+}
+
+.null-overlay.hidden { opacity: 0; pointer-events: none; }
+
+.toggle-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.toggle-track {
+  width: 44px;
+  height: 22px;
+  background: #333;
+  border-radius: 11px;
+  position: relative;
+  transition: background 0.3s;
+}
+
+.toggle-track.on { background: var(--green); }
+
+.toggle-thumb {
+  width: 18px; height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px; left: 2px;
+  transition: left 0.3s;
+}
+
+.toggle-track.on .toggle-thumb { left: 24px; }
+
+/* Bug 3: Infinite Loop */
+.polygon-container {
+  width: 100px;
+  height: 100px;
+  margin: 10px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinning-polygon {
+  transition: animation-duration 2s ease;
+}
+
+.spinning-polygon.fast {
+  animation: spinFast 0.1s linear infinite;
+}
+
+.spinning-polygon.slow {
+  animation: spinSlow 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes spinFast {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 
-.pun-battle {
-  font-size: 0.7rem;
-  color: #4A7A5A;
-  margin-top: 12px;
-  min-height: 3em;
-  border-top: 1px solid #1A3A1A;
-  padding-top: 8px;
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-.pun-line {
-  margin: 4px 0;
-  transition: opacity 0.5s;
+.spinning-polygon.stopped {
+  animation: none;
+  transform: rotate(0deg);
 }
 
-.headline-demo {
-  font-size: 0.7rem;
-  color: #4A7A5A;
-  margin-top: 12px;
-  min-height: 2.5em;
-  border-top: 1px solid #1A3A1A;
-  padding-top: 8px;
-}
-
-.social-card {
-  text-align: center;
-}
-
-.social-card .card-title {
-  justify-content: center;
-  font-size: 1rem;
-  color: #4A7A5A;
-}
-
-.social-btn {
-  display: block;
-  margin: 12px auto;
-  padding: 10px 30px;
-  border: 1px solid #1A3A1A;
-  color: #00FF41;
-  text-decoration: none;
-  font-family: 'Fira Code', monospace;
-  font-size: 0.9rem;
-  transition: all 0.3s;
-  position: relative;
-  overflow: hidden;
-  max-width: 240px;
-  background: transparent;
-}
-
-.social-btn::before {
-  content: attr(data-label);
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+.breakpoint-line {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: #050505;
-  color: #00FF41;
-  opacity: 0;
-  transition: opacity 0.15s;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 8px 0;
+  padding: 4px 8px;
+  background: #0d0d1a;
+  border-radius: 4px;
 }
 
-.social-btn:hover {
-  border-color: #00FF41;
-  box-shadow: 0 0 15px rgba(0,255,65,0.3);
-  text-shadow: 0 0 8px rgba(0,255,65,0.5);
+.breakpoint-dot {
+  width: 14px; height: 14px;
+  background: var(--red);
+  border-radius: 50%;
+  cursor: pointer;
+  animation: bpPulse 1.5s ease-in-out infinite;
+  flex-shrink: 0;
 }
 
-.social-btn:hover::before {
-  animation: glitch-btn 0.4s steps(1) forwards;
+@keyframes bpPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231,76,60,0.4); }
+  50% { transform: scale(1.15); box-shadow: 0 0 8px 2px rgba(231,76,60,0.3); }
 }
 
-@keyframes glitch-btn {
-  0% { opacity: 1; content: 'ア カ サ タ'; }
-  20% { opacity: 1; content: '█ ░ ▓ █ ░'; }
-  40% { opacity: 1; content: 'マ ヤ ラ ワ'; }
-  60% { opacity: 0; }
-  100% { opacity: 0; }
+.breakpoint-dot.clicked { animation: none; background: var(--muted); }
+
+/* Bug 4: Logic Error */
+.joke-setup {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  color: var(--text);
 }
 
-.footer {
-  text-align: center;
-  margin-top: 80px;
+.punchline-flagged {
+  border-bottom: 2px solid var(--yellow);
   position: relative;
-  z-index: 1;
+  color: var(--yellow);
 }
 
-.footer-line {
-  width: 0;
-  height: 1px;
-  background: #00FF41;
-  margin: 0 auto 20px;
-  box-shadow: 0 0 8px rgba(0,255,65,0.3);
-}
-
-.footer-line.animate {
-  animation: draw-footer-line 1.5s ease forwards;
-}
-
-@keyframes draw-footer-line {
-  to { width: 80%; }
-}
-
-.footer-credit {
+.logic-tooltip {
+  background: rgba(226,183,20,0.15);
+  border: 1px solid var(--yellow);
+  border-radius: 4px;
+  padding: 6px 10px;
   font-size: 0.7rem;
-  color: #1A3A1A;
-}
-
-.stopwatch {
-  font-size: 1.1rem;
-  color: #00FF41;
-  margin-top: 16px;
-  text-shadow: 0 0 10px rgba(0,255,65,0.4);
-  letter-spacing: 0.1em;
-  padding-bottom: 40px;
-}
-
-.stopwatch .digit {
+  color: var(--yellow);
+  margin: 8px 0;
   display: inline-block;
-  min-width: 0.7em;
-  text-align: center;
-  transition: text-shadow 0.1s;
 }
 
-.stopwatch .digit.tick {
-  text-shadow: 0 0 20px rgba(0,255,65,0.8);
+.punchline-options {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
 }
 
-.shimmer-text {
-  display: inline;
+.punchline-btn {
+  background: var(--pill-bg);
+  color: var(--text);
+  border: 1px solid #444;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+  min-width: 120px;
 }
 
-/* Card entry rain animation */
-.card-entry-rain {
+.punchline-btn:hover {
+  border-color: var(--blue);
+  background: rgba(72,169,254,0.1);
+}
+
+.laugh-effect {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3rem;
   z-index: 10;
   pointer-events: none;
+  opacity: 0;
+}
+
+.laugh-effect.playing {
+  animation: laughRipple 1s ease-out forwards;
+}
+
+@keyframes laughRipple {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.5); }
+}
+
+/* Bug 5: Encoding Error */
+.encoding-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.encoding-select {
+  background: #0d0d1a;
+  color: var(--text);
+  border: 1px solid #444;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.encoding-select:focus { border-color: var(--blue); }
+
+.encoding-char {
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+.encoding-char.pop {
+  animation: charPop 0.3s ease;
+}
+
+@keyframes charPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); color: var(--green); }
+  100% { transform: scale(1); }
+}
+
+/* Bug 6: Stack Overflow */
+.overflow-container { position: relative; }
+
+.overflow-stack {
+  position: relative;
+  min-height: 60px;
+}
+
+.overflow-ghost {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg-card);
+  border: 1px solid #333;
+  border-radius: 6px;
+  transition: all 0.6s ease;
+}
+
+.overflow-ghost:nth-child(1) { transform: translate(12px, 12px); opacity: 0.3; z-index: 1; }
+.overflow-ghost:nth-child(2) { transform: translate(8px, 8px); opacity: 0.4; z-index: 2; }
+.overflow-ghost:nth-child(3) { transform: translate(4px, 4px); opacity: 0.5; z-index: 3; }
+
+.overflow-ghost.collapsed {
+  transform: translate(0, 0) !important;
+  opacity: 0 !important;
+}
+
+.recursion-counter {
+  font-size: 0.8rem;
+  color: var(--red);
+  margin: 8px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.stop-btn {
+  background: var(--red);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.stop-btn:hover { background: #c0392b; }
+.stop-btn svg { width: 12px; height: 12px; fill: #fff; }
+
+/* Social / Output Console */
+.console-section {
+  grid-column: 1 / -1;
+}
+
+.console-box {
+  background: var(--bg-card-resolved);
+  border: 1px solid #2a2a3e;
+  border-left: 4px solid var(--green);
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.console-header {
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 16px;
+}
+
+.console-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background 0.2s;
+  text-decoration: none;
+  color: var(--text);
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.console-line:hover { background: rgba(72,169,254,0.08); }
+
+.console-prompt { color: var(--green); flex-shrink: 0; }
+
+.console-key { color: var(--blue); min-width: 90px; }
+
+.console-arrow {
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+
+.console-line:hover .console-arrow { transform: translateX(4px); }
+
+.console-value { color: var(--text); }
+
+/* Footer */
+.footer {
+  border-top: 1px dashed #333;
+  margin-top: 40px;
+  padding-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.footer-credit .highlight { color: #ddd; }
+
+.footer-timer {
+  font-variant-numeric: tabular-nums;
+}
+
+.footer-timer .seconds {
+  animation: secPulse 1s infinite;
+}
+
+@keyframes secPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Confetti */
+#confetti-container {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 1000;
   overflow: hidden;
 }
 
-.card-entry-char {
+.confetti-piece {
   position: absolute;
-  color: #00FF41;
-  font-size: 12px;
-  font-family: 'Fira Code', monospace;
-  transition: all 1s ease;
+  top: -10px;
+  width: 8px;
+  height: 8px;
+  opacity: 0;
+  animation: confettiFall 3s ease-out forwards;
+}
+
+@keyframes confettiFall {
+  0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .bug-grid { grid-template-columns: 1fr; }
+  .watch-name { font-size: 2.5rem; }
+  .watch-expression { padding: 8px 16px; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .debug-toolbar { padding: 6px 10px; gap: 4px; }
+  .toolbar-btn { width: 24px; height: 24px; }
+  .toolbar-btn svg { width: 11px; height: 11px; }
+  .code-editor-mini textarea { font-size: 0.75rem; min-height: 80px; }
+  .punchline-options { flex-direction: column; }
+  .footer { flex-direction: column; text-align: center; }
+  .console-line { font-size: 0.8rem; }
 }
 </style>
 </head>
 <body>
 
 <canvas id="matrix-canvas"></canvas>
-<div id="overlay"></div>
-<canvas id="assembly-canvas"></canvas>
+<div id="confetti-container"></div>
 
-<div id="content">
-  <header class="header">
-    <h1 class="header-name" id="header-name"></h1>
-    <p class="header-role">Software Engineer at Google</p>
-    <div class="header-line"></div>
-    <p class="header-subtitle">
-      <span id="subtitle-text">Redesigned daily by AI — an ever-changing artifact</span>
-      <span class="infinity-symbol">∞</span>
-    </p>
-  </header>
+<!-- Debug Toolbar -->
+<div class="debug-toolbar" id="toolbar">
+  <button class="toolbar-btn" id="tb-play">
+    <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+  </button>
+  <button class="toolbar-btn" id="tb-step-over">
+    <svg viewBox="0 0 24 24"><path d="M4 18V6h2v12H4zm4-6l8-6v12l-8-6z" transform="scale(0.8) translate(3,3)"/><circle cx="17" cy="6" r="2"/><path d="M9 6h6M12 6v4" stroke="currentColor" stroke-width="1.5" fill="none" style="stroke:var(--yellow)"/></svg>
+  </button>
+  <button class="toolbar-btn" id="tb-step-into">
+    <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M12 21v-2" stroke="currentColor" stroke-width="2" fill="none" style="stroke:var(--yellow)"/></svg>
+  </button>
+  <button class="toolbar-btn" id="tb-stop">
+    <svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>
+  </button>
+  <button class="toolbar-btn" id="tb-restart">
+    <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+  </button>
+  <div class="debug-indicator">
+    <div class="debug-dot" id="debug-dot"></div>
+    <span class="debug-indicator-text" id="debug-text">DEBUGGING SESSION ACTIVE</span>
+  </div>
+</div>
 
-  <div class="grid" id="card-grid">
-    <!-- Card 1: GlglStats -->
-    <div class="card" data-card="0">
-      <div class="card-rain-overlay" id="rain-0"></div>
-      <div class="card-title"><span class="icon">♪</span> GlglStats</div>
-      <div class="card-desc">A Python project measuring repetitiveness of Israeli pop-chart songs using LZ77 compression, visualizing repetition patterns of famous songs across decades.</div>
-      <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" rel="noopener" class="video-thumb">
-        <div class="play-icon">▶</div>
-        <div class="video-label">PyData TLV Talk</div>
-      </a>
-      <a href="https://glglstats.geekip.dev" target="_blank" rel="noopener" class="card-link"><span class="arrow">→</span> Explore GlglStats</a>
+<div class="page-wrapper">
+  <!-- Header -->
+  <section class="header-section" id="header">
+    <div class="watch-expression">
+      <span class="watch-arrow">▶</span>
+      <span class="watch-name">Geva Kipper</span>
+      <span class="watch-type">&lt;string&gt;</span>
+    </div>
+    <div class="comment-line" id="typewriter-line"></div>
+    <div class="doc-comment">/* This portfolio is redesigned daily by AI — the site you see today will never look quite the same again */</div>
+  </section>
+
+  <!-- Progress -->
+  <section class="progress-section" id="progress-section">
+    <div class="progress-label" id="progress-label">BUGS REMAINING: 6/6</div>
+    <div class="progress-bar" id="progress-bar">
+      <div class="progress-segment" data-index="0"></div>
+      <div class="progress-segment" data-index="1"></div>
+      <div class="progress-segment" data-index="2"></div>
+      <div class="progress-segment" data-index="3"></div>
+      <div class="progress-segment" data-index="4"></div>
+      <div class="progress-segment" data-index="5"></div>
+    </div>
+  </section>
+
+  <!-- Bug Grid -->
+  <div class="bug-grid" id="bug-grid">
+
+    <!-- Bug 1: GlglStats — Syntax Error -->
+    <div class="bug-card" id="card-1">
+      <div class="resolved-badge"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg> RESOLVED</div>
+      <div class="bug-content">
+        <div class="error-msg">SyntaxError: unexpected token in song_analysis.py at line 42</div>
+        <div class="scrambled-text" id="scrambled-1"></div>
+        <div class="code-editor-mini">
+          <textarea id="syntax-editor" rows="3">print("Analyzing repetitiveness"</textarea>
+        </div>
+        <button class="fix-btn" onclick="fixBug1()">Fix &amp; Continue ▶</button>
+      </div>
+      <div class="resolved-content">
+        <div class="project-title">function <span style="color:#fff">glglStats</span><span class="bracket">() {</span></div>
+        <div class="project-desc">A data-driven analysis of repetitiveness in Hebrew music. The project scrapes Hebrew song lyrics, computes statistical metrics on word and phrase repetition, and presents findings through interactive visualizations. Featured at the PyData TLV conference.</div>
+        <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="video-preview">
+          <div class="video-play-icon"><svg viewBox="0 0 68 48"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55C3.97 2.33 2.27 4.81 1.48 7.74.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z" fill="#e74c3c"/><path d="M45 24L27 14v20" fill="#fff"/></svg></div>
+          <div class="video-label">PyData TLV Conference Talk</div>
+        </a>
+        <div class="link-pills">
+          <a href="https://glglstats.geekip.dev" target="_blank" class="link-pill"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg> Live Site</a>
+          <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="link-pill"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg> YouTube Talk</a>
+        </div>
+      </div>
     </div>
 
-    <!-- Card 2: Ahuzat Dibuk -->
-    <div class="card" data-card="1">
-      <div class="card-rain-overlay" id="rain-1"></div>
-      <div class="card-title"><span class="icon">🅿</span> Ahuzat Dibuk</div>
-      <div class="card-desc">A Python scraping and data visualization project collecting Tel-Aviv parking lot occupancy statistics and generating heatmaps for residents.</div>
-      <ul class="terminal-links">
-        <li><a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" rel="noopener">&gt; Channel 13 News Coverage</a></li>
-        <li><a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" rel="noopener">&gt; Mako News Coverage</a></li>
-        <li><a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" rel="noopener">&gt; Original Post (Facebook)</a></li>
-      </ul>
+    <!-- Bug 2: Ahuzat Dibuk — Null Reference -->
+    <div class="bug-card" id="card-2">
+      <div class="resolved-badge"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg> RESOLVED</div>
+      <div class="bug-content" style="position:relative;">
+        <div class="heatmap-grid" id="heatmap-grid"></div>
+        <div class="null-overlay" id="null-overlay">
+          <div class="error-msg" style="text-align:center;">TypeError: Cannot read property 'occupancy' of null at heatmap.js:78</div>
+          <div class="toggle-switch" onclick="fixBug2()">
+            <span>Initialize data source?</span>
+            <div class="toggle-track" id="toggle-track">
+              <div class="toggle-thumb"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="resolved-content">
+        <div class="project-title">function <span style="color:#fff">ahuzatDibuk</span><span class="bracket">() {</span></div>
+        <div class="project-desc">A real-time parking availability system for Tel Aviv's Ahuzat HaHof parking lots. Scrapes and displays live occupancy data, helping drivers find open parking spots. The project gained viral attention and was featured on multiple Israeli news outlets.</div>
+        <div class="link-pills">
+          <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="link-pill"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg> Facebook Post</a>
+          <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="link-pill"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg> News: Channel 13</a>
+          <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="link-pill"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg> News: Mako</a>
+        </div>
+      </div>
     </div>
 
-    <!-- Card 3: 2D Part Orienting -->
-    <div class="card" data-card="2">
-      <div class="card-rain-overlay" id="rain-2"></div>
-      <div class="card-title">
-        <span class="icon rotating-polygon">
-          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00FF41" stroke-width="1.5">
-            <polygon points="10,1 18,7 15,18 5,18 2,7"/>
+    <!-- Bug 3: 2D Part Orienting — Infinite Loop -->
+    <div class="bug-card" id="card-3">
+      <div class="resolved-badge"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg> RESOLVED</div>
+      <div class="bug-content">
+        <div class="error-msg">Warning: Maximum call stack size exceeded — infinite recursion detected in orient_polygon()</div>
+        <div class="polygon-container">
+          <svg class="spinning-polygon fast" id="polygon-svg" width="80" height="80" viewBox="0 0 80 80">
+            <polygon points="40,5 70,25 60,65 20,65 10,25" fill="none" stroke="var(--yellow)" stroke-width="2"/>
           </svg>
-        </span>
-        2D Part Orienting
+        </div>
+        <div class="breakpoint-line">
+          <div class="breakpoint-dot" id="breakpoint-dot" onclick="fixBug3()"></div>
+          <code style="color:var(--muted);">while (angle != target) {</code>
+        </div>
+        <div class="breakpoint-line">
+          <div style="width:14px;"></div>
+          <code style="color:var(--muted);">  orient(polygon, angle);</code>
+        </div>
+        <div class="breakpoint-line">
+          <div style="width:14px;"></div>
+          <code style="color:var(--muted);">}</code>
+        </div>
       </div>
-      <div class="card-desc">A C++ implementation in an open-source computational geometry library of an efficient algorithm for constructing a push plan to orient a given polygon.</div>
-      <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" rel="noopener" class="card-link"><span class="arrow">→</span> Project & Code</a>
-    </div>
-
-    <!-- Card 4: The Turing Jest -->
-    <div class="card" data-card="3">
-      <div class="card-rain-overlay" id="rain-3"></div>
-      <div class="card-title"><span class="icon">😂</span> The Turing Jest</div>
-      <div class="card-desc">An LMSYS-style arena where LLMs compete at making and explaining puns, with answers rated by users in head-to-head matchups.</div>
-      <a href="https://jest.geekip.dev" target="_blank" rel="noopener" class="card-link"><span class="arrow">→</span> Enter the Arena</a>
-      <div class="pun-battle" id="pun-battle">
-        <div class="pun-line" id="pun-a"></div>
-        <div class="pun-line" id="pun-b"></div>
+      <div class="resolved-content">
+        <div class="project-title">function <span style="color:#fff">partOrienting2D</span><span class="bracket">() {</span></div>
+        <div class="project-desc">Research project at Tel-Aviv University on computational geometry algorithms for orienting 2D parts. Developed efficient algorithms for determining optimal orientations of polygonal shapes, with applications in manufacturing and robotics.</div>
+        <div class="link-pills">
+          <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="link-pill"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg> TAU Project Page</a>
+        </div>
       </div>
     </div>
 
-    <!-- Card 5: Rhymes of Israel -->
-    <div class="card" data-card="4">
-      <div class="card-rain-overlay" id="rain-4"></div>
-      <div class="card-title">
-        <span class="icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00FF41" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <circle cx="12" cy="12" r="4"/>
-            <line x1="21.17" y1="8" x2="15.87" y2="8"/>
-            <line x1="8.13" y1="8" x2="2.83" y2="8"/>
-            <line x1="21.17" y1="16" x2="15.87" y2="16"/>
-            <line x1="8.13" y1="16" x2="2.83" y2="16"/>
-          </svg>
-        </span>
-        Rhymes of Israel
+    <!-- Bug 4: The Turing Jest — Logic Error -->
+    <div class="bug-card" id="card-4">
+      <div class="resolved-badge"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg> RESOLVED</div>
+      <div class="bug-content" style="position:relative;">
+        <div class="error-msg">LogicError: Expected 'funny' but received 'undefined'</div>
+        <div class="joke-setup">
+          Why do programmers prefer dark mode?
+        </div>
+        <div>
+          <span class="punchline-flagged">undefined</span>
+        </div>
+        <div class="logic-tooltip">⚠ LogicError: Expected 'funny' but received 'undefined'</div>
+        <div class="punchline-options">
+          <button class="punchline-btn" onclick="fixBug4()">Because light attracts bugs! 🐛</button>
+          <button class="punchline-btn" onclick="fixBug4()">Because 0xFFFFFF hurts their eyes</button>
+        </div>
+        <div class="laugh-effect" id="laugh-effect">😂</div>
       </div>
-      <div class="card-desc">A Chrome extension that uses an LLM to rewrite Israeli news headlines into comedic rhymes in the style of a high school yearbook.</div>
-      <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" rel="noopener" class="card-link"><span class="arrow">→</span> Install Extension</a>
-      <div class="headline-demo" id="headline-demo"></div>
+      <div class="resolved-content">
+        <div class="project-title">function <span style="color:#fff">theTuringJest</span><span class="bracket">() {</span></div>
+        <div class="project-desc">An interactive Turing test for humor — can you distinguish between jokes written by humans and jokes generated by AI? Test your ability to detect machine-generated comedy in this playful experiment at the intersection of AI and humor.</div>
+        <div class="link-pills">
+          <a href="https://jest.geekip.dev" target="_blank" class="link-pill"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg> Live Site</a>
+        </div>
+      </div>
     </div>
 
-    <!-- Card 6: geekip.dev (Meta) -->
-    <div class="card meta-card" data-card="5" id="meta-card">
-      <div class="card-rain-overlay" id="rain-5"></div>
-      <div class="card-title"><span class="icon">🪞</span> geekip.dev</div>
-      <div class="card-desc">You're looking at it. This portfolio site is redesigned daily by AI — an ever-changing digital artifact, never the same twice.</div>
-      <a href="#" class="card-link" id="meta-link"><span class="arrow">→</span> You are here</a>
+    <!-- Bug 5: Rhymes of Israel — Encoding Error -->
+    <div class="bug-card" id="card-5">
+      <div class="resolved-badge"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg> RESOLVED</div>
+      <div class="bug-content">
+        <div class="error-msg">UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3</div>
+        <div class="encoding-text" id="encoding-text"></div>
+        <div style="margin-top: 12px;">
+          <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:6px;">Select encoding:</label>
+          <select class="encoding-select" id="encoding-select" onchange="checkEncoding()">
+            <option value="">-- Select --</option>
+            <option value="ascii">ASCII</option>
+            <option value="utf8">UTF-8</option>
+            <option value="iso">ISO-8859-1</option>
+            <option value="win">Windows-1252</option>
+          </select>
+        </div>
+      </div>
+      <div class="resolved-content">
+        <div class="project-title">function <span style="color:#fff">rhymesOfIsrael</span><span class="bracket">() {</span></div>
+        <div class="project-desc">A Chrome extension that finds rhymes for Hebrew words. Built to help Hebrew speakers, poets, and songwriters discover rhyming words quickly and easily, integrated directly into the browser experience.</div>
+        <div class="link-pills">
+          <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="link-pill"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg> Chrome Web Store</a>
+        </div>
+      </div>
     </div>
 
-    <!-- Card 7: Social Links -->
-    <div class="card social-card" data-card="6">
-      <div class="card-rain-overlay" id="rain-6"></div>
-      <div class="card-title">///</div>
-      <a href="https://github.com/gevak" target="_blank" rel="noopener" class="social-btn" data-label="GitHub">[ GitHub ]</a>
-      <a href="https://linkedin.com/in/gevakip" target="_blank" rel="noopener" class="social-btn" data-label="LinkedIn">[ LinkedIn ]</a>
-      <a href="https://facebook.com/geva.kipper" target="_blank" rel="noopener" class="social-btn" data-label="Facebook">[ Facebook ]</a>
+    <!-- Bug 6: Portfolio Meta — Stack Overflow -->
+    <div class="bug-card" id="card-6">
+      <div class="resolved-badge"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg> RESOLVED</div>
+      <div class="bug-content">
+        <div class="error-msg">RangeError: Maximum call stack size exceeded — recursive self-reference detected</div>
+        <div class="overflow-container">
+          <div class="overflow-stack" id="overflow-stack">
+            <div class="overflow-ghost" id="ghost-1"></div>
+            <div class="overflow-ghost" id="ghost-2"></div>
+            <div class="overflow-ghost" id="ghost-3"></div>
+          </div>
+        </div>
+        <div class="recursion-counter">Recursion depth: <span id="recursion-count">0</span></div>
+        <button class="stop-btn" onclick="fixBug6()">
+          <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+          Break Recursion
+        </button>
+      </div>
+      <div class="resolved-content">
+        <div class="project-title">function <span style="color:#fff">portfolioMeta</span><span class="bracket">() {</span></div>
+        <div class="project-desc">This very portfolio website — a meta-project that is regenerated daily by AI. Each day brings a new design concept while showcasing the same projects. Today's theme: an IDE debugger interface where you fix bugs to reveal project details.</div>
+        <div class="link-pills">
+          <a href="https://geekip.dev" target="_blank" class="link-pill"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg> Live Site</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Social Console -->
+    <div class="console-section">
+      <div class="console-box">
+        <div class="console-header">&gt; OUTPUT</div>
+        <a href="https://github.com/gevak" target="_blank" class="console-line">
+          <span class="console-prompt">&gt;</span>
+          <span class="console-key">github</span>
+          <span class="console-arrow">→</span>
+          <span class="console-value">gevak</span>
+        </a>
+        <a href="https://linkedin.com/in/gevakip" target="_blank" class="console-line">
+          <span class="console-prompt">&gt;</span>
+          <span class="console-key">linkedin</span>
+          <span class="console-arrow">→</span>
+          <span class="console-value">gevakip</span>
+        </a>
+        <a href="https://facebook.com/geva.kipper" target="_blank" class="console-line">
+          <span class="console-prompt">&gt;</span>
+          <span class="console-key">facebook</span>
+          <span class="console-arrow">→</span>
+          <span class="console-value">geva.kipper</span>
+        </a>
+      </div>
     </div>
   </div>
 
+  <!-- Footer -->
   <footer class="footer">
-    <div class="footer-line" id="footer-line"></div>
-    <div class="footer-credit">Designed by Claude (Anthropic) · <span id="current-date"></span></div>
-    <div class="stopwatch" id="stopwatch"></div>
+    <div class="footer-credit">// Site generated by <span class="highlight">Claude</span> (Anthropic) · Model: <span class="highlight">Claude</span></div>
+    <div class="footer-timer" id="footer-timer">Session uptime: 0h 00m 00s</div>
   </footer>
 </div>
 
 <script>
-// ==================== MATRIX CHARACTERS ====================
-const matrixChars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-function randomChar() {
-  return matrixChars[Math.floor(Math.random() * matrixChars.length)];
-}
+// ========== State ==========
+let bugsFixed = 0;
+const totalBugs = 6;
+const bugStates = [false, false, false, false, false, false];
+let recursionInterval = null;
 
-// ==================== BACKGROUND MATRIX RAIN ====================
+// ========== Matrix Rain ==========
 const canvas = document.getElementById('matrix-canvas');
 const ctx = canvas.getContext('2d');
-let columns, drops;
-let matrixFontSize = 14;
-const isMobile = window.innerWidth < 640;
 
-function initCanvas() {
+function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  columns = Math.floor(canvas.width / matrixFontSize);
-  if (isMobile) columns = Math.floor(columns * 0.5);
-  drops = new Array(columns).fill(1);
 }
-initCanvas();
-window.addEventListener('resize', initCanvas);
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
 
-let bgRainOpacity = 0;
-let bgRainTargetOpacity = 0.25;
+const columns = [];
+const fontSize = 14;
 
-function drawMatrixRain() {
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+function initColumns() {
+  columns.length = 0;
+  const cols = Math.floor(canvas.width / fontSize);
+  for (let i = 0; i < cols; i++) {
+    columns.push(Math.random() * canvas.height / fontSize);
+  }
+}
+initColumns();
+window.addEventListener('resize', initColumns);
+
+let matrixColor = 'rgba(15, 52, 96, 0.08)';
+
+function drawMatrix() {
+  ctx.fillStyle = 'rgba(26, 26, 46, 0.15)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
-  ctx.fillStyle = `rgba(0, 255, 65, ${bgRainOpacity})`;
-  ctx.font = matrixFontSize + 'px Fira Code, monospace';
+  ctx.fillStyle = matrixColor;
+  ctx.font = fontSize + 'px JetBrains Mono';
   
-  for (let i = 0; i < drops.length; i++) {
-    const text = randomChar();
-    ctx.fillText(text, i * matrixFontSize, drops[i] * matrixFontSize);
+  for (let i = 0; i < columns.length; i++) {
+    const char = String.fromCharCode(0x30 + Math.random() * 94);
+    ctx.fillText(char, i * fontSize, columns[i] * fontSize);
     
-    if (drops[i] * matrixFontSize > canvas.height && Math.random() > 0.975) {
-      drops[i] = 0;
+    if (columns[i] * fontSize > canvas.height && Math.random() > 0.975) {
+      columns[i] = 0;
     }
-    drops[i]++;
+    columns[i] += 0.5;
   }
+  requestAnimationFrame(drawMatrix);
 }
+drawMatrix();
 
-let matrixInterval;
-function startBackgroundRain() {
-  matrixInterval = setInterval(drawMatrixRain, 33); // ~30fps
-}
+// ========== Toolbar Pulse Animation ==========
+const toolbarBtns = document.querySelectorAll('.toolbar-btn');
+let pulseIndex = 0;
 
-// ==================== OPENING SEQUENCE ====================
-const overlay = document.getElementById('overlay');
-const assemblyCanvas = document.getElementById('assembly-canvas');
-const actx = assemblyCanvas.getContext('2d');
-assemblyCanvas.width = window.innerWidth;
-assemblyCanvas.height = window.innerHeight;
-
-// Phase 1: Full-screen intense rain
-let openingDrops = [];
-let openingColumns = Math.floor(window.innerWidth / 14);
-for (let i = 0; i < openingColumns; i++) {
-  openingDrops.push({
-    x: i * 14,
-    y: Math.random() * -500,
-    speed: 4 + Math.random() * 8,
-    chars: []
-  });
-}
-
-let openingPhase = 0; // 0 = rain, 1 = assembling, 2 = done
-let openingStart = Date.now();
-const openingDuration = isMobile ? 2000 : 3000;
-const assemblyDuration = 1500;
-
-// Target text to assemble
-const targetName = "GEVA KIPPER";
-let targetChars = [];
-
-function calculateTargetPositions() {
-  const fontSize = Math.min(window.innerWidth / 8, 64);
-  actx.font = `700 ${fontSize}px Fira Code, monospace`;
-  const metrics = actx.measureText(targetName);
-  const startX = (window.innerWidth - metrics.width) / 2;
-  const startY = window.innerHeight / 2;
-  
-  targetChars = [];
-  let xOffset = 0;
-  for (let i = 0; i < targetName.length; i++) {
-    const charMetrics = actx.measureText(targetName[i]);
-    targetChars.push({
-      char: targetName[i],
-      targetX: startX + xOffset,
-      targetY: startY,
-      currentX: Math.random() * window.innerWidth,
-      currentY: -50 - Math.random() * 500,
-      currentChar: randomChar(),
-      settled: false,
-      fontSize: fontSize
-    });
-    xOffset += charMetrics.width;
+setInterval(() => {
+  toolbarBtns.forEach(btn => btn.classList.remove('pulsing'));
+  if (pulseIndex < toolbarBtns.length) {
+    toolbarBtns[pulseIndex].classList.add('pulsing');
   }
-}
+  pulseIndex = (pulseIndex + 1) % (toolbarBtns.length + 2);
+}, 600);
 
-calculateTargetPositions();
-
-function drawOpeningRain() {
-  actx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-  actx.fillRect(0, 0, assemblyCanvas.width, assemblyCanvas.height);
-  
-  actx.font = '14px Fira Code, monospace';
-  actx.fillStyle = '#00FF41';
-  
-  for (let drop of openingDrops) {
-    const ch = randomChar();
-    actx.fillText(ch, drop.x, drop.y);
-    drop.y += drop.speed;
-    if (drop.y > assemblyCanvas.height) {
-      drop.y = Math.random() * -100;
-    }
-  }
-}
-
-function drawAssembly(progress) {
-  actx.clearRect(0, 0, assemblyCanvas.width, assemblyCanvas.height);
-  
-  // Draw remaining rain chars dimming out
-  actx.font = '14px Fira Code, monospace';
-  actx.fillStyle = `rgba(0, 255, 65, ${0.3 * (1 - progress)})`;
-  for (let drop of openingDrops) {
-    actx.fillText(randomChar(), drop.x, drop.y);
-    drop.y += drop.speed * (1 - progress * 0.8);
-    drop.x += (Math.random() - 0.5) * progress * 4;
-  }
-  
-  // Draw assembling characters
-  for (let tc of targetChars) {
-    const eased = easeOutCubic(Math.min(progress * 1.2, 1));
-    tc.currentX += (tc.targetX - tc.currentX) * eased * 0.15;
-    tc.currentY += (tc.targetY - tc.currentY) * eased * 0.15;
-    
-    const dist = Math.hypot(tc.currentX - tc.targetX, tc.currentY - tc.targetY);
-    
-    if (dist < 5) {
-      tc.currentChar = tc.char;
-      tc.settled = true;
-    } else if (Math.random() > 0.7) {
-      tc.currentChar = randomChar();
-    }
-    
-    actx.font = `700 ${tc.fontSize}px Fira Code, monospace`;
-    actx.fillStyle = tc.settled ? '#00FF41' : `rgba(0, 255, 65, ${0.5 + progress * 0.5})`;
-    if (tc.settled) {
-      actx.shadowColor = '#00FF41';
-      actx.shadowBlur = 20;
-    }
-    actx.fillText(tc.currentChar, tc.currentX, tc.currentY);
-    actx.shadowBlur = 0;
-  }
-}
-
-function easeOutCubic(t) {
-  return 1 - Math.pow(1 - t, 3);
-}
-
-let openingAnimId;
-function animateOpening() {
-  const elapsed = Date.now() - openingStart;
-  
-  if (openingPhase === 0) {
-    drawOpeningRain();
-    if (elapsed > openingDuration) {
-      openingPhase = 1;
-      openingStart = Date.now();
-    }
-  } else if (openingPhase === 1) {
-    const progress = Math.min((Date.now() - openingStart) / assemblyDuration, 1);
-    drawAssembly(progress);
-    if (progress >= 1) {
-      openingPhase = 2;
-      openingStart = Date.now();
-    }
-  } else if (openingPhase === 2) {
-    // Hold for a moment then fade
-    const holdTime = Date.now() - openingStart;
-    if (holdTime > 800) {
-      assemblyCanvas.style.transition = 'opacity 1s ease';
-      assemblyCanvas.style.opacity = '0';
-      overlay.classList.add('fade-out');
-      document.getElementById('content').classList.add('visible');
-      bgRainOpacity = bgRainTargetOpacity;
-      startBackgroundRain();
-      startShimmer();
-      startSubtitleAnimation();
-      startPunBattle();
-      startHeadlineDemo();
-      initCardObserver();
-      setTimeout(() => {
-        assemblyCanvas.remove();
-        overlay.remove();
-      }, 1200);
-      return;
-    }
-    drawAssembly(1);
-  }
-  
-  openingAnimId = requestAnimationFrame(animateOpening);
-}
-
-animateOpening();
-
-// ==================== HEADER NAME WITH GLOW TRAILS ====================
-const headerNameEl = document.getElementById('header-name');
-const nameText = "GEVA KIPPER";
-nameText.split('').forEach(ch => {
-  const span = document.createElement('span');
-  span.className = 'char shimmer-text';
-  span.textContent = ch;
-  span.dataset.original = ch;
-  headerNameEl.appendChild(span);
-});
-
-// ==================== TEXT SHIMMER EFFECT ====================
-function startShimmer() {
-  setInterval(() => {
-    const shimmerEls = document.querySelectorAll('.shimmer-text');
-    shimmerEls.forEach(el => {
-      if (Math.random() < 0.015) {
-        const orig = el.dataset.original;
-        el.textContent = randomChar();
-        setTimeout(() => {
-          el.textContent = orig;
-        }, 80);
-      }
-    });
+// ========== Boot Sequence ==========
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.body.classList.add('loaded');
   }, 100);
-}
-
-// ==================== SUBTITLE DISSOLVE/REASSEMBLE ====================
-const subtitleEl = document.getElementById('subtitle-text');
-const subtitleOriginal = subtitleEl.textContent;
-
-function startSubtitleAnimation() {
-  setInterval(() => {
-    dissolveAndReassemble(subtitleEl, subtitleOriginal);
-  }, 20000);
-}
-
-function dissolveAndReassemble(el, text) {
-  let chars = text.split('');
-  let indices = chars.map((_, i) => i);
-  
-  // Shuffle indices for dissolve order
-  for (let i = indices.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [indices[i], indices[j]] = [indices[j], indices[i]];
-  }
-  
-  let dissolved = [...chars];
-  let step = 0;
-  
-  // Dissolve
-  const dissolveInterval = setInterval(() => {
-    if (step < indices.length) {
-      dissolved[indices[step]] = randomChar();
-      el.textContent = dissolved.join('');
-      step++;
-    } else {
-      clearInterval(dissolveInterval);
-      
-      // Reassemble
-      let rstep = 0;
-      const reassembleInterval = setInterval(() => {
-        if (rstep < indices.length) {
-          dissolved[indices[rstep]] = chars[indices[rstep]];
-          el.textContent = dissolved.join('');
-          rstep++;
-        } else {
-          clearInterval(reassembleInterval);
-        }
-      }, 30);
-    }
-  }, 30);
-}
-
-// ==================== CARD ENTRY ANIMATIONS ====================
-function initCardObserver() {
-  const cards = document.querySelectorAll('.card');
-  
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting && !entry.target.classList.contains('visible')) {
-        animateCardEntry(entry.target);
-      }
-    });
-  }, { threshold: 0.2 });
-  
-  cards.forEach(card => observer.observe(card));
-}
-
-function animateCardEntry(card) {
-  const rainOverlay = document.createElement('div');
-  rainOverlay.className = 'card-entry-rain';
-  card.appendChild(rainOverlay);
-  
-  // Hide real content briefly
-  const children = Array.from(card.children).filter(c => !c.classList.contains('card-entry-rain') && !c.classList.contains('card-rain-overlay'));
-  children.forEach(c => c.style.opacity = '0');
-  
-  // Create mini rain chars
-  const rect = card.getBoundingClientRect();
-  const numChars = Math.floor((rect.width * rect.height) / 400);
-  const chars = [];
-  
-  for (let i = 0; i < numChars; i++) {
-    const span = document.createElement('span');
-    span.className = 'card-entry-char';
-    span.textContent = randomChar();
-    span.style.left = Math.random() * 100 + '%';
-    span.style.top = -20 - Math.random() * 100 + 'px';
-    span.style.opacity = '0.8';
-    rainOverlay.appendChild(span);
-    chars.push(span);
-  }
-  
-  // Animate rain fall
-  let startTime = Date.now();
-  function animateRain() {
-    const elapsed = Date.now() - startTime;
-    const progress = Math.min(elapsed / 600, 1);
-    
-    chars.forEach((span, i) => {
-      const targetY = (i / numChars) * rect.height * 0.8 + 10;
-      const currentY = -20 + (targetY + 20) * easeOutCubic(progress);
-      span.style.top = currentY + 'px';
-      
-      if (Math.random() > 0.7) {
-        span.textContent = randomChar();
-      }
-    });
-    
-    if (progress < 1) {
-      requestAnimationFrame(animateRain);
-    } else {
-      // Fade out rain, show content
-      rainOverlay.style.transition = 'opacity 0.5s';
-      rainOverlay.style.opacity = '0';
-      children.forEach(c => {
-        c.style.transition = 'opacity 0.5s';
-        c.style.opacity = '1';
-      });
-      card.classList.add('visible');
-      
-      setTimeout(() => rainOverlay.remove(), 600);
-    }
-  }
-  
-  requestAnimationFrame(animateRain);
-  
-  // Also make card visible via CSS
-  setTimeout(() => card.classList.add('visible'), 50);
-}
-
-// ==================== CARD HOVER RAIN ====================
-document.querySelectorAll('.card').forEach((card, index) => {
-  const rainOverlay = card.querySelector('.card-rain-overlay') || document.getElementById('rain-' + index);
-  if (!rainOverlay) return;
-  
-  // Pre-populate rain chars
-  for (let i = 0; i < 15; i++) {
-    const span = document.createElement('span');
-    span.className = 'card-rain-char';
-    span.textContent = randomChar();
-    span.style.left = Math.random() * 100 + '%';
-    span.style.animationDuration = (2 + Math.random() * 3) + 's';
-    span.style.animationDelay = Math.random() * 2 + 's';
-    rainOverlay.appendChild(span);
-  }
-  
-  // Refresh rain chars periodically
-  setInterval(() => {
-    rainOverlay.querySelectorAll('.card-rain-char').forEach(span => {
-      span.textContent = randomChar();
-    });
-  }, 500);
-});
-
-// ==================== PUN BATTLE ANIMATION ====================
-const puns = [
-  { a: "LLM-1: I'm reading a book on anti-gravity — it's impossible to put down!", b: "LLM-2: I used to hate math, but then I realized decimals have a point. ⭐" },
-  { a: "LLM-1: Why do programmers prefer dark mode? Less bugs. ⭐", b: "LLM-2: Parallel lines have so much in common — shame they'll never meet." },
-  { a: "LLM-1: I told my compiler a joke. It didn't C the humor.", b: "LLM-2: I'd tell you a UDP joke but you might not get it. ⭐" }
-];
-
-let punIndex = 0;
-function startPunBattle() {
-  const punA = document.getElementById('pun-a');
-  const punB = document.getElementById('pun-b');
-  
-  function showPun() {
-    const pun = puns[punIndex % puns.length];
-    punA.style.opacity = '0';
-    punB.style.opacity = '0';
-    
-    setTimeout(() => {
-      punA.textContent = pun.a;
-      punA.style.opacity = '1';
-    }, 300);
-    
-    setTimeout(() => {
-      punB.textContent = pun.b;
-      punB.style.opacity = '1';
-    }, 800);
-    
-    punIndex++;
-  }
-  
-  showPun();
-  setInterval(showPun, 5000);
-}
-
-// ==================== HEADLINE DEMO ANIMATION ====================
-const headlines = [
-  { before: "Traffic jam on Highway 1", after: "♪ Cars in a line, what a sign, stuck on One, no fun ♪" },
-  { before: "New café opens in Florentin", after: "♪ Florentin's got a brand new bean, the hippest café ever seen ♪" },
-  { before: "Humidity breaks new record", after: "♪ The air is thick, the sweat is quick, humidity's mean trick ♪" }
-];
-
-let headlineIndex = 0;
-function startHeadlineDemo() {
-  const el = document.getElementById('headline-demo');
-  
-  function showHeadline() {
-    const hl = headlines[headlineIndex % headlines.length];
-    el.textContent = hl.before;
-    
-    setTimeout(() => {
-      // Dissolve to random chars
-      let text = hl.before.split('');
-      let step = 0;
-      const dissolve = setInterval(() => {
-        if (step < text.length) {
-          text[step] = randomChar();
-          el.textContent = text.join('');
-          step++;
-        } else {
-          clearInterval(dissolve);
-          
-          // Reassemble into rhyme
-          let rhyme = hl.after.split('');
-          let rebuilt = new Array(rhyme.length).fill(null).map(() => randomChar());
-          el.textContent = rebuilt.join('');
-          
-          let rstep = 0;
-          const reassemble = setInterval(() => {
-            if (rstep < rhyme.length) {
-              rebuilt[rstep] = rhyme[rstep];
-              el.textContent = rebuilt.join('');
-              rstep++;
-            } else {
-              clearInterval(reassemble);
-            }
-          }, 25);
-        }
-      }, 25);
-    }, 1500);
-    
-    headlineIndex++;
-  }
-  
-  showHeadline();
-  setInterval(showHeadline, 6000);
-}
-
-// ==================== META CARD CLICK — FULL PAGE RAIN RESET ====================
-document.getElementById('meta-link').addEventListener('click', (e) => {
-  e.preventDefault();
-  
-  const content = document.getElementById('content');
-  content.style.transition = 'opacity 0.8s';
-  content.style.opacity = '0';
-  
-  // Temporarily boost rain
-  bgRainOpacity = 0.8;
   
   setTimeout(() => {
-    bgRainOpacity = bgRainTargetOpacity;
-    content.style.opacity = '1';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, 2000);
+    document.getElementById('toolbar').classList.add('visible');
+  }, 400);
+  
+  setTimeout(() => {
+    document.getElementById('header').classList.add('visible');
+    startTypewriter();
+  }, 800);
+  
+  setTimeout(() => {
+    document.getElementById('progress-section').classList.add('visible');
+  }, 1000);
+  
+  const cards = document.querySelectorAll('.bug-card');
+  cards.forEach((card, i) => {
+    setTimeout(() => {
+      card.classList.add('visible');
+    }, 1200 + i * 100);
+  });
+  
+  // Initialize bugs
+  initBug1();
+  initBug2();
+  initBug6();
+  initBug5();
 });
 
-// ==================== STOPWATCH ====================
-const stopwatchEl = document.getElementById('stopwatch');
-const startDate = new Date('2026-02-06T01:25:00Z');
-
-function updateStopwatch() {
-  const now = new Date();
-  let diff = Math.max(0, Math.floor((now - startDate) / 1000));
+// ========== Typewriter ==========
+function startTypewriter() {
+  const text = '// Currently engineering software at Google';
+  const el = document.getElementById('typewriter-line');
+  let i = 0;
+  el.innerHTML = '<span class="cursor"></span>';
   
-  const days = Math.floor(diff / 86400);
-  diff %= 86400;
-  const hours = Math.floor(diff / 3600);
-  diff %= 3600;
-  const minutes = Math.floor(diff / 60);
-  const seconds = diff % 60;
-  
-  const daysStr = String(days).padStart(5, '0');
-  const hoursStr = String(hours).padStart(2, '0');
-  const minutesStr = String(minutes).padStart(2, '0');
-  const secondsStr = String(seconds).padStart(2, '0');
-  
-  const timeStr = `${daysStr}:${hoursStr}:${minutesStr}:${secondsStr}`;
-  
-  let html = '';
-  for (let i = 0; i < timeStr.length; i++) {
-    const ch = timeStr[i];
-    if (ch === ':') {
-      html += '<span class="digit">:</span>';
+  const interval = setInterval(() => {
+    if (i < text.length) {
+      el.innerHTML = text.substring(0, i + 1) + '<span class="cursor"></span>';
+      i++;
     } else {
-      // On second change, briefly show random chars
-      html += `<span class="digit">${ch}</span>`;
+      clearInterval(interval);
+      setTimeout(() => {
+        const cursor = el.querySelector('.cursor');
+        if (cursor) cursor.style.display = 'none';
+      }, 2000);
     }
-  }
-  
-  stopwatchEl.innerHTML = html;
+  }, 50);
 }
 
-// Add digit flicker effect on each second
-let lastSecond = -1;
-function updateStopwatchWithFlicker() {
-  const now = new Date();
-  const currentSecond = now.getSeconds();
+// ========== Progress Update ==========
+function updateProgress() {
+  bugsFixed = bugStates.filter(b => b).length;
+  const remaining = totalBugs - bugsFixed;
+  const label = document.getElementById('progress-label');
+  const segments = document.querySelectorAll('.progress-segment');
   
-  if (currentSecond !== lastSecond) {
-    lastSecond = currentSecond;
+  segments.forEach((seg, i) => {
+    if (i < bugsFixed) seg.classList.add('filled');
+  });
+  
+  if (remaining === 0) {
+    label.textContent = 'ALL BUGS RESOLVED ✓';
+    label.style.color = 'var(--green)';
+    celebrate();
+  } else {
+    label.textContent = `BUGS REMAINING: ${remaining}/${totalBugs}`;
+  }
+}
+
+function markResolved(cardId, bugIndex) {
+  bugStates[bugIndex] = true;
+  const card = document.getElementById(cardId);
+  card.classList.add('resolved');
+  updateProgress();
+}
+
+// ========== Celebration ==========
+function celebrate() {
+  // Change matrix color
+  matrixColor = 'rgba(78, 201, 87, 0.12)';
+  setTimeout(() => {
+    matrixColor = 'rgba(15, 52, 96, 0.08)';
+  }, 2000);
+  
+  // Update debug indicator
+  const dot = document.getElementById('debug-dot');
+  const text = document.getElementById('debug-text');
+  dot.classList.add('complete');
+  text.classList.add('complete');
+  text.textContent = 'SESSION COMPLETE';
+  
+  // Progress bar glow
+  document.getElementById('progress-bar').classList.add('glow');
+  setTimeout(() => {
+    document.getElementById('progress-bar').classList.remove('glow');
+  }, 3000);
+  
+  // Confetti
+  const container = document.getElementById('confetti-container');
+  for (let i = 0; i < 80; i++) {
+    setTimeout(() => {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = Math.random() * 100 + '%';
+      piece.style.width = (4 + Math.random() * 8) + 'px';
+      piece.style.height = (4 + Math.random() * 8) + 'px';
+      piece.style.background = Math.random() > 0.5 ? 'var(--yellow)' : '#ffd700';
+      piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+      piece.style.animationDelay = (Math.random() * 0.5) + 's';
+      piece.style.animationDuration = (2 + Math.random() * 2) + 's';
+      container.appendChild(piece);
+      setTimeout(() => piece.remove(), 4000);
+    }, Math.random() * 1000);
+  }
+}
+
+// ========== Bug 1: Syntax Error (GlglStats) ==========
+const bug1OriginalText = "A statistical analysis of repetitiveness in Hebrew songs, measuring how repetitive popular Hebrew music really is using data science techniques.";
+
+function scrambleWord(word) {
+  if (word.length <= 3) return word;
+  const arr = word.split('');
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.join('');
+}
+
+function initBug1() {
+  const words = bug1OriginalText.split(' ');
+  const scrambled = words.map(w => {
+    if (Math.random() > 0.4) return scrambleWord(w);
+    return w;
+  });
+  document.getElementById('scrambled-1').textContent = scrambled.join(' ');
+}
+
+function fixBug1() {
+  const editor = document.getElementById('syntax-editor');
+  const val = editor.value.trim();
+  
+  // Check if they added the closing paren
+  if (val.includes('print("Analyzing repetitiveness")') || 
+      (val.includes('print(') && val.includes(')') && val.split(')').length > val.split('(').length - 1)) {
     
-    // Show random chars briefly
-    const digits = stopwatchEl.querySelectorAll('.digit');
-    digits.forEach(d => {
-      if (d.textContent !== ':' && Math.random() > 0.5) {
-        const orig = d.textContent;
-        d.textContent = Math.floor(Math.random() * 10).toString();
-        d.classList.add('tick');
+    // Unscramble animation
+    const el = document.getElementById('scrambled-1');
+    const words = bug1OriginalText.split('');
+    el.textContent = '';
+    
+    words.forEach((char, i) => {
+      setTimeout(() => {
+        el.textContent = bug1OriginalText.substring(0, i + 1);
+      }, i * 15);
+    });
+    
+    setTimeout(() => {
+      markResolved('card-1', 0);
+    }, words.length * 15 + 300);
+  } else {
+    const editor = document.getElementById('syntax-editor');
+    editor.style.borderColor = 'var(--red)';
+    setTimeout(() => editor.style.borderColor = '', 1000);
+  }
+}
+
+// ========== Bug 2: Null Reference (Ahuzat Dibuk) ==========
+function initBug2() {
+  const grid = document.getElementById('heatmap-grid');
+  const colors = ['#4ec957', '#8bc34a', '#cddc39', '#ffeb3b', '#ff9800', '#f44336', '#e74c3c'];
+  
+  for (let i = 0; i < 32; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'heatmap-cell';
+    cell.style.background = colors[Math.floor(Math.random() * colors.length)];
+    cell.dataset.delay = i * 40;
+    grid.appendChild(cell);
+  }
+}
+
+function fixBug2() {
+  const track = document.getElementById('toggle-track');
+  if (track.classList.contains('on')) return;
+  track.classList.add('on');
+  
+  const overlay = document.getElementById('null-overlay');
+  overlay.classList.add('hidden');
+  
+  // Ripple in heatmap cells
+  const cells = document.querySelectorAll('.heatmap-cell');
+  cells.forEach((cell, i) => {
+    setTimeout(() => {
+      cell.classList.add('visible');
+    }, i * 40);
+  });
+  
+  setTimeout(() => {
+    markResolved('card-2', 1);
+  }, cells.length * 40 + 400);
+}
+
+// ========== Bug 3: Infinite Loop (2D Part Orienting) ==========
+function fixBug3() {
+  const dot = document.getElementById('breakpoint-dot');
+  if (dot.classList.contains('clicked')) return;
+  dot.classList.add('clicked');
+  
+  const polygon = document.getElementById('polygon-svg');
+  polygon.classList.remove('fast');
+  polygon.classList.add('slow');
+  
+  setTimeout(() => {
+    polygon.classList.remove('slow');
+    polygon.classList.add('stopped');
+    markResolved('card-3', 2);
+  }, 2000);
+}
+
+// ========== Bug 4: Logic Error (The Turing Jest) ==========
+function fixBug4() {
+  const laugh = document.getElementById('laugh-effect');
+  laugh.classList.add('playing');
+  
+  setTimeout(() => {
+    laugh.classList.remove('playing');
+    markResolved('card-4', 3);
+  }, 1000);
+}
+
+// ========== Bug 5: Encoding Error (Rhymes of Israel) ==========
+const bug5Text = "A Chrome extension that helps users find rhymes for Hebrew words, making it easier for poets, songwriters, and students to explore the language.";
+const garbleMap = { 'a': 'ä', 'e': 'ë', 'i': 'ï', 'o': 'ö', 'u': 'ü', 'A': 'Ä', 'E': 'Ë', 'I': 'Ï', 'O': 'Ö', 'U': 'Ü' };
+const vowels = 'aeiouAEIOU';
+
+function initBug5() {
+  const el = document.getElementById('encoding-text');
+  let html = '';
+  for (let i = 0; i < bug5Text.length; i++) {
+    const ch = bug5Text[i];
+    if (vowels.includes(ch)) {
+      html += `<span class="encoding-char" data-original="${ch}" data-garbled="${garbleMap[ch]}">${garbleMap[ch]}</span>`;
+    } else {
+      html += `<span class="encoding-char">${ch}</span>`;
+    }
+  }
+  el.innerHTML = html;
+}
+
+function checkEncoding() {
+  const val = document.getElementById('encoding-select').value;
+  if (val === 'utf8') {
+    const chars = document.querySelectorAll('#encoding-text .encoding-char');
+    let delay = 0;
+    chars.forEach((ch) => {
+      if (ch.dataset.original) {
         setTimeout(() => {
-          d.classList.remove('tick');
-        }, 200);
+          ch.textContent = ch.dataset.original;
+          ch.classList.add('pop');
+        }, delay);
+        delay += 30;
       }
     });
     
-    setTimeout(updateStopwatch, 120);
+    setTimeout(() => {
+      markResolved('card-5', 4);
+    }, delay + 400);
   }
-  
-  requestAnimationFrame(updateStopwatchWithFlicker);
 }
 
-updateStopwatch();
-requestAnimationFrame(updateStopwatchWithFlicker);
-setInterval(updateStopwatch, 1000);
+// ========== Bug 6: Stack Overflow (Portfolio Meta) ==========
+function initBug6() {
+  let count = 0;
+  const el = document.getElementById('recursion-count');
+  recursionInterval = setInterval(() => {
+    count += Math.floor(Math.random() * 50) + 10;
+    el.textContent = count.toLocaleString();
+  }, 50);
+}
 
-// ==================== FOOTER LINE ANIMATION ====================
-const footerLine = document.getElementById('footer-line');
-const footerObserver = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add('animate');
-    }
+function fixBug6() {
+  if (recursionInterval) {
+    clearInterval(recursionInterval);
+    recursionInterval = null;
+  }
+  
+  const ghosts = document.querySelectorAll('.overflow-ghost');
+  ghosts.forEach((ghost, i) => {
+    setTimeout(() => {
+      ghost.classList.add('collapsed');
+    }, i * 150);
   });
-}, { threshold: 0.5 });
-footerObserver.observe(footerLine);
+  
+  setTimeout(() => {
+    markResolved('card-6', 5);
+  }, 600);
+}
 
-// ==================== CURRENT DATE ====================
-document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric'
-});
+// ========== Footer Timer ==========
+function updateTimer() {
+  const epoch = new Date('2026-02-07T01:23:13Z');
+  const now = new Date();
+  const diff = now - epoch;
+  
+  // If before epoch, show positive from epoch
+  const absDiff = Math.abs(diff);
+  const totalSeconds = Math.floor(absDiff / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  
+  const sign = diff < 0 ? '-' : '';
+  const el = document.getElementById('footer-timer');
+  el.innerHTML = `Session uptime: ${sign}${hours.toLocaleString()}h ${String(minutes).padStart(2, '0')}m <span class="seconds">${String(seconds).padStart(2, '0')}s</span>`;
+}
 
-// ==================== PARALLAX EFFECT ====================
-let scrollY = 0;
-window.addEventListener('scroll', () => {
-  scrollY = window.scrollY;
-  canvas.style.transform = `translateY(${scrollY * 0.15}px)`;
-}, { passive: true });
+updateTimer();
+setInterval(updateTimer, 1000);
 </script>
-
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260206",
+          pageId: "20260207",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
