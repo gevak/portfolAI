@@ -2,754 +2,812 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | Build Workspace</title>
-    
-    <!-- Google Fonts -->
+    <title>Geva Kipper | Terminal Vending Machine</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
-        /* CSS Variables & Theme */
         :root {
-            /* Palette */
-            --bg-color: #1a1a1a;
-            --grid-line: rgba(255, 255, 255, 0.04);
-            --pink: #FF6188;
-            --cyan: #78DCE8;
-            --yellow: #FFD866;
-            --green: #A9DC76;
-            --purple: #AB9DF2;
-            --orange: #FC9867;
-            --white: #FCFCFA;
-            --comment: #727072;
-            --vscode-blue: #007ACC;
-            
-            /* Glassmorphism */
-            --glass-bg: rgba(255, 255, 255, 0.04);
+            --bg-dark: #111214;
+            --machine-gray: #1e1e24;
+            --glass-bg: rgba(255, 255, 255, 0.03);
             --glass-border: rgba(255, 255, 255, 0.1);
-            
-            /* Fonts */
-            --font-mono: 'Fira Code', monospace;
-            --font-sans: 'Inter', sans-serif;
+            --neon-blue: #00f0ff;
+            --neon-pink: #ff0055;
+            --neon-green: #00ff66;
+            --text-main: #f0f0f0;
+            --text-muted: #888;
+            --tray-dark: #0a0a0c;
         }
 
-        /* Base Styles */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            user-select: none;
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--white);
-            font-family: var(--font-sans);
-            overflow-x: hidden;
-            background-image: 
-                linear-gradient(var(--grid-line) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-            background-size: 30px 30px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Layer Visibility */
-        #editor-view, #terminal-view, #grid-view, #abstract-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 50% 50%, #2a2c33 0%, var(--bg-dark) 100%);
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
             height: 100vh;
-            pointer-events: none;
             overflow: hidden;
-        }
-
-        #editor-view.active, #terminal-view.active, #grid-view.active {
-            pointer-events: auto;
-        }
-
-        /* Abstract Glow Background (Hidden Initially) */
-        #abstract-bg {
-            opacity: 0;
-            transition: opacity 1.5s ease;
-            z-index: 0;
-            background: 
-                radial-gradient(circle at 15% 50%, rgba(120, 220, 232, 0.1), transparent 35%),
-                radial-gradient(circle at 85% 30%, rgba(255, 97, 136, 0.1), transparent 35%);
-        }
-        #abstract-bg.active {
-            opacity: 1;
-        }
-
-        /* 1. Code Editor View */
-        #editor-view {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .editor-window {
-            background: rgba(30, 30, 30, 0.95);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            width: 90%;
-            max-width: 800px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-            overflow: hidden;
-        }
-
-        .editor-header {
-            background: #252526;
-            padding: 10px 15px;
-            font-family: var(--font-sans);
-            font-size: 13px;
-            color: #ccc;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            display: flex;
-            align-items: center;
-        }
-
-        .editor-header i {
-            color: var(--yellow);
-            margin-right: 8px;
-        }
-
-        .editor-content {
-            padding: 30px;
-            font-family: var(--font-mono);
-            font-size: 16px;
-            line-height: 1.6;
-            min-height: 200px;
-        }
-
-        .kw { color: var(--pink); }
-        .var { color: var(--cyan); }
-        .str { color: var(--yellow); }
-        .op { color: var(--pink); }
-        .punct { color: var(--white); }
-        .comment { color: var(--comment); font-style: italic; }
-        
-        #type-cursor {
-            border-right: 2px solid var(--white);
-            animation: blink 0.8s step-end infinite;
-        }
-
-        @keyframes blink { 50% { border-color: transparent; } }
-
-        .run-container {
-            margin-top: 30px;
-            height: 50px;
             display: flex;
             justify-content: center;
+            align-items: center;
+            perspective: 1000px;
         }
 
-        #run-btn {
-            background: rgba(120, 220, 232, 0.1);
-            color: var(--cyan);
-            border: 1px solid var(--cyan);
-            padding: 12px 24px;
-            font-family: var(--font-mono);
-            font-size: 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            outline: none;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.3s ease;
-        }
-
-        #run-btn.visible {
-            opacity: 1;
-            transform: translateY(0);
-            animation: pulseBtn 2s infinite;
-        }
-
-        #run-btn:hover {
-            background: var(--cyan);
-            color: var(--bg-color);
-            box-shadow: 0 0 15px var(--cyan);
-        }
-
-        @keyframes pulseBtn {
-            0% { box-shadow: 0 0 0 0 rgba(120, 220, 232, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(120, 220, 232, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(120, 220, 232, 0); }
-        }
-
-        /* 2. Terminal View */
-        #terminal-view {
-            z-index: 20;
+        /* Machine Chassis */
+        .vending-machine {
+            width: 1000px;
+            max-width: 98vw;
+            height: 94vh;
+            background: linear-gradient(135deg, #2b2e36, #15161a);
+            border-radius: 20px;
+            box-shadow: 
+                0 30px 60px rgba(0,0,0,0.8), 
+                inset 0 2px 10px rgba(255,255,255,0.1), 
+                inset 0 -5px 20px rgba(0,0,0,0.8);
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
-            transform: translateY(100%);
-            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        #terminal-view.open {
-            transform: translateY(0%);
-        }
-
-        .terminal-panel {
-            background: #111;
-            border-top: 1px solid var(--glass-border);
-            height: 40vh;
-            padding: 20px;
-            font-family: var(--font-mono);
-            color: var(--green);
-            font-size: 14px;
-            line-height: 1.8;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
-        }
-
-        .terminal-panel .log-line {
-            display: block;
-            opacity: 0;
-        }
-
-        /* Shatter/Morph Animation Class */
-        .morph-out {
-            opacity: 0 !important;
-            transform: scale(0.95) translateY(-20px) !important;
-            filter: blur(10px);
-        }
-
-        /* 3. Grid View (Compiled UI) */
-        #grid-view {
+            border: 2px solid #3a3f4a;
             position: relative;
-            z-index: 5;
-            height: auto;
-            min-height: 100vh;
-            padding: 60px 5% 80px 5%;
-            overflow-y: auto;
-            display: none;
-            opacity: 0;
-            transition: opacity 1s ease-in-out;
+            overflow: hidden;
         }
 
-        #grid-view.active {
-            display: block;
-            opacity: 1;
+        /* Ambient internal glow */
+        .vending-machine::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            box-shadow: inset 0 0 100px rgba(0, 240, 255, 0.05);
+            pointer-events: none;
+            z-index: 10;
         }
 
-        .masonry-grid {
-            column-count: 3;
-            column-gap: 25px;
-            max-width: 1400px;
+        /* Header Marquee */
+        .header-marquee {
+            background: rgba(10, 10, 15, 0.6);
+            border-bottom: 2px solid var(--glass-border);
+            padding: 20px;
+            text-align: center;
+            border-radius: 20px 20px 0 0;
+            position: relative;
+            z-index: 20;
+        }
+
+        .header-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3), 0 0 20px var(--neon-blue);
+            margin-bottom: 5px;
+        }
+
+        .header-subtitle {
+            font-size: 0.9rem;
+            font-weight: 300;
+            color: #ddd;
+            margin-bottom: 12px;
+        }
+
+        .ticker-container {
+            width: 80%;
             margin: 0 auto;
+            background: #000;
+            border-radius: 4px;
+            border: 1px solid #333;
+            overflow: hidden;
+            padding: 4px 10px;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
         }
 
-        @media (max-width: 1024px) { .masonry-grid { column-count: 2; } }
-        @media (max-width: 768px) { .masonry-grid { column-count: 1; } }
+        .ticker-text {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--neon-green);
+            white-space: nowrap;
+            display: inline-block;
+            animation: tickerScroll 20s linear infinite;
+            text-shadow: 0 0 5px var(--neon-green);
+        }
 
-        /* The Glassmorphism Card */
-        .card {
+        @keyframes tickerScroll {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* Main Workspace */
+        .machine-body {
+            display: flex;
+            flex: 1;
+            padding: 20px;
+            gap: 20px;
+            position: relative;
+        }
+
+        /* Viewport Glass */
+        .viewport-glass {
+            flex: 1;
             background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(8px);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
-            margin-bottom: 25px;
-            break-inside: avoid;
-            overflow: hidden;
-            position: relative;
-            opacity: 0;
-            transform: translateY(30px);
-            transition: all 0.4s ease, opacity 0.8s ease, transform 0.8s ease;
-        }
-
-        .card:hover {
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
-        }
-
-        .card.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .card-header {
-            background: rgba(0,0,0,0.2);
-            padding: 8px 15px;
-            font-family: var(--font-mono);
-            font-size: 12px;
-            color: #888;
-            border-bottom: 1px solid var(--glass-border);
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.5);
             display: flex;
-            align-items: center;
-        }
-
-        .card-header span {
-            color: var(--white);
-            margin-left: 5px;
-        }
-
-        .card-content {
-            padding: 25px;
+            flex-direction: column;
             position: relative;
-            z-index: 2;
+            z-index: 5;
+            padding: 20px;
         }
 
-        .card-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: var(--white);
+        /* Shelves / Grid */
+        .shelves-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 20px;
+            align-items: end;
         }
 
-        .card-desc {
-            font-size: 14px;
-            line-height: 1.6;
-            color: #b3b3b3;
-            margin-bottom: 20px;
-        }
-
-        /* Action Buttons / Links */
-        .card-actions {
+        .slot {
+            position: relative;
+            height: 140px;
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #2a2d35;
+            box-shadow: 0 5px 5px -5px rgba(0,0,0,0.5);
         }
 
-        .neon-link {
-            display: inline-flex;
-            align-items: center;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-family: var(--font-mono);
-            font-size: 12px;
-            text-decoration: none;
-            transition: all 0.2s;
-            border: 1px solid transparent;
-            cursor: pointer;
-        }
-
-        .neon-link i { margin-right: 6px; font-size: 14px; }
-
-        .neon-cyan { color: var(--cyan); background: rgba(120, 220, 232, 0.05); }
-        .neon-cyan:hover { background: rgba(120, 220, 232, 0.15); border-color: var(--cyan); box-shadow: 0 0 10px rgba(120,220,232,0.3); }
-
-        .neon-pink { color: var(--pink); background: rgba(255, 97, 136, 0.05); }
-        .neon-pink:hover { background: rgba(255, 97, 136, 0.15); border-color: var(--pink); box-shadow: 0 0 10px rgba(255,97,136,0.3); }
-
-        .neon-yellow { color: var(--yellow); background: rgba(255, 216, 102, 0.05); }
-        .neon-yellow:hover { background: rgba(255, 216, 102, 0.15); border-color: var(--yellow); box-shadow: 0 0 10px rgba(255,216,102,0.3); }
-
-        .neon-green { color: var(--green); background: rgba(169, 220, 118, 0.05); }
-        .neon-green:hover { background: rgba(169, 220, 118, 0.15); border-color: var(--green); box-shadow: 0 0 10px rgba(169,220,118,0.3); }
-
-        /* --- Specific Box Visuals --- */
-        .visual-bg {
+        /* Metallic Coils */
+        .coil {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 0;
-            overflow: hidden;
-            opacity: 0.15;
+            bottom: 15px;
+            width: 80%;
+            height: 25px;
+            background: repeating-linear-gradient(
+                90deg,
+                #222,
+                #555 5px,
+                #999 10px,
+                #555 15px,
+                #222 20px
+            );
+            border-radius: 12px;
+            z-index: 1;
+            box-shadow: 0 10px 10px rgba(0,0,0,0.8);
+            transform-style: preserve-3d;
+            transition: transform 0s; /* controlled by JS CSS class */
+        }
+
+        .coil.spinning {
+            animation: spinCoil 0.8s linear forwards;
+        }
+
+        @keyframes spinCoil {
+            to { transform: rotateX(720deg); }
+        }
+
+        /* Snack Packages */
+        .snack {
+            width: 85px;
+            height: 100px;
+            border-radius: 6px;
+            z-index: 10;
+            cursor: pointer;
+            transition: transform 0.3s ease, filter 0.3s ease;
+            box-shadow: -5px 5px 15px rgba(0,0,0,0.6), inset 0 0 10px rgba(255,255,255,0.2);
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
+            text-align: center;
+            padding: 5px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            overflow: hidden;
         }
 
-        /* Box 1 Wave */
-        .wave-lines {
-            display: flex; gap: 4px;
-            align-items: center; height: 100%;
+        .snack:hover {
+            transform: translateY(-5px) rotateZ(3deg) scale(1.05);
+            filter: brightness(1.2) drop-shadow(0 0 10px rgba(255,255,255,0.3));
         }
-        .wave-lines div {
-            width: 6px; height: 30%; background: var(--cyan);
+
+        /* Package Details */
+        .pkg-1 {
+            background: repeating-linear-gradient(45deg, #8A2BE2, #4B0082 10px, #0000FF 20px, #008000 30px, #FFFF00 40px, #FFA500 50px, #FF0000 60px);
+            border: 2px solid #fff;
+        }
+        .pkg-2 {
+            background: radial-gradient(circle at 30% 30%, #ffd700, #ff4500, #00008b, #000);
+            border: 2px solid #ff4500;
+        }
+        .pkg-3 {
+            background-color: #1a2a3a;
+            background-image: 
+                linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, .15) 25%, rgba(255, 255, 255, .15) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .15) 75%, rgba(255, 255, 255, .15) 76%, transparent 77%, transparent), 
+                linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, .15) 25%, rgba(255, 255, 255, .15) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .15) 75%, rgba(255, 255, 255, .15) 76%, transparent 77%, transparent);
+            background-size: 15px 15px;
+            border: 1px solid #aaa;
+        }
+        .pkg-3::before {
+            content: ''; position: absolute; top:0;left:0; right:0;bottom:0;
+            background: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            border: 1px solid rgba(255,255,255,0.3); z-index: -1;
+        }
+        .pkg-4 {
+            background: linear-gradient(135deg, #1a0033, #000);
+            border: 2px solid #800080;
+        }
+        .pkg-4::after {
+            content: '👾'; position: absolute; opacity: 0.3; font-size: 3rem; transform: rotate(15deg);
+        }
+        .pkg-5 {
+            background: #ece5ce; color: #111; text-shadow: none;
+            background-image: repeating-linear-gradient(transparent, transparent 4px, rgba(0,0,0,0.1) 4px, rgba(0,0,0,0.1) 5px);
+            border: 2px solid #555;
+            border-left: 5px solid red; border-right: 5px solid yellow; border-top: 5px solid green; border-bottom: 5px solid blue;
+        }
+        .pkg-6 {
+            background: #444; border: 2px solid #888;
+        }
+        .pkg-6::before {
+            content: 'Portfolio'; position: absolute; top: 10px; left: 10px; right: 10px; bottom: 10px;
+            background: #333; border: 1px solid #777; display: flex; align-items: center; justify-content: center; font-size: 0.5rem;
+        }
+
+        /* Dispenser Tray */
+        .dispenser-tray {
+            height: 90px;
+            background: linear-gradient(to bottom, #050505, #111);
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: inset 0 10px 20px rgba(0,0,0,0.9), 0 2px 2px rgba(255,255,255,0.05);
+            position: relative;
+            border-top: 3px solid #222;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 10px;
+        }
+
+        .tray-flap {
+            width: 80%;
+            height: 60px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
             border-radius: 4px;
-            animation: waveAnim 1s ease-in-out infinite alternate;
-        }
-        .wave-lines div:nth-child(1) { animation-delay: 0.0s; height: 40%;}
-        .wave-lines div:nth-child(2) { animation-delay: 0.2s; height: 80%;}
-        .wave-lines div:nth-child(3) { animation-delay: 0.4s; height: 60%;}
-        .wave-lines div:nth-child(4) { animation-delay: 0.6s; height: 90%;}
-        .wave-lines div:nth-child(5) { animation-delay: 0.8s; height: 50%;}
-        @keyframes waveAnim { 0% { opacity: 0.3; transform: scaleY(0.5); } 100% { opacity: 1; transform: scaleY(1); } }
-
-        /* Box 2 Heatmap */
-        .heatmap-gradient {
-            width: 150%; height: 150%;
-            background: 
-                radial-gradient(circle at 70% 80%, rgba(255, 97, 136, 1), transparent 40%),
-                radial-gradient(circle at 20% 20%, rgba(252, 152, 103, 1), transparent 50%);
-            filter: blur(40px);
-            opacity: 0.2;
+            box-shadow: inset 0 0 15px #000;
         }
 
-        /* Box 3 Polygon */
-        .poly-outline {
-            width: 120px; height: 120px;
-            border: 2px solid var(--white);
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-            opacity: 0.2;
-            transform: rotate(15deg);
+        /* Control Panel */
+        .control-panel {
+            width: 140px;
+            background: #191c21;
+            border-radius: 12px;
+            border: 1px solid #333;
+            box-shadow: inset 1px 1px 2px rgba(255,255,255,0.1), -5px 0 15px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 10px;
+            z-index: 10;
         }
 
-        /* Box 4 Split Arena */
-        .split-arena {
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, rgba(120,220,232,0.3) 0%, rgba(120,220,232,0) 49%, rgba(255,97,136,0) 51%, rgba(255,97,136,0.3) 100%);
+        .panel-header {
+            font-size: 0.6rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            text-align: center;
         }
 
-        /* Box 5 Puzzle */
-        .bg-icon { font-size: 100px; color: var(--white); opacity: 0.08; transform: rotate(-15deg); }
+        .keypad {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+        }
 
-        /* Box 6 Meta */
-        .recursive-box {
-            width: 80px; height: 80px;
-            border: 2px solid var(--purple);
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0.4;
-            animation: spinBg 15s linear infinite;
+        .btn {
+            width: 100%;
+            height: 60px;
+            background: linear-gradient(180deg, #3a3f4a, #2b2e36);
+            border: 1px solid #111;
+            border-top: 1px solid #555;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.6);
+            transition: all 0.1s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
-        .recursive-box div {
-            width: 60%; height: 60%;
-            border: 2px solid var(--purple);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .recursive-box div div {
-            width: 50%; height: 50%;
-            border: 2px solid var(--purple);
-        }
-        @keyframes spinBg { 100% { transform: rotate(360deg); } }
 
-        /* Box 7 API / Socials */
-        .api-stack { display: flex; flex-direction: column; gap: 12px; }
-        .api-endpoint {
-            display: flex; align-items: center;
-            background: rgba(0,0,0,0.3);
-            border-radius: 6px; border: 1px solid var(--glass-border);
-            padding: 8px 12px;
-            text-decoration: none;
-            transition: 0.2s;
+        .btn:active {
+            transform: scale(0.95) translateY(2px);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            background: #2b2e36;
         }
-        .api-endpoint:hover { background: rgba(255,255,255,0.08); border-color: var(--white); }
-        .api-method {
-            font-family: var(--font-mono); font-size: 11px;
-            font-weight: bold; color: var(--green);
-            background: rgba(169, 220, 118, 0.1);
-            padding: 3px 6px; border-radius: 4px; margin-right: 12px;
-        }
-        .api-path { 
-            font-family: var(--font-mono); font-size: 13px; color: var(--white); 
-            display: flex; align-items: center; flex: 1;
-        }
-        .api-path i { margin-right: 8px; color: #888; }
 
+        .btn-icon {
+            font-size: 1.2rem;
+            margin-bottom: 2px;
+        }
 
-        /* Footer / Status Bar */
-        footer {
-            position: fixed;
-            bottom: 0; left: 0; width: 100%; height: 26px;
-            background-color: var(--vscode-blue);
-            z-index: 100;
+        .insert-coin {
+            margin-top: auto;
+            width: 80%;
+            height: 40px;
+            background: #000;
+            border-radius: 4px;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 10px #000;
+        }
+        .coin-slot {
+            width: 70%; height: 6px; background: #0a0a0c; border-radius: 2px;
+            box-shadow: inset 0 2px 5px #000;
+        }
+
+        /* Base / Footer */
+        .footer-base {
+            background: #111;
+            border-top: 2px solid #222;
+            padding: 15px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 15px;
-            font-family: var(--font-sans);
-            font-size: 12px;
-            color: #fff;
+            border-radius: 0 0 20px 20px;
+            z-index: 20;
         }
 
-        footer .right span { font-family: var(--font-mono); margin-left: 5px; }
+        .lcd-screen {
+            background: #0a0e0a;
+            border: 2px inset #333;
+            padding: 8px 15px;
+            border-radius: 4px;
+            display: flex;
+            gap: 20px;
+            font-family: 'Share Tech Mono', monospace;
+            box-shadow: 0 0 10px rgba(0,255,100,0.1);
+        }
+
+        .lcd-text { color: #556b2f; text-shadow: 0 0 4px var(--neon-green); font-size: 0.9rem;}
+        .lcd-time { color: var(--neon-green); text-shadow: 0 0 4px var(--neon-green); font-size: 0.9rem;}
+
+        /* Modal Overlay */
+        .modal-wrapper {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            border-radius: 20px;
+        }
+
+        .modal-wrapper.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            width: 80%;
+            max-height: 80%;
+            background: linear-gradient(145deg, #1e1e24, #15161a);
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.2), inset 0 0 20px rgba(0,0,0,0.8);
+            border-radius: 12px;
+            padding: 30px;
+            transform: scale(0.1) translateY(300px);
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-wrapper.active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        /* Scrollbar for modal */
+        .modal-content::-webkit-scrollbar { width: 8px; }
+        .modal-content::-webkit-scrollbar-track { background: #111; border-radius: 4px; }
+        .modal-content::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 4px; }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+        }
+
+        .modal-title {
+            font-size: 2rem;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255,255,255,0.2);
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .close-btn:hover { color: var(--neon-pink); }
+
+        .modal-body {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #ccc;
+        }
+
+        .modal-video iframe {
+            width: 100%;
+            height: 300px;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        .modal-links {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .action-link {
+            text-decoration: none;
+            padding: 10px 20px;
+            background: rgba(0, 240, 255, 0.1);
+            color: var(--neon-blue);
+            border: 1px solid var(--neon-blue);
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 0 5px rgba(0, 240, 255, 0.2);
+        }
+
+        .action-link:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
 
     </style>
 </head>
 <body>
 
-    <!-- Dynamic Glow Background for Compiled View -->
-    <div id="abstract-bg"></div>
-
-    <!-- 1. Editor View -->
-    <div id="editor-view" class="active">
-        <div class="editor-window">
-            <div class="editor-header">
-                <i class="fab fa-js"></i> portfolio.js
-            </div>
-            <div class="editor-content" id="code-entry">
-                <!-- Text typed by JS -->
-                <span id="type-cursor"></span>
-            </div>
-        </div>
-        <div class="run-container">
-            <button id="run-btn"><i class="fas fa-play"></i> Run Build Script</button>
-        </div>
-    </div>
-
-    <!-- 2. Terminal View -->
-    <div id="terminal-view">
-        <div class="terminal-panel" id="terminal-panel">
-            <div><span style="color:var(--white)">Terminal</span> - executing script...</div>
-            <br>
-            <!-- Logs injected by JS -->
-        </div>
-    </div>
-
-    <!-- 3. Compiled Grid View -->
-    <div id="grid-view">
-        <div class="masonry-grid" id="masonry">
-
-            <!-- Box 1: GlglStats -->
-            <div class="card">
-                <div class="card-header"><i class="fas fa-terminal"></i> <span>glgl-stats.exe</span></div>
-                <div class="visual-bg">
-                    <div class="wave-lines"><div></div><div></div><div></div><div></div><div></div></div>
-                </div>
-                <div class="card-content">
-                    <div class="card-title">GlglStats</div>
-                    <div class="card-desc">Measuring Israeli pop-chart repetitiveness. A Python project utilizing LZ77 compression to analyze and visualize repetition patterns in music structures.</div>
-                    <div class="card-actions">
-                        <a href="https://glglstats.geekip.dev" target="_blank" class="neon-link neon-cyan"><i class="fas fa-globe"></i> Live Site</a>
-                        <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="neon-link neon-cyan"><i class="fas fa-play"></i> PyData TLV Presentation</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Box 2: Ahuzat Dibuk -->
-            <div class="card">
-                <div class="card-header"><i class="fab fa-python"></i> <span>ahuzat-dibuk.py</span></div>
-                <div class="visual-bg"><div class="heatmap-gradient"></div></div>
-                <div class="card-content">
-                    <div class="card-title">Ahuzat Dibuk</div>
-                    <div class="card-desc">Python scraping and data visualization pipeline generating highly detailed Tel-Aviv parking lot occupancy heatmaps, aiding residents globally.</div>
-                    <div class="card-actions">
-                        <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="neon-link neon-pink"><i class="fas fa-tv"></i> Feature: 13TV</a>
-                        <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="neon-link neon-pink"><i class="far fa-newspaper"></i> Feature: Mako</a>
-                        <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" class="neon-link neon-pink"><i class="fas fa-code-branch"></i> Source Log</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Box 3: 2D Part Orienting -->
-            <div class="card">
-                <div class="card-header"><i class="fas fa-cogs"></i> <span>orienting_algo.cpp</span></div>
-                <div class="visual-bg"><div class="poly-outline"></div></div>
-                <div class="card-content">
-                    <div class="card-title">2D Part Orienting</div>
-                    <div class="card-desc">C++ implementation within an open-source computational geometry library. Executes a push plan algorithm to correctly orient a given arbitrary polygon.</div>
-                    <div class="card-actions">
-                        <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="neon-link neon-yellow"><i class="fas fa-puzzle-piece"></i> View Implementation Details (TAU)</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Box 4: The Turing Jest -->
-            <div class="card">
-                <div class="card-header"><i class="fas fa-robot"></i> <span>turing-jest.sh</span></div>
-                <div class="visual-bg"><div class="split-arena"></div></div>
-                <div class="card-content">
-                    <div class="card-title">The Turing Jest</div>
-                    <div class="card-desc">An LMSYS-inspired arena where top LLMs ruthlessly compete against each other to weave and explain puns, dynamically rated by human users.</div>
-                    <div class="card-actions">
-                        <a href="https://jest.geekip.dev" target="_blank" class="neon-link neon-purple"><i class="fas fa-rocket"></i> Launch Arena</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Box 5: Rhymes of Israel -->
-            <div class="card">
-                <div class="card-header"><i class="fab fa-chrome"></i> <span>rhymes-ext.crx</span></div>
-                <div class="visual-bg"><i class="fas fa-puzzle-piece bg-icon"></i></div>
-                <div class="card-content">
-                    <div class="card-title">Rhymes of Israel</div>
-                    <div class="card-desc">An LLM-powered Chrome Custom Extension rewriting mainstream Israeli news headlines on-the-fly into comedic, high-school-yearbook-style rhyming couplets.</div>
-                    <div class="card-actions">
-                        <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="neon-link neon-green"><i class="fas fa-download"></i> Install Extension</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Box 6: Meta Portfolio -->
-            <div class="card">
-                <div class="card-header"><i class="fas fa-infinity"></i> <span>portfolio-meta.js</span></div>
-                <div class="visual-bg"><div class="recursive-box"><div><div></div></div></div></div>
-                <div class="card-content">
-                    <div class="card-title">Self-Referential UI</div>
-                    <div class="card-desc">You are currently observing the compiled output of this module. A meta-acknowledgment of the dynamically shifting portfolio environment.</div>
-                    <div class="card-actions">
-                        <a href="https://geekip.dev" class="neon-link neon-cyan"><i class="fas fa-sync-alt"></i> Execute Main Loop (geekip.dev)</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Box 7: Network Outbound -->
-            <div class="card" style="grid-column: span 1;">
-                <div class="card-header"><i class="fas fa-network-wired"></i> <span>net-outbound.api</span></div>
-                <div class="card-content">
-                    <div class="card-title" style="margin-bottom: 20px;">Network Connections</div>
-                    <div class="api-stack">
-                        <a href="https://github.com/gevak" target="_blank" class="api-endpoint">
-                            <span class="api-method">GET</span>
-                            <span class="api-path"><i class="fab fa-github"></i> /github/gevak</span>
-                        </a>
-                        <a href="https://linkedin.com/in/gevakip" target="_blank" class="api-endpoint">
-                            <span class="api-method">GET</span>
-                            <span class="api-path"><i class="fab fa-linkedin"></i> /linkedin/gevakip</span>
-                        </a>
-                        <a href="https://facebook.com/geva.kipper" target="_blank" class="api-endpoint">
-                            <span class="api-method">GET</span>
-                            <span class="api-path"><i class="fab fa-facebook"></i> /facebook/geva.kipper</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- Status Bar (Footer) -->
-    <footer>
-        <div class="left">
-            <i class="fas fa-code-branch" style="margin-right:5px;"></i> Compiled by: Claude [AI Model]
-        </div>
-        <div class="right">
-            <i class="fas fa-clock"></i> <span id="uptime-display">Uptime: 00:00:00</span>
-        </div>
-    </footer>
-
-    <!-- Logic Script -->
-    <script>
-        // 1. Uptime Logic
-        function updateUptime() {
-            // Target timestamp: 2026-02-22 01:30:12 UTC (or local depending on parsing, using strict string)
-            const startEpoch = new Date("2026-02-22T01:30:12").getTime();
-            const now = Date.now();
-            
-            // To ensure logic works regardless of current date, get absolute elapsed difference
-            let diffSecs = Math.floor(Math.abs(now - startEpoch) / 1000);
-            
-            const h = String(Math.floor(diffSecs / 3600)).padStart(2, '0');
-            const m = String(Math.floor((diffSecs % 3600) / 60)).padStart(2, '0');
-            const s = String(diffSecs % 60).padStart(2, '0');
-            
-            document.getElementById('uptime-display').textContent = `Uptime: ${h}:${m}:${s}`;
-        }
-        setInterval(updateUptime, 1000);
-        updateUptime();
-
-        // 2. Typing Animation Logic
-        const codeTokens = [
-            { type: 'kw', text: 'const ' },
-            { type: 'var', text: 'buildOwner ' },
-            { type: 'op', text: '= ' },
-            { type: 'str', text: '"Geva Kipper"' },
-            { type: 'punct', text: ';\n' },
-            { type: 'kw', text: 'const ' },
-            { type: 'var', text: 'currentStatus ' },
-            { type: 'op', text: '= ' },
-            { type: 'str', text: '"Software Engineer at Google, building next-generation web technologies."' },
-            { type: 'punct', text: ';\n\n' },
-            { type: 'comment', text: '/* NOTE: This layout is dynamically re-designed each day by an AI agent,\n   ensuring an ever-changing digital footprint. */' }
-        ];
-
-        const editorElement = document.getElementById('code-entry');
-        const cursor = document.getElementById('type-cursor');
+    <div class="vending-machine" id="machine">
         
-        const wait = (ms) => new Promise(r => setTimeout(r, ms));
+        <!-- Header Panel -->
+        <div class="header-marquee">
+            <h1 class="header-title">Geva Kipper</h1>
+            <p class="header-subtitle">Software Engineer currently building the future at Google.</p>
+            <div class="ticker-container">
+                <span class="ticker-text">Notice: The architecture of this interface is re-designed daily by AI. You are experiencing an ever-changing, ephemeral layout. *** System Nominal *** Ready for Dispense ***</span>
+            </div>
+        </div>
 
-        async function initTyping() {
-            await wait(500); // initial delay
+        <!-- Main Workspace -->
+        <div class="machine-body">
             
-            for (let token of codeTokens) {
-                const span = document.createElement('span');
-                span.className = token.type;
-                editorElement.insertBefore(span, cursor);
+            <!-- Vending Area Container -->
+            <div class="viewport-glass">
+                <div class="shelves-grid">
+                    
+                    <div class="slot">
+                        <div class="coil"></div>
+                        <div class="snack pkg-1" data-id="1">GlglStats</div>
+                    </div>
+                    <div class="slot">
+                        <div class="coil"></div>
+                        <div class="snack pkg-2" data-id="2">Ahuzat Dibuk</div>
+                    </div>
+                    <div class="slot">
+                        <div class="coil"></div>
+                        <div class="snack pkg-3" data-id="3">2D Part Orient</div>
+                    </div>
+                    
+                    <div class="slot">
+                        <div class="coil"></div>
+                        <div class="snack pkg-4" data-id="4">The Turing<br>Jest</div>
+                    </div>
+                    <div class="slot">
+                        <div class="coil"></div>
+                        <div class="snack pkg-5" data-id="5">Rhymes of Israel</div>
+                    </div>
+                    <div class="slot">
+                        <div class="coil"></div>
+                        <div class="snack pkg-6" data-id="6">Meta<br>Portfolio</div>
+                    </div>
 
-                for (let i = 0; i < token.text.length; i++) {
-                    if(token.text[i] === '\n') {
-                        editorElement.insertBefore(document.createElement('br'), cursor);
-                    } else {
-                        span.textContent += token.text[i];
-                    }
-                    // Speed variation
-                    await wait(Math.random() * 20 + 20); 
-                }
+                </div>
+
+                <div class="dispenser-tray">
+                    <div class="tray-flap" id="tray-target"></div>
+                </div>
+            </div>
+
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <div class="panel-header">Terminal<br>Select</div>
+                <div class="keypad">
+                    <button class="btn" onclick="openLink('https://github.com/gevak')">
+                        <span class="btn-icon">GH</span>
+                        GitHub
+                    </button>
+                    <button class="btn" onclick="openLink('https://linkedin.com/in/gevakip')">
+                        <span class="btn-icon">IN</span>
+                        LinkedIn
+                    </button>
+                    <button class="btn" onclick="openLink('https://facebook.com/geva.kipper')">
+                        <span class="btn-icon">FB</span>
+                        Facebook
+                    </button>
+                </div>
+                <div class="insert-coin"><div class="coin-slot"></div></div>
+            </div>
+
+        </div>
+
+        <!-- Footer Base -->
+        <div class="footer-base">
+            <div style="width: 20px; height: 10px; background: #333; border-radius: 5px; box-shadow: inset 0 2px 5px #000;"></div>
+            <div class="lcd-screen">
+                <span class="lcd-text">Interface generated by AI.</span>
+                <span class="lcd-time" id="stopwatch">[00:00:00]</span>
+            </div>
+            <div style="width: 20px; height: 10px; background: #333; border-radius: 5px; box-shadow: inset 0 2px 5px #000;"></div>
+        </div>
+
+        <!-- Modal Overlay -->
+        <div class="modal-wrapper" id="modalWrapper">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="mTitle">Project Name</h2>
+                    <button class="close-btn" onclick="closeModal()">×</button>
+                </div>
+                <div class="modal-body" id="mBody">
+                    <!-- Dynamic Content -->
+                </div>
+                <div class="modal-links" id="mLinks">
+                    <!-- Dynamic Links -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Project Database
+        const projects = {
+            1: {
+                title: "GlglStats",
+                color: "var(--neon-blue)",
+                desc: "A Python LZ77 pop-chart compression project. Presented at the PyData TLV conference, demonstrating innovative data structuring and algorithmic thinking in Python.",
+                html: `<div class="modal-video"><iframe src="https://www.youtube.com/embed/jrKAtOsj1Lo" allowfullscreen></iframe></div>`,
+                links: [{ text: "Visit Site", url: "https://glglstats.geekip.dev" }]
+            },
+            2: {
+                title: "Ahuzat Dibuk",
+                color: "#ff4500",
+                desc: "A highly impactful Tel-Aviv parking lot scraping project. Uncovered critical data regarding parking availability, triggering widespread media coverage and public discourse.",
+                html: `<p style="margin-top: 15px;">Featured on major Israeli news networks and social groups.</p>`,
+                links: [
+                    { text: "Channel 13 News", url: "https://13tv.co.il/item/news/domestic/internal/parking-902956407/" },
+                    { text: "Mako / Nexter", url: "https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" },
+                    { text: "Secret Tel-Aviv Post", url: "https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" }
+                ]
+            },
+            3: {
+                title: "2D Part Orienting",
+                color: "#aaa",
+                desc: "A C++ computational geometry push-plan algorithm framework. Developed in collaboration with Tel-Aviv University, focusing on precise geometric manipulation and robotic part orienting.",
+                html: `<p style="margin-top: 15px;">Open source library and academic implementation details available below.</p>`,
+                links: [{ text: "TAU Project Page", url: "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" }]
+            },
+            4: {
+                title: "The Turing Jest",
+                color: "#00ff66",
+                desc: "An LMSYS-like arena for LLMs, but specifically designed to benchmark and evaluate AI-generated puns and humor. A cyberpunk-themed arena testing the creative boundaries of generative models.",
+                html: ``,
+                links: [{ text: "Enter The Arena", url: "https://jest.geekip.dev" }]
+            },
+            5: {
+                title: "Rhymes of Israel",
+                color: "yellow",
+                desc: "A novel Chrome Extension that re-writes online news headlines using LLMs in the style of highschool yearbook poetry. Blending modern AI with nostalgic, rhyming satire.",
+                html: ``,
+                links: [{ text: "Chrome Web Store", url: "https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" }]
+            },
+            6: {
+                title: "The Meta Portfolio",
+                color: "#fff",
+                desc: "You are looking at it. A self-referential digital diorama acting as a resume. Built as a single-file system mimicking a physical vending machine, where projects are snacks and gravity handles navigation.",
+                html: `<p style="margin-top: 15px;">*Humorous self-awareness protocols engaged.*</p>`,
+                links: [{ text: "Return to Root", url: "https://geekip.dev" }]
             }
-            
-            await wait(400);
-            document.getElementById('run-btn').classList.add('visible');
+        };
+
+        // Mechanical Button Sound Simulation & Link Opening
+        function openLink(url) {
+            // Play a tiny beep (simulated)
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if(audioCtx) {
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.type = 'square';
+                oscillator.frequency.value = 800;
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
+                oscillator.stop(audioCtx.currentTime + 0.1);
+            }
+            setTimeout(() => window.open(url, '_blank'), 150);
         }
 
-        window.addEventListener('DOMContentLoaded', initTyping);
+        // Stopwatch Logic
+        const targetDate = new Date("2026-02-23T01:28:34").getTime();
+        const stopwatchEl = document.getElementById('stopwatch');
 
-        // 3. Terminal & Morph Logic
-        const runBtn = document.getElementById('run-btn');
-        const editorView = document.getElementById('editor-view');
-        const terminalView = document.getElementById('terminal-view');
-        const gridView = document.getElementById('grid-view');
-        const abstractBg = document.getElementById('abstract-bg');
-        const terminalPanel = document.getElementById('terminal-panel');
-
-        const buildLogs = [
-            "> Fetching achievements...",
-            "> Resolving dependencies...",
-            "> Compiling project modules...",
-            "> Build Successful. Rendering UI..."
-        ];
-
-        runBtn.addEventListener('click', async () => {
-            // Hide button 
-            runBtn.style.opacity = '0';
+        function updateStopwatch() {
+            const now = Date.now();
+            let diffRaw = Math.floor(Math.abs(now - targetDate) / 1000);
             
-            // Slide up terminal
-            terminalView.classList.add('open');
-            await wait(600);
+            const h = Math.floor(diffRaw / 3600);
+            diffRaw %= 3600;
+            const m = Math.floor(diffRaw / 60);
+            const s = diffRaw % 60;
 
-            // Log sequence
-            for(let log of buildLogs) {
-                const p = document.createElement('div');
-                p.textContent = log;
-                p.style.opacity = '1';
-                terminalPanel.appendChild(p);
-                terminalPanel.scrollTop = terminalPanel.scrollHeight;
-                await wait(400); // ~2 second total animation
-            }
-
-            // Final wait before morph
-            await wait(400);
-
-            // Shatter/Morph Out
-            editorView.classList.add('morph-out');
-            terminalView.classList.add('morph-out');
+            const pad = (num) => String(num).padStart(2, '0');
             
-            await wait(800);
-            
-            // Clean DOM visually layer
-            editorView.style.display = 'none';
-            terminalView.style.display = 'none';
-            
-            // Reveal New UI
-            document.body.style.backgroundImage = 'none'; // remove grid lines
-            abstractBg.classList.add('active');
-            gridView.classList.add('active');
+            // If now is before target date, it's a countdown. Show negative sign just for flavor.
+            const prefix = now < targetDate ? "-" : "";
+            stopwatchEl.innerText = `[${prefix}${pad(h)}:${pad(m)}:${pad(s)}]`;
+        }
+        setInterval(updateStopwatch, 1000);
+        updateStopwatch();
 
-            // Stagger Cards in
-            const cards = document.querySelectorAll('.card');
-            cards.forEach((card, index) => {
+        // Gravity Drop & Modal Logic
+        const snacks = document.querySelectorAll('.snack');
+        const tray = document.getElementById('tray-target');
+        const modalWrap = document.getElementById('modalWrapper');
+        let isAnimating = false;
+
+        snacks.forEach(snack => {
+            snack.addEventListener('click', (e) => {
+                if (isAnimating) return;
+                isAnimating = true;
+
+                const origEl = e.currentTarget;
+                const id = origEl.getAttribute('data-id');
+                const coil = origEl.previousElementSibling;
+
+                const snackRect = origEl.getBoundingClientRect();
+                const trayRect = tray.getBoundingClientRect();
+
+                // Create clone for falling
+                const clone = origEl.cloneNode(true);
+                clone.style.position = 'fixed';
+                clone.style.top = snackRect.top + 'px';
+                clone.style.left = snackRect.left + 'px';
+                clone.style.margin = '0';
+                clone.style.zIndex = '900';
+                clone.style.transition = 'top 0.6s cubic-bezier(0.55, 0.085, 0.68, 0.53), left 0.6s linear, transform 0.6s ease-in';
+                
+                document.body.appendChild(clone);
+                origEl.style.opacity = '0'; // Hide original
+                coil.classList.add('spinning');
+
+                // Trigger fall next frame
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        const targetY = trayRect.top + (trayRect.height / 2) - (snackRect.height / 2);
+                        const targetX = trayRect.left + (trayRect.width / 2) - (snackRect.width / 2);
+                        
+                        clone.style.top = targetY + 'px';
+                        clone.style.left = targetX + 'px';
+                        clone.style.transform = 'rotate(720deg) scale(0.9)';
+                    });
+                });
+
+                // Wait for fall to intersept tray, then burst modal
                 setTimeout(() => {
-                    card.classList.add('show');
-                }, index * 100); // 100ms stagger offset
+                    clone.remove();
+                    coil.classList.remove('spinning');
+                    origEl.style.opacity = '1';
+                    populateAndOpenModal(id);
+                }, 650);
+
             });
         });
+
+        function populateAndOpenModal(id) {
+            const data = projects[id];
+            
+            document.getElementById('mTitle').innerText = data.title;
+            document.getElementById('mTitle').style.color = data.color;
+            
+            document.getElementById('mBody').innerHTML = `<p>${data.desc}</p>${data.html}`;
+            
+            const linksContainer = document.getElementById('mLinks');
+            linksContainer.innerHTML = '';
+            data.links.forEach(l => {
+                const a = document.createElement('a');
+                a.href = l.url;
+                a.className = 'action-link';
+                a.target = '_blank';
+                a.innerText = l.text;
+                a.style.borderColor = data.color;
+                a.style.color = data.color;
+                
+                // Hover effect dynamic colors
+                a.addEventListener('mouseenter', () => {
+                   a.style.background = data.color;
+                   a.style.color = '#000';
+                   a.style.boxShadow = `0 0 15px ${data.color}`;
+                });
+                a.addEventListener('mouseleave', () => {
+                   a.style.background = 'transparent';
+                   a.style.color = data.color;
+                   a.style.boxShadow = `none`;
+                });
+
+                linksContainer.appendChild(a);
+            });
+
+            // Burst open
+            modalWrap.classList.add('active');
+        }
+
+        function closeModal() {
+            modalWrap.classList.remove('active');
+            setTimeout(() => {
+                // Clear iframe to stop video playing in bg
+                const vid = document.querySelector('.modal-video iframe');
+                if(vid) vid.src = vid.src; 
+                isAnimating = false;
+            }, 400); // match transition time
+        }
 
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260222",
+          pageId: "20260223",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
