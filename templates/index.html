@@ -2,731 +2,604 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | Digital Vending Interface</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <title>Geva Kipper | Terminal Portal</title>
+    
+    <!-- Fonts: Standard Inter, Monospace Fira Code, and Caveat for doodles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Fira+Code:wght@300;400;600&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+
     <style>
-        /* === CSS Variables & Foundations === */
         :root {
-            --bg-dark: #0a0a0c;
+            /* Color Palette */
+            --bg-deep: #050810;
+            --bg-black: #000000;
+            --term-text: #A0AABF;
+            --term-dim: #4B5563;
+            --neon-green: #39FF14;
+            --neon-blue: #00F3FF;
+            --neon-magenta: #FF00FF;
+            --neon-pink: #FF3366;
+            --neon-orange: #FFAA00;
+            --neon-purple: #BF00FF;
+            
+            /* Glassmorphism */
             --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --glow-cyan: 0 0 15px rgba(0, 255, 255, 0.6);
-            --glow-purple: 0 0 15px rgba(162, 0, 255, 0.6);
-            --glow-amber: 0 0 15px rgba(255, 170, 0, 0.6);
-            --color-cyan: #00ffff;
-            --color-purple: #b942ff;
-            --color-amber: #ffb700;
-            --font-main: 'Inter', sans-serif;
-            --font-display: 'Orbitron', sans-serif;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            
+            --font-term: 'Fira Code', monospace;
+            --font-ui: 'Inter', sans-serif;
+            --font-doodle: 'Caveat', cursive;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--term-dim) transparent;
+        }
 
-        body {
-            background-color: var(--bg-dark);
-            background-image: 
-                radial-gradient(circle at 15% 50%, rgba(162, 0, 255, 0.15), transparent 40%),
-                radial-gradient(circle at 85% 30%, rgba(0, 255, 255, 0.1), transparent 40%);
-            color: #fff;
-            font-family: var(--font-main);
+        body, html {
+            width: 100vw;
             height: 100vh;
+            background: linear-gradient(135deg, var(--bg-deep) 0%, var(--bg-black) 100%);
+            color: var(--term-text);
+            font-family: var(--font-term);
             overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            perspective: 1200px;
-        }
-
-        /* === Machine Architecture === */
-        #machine-container {
-            width: 95vw;
-            max-width: 1100px;
-            height: 90vh;
-            background: rgba(10, 10, 15, 0.6);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,255,255,0.05);
-            backdrop-filter: blur(20px);
-            position: relative;
-            transform-style: preserve-3d;
         }
 
-        /* === Marquee Header === */
-        .marquee-container {
-            height: 12%;
-            border-bottom: 2px solid var(--glass-border);
-            padding: 1rem;
+        a { text-decoration: none; color: inherit; }
+
+        /* Main Layout */
+        main {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 30px); /* minus footer */
+        }
+
+        .pane {
+            flex: 1;
+            padding: 40px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-            border-radius: 20px 20px 0 0;
-            overflow: hidden;
-        }
-
-        .marquee-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-family: var(--font-display);
-        }
-
-        .marquee-top h1 {
-            font-size: 1.8rem;
-            color: #fff;
-            text-shadow: var(--glow-cyan);
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        .marquee-subtitle {
-            font-size: 0.85rem;
-            color: rgba(255,255,255,0.7);
-            text-align: right;
-            max-width: 50%;
-        }
-
-        .scrolling-ticker {
-            margin-top: 10px;
-            width: 100%;
-            overflow: hidden;
-            white-space: nowrap;
+            overflow-y: auto;
             position: relative;
         }
 
-        .scrolling-ticker p {
-            display: inline-block;
-            color: var(--color-amber);
-            font-family: var(--font-display);
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            text-shadow: var(--glow-amber);
-            animation: scroll 20s linear infinite;
-        }
-
-        @keyframes scroll {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
-        }
-
-        /* === Main Display Area (Glassmorphism Enclosure) === */
-        .glass-enclosure {
-            flex-grow: 1;
-            display: grid;
-            grid-template-columns: 3fr 1fr;
-            padding: 20px;
-            gap: 20px;
-            position: relative;
-        }
-
-        .shelves-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 20px;
-            position: relative;
-        }
-
-        /* The rendered Metallic Coil */
-        .slot {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            padding-bottom: 15px;
-            border-bottom: 3px solid rgba(255,255,255,0.05);
-            box-shadow: inset 0 -10px 20px -10px rgba(0,255,255,0.1);
-        }
-
-        .slot::before {
-            content: '';
-            position: absolute;
-            bottom: 12px;
-            width: 60px;
-            height: 80%;
-            background: repeating-linear-gradient(
-                180deg,
-                transparent,
-                transparent 10px,
-                rgba(255, 255, 255, 0.4) 10px,
-                rgba(150, 150, 150, 0.8) 15px
-            );
-            border-radius: 5px;
-            z-index: 1;
-            transition: transform 1s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-
-        .slot.spinning::before {
-            transform: translateY(-5px) scaleY(1.1);
-            background: repeating-linear-gradient(
-                180deg,
-                transparent,
-                transparent 8px,
-                rgba(255, 255, 255, 0.6) 8px,
-                rgba(150, 150, 150, 0.9) 12px
-            );
-            animation: spinCoil 0.3s linear infinite;
-        }
-
-        @keyframes spinCoil {
-            0% { background-position: 0 0; }
-            100% { background-position: 0 15px; }
-        }
-
-        /* === Product Designs === */
-        .item-package {
-            position: relative;
-            z-index: 2;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: var(--font-display);
-            font-weight: bold;
-            text-align: center;
-            font-size: 0.8rem;
+        /* ----- LEFT: TERMINAL ----- */
+        .term-header {
+            min-height: 120px;
+            margin-bottom: 20px;
+            border-bottom: 1px dashed var(--term-dim);
+            padding-bottom: 20px;
         }
         
-        .item-package:hover {
-            transform: scale(1.05) translateY(-5px);
-            filter: brightness(1.2);
-        }
+        .type-line { min-height: 1.5em; margin-bottom: 8px; font-size: 0.95rem; }
+        .sys-user { color: #FFF; font-weight: 600; font-size: 1.1rem; }
+        .sys-status { color: var(--neon-green); opacity: 0.8; }
+        .sys-notice { color: var(--neon-magenta); font-style: italic; }
 
-        /* 1. Cassette */
-        .pack-cassette {
-            width: 90px; height: 60px;
-            background: rgba(40, 40, 50, 0.8);
-            border: 2px solid var(--color-purple);
-            border-radius: 8px;
-            box-shadow: var(--glow-purple);
-            backdrop-filter: blur(5px);
-        }
-        .pack-cassette::after {
-            content: ''; position: absolute; width: 60px; height: 20px;
-            background: #111; border-radius: 10px; border: 1px dotted var(--color-purple);
-        }
+        .term-history { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        .history-line { font-size: 0.95rem; line-height: 1.4; color: var(--term-text); }
+        .history-prompt-prefix { color: var(--neon-blue); margin-right: 8px; }
+        .success-msg { color: var(--neon-green); }
 
-        /* 2. Matchbox*/
-        .pack-matchbox {
-            width: 100px; height: 45px;
-            background: linear-gradient(45deg, #111, #331);
-            border: 1px solid var(--color-amber);
-            border-left: 5px solid var(--color-amber);
-            box-shadow: var(--glow-amber);
-            color: var(--color-amber);
+        .prompt-container { margin-top: auto; padding-top: 20px; }
+        
+        .sys-tags {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
         }
+        .tag {
+            font-size: 0.8rem;
+            color: var(--term-dim);
+            border: 1px solid var(--term-dim);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tag:hover { border-color: var(--neon-blue); color: var(--neon-blue); }
 
-        /* 3. Puzzle Cube */
-        .pack-cube {
-            width: 65px; height: 65px;
+        .input-line {
+            display: flex;
+            align-items: center;
+        }
+        .prompt { color: var(--neon-green); margin-right: 12px; font-weight: 600; white-space: nowrap; }
+        
+        input[type="text"] {
             background: transparent;
-            border: 1px solid rgba(0,255,255,0.3);
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
-            box-shadow: var(--glow-cyan);
-        }
-        .pack-cube div { background: rgba(0, 255, 255, 0.2); }
-        .pack-cube div:nth-child(even) { background: rgba(0, 255, 255, 0.6); }
-
-        /* 4. Playing Cards */
-        .pack-cards {
-            width: 60px; height: 85px;
-            background: linear-gradient(135deg, #fff 50%, #222 50%);
-            border-radius: 4px;
-            box-shadow: 0 0 10px rgba(255,255,255,0.5);
-            border: 1px solid #777;
+            border: none;
+            color: #FFF;
+            font-family: var(--font-term);
+            font-size: 1rem;
+            flex: 1;
+            outline: none;
+            caret-color: transparent; /* custom cursor handled via span */
         }
 
-        /* 5. Energy Drink Can */
-        .pack-can {
-            width: 45px; height: 90px;
-            background: linear-gradient(90deg, #333 0%, #aaa 50%, #333 100%);
-            border-radius: 8px / 15px;
-            position: relative;
-            overflow: hidden;
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.2em;
+            background-color: var(--term-text);
+            animation: blink 1s step-end infinite;
+            transform: translateY(3px); margin-left: -2px;
         }
-        .pack-can::after { /* Newspaper wrap effect */
-            content: 'RHYMES NEWSPAPER RHYMES'; position: absolute; inset: 15px 0;
-            background: #fff; color: #000; font-size: 5px; line-height: 1; word-wrap: break-word; text-align: left; padding: 2px;
-        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-        /* 6. Mini Machine */
-        .pack-mini {
-            width: 50px; height: 80px;
-            background: #111; border: 1px solid #555; border-radius: 4px; border-top: 5px solid cyan;
-            display: flex; flex-direction: column; padding: 5px; gap: 2px;
-        }
-        .pack-mini div { background: rgba(255,255,255,0.2); height: 10px; width: 100%; border-radius: 2px; }
-
-        /* === Control Panel (Slot 7) === */
-        .control-panel {
-            background: repeating-linear-gradient(45deg, #2a2a35, #2a2a35 10px, #202028 10px, #202028 20px);
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-            box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            gap: 20px;
-        }
-
-        .reader-module {
-            width: 100%;
-            height: 150px;
-            background: #0f0f15;
-            border-radius: 10px;
-            border: 1px solid #444;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .reader-module:hover {
-            box-shadow: var(--glow-cyan);
-            border-color: var(--color-cyan);
-        }
-
-        .nfc-icon {
-            width: 50px; height: 50px;
-            border-radius: 50%;
-            border: 3px solid transparent;
-            border-top-color: var(--color-cyan);
-            position: relative;
-            animation: pulse-nfc 2s infinite;
-        }
-        .nfc-icon::before {
-            content:''; position: absolute; top: 8px; left: 8px; right: 8px; bottom: 8px;
-            border-radius: 50%; border: 3px solid transparent; border-top-color: var(--color-cyan);
-        }
-        .nfc-icon::after {
-            content:''; position: absolute; top: 20px; left: 20px; width: 4px; height: 4px; background: var(--color-cyan); border-radius: 50%;
-        }
-        @keyframes pulse-nfc { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
-        
-        .control-panel p {
-            font-family: var(--font-display);
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.6);
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* === Drop Tray Container === */
-        .tray-container {
-            height: 15%;
-            margin: 0 20px;
-            background: #050508;
-            border-radius: 10px;
-            border: 1px solid #222;
-            box-shadow: inset 0 20px 30px rgba(0,0,0,1), 0 -5px 15px rgba(255,255,255,0.02);
-            position: relative;
+        /* ----- RIGHT: CANVAS (PROJECT BOXES) ----- */
+        .canvas {
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
-        }
-        .tray-glass-door {
-            position: absolute; width: 100%; height: 100%;
-            background: linear-gradient(180deg, rgba(255,255,255,0.05), transparent);
-            border-top: 1px solid rgba(255,255,255,0.2);
-            pointer-events: none;
+            position: relative;
         }
 
-        /* === Footer Chassis === */
-        #chassis-plate {
-            height: 10%;
-            background: radial-gradient(ellipse at bottom, #3a3a45, #1a1a20);
-            border-radius: 0 0 20px 20px;
-            border-top: 1px solid #555;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 30px;
-        }
-
-        .footer-credit {
-            font-family: var(--font-main);
-            font-size: 0.75rem;
-            color: rgba(255,255,255,0.4);
-            text-shadow: 1px 1px 0px rgba(255,255,255,0.1), -1px -1px 0px rgba(0,0,0,1);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .stopwatch {
-            font-family: var(--font-display);
-            font-size: 1.1rem;
-            color: #ff3333;
-            text-shadow: 0 0 10px rgba(255, 51, 51, 0.8);
-            background: #000;
-            padding: 5px 15px;
-            border-radius: 4px;
-            border: 1px solid #330000;
-            box-shadow: inset 0 0 10px #000;
-        }
-
-        /* === Drop Animation Clone === */
-        .falling-item {
-            position: fixed;
-            z-index: 1000;
-            transition: top 0.6s cubic-bezier(0.6, -0.28, 0.735, 0.045), left 0.6s linear, transform 0.6s ease-in;
-            pointer-events: none;
-        }
-
-        /* === Modal Overlay === */
-        #modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.8);
+        .card {
+            font-family: var(--font-ui);
+            background: var(--glass-bg);
             backdrop-filter: blur(15px);
-            z-index: 2000; /* above everything */
-            display: flex; justify-content: center; align-items: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.4s ease;
-        }
-
-        #modal-overlay.active {
-            opacity: 1; pointer-events: auto;
-        }
-
-        .modal-box {
-            width: 90%; max-width: 600px;
-            background: rgba(20, 20, 25, 0.85);
+            -webkit-backdrop-filter: blur(15px);
             border: 1px solid var(--glass-border);
             border-radius: 16px;
             padding: 40px;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.05);
-            transform: translateY(50px) scale(0.9);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
+            width: 100%;
+            max-width: 500px;
+            color: #FFF;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px) scale(0.95);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 10;
         }
-        #modal-overlay.active .modal-box { transform: translateY(0) scale(1); }
-
-        .modal-close {
-            position: absolute; top: 15px; right: 20px;
-            font-family: var(--font-display); font-size: 1.5rem; color: #fff;
-            cursor: pointer; background: none; border: none; opacity: 0.6; transition: opacity 0.2s;
+        
+        .card.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0) scale(1);
         }
-        .modal-close:hover { opacity: 1; text-shadow: var(--glow-cyan); }
 
-        .modal-title { font-family: var(--font-display); font-size: 2rem; margin-bottom: 10px; color: var(--color-cyan); }
-        .modal-desc { font-size: 1rem; line-height: 1.6; color: #ddd; margin-bottom: 30px; }
-
-        .btn-group { display: flex; flex-wrap: wrap; gap: 15px; }
+        .card h2 { font-size: 1.8rem; margin-bottom: 10px; font-weight: 800; letter-spacing: -0.5px; }
+        .card p { font-size: 0.95rem; color: #cbd5e1; line-height: 1.6; margin-bottom: 25px; }
+        
+        .btn-group { display: flex; gap: 12px; flex-wrap: wrap; }
         .btn {
-            text-decoration: none; padding: 10px 20px; font-family: var(--font-display); font-size: 0.9rem;
-            color: #fff; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
-            border-radius: 6px; transition: all 0.3s; text-transform: uppercase; letter-spacing: 1px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            transition: all 0.2s;
+            cursor: pointer;
         }
-        .btn:hover { background: rgba(0, 255, 255, 0.1); border-color: var(--color-cyan); box-shadow: var(--glow-cyan); }
+        .btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
 
-        /* specific color overrides for titles/buttons in modal based on item type could be added by JS */
+        /* --- Individual Box Styling --- */
+        
+        /* Box 1: GlglStats (Wave Animation) */
+        #box-1 { border-color: rgba(0, 243, 255, 0.3); box-shadow: 0 0 20px rgba(0,243,255,0.1); }
+        .wave-container { height: 60px; display: flex; align-items: center; gap: 4px; margin-bottom: 20px; }
+        .wave-bar { width: 6px; background: var(--neon-blue); border-radius: 3px; animation: bounce 1s ease-in-out infinite alternate; }
+        .wave-bar:nth-child(1) { height: 20%; animation-delay: 0.0s; }
+        .wave-bar:nth-child(2) { height: 60%; animation-delay: 0.2s; }
+        .wave-bar:nth-child(3) { height: 100%; animation-delay: 0.4s; }
+        .wave-bar:nth-child(4) { height: 40%; animation-delay: 0.6s; }
+        .wave-bar:nth-child(5) { height: 80%; animation-delay: 0.8s; }
+        @keyframes bounce { from { transform: scaleY(0.2); } to { transform: scaleY(1); } }
+        #box-1 .btn { border-color: var(--neon-blue); color: var(--neon-blue); }
 
-        @media (max-width: 768px) {
-            .glass-enclosure { grid-template-columns: 1fr; overflow-y: auto;}
-            .shelves-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: auto; }
-            .marquee-top { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .marquee-subtitle { text-align: left; max-width: 100%; }
-            #chassis-plate { flex-direction: column; padding: 10px; gap: 10px;}
+        /* Box 2: Ahuzat Dibuk (Heatmap) */
+        #box-2 { border-color: rgba(255, 51, 102, 0.3); overflow: hidden; }
+        #box-2::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at 70% 30%, rgba(255,51,102,0.15), transparent 50%);
+            z-index: -1; pointer-events: none;
         }
+        .term-links a { color: var(--neon-pink); display: block; margin-bottom: 8px; font-family: var(--font-term); font-size: 0.85rem;}
+        .term-links a::before { content: '>'; margin-right: 8px; }
+
+        /* Box 3: 2D Part Orienting */
+        #box-3 { border-color: rgba(255, 170, 0, 0.3); }
+        .poly-container { width: 100%; height: 80px; display: flex; align-items: center; margin-bottom: 20px;}
+        .poly { 
+            width: 50px; height: 50px; border: 2px solid var(--neon-orange); 
+            animation: rotateLock 4s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite;
+        }
+        @keyframes rotateLock {
+            0% { transform: rotate(0deg) skew(0deg); }
+            20%, 50% { transform: rotate(90deg) skew(10deg); border-radius: 10px; }
+            70%, 100% { transform: rotate(180deg) skew(0deg); border-radius: 0px; }
+        }
+        #box-3 .btn { background: var(--neon-orange); color: #000; border:none; }
+
+        /* Box 4: Turing Jest */
+        #box-4 { border-color: rgba(191, 0, 255, 0.3); }
+        .vs-battler { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;}
+        .llm-card { text-align: center; font-size: 0.8rem; color: var(--term-text); }
+        .llm-card div { font-size: 1.5rem; margin-bottom: 5px; }
+        .vs-badge { background: var(--neon-purple); color: #fff; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; }
+        #box-4 .btn { border-color: var(--neon-purple); color: var(--neon-purple); }
+
+        /* Box 5: Rhymes of Israel */
+        #box-5 { font-family: var(--font-doodle); border-color: var(--neon-green); border-width: 2px; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; }
+        #box-5 h2 { font-family: var(--font-term); font-size: 1.5rem; }
+        #box-5 p { font-size: 1.2rem; line-height: 1.3; color: #fff; opacity: 0.9; }
+        #box-5 .btn { font-family: var(--font-term); border-bottom: 3px solid var(--neon-green); border-radius: 0; }
+
+        /* Box 6: Meta Portfolio */
+        #box-6 { display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .mirror-effect {
+            width: 80px; height: 80px; margin-bottom: 20px; border-radius: 8px;
+            box-shadow: 
+                inset 0 0 0 2px #fff, inset 0 0 0 10px var(--bg-deep),
+                inset 0 0 0 12px #fff, inset 0 0 0 20px var(--bg-deep),
+                inset 0 0 0 22px #fff, inset 0 0 0 30px var(--bg-deep),
+                inset 0 0 0 32px #fff, 0 0 20px rgba(255,255,255,0.5);
+            animation: pulse-mirror 3s infinite linear;
+        }
+        @keyframes pulse-mirror { 0% { transform: scale(0.95); opacity: 0.8;} 50% { transform: scale(1.05); opacity: 1;} 100%{ transform: scale(0.95); opacity: 0.8;} }
+
+        /* Box 7: Accounts (Nodes) */
+        #box-7 { border-color: rgba(255,255,255, 0.2); }
+        .node-hub { position: relative; height: 100px; display: flex; justify-content: space-around; align-items: center; margin-bottom: 20px; }
+        .node-line { position: absolute; top: 49%; left: 10%; right: 10%; height: 2px; background: var(--term-dim); z-index: 1; }
+        .node { 
+            position: relative; z-index: 2; width: 45px; height: 45px; border-radius: 50%; 
+            background: var(--bg-deep); border: 2px solid var(--term-text); display: flex; justify-content: center; align-items: center;
+            transition: all 0.3s; color: #fff; font-weight: bold; cursor: pointer; text-decoration: none;
+        }
+        .node:hover { transform: scale(1.2); box-shadow: 0 0 15px; }
+        .node-gh:hover { border-color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.5); }
+        .node-li:hover { border-color: #0077b5; box-shadow: 0 0 15px rgba(0,119,181,0.5); }
+        .node-fb:hover { border-color: #1877f2; box-shadow: 0 0 15px rgba(24,119,242,0.5); }
+
+        /* ----- FOOTER / STATUS BAR ----- */
+        footer {
+            height: 30px;
+            background: #007acc; /* VSCode generic blue status bar vibe */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px;
+            font-size: 0.75rem;
+            color: #ffffff;
+            font-family: var(--font-term);
+            z-index: 100;
+        }
+        .footer-left { opacity: 0.85; }
+        .footer-right { font-weight: 600; }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            main { flex-direction: column; height: auto; display: block; overflow-y: auto; }
+            .pane { min-height: 50vh; overflow: visible;}
+            .canvas { position: fixed; top: 10%; left: 5%; right: 5%; bottom: auto; background: rgba(5,8,16,0.95); padding: 20px; border-radius: 16px; border: 1px solid var(--term-dim); display: none; z-index: 999; }
+            .canvas.mobile-active { display: block; }
+            .card { position: relative; max-width: 100%; transform: none !important; opacity: 1 !important;}
+            /* Add close button for mobile */
+            .mobile-close { position: absolute; top: 10px; right: 20px; color: #fff; font-size: 1.5rem; cursor: pointer; z-index: 1000; font-family: sans-serif; }
+            body { overflow-y: auto; }
+        }
+
+        .mobile-close { display: none; }
+        @media (max-width: 900px) { .mobile-close { display: block; } }
+
     </style>
 </head>
 <body>
 
-    <main id="machine-container">
-        
-        <!-- Marquee / Header -->
-        <header class="marquee-container">
-            <div class="marquee-top">
-                <h1>Geva Kipper</h1>
-                <p class="marquee-subtitle">Software Engineer weaving scalable code & innovative systems at Google.</p>
-            </div>
-            <div class="scrolling-ticker">
-                <p>Notice: This digital interface is dynamically re-designed by AI every 24 hours and is thus ever-changing.</p>
-            </div>
-        </header>
-
-        <!-- Glass Display Case -->
-        <section class="glass-enclosure">
-            
-            <!-- Items Grid -->
-            <div class="shelves-grid">
-                <!-- Slot 1 -->
-                <div class="slot" id="slot-1">
-                    <div class="item-package pack-cassette" data-id="1">GLGL</div>
-                </div>
-                <!-- Slot 2 -->
-                <div class="slot" id="slot-2">
-                    <div class="item-package pack-matchbox" data-id="2">AHUZAT</div>
-                </div>
-                <!-- Slot 3 -->
-                <div class="slot" id="slot-3">
-                    <div class="item-package pack-cube" data-id="3">
-                        <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-                    </div>
-                </div>
-                <!-- Slot 4 -->
-                <div class="slot" id="slot-4">
-                    <div class="item-package pack-cards" data-id="4"></div>
-                </div>
-                <!-- Slot 5 -->
-                <div class="slot" id="slot-5">
-                    <div class="item-package pack-can" data-id="5"></div>
-                </div>
-                <!-- Slot 6 -->
-                <div class="slot" id="slot-6">
-                    <div class="item-package pack-mini" data-id="6">
-                        <div></div><div></div><div></div><div></div>
-                    </div>
-                </div>
+    <main>
+        <!-- LEFT: Terminal Window -->
+        <div class="pane term-pane" id="terminal" onclick="document.getElementById('cmd-input').focus()">
+            <div class="term-header">
+                <div class="type-line sys-user" id="head-1"></div>
+                <div class="type-line sys-status" id="head-2"></div>
+                <div class="type-line sys-notice" id="head-3"></div>
             </div>
 
-            <!-- Control Panel -->
-            <aside class="control-panel" id="slot-7">
-                <div class="reader-module item-package" data-id="7">
-                    <div class="nfc-icon"></div>
+            <div class="term-history" id="output"></div>
+
+            <div class="prompt-container">
+                <div class="sys-tags">
+                    <span class="tag" onclick="injectCmd('./glglstats')">[run glglstats]</span>
+                    <span class="tag" onclick="injectCmd('cd accounts')">[cat socials]</span>
+                    <span class="tag" onclick="injectCmd('ls projects')">[ls projects]</span>
                 </div>
-                <p>Tap to Read<br>Network ID</p>
-            </aside>
-
-        </section>
-
-        <!-- Dispense Tray -->
-        <div class="tray-container" id="tray">
-            <div class="tray-glass-door"></div>
+                <div class="input-line">
+                    <span class="prompt">guest@geekip.dev:~ $</span>
+                    <input type="text" id="cmd-input" autocomplete="off" spellcheck="false" autofocus>
+                    <span class="cursor"></span>
+                </div>
+            </div>
         </div>
 
-        <!-- Footer Footer Base -->
-        <footer id="chassis-plate">
-            <div class="footer-credit">Architecture & Design generated by Assistant / ChatGPT</div>
-            <div class="stopwatch" id="timer-display">00:00:00:00</div>
-        </footer>
+        <!-- RIGHT: Project Canvas -->
+        <div class="pane canvas" id="canvas-area">
+            <span class="mobile-close" onclick="closeMobileCanvas()">&times;</span>
+            
+            <!-- Box 1: GlglStats -->
+            <div class="card" id="box-1">
+                <div class="wave-container">
+                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                </div>
+                <h2>GlglStats</h2>
+                <p>Measuring Israeli pop-chart repetitiveness using Python and LZ77 compression algorithms. Audio data deconstructed into structural entropy.</p>
+                <div class="btn-group">
+                    <a href="https://glglstats.geekip.dev" target="_blank" class="btn">Launch Subroutine</a>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn">PyData TLV Conf</a>
+                </div>
+            </div>
 
+            <!-- Box 2: Ahuzat Dibuk -->
+            <div class="card" id="box-2">
+                <h2>Ahuzat Dibuk</h2>
+                <p>Python scraping and geospatial visualization mapping Tel-Aviv parking lot occupancy. Rendering urban density invisible metrics into actionable intelligence.</p>
+                <div class="term-links">
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">Channel 13 Broadcast</a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">Mako Tech Review</a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank">Secret Tel-Aviv Origin Log</a>
+                </div>
+            </div>
+
+            <!-- Box 3: 2D Part Orienting -->
+            <div class="card" id="box-3">
+                <div class="poly-container"><div class="poly"></div></div>
+                <h2>2D Part Orienting</h2>
+                <p>C++ implementation within an open-source computational geometry library. Constructing exact algorithmic push plans for automated geometric polygon locking.</p>
+                <div class="btn-group">
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn">View TAU Docs & Code</a>
+                </div>
+            </div>
+
+            <!-- Box 4: The Turing Jest -->
+            <div class="card" id="box-4">
+                <div class="vs-battler">
+                    <div class="llm-card"><div>🤖</div>Model A</div>
+                    <div class="vs-badge">VS</div>
+                    <div class="llm-card"><div>🧠</div>Model B</div>
+                </div>
+                <h2>The Turing Jest</h2>
+                <p>An LMSYS-style arena protocol. Large Language Models competing head-to-head to construct, deliver, and dissect puns based on crowdsourced human humor ratings.</p>
+                <div class="btn-group">
+                    <a href="https://jest.geekip.dev" target="_blank" class="btn">Enter Arena</a>
+                </div>
+            </div>
+
+            <!-- Box 5: Rhymes of Israel -->
+            <div class="card" id="box-5">
+                <h2>Rhymes of Israel</h2>
+                <p>A satirical LLM-powered Chrome extension formatting grim Israeli headlines into whimsical, comedic rhyming verse. Because the CLI is harsh, but poetry heals.</p>
+                <div class="btn-group">
+                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn">Add to Chrome</a>
+                </div>
+            </div>
+
+            <!-- Box 6: Meta Portfolio -->
+            <div class="card" id="box-6">
+                <div class="mirror-effect"></div>
+                <h2>Recursion Loop Error</h2>
+                <p>You are currently looking at a holographic projection of a terminal interface designed to showcase terminal interfaces. The system is consuming itself.</p>
+                <div class="btn-group">
+                    <a href="https://geekip.dev" target="_self" class="btn">Reload Matrix (geekip.dev)</a>
+                </div>
+            </div>
+
+            <!-- Box 7: Accounts (Socials) -->
+            <div class="card" id="box-7">
+                <h2>External Hub Links</h2>
+                <p>Decentralized nodes initialized. Select an external server to open secure handshake Protocol.</p>
+                <div class="node-hub">
+                    <div class="node-line"></div>
+                    <a href="https://github.com/gevak" target="_blank" class="node node-gh" title="GitHub">GH</a>
+                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="node node-li" title="LinkedIn">in</a>
+                    <a href="https://facebook.com/geva.kipper" target="_blank" class="node node-fb" title="Facebook">FB</a>
+                </div>
+            </div>
+
+        </div>
     </main>
 
-    <!-- Modal Container -->
-    <div id="modal-overlay">
-        <div class="modal-box">
-            <button class="modal-close">&times;</button>
-            <h2 class="modal-title" id="m-title">Project Title</h2>
-            <p class="modal-desc" id="m-desc">Project Description</p>
-            <div class="btn-group" id="m-links"></div>
-        </div>
-    </div>
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-left">Design Architecture: LLM Core - Auto-generated iteration</div>
+        <div class="footer-right" id="uptime">Uptime: Calculating...</div>
+    </footer>
 
-    <!-- Application Logic -->
+    <!-- LOGIC -->
     <script>
-        // Database
-        const projectData = {
-            "1": {
-                title: "GlglStats",
-                desc: "A Python/LZ77 algorithm analyzing and measuring the structural repetitiveness of Israeli pop-chart tracks. Visualized as a translucent cassette tape paying homage to audio fidelity.",
-                color: "var(--color-purple)",
-                links: [
-                    { text: "Live Site", url: "https://glglstats.geekip.dev" },
-                    { text: "▶ PyData TLV Presentation", url: "https://www.youtube.com/watch?v=jrKAtOsj1Lo" }
-                ]
-            },
-            "2": {
-                title: "Ahuzat Dibuk",
-                desc: "Data-driven heat maps of parking in Tel Aviv, powered by Python scraping. It sparked an urban conversation and was featured across multiple national news channels.",
-                color: "var(--color-amber)",
-                links: [
-                    { text: "Ch. 13 News", url: "https://13tv.co.il/item/news/domestic/internal/parking-902956407/" },
-                    { text: "Mako", url: "https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" },
-                    { text: "Viral Facebook Post", url: "https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" }
-                ]
-            },
-            "3": {
-                title: "2D Part Orienting",
-                desc: "A C++ computational geometry application implementing a push-plan algorithm designed to orient 2D puzzle/machine parts predictably. Developed with Tel-Aviv University.",
-                color: "var(--color-cyan)",
-                links: [
-                    { text: "TAU Project & Code", url: "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" }
-                ]
-            },
-            "4": {
-                title: "The Turing Jest",
-                desc: "An LMSYS-inspired arena dedicated exclusively to LLM pun battles. Two models enter, one comedic champion leaves. Do you have what it takes to judge the machine wit?",
-                color: "#ffdd00",
-                links: [
-                    { text: "Enter the Arena", url: "https://jest.geekip.dev" }
-                ]
-            },
-            "5": {
-                title: "Rhymes of Israel",
-                desc: "A chaotic Chrome Extension injecting humor into your daily news. It rewrites somber headlines into sarcastic, high-school yearbook rhymes utilizing local LLM tech.",
-                color: "#00ff66",
-                links: [
-                    { text: "Get on Chrome Web Store", url: "https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" }
-                ]
-            },
-            "6": {
-                title: "Meta-Portfolio",
-                desc: "You dispensed the very machine you are interacting with. A deliberate spatial anomaly wrapped in digital glass. Exploring the intersection of modern web design and AI generation.",
-                color: "#ffffff",
-                links: [
-                    { text: "Return to Origin", url: "https://geekip.dev" }
-                ]
-            },
-            "7": {
-                title: "Geva Kipper | Network",
-                desc: "Secure connection established. Accessing digital footprint and professional communication protocols...",
-                color: "var(--color-cyan)",
-                links: [
-                    { text: "GitHub", url: "https://github.com/gevak" },
-                    { text: "LinkedIn", url: "https://linkedin.com/in/gevakip" },
-                    { text: "Facebook", url: "https://facebook.com/geva.kipper" }
-                ]
+        // --- 1. Boot Sequence Typing Effect ---
+        const bootText = [
+            { el: 'head-1', text: "User: Geva Kipper" },
+            { el: 'head-2', text: "Status: Currently building scalable software solutions at Google." },
+            { el: 'head-3', text: "System Notice: This interface is hallucinated and re-designed daily by AI. Expect permanent evolution." }
+        ];
+
+        async function typeWriter(elId, text, speed = 25) {
+            const el = document.getElementById(elId);
+            for (let i = 0; i < text.length; i++) {
+                el.innerHTML += text.charAt(i);
+                await new Promise(resolve => setTimeout(resolve, speed));
             }
+        }
+
+        async function initBoot() {
+            document.getElementById('cmd-input').disabled = true;
+            for (const line of bootText) {
+                await typeWriter(line.el, line.text);
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            document.getElementById('cmd-input').disabled = false;
+            document.getElementById('cmd-input').focus();
+        }
+
+        // --- 2. Uptime Counter ---
+        // Requirement: Track time since "2026-03-08 01:27:56"
+        const anchorDate = new Date("2026-03-08T01:27:56").getTime();
+        
+        function updateUptime() {
+            const now = new Date().getTime();
+            // Using absolute difference to handle past/future elegantly for aesthetic
+            let diff = Math.abs(now - anchorDate) / 1000; 
+            
+            const hrs = String(Math.floor(diff / 3600)).padStart(2, '0');
+            diff %= 3600;
+            const mins = String(Math.floor(diff / 60)).padStart(2, '0');
+            const secs = String(Math.floor(diff % 60)).padStart(2, '0');
+            
+            document.getElementById('uptime').innerText = `Uptime: ${hrs}hrs : ${mins}mins : ${secs}secs since 2026-03-08 01:27:56`;
+        }
+        setInterval(updateUptime, 1000);
+        updateUptime();
+
+        // --- 3. Terminal Logic & Parsing ---
+        const input = document.getElementById('cmd-input');
+        const output = document.getElementById('output');
+        const termPane = document.getElementById('terminal');
+        const canvasArea = document.getElementById('canvas-area');
+        const cards = document.querySelectorAll('.card');
+
+        // Command registry mapping 
+        const routingTable = {
+            './glglstats': 'box-1',
+            'run glglstats': 'box-1',
+            './ahuzat-dibuk': 'box-2',
+            './orient-2d': 'box-3',
+            './turing-jest': 'box-4',
+            './rhymes': 'box-5',
+            './portfolio': 'box-6',
+            'cd accounts': 'box-7',
+            'cat socials': 'box-7',
+            'ls': 'DIR',
+            'ls projects': 'DIR',
+            'clear': 'CLEAR',
+            'help': 'HELP'
         };
 
-        const modalOverlay = document.getElementById('modal-overlay');
-        const modalCloseBtn = document.querySelector('.modal-close');
-        const tray = document.getElementById('tray');
-        let isAnimating = false;
+        const projectListHtml = `
+            <br>Available executables/paths:<br>
+            <span style="color: var(--neon-blue);">./glglstats</span>      - Structural pop-chart entropy<br>
+            <span style="color: var(--neon-pink);">./ahuzat-dibuk</span>   - Geospatial parking intelligence<br>
+            <span style="color: var(--neon-orange);">./orient-2d</span>      - C++ geometric part locking<br>
+            <span style="color: var(--neon-purple);">./turing-jest</span>    - Head-to-head LLM humor arena<br>
+            <span style="color: var(--neon-green);">./rhymes</span>         - Satirical news via Chrome plugin<br>
+            <span style="color: #fff;">./portfolio</span>      - Recursive systemic loop<br>
+            <span style="color: var(--term-dim);">cd accounts</span>      - Enter external networks layer<br><br>
+        `;
 
-        // Interactive Interaction Logic
-        document.querySelectorAll('.item-package').forEach(item => {
-            item.addEventListener('click', (e) => {
-                if (isAnimating) return;
-                isAnimating = true;
-
-                const itemId = item.getAttribute('data-id');
-                const slot = item.parentElement;
-                
-                // 1. Spin the coil (except for control panel which has no coil visually, but slot 7 wrapper exists)
-                if(slot.classList.contains('slot')) {
-                    slot.classList.add('spinning');
-                }
-
-                // 2. Clone the item for the falling animation
-                const rect = item.getBoundingClientRect();
-                const trayRect = tray.getBoundingClientRect();
-                
-                const clone = item.cloneNode(true);
-                clone.classList.add('falling-item');
-                
-                // Set initial position
-                clone.style.top = rect.top + 'px';
-                clone.style.left = rect.left + 'px';
-                clone.style.width = rect.width + 'px';
-                clone.style.height = rect.height + 'px';
-                clone.style.margin = "0";
-                
-                document.body.appendChild(clone);
-                
-                // Keep the visual layout but hide the initial element temporarily
-                item.style.opacity = '0';
-
-                // Request animation frame to ensure initial styles are applied before transitioning
-                requestAnimationFrame(() => {
-                    // 3. Drop to tray
-                    const dropY = trayRect.top + (trayRect.height / 2) - (rect.height / 2);
-                    const dropX = trayRect.left + (trayRect.width / 2) - (rect.width / 2);
-                    
-                    clone.style.top = dropY + 'px';
-                    clone.style.left = dropX + 'px';
-                    clone.style.transform = "rotate(10deg)";
-
-                    // 4. After drop ends, open modal
-                    setTimeout(() => {
-                        slot.classList.remove('spinning');
-                        clone.remove(); // Remove clone from DOM
-                        populateAndOpenModal(itemId, item);
-                    }, 600); // Matches transition time
-                });
-            });
+        // Sync visual cursor with input
+        input.addEventListener('input', () => {
+             // Keeps native cursor hidden but allows custom blinking cursor span to sit adjacent.
         });
 
-        function populateAndOpenModal(id, originalItemElement) {
-            const data = projectData[id];
-            
-            document.getElementById('m-title').textContent = data.title;
-            document.getElementById('m-title').style.color = data.color;
-            document.getElementById('m-title').style.textShadow = `0 0 10px ${data.color}`;
-            
-            document.getElementById('m-desc').textContent = data.desc;
-            
-            const linksContainer = document.getElementById('m-links');
-            linksContainer.innerHTML = '';
-            data.links.forEach(l => {
-                const a = document.createElement('a');
-                a.href = l.url;
-                a.className = 'btn';
-                a.textContent = l.text;
-                a.target = '_blank';
-                linksContainer.appendChild(a);
-            });
-
-            // Store reference to original element on the modal for restore later
-            modalOverlay.dataset.activeItem = id;
-            originalItemElement.id = 'hidden-active-item'; 
-
-            modalOverlay.classList.add('active');
+        // Trigger on tag click
+        function injectCmd(cmd) {
+            input.value = cmd;
+            input.focus();
+            processCommand(cmd);
         }
 
-        // Close Modal Logic
-        function closeModal() {
-            modalOverlay.classList.remove('active');
-            // Restore hidden item in vending machine
-            const hiddenItem = document.getElementById('hidden-active-item');
-            if(hiddenItem) {
-                hiddenItem.style.opacity = '1';
-                hiddenItem.removeAttribute('id');
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const cmd = this.value.trim();
+                if(cmd) processCommand(cmd);
             }
-            setTimeout(() => { isAnimating = false; }, 400);
-        }
-
-        modalCloseBtn.addEventListener('click', closeModal);
-        modalOverlay.addEventListener('click', (e) => {
-            if (e.target === modalOverlay) closeModal();
         });
 
+        async function processCommand(cmdLine) {
+            // 1. Echo command to history
+            const cmdEcho = document.createElement('div');
+            cmdEcho.className = 'history-line';
+            cmdEcho.innerHTML = `<span class="history-prompt-prefix">guest@geekip.dev:~ $</span>${cmdLine}`;
+            output.appendChild(cmdEcho);
+            input.value = '';
+            
+            // 2. Parse
+            const parsed = cmdLine.toLowerCase();
+            const action = routingTable[parsed];
 
-        // Precise Stopwatch Logic
-        // Timestamp specified: 2026-03-07 01:21:48
-        // UTC parsing to ensure consistency:
-        const targetDateStr = "2026-03-07T01:21:48Z";
-        const startDate = new Date(targetDateStr);
-        const timerDisplay = document.getElementById('timer-display');
+            if (action === 'CLEAR') {
+                output.innerHTML = '';
+            } 
+            else if (action === 'DIR' || action === 'HELP') {
+                const res = document.createElement('div');
+                res.className = 'history-line';
+                res.innerHTML = projectListHtml;
+                output.appendChild(res);
+            }
+            else if (action) {
+                // Execute Loading phase
+                input.disabled = true;
+                const loadingLine = document.createElement('div');
+                loadingLine.className = 'history-line';
+                output.appendChild(loadingLine);
+                
+                let loadTxt = "Locating server package";
+                for(let i=0; i<3; i++){
+                    loadingLine.innerText = loadTxt;
+                    loadTxt += ".";
+                    await new Promise(r => setTimeout(r, 200));
+                }
+                loadingLine.innerHTML = `<span class="success-msg">[OK] Data stream established. Rendering visual canvas.</span>`;
+                
+                // Show Card
+                displayCard(action);
+                input.disabled = false;
+                input.focus();
+            } 
+            else {
+                // Command not found
+                const err = document.createElement('div');
+                err.className = 'history-line';
+                err.innerHTML = `bash: ${parsed}: command not found. Try 'ls projects'.`;
+                output.appendChild(err);
+            }
 
-        function padZero(num, size=2) {
-            let s = String(num);
-            while (s.length < size) {s = "0" + s;}
-            return s;
+            // Scroll to bottom
+            termPane.scrollTop = termPane.scrollHeight;
         }
 
-        function updateStopwatch() {
-            const now = new Date();
-            // Calculates absolute diff in milliseconds
-            const diffMs = Math.abs(now - startDate);
+        function displayCard(targetId) {
+            // Hide all
+            cards.forEach(c => c.classList.remove('active'));
+            
+            // Show target
+            const target = document.getElementById(targetId);
+            if (target) {
+                target.classList.add('active');
+            }
 
-            const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
-            const minutes = Math.floor((diffMs / 1000 / 60) % 60);
-            const seconds = Math.floor((diffMs / 1000) % 60);
-
-            // Format DD:HH:MM:SS
-            timerDisplay.textContent = `${padZero(days)}:${padZero(hours)}:${padZero(minutes)}:${padZero(seconds)}`;
+            // Mobile handling: Show canvas overlay
+            if (window.innerWidth <= 900) {
+                canvasArea.classList.add('mobile-active');
+            }
         }
 
-        setInterval(updateStopwatch, 1000);
-        updateStopwatch(); // Initial call
+        function closeMobileCanvas() {
+            canvasArea.classList.remove('mobile-active');
+            cards.forEach(c => c.classList.remove('active'));
+            input.focus();
+        }
+
+        // Start App
+        window.onload = initBoot;
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260307",
+          pageId: "20260308",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
