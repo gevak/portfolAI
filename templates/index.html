@@ -2,604 +2,578 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | Terminal Portal</title>
-    
-    <!-- Fonts: Standard Inter, Monospace Fira Code, and Caveat for doodles -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Fira+Code:wght@300;400;600&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-
+    <title>Geva Kipper | Interactive Realm</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,600;1,600&family=JetBrains+Mono:wght@400&display=swap');
+
         :root {
-            /* Color Palette */
-            --bg-deep: #050810;
-            --bg-black: #000000;
-            --term-text: #A0AABF;
-            --term-dim: #4B5563;
-            --neon-green: #39FF14;
-            --neon-blue: #00F3FF;
-            --neon-magenta: #FF00FF;
-            --neon-pink: #FF3366;
-            --neon-orange: #FFAA00;
-            --neon-purple: #BF00FF;
-            
-            /* Glassmorphism */
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            
-            --font-term: 'Fira Code', monospace;
-            --font-ui: 'Inter', sans-serif;
-            --font-doodle: 'Caveat', cursive;
+            --bg-color: #0f1115;
+            --grid-color: rgba(255, 255, 255, 0.03);
+            --primary: #00f0ff;
+            --glass-bg: rgba(18, 20, 25, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --hud-bg: rgba(10, 12, 16, 0.85);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            scrollbar-width: thin;
-            scrollbar-color: var(--term-dim) transparent;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            user-select: none;
         }
 
-        body, html {
+        /* ----- Game Environment ----- */
+        #viewport {
             width: 100vw;
             height: 100vh;
-            background: linear-gradient(135deg, var(--bg-deep) 0%, var(--bg-black) 100%);
-            color: var(--term-text);
-            font-family: var(--font-term);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        a { text-decoration: none; color: inherit; }
-
-        /* Main Layout */
-        main {
-            display: flex;
-            flex: 1;
-            height: calc(100vh - 30px); /* minus footer */
-        }
-
-        .pane {
-            flex: 1;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
             position: relative;
+            cursor: crosshair;
         }
 
-        /* ----- LEFT: TERMINAL ----- */
-        .term-header {
-            min-height: 120px;
-            margin-bottom: 20px;
-            border-bottom: 1px dashed var(--term-dim);
-            padding-bottom: 20px;
-        }
-        
-        .type-line { min-height: 1.5em; margin-bottom: 8px; font-size: 0.95rem; }
-        .sys-user { color: #FFF; font-weight: 600; font-size: 1.1rem; }
-        .sys-status { color: var(--neon-green); opacity: 0.8; }
-        .sys-notice { color: var(--neon-magenta); font-style: italic; }
-
-        .term-history { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
-        .history-line { font-size: 0.95rem; line-height: 1.4; color: var(--term-text); }
-        .history-prompt-prefix { color: var(--neon-blue); margin-right: 8px; }
-        .success-msg { color: var(--neon-green); }
-
-        .prompt-container { margin-top: auto; padding-top: 20px; }
-        
-        .sys-tags {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-        .tag {
-            font-size: 0.8rem;
-            color: var(--term-dim);
-            border: 1px solid var(--term-dim);
-            padding: 4px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .tag:hover { border-color: var(--neon-blue); color: var(--neon-blue); }
-
-        .input-line {
-            display: flex;
-            align-items: center;
-        }
-        .prompt { color: var(--neon-green); margin-right: 12px; font-weight: 600; white-space: nowrap; }
-        
-        input[type="text"] {
-            background: transparent;
-            border: none;
-            color: #FFF;
-            font-family: var(--font-term);
-            font-size: 1rem;
-            flex: 1;
-            outline: none;
-            caret-color: transparent; /* custom cursor handled via span */
+        #world {
+            position: absolute;
+            left: 50vw;
+            top: 50vh;
+            width: 0; 
+            height: 0;
+            transform-style: preserve-3d;
+            transition: transform 0s;
         }
 
-        .cursor {
-            display: inline-block;
-            width: 8px;
-            height: 1.2em;
-            background-color: var(--term-text);
-            animation: blink 1s step-end infinite;
-            transform: translateY(3px); margin-left: -2px;
+        .world-bg {
+            position: absolute;
+            top: -3000px; left: -3000px;
+            width: 6000px; height: 6000px;
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 0;
         }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-        /* ----- RIGHT: CANVAS (PROJECT BOXES) ----- */
-        .canvas {
+        #paths-svg {
+            position: absolute;
+            top: -1500px; left: -1500px;
+            width: 3000px; height: 3000px;
+            z-index: 1;
+        }
+
+        .engraving {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            font-family: 'Playfair Display', serif;
+            font-size: 4rem;
+            color: rgba(255, 255, 255, 0.05);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5), -1px -1px 1px rgba(255,255,255,0.05);
+            letter-spacing: 4px;
+            z-index: 2;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        /* ----- Entities ----- */
+        .entity {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            z-index: 10;
             display: flex;
             justify-content: center;
             align-items: center;
-            position: relative;
+            transition: transform 0.1s linear;
         }
 
-        .card {
-            font-family: var(--font-ui);
-            background: var(--glass-bg);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 40px;
-            width: 100%;
-            max-width: 500px;
-            color: #FFF;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            
+        #player {
+            width: 30px; height: 30px;
+            background: #fff;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            box-shadow: 0 0 40px 15px rgba(0, 240, 255, 0.3);
+            z-index: 20;
+        }
+
+        #player::after {
+            content: '';
             position: absolute;
-            opacity: 0;
+            width: 200vw; height: 200vh;
+            background: radial-gradient(circle, transparent 10%, rgba(15, 17, 21, 0.8) 60%);
             pointer-events: none;
-            transform: translateY(20px) scale(0.95);
-            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 10;
-        }
-        
-        .card.active {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateY(0) scale(1);
+            transform: translate(-50%, -50%);
+            left: 50%; top: 50%;
         }
 
-        .card h2 { font-size: 1.8rem; margin-bottom: 10px; font-weight: 800; letter-spacing: -0.5px; }
-        .card p { font-size: 0.95rem; color: #cbd5e1; line-height: 1.6; margin-bottom: 25px; }
-        
-        .btn-group { display: flex; gap: 12px; flex-wrap: wrap; }
-        .btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            transition: all 0.2s;
+        .npc-shape {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 20px currentcolor;
             cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: float 3s ease-in-out infinite;
         }
-        .btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
 
-        /* --- Individual Box Styling --- */
-        
-        /* Box 1: GlglStats (Wave Animation) */
-        #box-1 { border-color: rgba(0, 243, 255, 0.3); box-shadow: 0 0 20px rgba(0,243,255,0.1); }
-        .wave-container { height: 60px; display: flex; align-items: center; gap: 4px; margin-bottom: 20px; }
-        .wave-bar { width: 6px; background: var(--neon-blue); border-radius: 3px; animation: bounce 1s ease-in-out infinite alternate; }
-        .wave-bar:nth-child(1) { height: 20%; animation-delay: 0.0s; }
-        .wave-bar:nth-child(2) { height: 60%; animation-delay: 0.2s; }
-        .wave-bar:nth-child(3) { height: 100%; animation-delay: 0.4s; }
-        .wave-bar:nth-child(4) { height: 40%; animation-delay: 0.6s; }
-        .wave-bar:nth-child(5) { height: 80%; animation-delay: 0.8s; }
-        @keyframes bounce { from { transform: scaleY(0.2); } to { transform: scaleY(1); } }
-        #box-1 .btn { border-color: var(--neon-blue); color: var(--neon-blue); }
+        .npc:hover .npc-shape { transform: scale(1.15); }
 
-        /* Box 2: Ahuzat Dibuk (Heatmap) */
-        #box-2 { border-color: rgba(255, 51, 102, 0.3); overflow: hidden; }
-        #box-2::before {
-            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: radial-gradient(circle at 70% 30%, rgba(255,51,102,0.15), transparent 50%);
-            z-index: -1; pointer-events: none;
+        .npc-label {
+            position: absolute; top: -30px;
+            font-size: 0.75rem; font-weight: 600;
+            white-space: nowrap; color: var(--text-muted);
+            background: rgba(0,0,0,0.5);
+            padding: 2px 8px; border-radius: 10px;
+            pointer-events: none; opacity: 0.6;
+            transition: opacity 0.2s;
         }
-        .term-links a { color: var(--neon-pink); display: block; margin-bottom: 8px; font-family: var(--font-term); font-size: 0.85rem;}
-        .term-links a::before { content: '>'; margin-right: 8px; }
 
-        /* Box 3: 2D Part Orienting */
-        #box-3 { border-color: rgba(255, 170, 0, 0.3); }
-        .poly-container { width: 100%; height: 80px; display: flex; align-items: center; margin-bottom: 20px;}
-        .poly { 
-            width: 50px; height: 50px; border: 2px solid var(--neon-orange); 
-            animation: rotateLock 4s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite;
-        }
-        @keyframes rotateLock {
-            0% { transform: rotate(0deg) skew(0deg); }
-            20%, 50% { transform: rotate(90deg) skew(10deg); border-radius: 10px; }
-            70%, 100% { transform: rotate(180deg) skew(0deg); border-radius: 0px; }
-        }
-        #box-3 .btn { background: var(--neon-orange); color: #000; border:none; }
-
-        /* Box 4: Turing Jest */
-        #box-4 { border-color: rgba(191, 0, 255, 0.3); }
-        .vs-battler { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;}
-        .llm-card { text-align: center; font-size: 0.8rem; color: var(--term-text); }
-        .llm-card div { font-size: 1.5rem; margin-bottom: 5px; }
-        .vs-badge { background: var(--neon-purple); color: #fff; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; }
-        #box-4 .btn { border-color: var(--neon-purple); color: var(--neon-purple); }
-
-        /* Box 5: Rhymes of Israel */
-        #box-5 { font-family: var(--font-doodle); border-color: var(--neon-green); border-width: 2px; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; }
-        #box-5 h2 { font-family: var(--font-term); font-size: 1.5rem; }
-        #box-5 p { font-size: 1.2rem; line-height: 1.3; color: #fff; opacity: 0.9; }
-        #box-5 .btn { font-family: var(--font-term); border-bottom: 3px solid var(--neon-green); border-radius: 0; }
-
-        /* Box 6: Meta Portfolio */
-        #box-6 { display: flex; flex-direction: column; align-items: center; text-align: center; }
-        .mirror-effect {
-            width: 80px; height: 80px; margin-bottom: 20px; border-radius: 8px;
-            box-shadow: 
-                inset 0 0 0 2px #fff, inset 0 0 0 10px var(--bg-deep),
-                inset 0 0 0 12px #fff, inset 0 0 0 20px var(--bg-deep),
-                inset 0 0 0 22px #fff, inset 0 0 0 30px var(--bg-deep),
-                inset 0 0 0 32px #fff, 0 0 20px rgba(255,255,255,0.5);
-            animation: pulse-mirror 3s infinite linear;
-        }
-        @keyframes pulse-mirror { 0% { transform: scale(0.95); opacity: 0.8;} 50% { transform: scale(1.05); opacity: 1;} 100%{ transform: scale(0.95); opacity: 0.8;} }
-
-        /* Box 7: Accounts (Nodes) */
-        #box-7 { border-color: rgba(255,255,255, 0.2); }
-        .node-hub { position: relative; height: 100px; display: flex; justify-content: space-around; align-items: center; margin-bottom: 20px; }
-        .node-line { position: absolute; top: 49%; left: 10%; right: 10%; height: 2px; background: var(--term-dim); z-index: 1; }
-        .node { 
-            position: relative; z-index: 2; width: 45px; height: 45px; border-radius: 50%; 
-            background: var(--bg-deep); border: 2px solid var(--term-text); display: flex; justify-content: center; align-items: center;
-            transition: all 0.3s; color: #fff; font-weight: bold; cursor: pointer; text-decoration: none;
-        }
-        .node:hover { transform: scale(1.2); box-shadow: 0 0 15px; }
-        .node-gh:hover { border-color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.5); }
-        .node-li:hover { border-color: #0077b5; box-shadow: 0 0 15px rgba(0,119,181,0.5); }
-        .node-fb:hover { border-color: #1877f2; box-shadow: 0 0 15px rgba(24,119,242,0.5); }
-
-        /* ----- FOOTER / STATUS BAR ----- */
-        footer {
-            height: 30px;
-            background: #007acc; /* VSCode generic blue status bar vibe */
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 15px;
-            font-size: 0.75rem;
-            color: #ffffff;
-            font-family: var(--font-term);
+        /* ----- UI Overlays ----- */
+        #interaction-tooltip {
+            position: absolute;
+            top: 50vh; left: 50vw;
+            transform: translate(-50%, 40px);
+            background: var(--primary);
+            color: #000; font-weight: 600; font-size: 0.8rem;
+            padding: 6px 16px; border-radius: 20px;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
             z-index: 100;
         }
-        .footer-left { opacity: 0.85; }
-        .footer-right { font-weight: 600; }
 
-        /* Responsive */
-        @media (max-width: 900px) {
-            main { flex-direction: column; height: auto; display: block; overflow-y: auto; }
-            .pane { min-height: 50vh; overflow: visible;}
-            .canvas { position: fixed; top: 10%; left: 5%; right: 5%; bottom: auto; background: rgba(5,8,16,0.95); padding: 20px; border-radius: 16px; border: 1px solid var(--term-dim); display: none; z-index: 999; }
-            .canvas.mobile-active { display: block; }
-            .card { position: relative; max-width: 100%; transform: none !important; opacity: 1 !important;}
-            /* Add close button for mobile */
-            .mobile-close { position: absolute; top: 10px; right: 20px; color: #fff; font-size: 1.5rem; cursor: pointer; z-index: 1000; font-family: sans-serif; }
-            body { overflow-y: auto; }
+        #interaction-tooltip.show { opacity: 1; transform: translate(-50%, 25px); }
+
+        /* Glassmorphism Modal */
+        #modal-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; z-index: 200;
+            transition: opacity 0.4s ease;
         }
 
-        .mobile-close { display: none; }
-        @media (max-width: 900px) { .mobile-close { display: block; } }
+        #modal-container.active { opacity: 1; pointer-events: all; }
 
+        .modal {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            padding: 40px; border-radius: 24px;
+            width: 90%; max-width: 600px;
+            max-height: 80vh; overflow-y: auto;
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        #modal-container.active .modal { transform: translateY(0); }
+
+        .modal-close {
+            position: absolute; top: 20px; right: 20px;
+            background: none; border: none; color: var(--text-muted);
+            font-size: 1.5rem; cursor: pointer; transition: color 0.2s;
+        }
+        .modal-close:hover { color: #fff; }
+
+        /* Modal Inner Typography */
+        .modal h2 { font-family: 'Playfair Display', serif; color: var(--primary); margin-bottom: 15px; font-size: 2rem; }
+        .modal p { line-height: 1.6; margin-bottom: 20px; color: var(--text-main); }
+        .modal .subtitle { color: #a78bfa; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; padding: 10px; background: rgba(167, 139, 250, 0.1); border-left: 3px solid #a78bfa; border-radius: 0 4px 4px 0;}
+        
+        /* Links & Buttons */
+        .btn {
+            display: inline-block; padding: 10px 20px; margin-top: 10px;
+            background: var(--primary); color: #000; text-decoration: none;
+            font-weight: 600; border-radius: 8px; transition: 0.2s ease;
+        }
+        .btn:hover { background: #fff; box-shadow: 0 0 15px var(--primary); transform: translateY(-2px); }
+
+        .parchment-link {
+            display: block; background: #fdf6e3; color: #333;
+            border: 1px solid #d4c4a8; border-left: 4px solid #b58900;
+            padding: 12px; margin: 8px 0; text-decoration: none; font-weight: 600;
+            border-radius: 6px; box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+            transition: 0.2s ease;
+        }
+        .parchment-link:hover { background: #fff; transform: translateX(5px); }
+
+        .social-grid { display: flex; gap: 15px; margin-top: 20px; }
+        .social-icon {
+            display: flex; justify-content: center; align-items: center;
+            width: 50px; height: 50px; border-radius: 12px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: #fff; text-decoration: none; font-size: 1.2rem; transition: 0.2s;
+        }
+        .social-icon:hover { background: var(--primary); color: #000; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,240,255,0.4); }
+
+        .video-wrapper {
+            position: relative; padding-bottom: 56.25%; height: 0; margin-top: 20px;
+            overflow: hidden; border-radius: 12px; border: 1px solid var(--glass-border);
+        }
+        .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        /* HUD */
+        #hud {
+            position: fixed; bottom: 0; left: 0; width: 100vw;
+            background: var(--hud-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid var(--glass-border);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 24px; z-index: 150;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
+        }
+        .hud-left { color: var(--text-muted); }
+        .hud-right { color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        .glitch-clock { font-weight: bold; letter-spacing: 1px; }
+
+        /* Animations */
+        @keyframes float { 0% { transform: translateY(0); } 50% { transform: translateY(-8px); } 100% { transform: translateY(0); } }
+        
+        .glitch-text { animation: glitch 2s infinite; position: relative; display: inline-block; color: #ff00ff; }
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+        
     </style>
 </head>
 <body>
 
-    <main>
-        <!-- LEFT: Terminal Window -->
-        <div class="pane term-pane" id="terminal" onclick="document.getElementById('cmd-input').focus()">
-            <div class="term-header">
-                <div class="type-line sys-user" id="head-1"></div>
-                <div class="type-line sys-status" id="head-2"></div>
-                <div class="type-line sys-notice" id="head-3"></div>
-            </div>
-
-            <div class="term-history" id="output"></div>
-
-            <div class="prompt-container">
-                <div class="sys-tags">
-                    <span class="tag" onclick="injectCmd('./glglstats')">[run glglstats]</span>
-                    <span class="tag" onclick="injectCmd('cd accounts')">[cat socials]</span>
-                    <span class="tag" onclick="injectCmd('ls projects')">[ls projects]</span>
-                </div>
-                <div class="input-line">
-                    <span class="prompt">guest@geekip.dev:~ $</span>
-                    <input type="text" id="cmd-input" autocomplete="off" spellcheck="false" autofocus>
-                    <span class="cursor"></span>
-                </div>
-            </div>
-        </div>
-
-        <!-- RIGHT: Project Canvas -->
-        <div class="pane canvas" id="canvas-area">
-            <span class="mobile-close" onclick="closeMobileCanvas()">&times;</span>
+    <div id="viewport">
+        <!-- Game World -->
+        <div id="world">
+            <div class="world-bg"></div>
             
-            <!-- Box 1: GlglStats -->
-            <div class="card" id="box-1">
-                <div class="wave-container">
-                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-                </div>
-                <h2>GlglStats</h2>
-                <p>Measuring Israeli pop-chart repetitiveness using Python and LZ77 compression algorithms. Audio data deconstructed into structural entropy.</p>
-                <div class="btn-group">
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="btn">Launch Subroutine</a>
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn">PyData TLV Conf</a>
-                </div>
-            </div>
+            <!-- SVG Background Paths -->
+            <svg id="paths-svg">
+                <g stroke="rgba(255, 255, 255, 0.08)" stroke-width="4" stroke-dasharray="10 10" fill="none">
+                    <!-- Dynamic paths drawn by JS -->
+                </g>
+            </svg>
 
-            <!-- Box 2: Ahuzat Dibuk -->
-            <div class="card" id="box-2">
-                <h2>Ahuzat Dibuk</h2>
-                <p>Python scraping and geospatial visualization mapping Tel-Aviv parking lot occupancy. Rendering urban density invisible metrics into actionable intelligence.</p>
-                <div class="term-links">
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">Channel 13 Broadcast</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">Mako Tech Review</a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank">Secret Tel-Aviv Origin Log</a>
-                </div>
-            </div>
-
-            <!-- Box 3: 2D Part Orienting -->
-            <div class="card" id="box-3">
-                <div class="poly-container"><div class="poly"></div></div>
-                <h2>2D Part Orienting</h2>
-                <p>C++ implementation within an open-source computational geometry library. Constructing exact algorithmic push plans for automated geometric polygon locking.</p>
-                <div class="btn-group">
-                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn">View TAU Docs & Code</a>
-                </div>
-            </div>
-
-            <!-- Box 4: The Turing Jest -->
-            <div class="card" id="box-4">
-                <div class="vs-battler">
-                    <div class="llm-card"><div>🤖</div>Model A</div>
-                    <div class="vs-badge">VS</div>
-                    <div class="llm-card"><div>🧠</div>Model B</div>
-                </div>
-                <h2>The Turing Jest</h2>
-                <p>An LMSYS-style arena protocol. Large Language Models competing head-to-head to construct, deliver, and dissect puns based on crowdsourced human humor ratings.</p>
-                <div class="btn-group">
-                    <a href="https://jest.geekip.dev" target="_blank" class="btn">Enter Arena</a>
-                </div>
-            </div>
-
-            <!-- Box 5: Rhymes of Israel -->
-            <div class="card" id="box-5">
-                <h2>Rhymes of Israel</h2>
-                <p>A satirical LLM-powered Chrome extension formatting grim Israeli headlines into whimsical, comedic rhyming verse. Because the CLI is harsh, but poetry heals.</p>
-                <div class="btn-group">
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn">Add to Chrome</a>
-                </div>
-            </div>
-
-            <!-- Box 6: Meta Portfolio -->
-            <div class="card" id="box-6">
-                <div class="mirror-effect"></div>
-                <h2>Recursion Loop Error</h2>
-                <p>You are currently looking at a holographic projection of a terminal interface designed to showcase terminal interfaces. The system is consuming itself.</p>
-                <div class="btn-group">
-                    <a href="https://geekip.dev" target="_self" class="btn">Reload Matrix (geekip.dev)</a>
-                </div>
-            </div>
-
-            <!-- Box 7: Accounts (Socials) -->
-            <div class="card" id="box-7">
-                <h2>External Hub Links</h2>
-                <p>Decentralized nodes initialized. Select an external server to open secure handshake Protocol.</p>
-                <div class="node-hub">
-                    <div class="node-line"></div>
-                    <a href="https://github.com/gevak" target="_blank" class="node node-gh" title="GitHub">GH</a>
-                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="node node-li" title="LinkedIn">in</a>
-                    <a href="https://facebook.com/geva.kipper" target="_blank" class="node node-fb" title="Facebook">FB</a>
-                </div>
-            </div>
-
+            <!-- Spawns -->
+            <div class="engraving" style="left: 0; top: 0;">Geva Kipper</div>
+            
+            <div id="npcs-container"></div>
+            
+            <div class="entity" id="player"></div>
         </div>
-    </main>
+    </div>
 
-    <!-- FOOTER -->
-    <footer>
-        <div class="footer-left">Design Architecture: LLM Core - Auto-generated iteration</div>
-        <div class="footer-right" id="uptime">Uptime: Calculating...</div>
-    </footer>
+    <!-- UI Overlay -->
+    <div id="interaction-tooltip">Press [E] or Click</div>
 
-    <!-- LOGIC -->
-    <script>
-        // --- 1. Boot Sequence Typing Effect ---
-        const bootText = [
-            { el: 'head-1', text: "User: Geva Kipper" },
-            { el: 'head-2', text: "Status: Currently building scalable software solutions at Google." },
-            { el: 'head-3', text: "System Notice: This interface is hallucinated and re-designed daily by AI. Expect permanent evolution." }
-        ];
+    <!-- Modals -->
+    <div id="modal-container">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <div id="modal-content"></div>
+        </div>
+    </div>
 
-        async function typeWriter(elId, text, speed = 25) {
-            const el = document.getElementById(elId);
-            for (let i = 0; i < text.length; i++) {
-                el.innerHTML += text.charAt(i);
-                await new Promise(resolve => setTimeout(resolve, speed));
-            }
+    <!-- HUD -->
+    <div id="hud">
+        <div class="hud-left">
+            World architecture and design generated by Claude 3.5 Sonnet
+        </div>
+        <div class="hud-right">
+            <span>Temporal Glitch Clock:</span>
+            <span class="glitch-clock" id="clock">00:00:00:00</span>
+        </div>
+    </div>
+
+<script>
+    /* --- Game Data Configuration --- */
+    const npcData = [
+        {
+            id: 'guide', label: 'Town Guide', x: 0, y: -120,
+            color: '#3b82f6', shape: 'circle',
+            html: `<h2>The Town Guide</h2>
+                   <p>Greetings! Geva is currently crafting code and magic as a Software Engineer at Google.</p>
+                   <div class="subtitle">Beware the shifting terrain: this digital realm is re-designed each day by AI and is thus ever-changing.</div>`
+        },
+        {
+            id: 'bard', label: "The Bard's Tavern", x: 450, y: 350,
+            color: '#a855f7', shape: 'polygon(50% 0%, 0% 100%, 100% 100%)', // Triangle
+            html: `<h2>GlglStats</h2>
+                   <p>Welcome to the Tavern! Here rolling sheet music reveals the repetitive nature of chart-topping songs. This Python project measures the repetitiveness of Israeli pop-chart songs based on LZ77 compression and visualizes patterns in famous tracks.</p>
+                   <a href="https://glglstats.geekip.dev" target="_blank" rel="noopener noreferrer" class="btn">Explore Live Site</a>
+                   <div class="video-wrapper">
+                       <iframe src="https://www.youtube.com/embed/jrKAtOsj1Lo" title="GlglStats PyData TLV" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                   </div>`
+        },
+        {
+            id: 'surveyor', label: 'City Watchtower', x: 0, y: -450,
+            color: '#f97316', shape: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)', // Square
+            html: `<h2>Ahuzat Dibuk</h2>
+                   <p>From here, we monitor the moving carriages! This Python scraping and data visualization tool collects Tel-Aviv car parking lot occupancy statistics, generating vital heat-maps for navigating the city.</p>
+                   <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="parchment-link">📜 Featured on Channel 13</a>
+                   <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="parchment-link">📜 Mentioned in Mako</a>
+                   <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" class="parchment-link">📜 Original Secret Tel Aviv Publication</a>`
+        },
+        {
+            id: 'artisan', label: "Blacksmith's Forge", x: -450, y: 0,
+            color: '#ef4444', shape: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)', // Hexagon
+            html: `<h2>2D Part Orienting</h2>
+                   <p>Watch the geometric polygon being hammered into perfect alignment. This C++ implementation within an open-source computational geometry library utilizes an efficient algorithm for constructing a 'push plan' to orient a given polygon.</p>
+                   <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" rel="noopener noreferrer" style="background: #333; color: #fff; border: 2px solid #555; border-radius: 4px;" class="btn">Forge Repository & Info</a>`
+        },
+        {
+            id: 'referee', label: "Court Jester's Arena", x: -350, y: -300,
+            color: 'linear-gradient(45deg, #eab308 50%, #ec4899 50%)', shape: 'circle',
+            html: `<h2>The Turing Jest</h2>
+                   <p>Step into the arena where robotic jesters clash! This is an LMSYS-like arena where LLMs compete at making and explaining puns, with answers rated by real-world human judges.</p>
+                   <a href="https://jest.geekip.dev" target="_blank" rel="noopener noreferrer" style="background: linear-gradient(90deg, #eab308, #ec4899); color: #fff;" class="btn">Judge the Competition</a>`
+        },
+        {
+            id: 'crier', label: 'Town Crier', x: 450, y: 0,
+            color: '#eab308', shape: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)', // Star
+            html: `<h2>Rhymes of Israel</h2>
+                   <p>Hear ye, hear ye! This Chrome extension utilizes an LLM to magically rewrite Israeli news site headlines into comedic rhymes in the style of high-school senior quotes.</p>
+                   <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" rel="noopener noreferrer" class="btn">Download from Web Store</a>`
+        },
+        {
+            id: 'architect', label: 'The Architect', x: -400, y: 400,
+            color: '#ff00ff', shape: 'polygon(10% 0, 100% 10%, 90% 100%, 0 90%)',
+            html: `<h2><span class="glitch-text">Meta Portfolio</span></h2>
+                   <p>How meta! You are currently exploring the very web project I am describing. A digital realm encapsulating its own existence.</p>
+                   <a href="https://geekip.dev" class="btn" style="background: transparent; color: #ff00ff; border: 1px solid #ff00ff;">∞ Loop Back to Reality (geekip.dev)</a>`
+        },
+        {
+            id: 'messenger', label: "Courier's Guild", x: 0, y: 550,
+            color: '#06d6a0', shape: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)', // Diamond
+            html: `<h2>The Courier's Guild</h2>
+                   <p>Send a message across the digital realms. Connect via the channels below.</p>
+                   <div class="social-grid">
+                       <a href="https://github.com/gevak" target="_blank" class="social-icon">GH</a>
+                       <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-icon">IN</a>
+                       <a href="https://facebook.com/geva.kipper" target="_blank" class="social-icon">FB</a>
+                   </div>`
         }
+    ];
 
-        async function initBoot() {
-            document.getElementById('cmd-input').disabled = true;
-            for (const line of bootText) {
-                await typeWriter(line.el, line.text);
-                await new Promise(resolve => setTimeout(resolve, 300));
-            }
-            document.getElementById('cmd-input').disabled = false;
-            document.getElementById('cmd-input').focus();
-        }
+    /* --- Game Engine State --- */
+    const state = {
+        player: { x: 0, y: 0, speed: 5 },
+        target: { x: 0, y: 0, active: false },
+        keys: { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false },
+        activeNPC: null,
+        modalOpen: false
+    };
 
-        // --- 2. Uptime Counter ---
-        // Requirement: Track time since "2026-03-08 01:27:56"
-        const anchorDate = new Date("2026-03-08T01:27:56").getTime();
+    /* --- Initialization --- */
+    const worldEl = document.getElementById('world');
+    const playerEl = document.getElementById('player');
+    const npcsContainer = document.getElementById('npcs-container');
+    const svgPaths = document.querySelector('#paths-svg g');
+    const tooltip = document.getElementById('interaction-tooltip');
+    
+    // Draw paths & Create NPCs
+    npcData.forEach(npc => {
+        // Draw path line from center
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        // Coordinates offset to center of the 3000x3000 SVG canvas
+        line.setAttribute("x1", "1500"); line.setAttribute("y1", "1500");
+        line.setAttribute("x2", 1500 + npc.x); line.setAttribute("y2", 1500 + npc.y);
+        svgPaths.appendChild(line);
+
+        // Create DOM Element
+        const el = document.createElement('div');
+        el.className = 'entity npc';
+        el.id = `npc-${npc.id}`;
+        el.style.left = `${npc.x}px`;
+        el.style.top = `${npc.y}px`;
+        el.style.color = npc.color.includes('gradient') ? 'var(--primary)' : npc.color; 
         
-        function updateUptime() {
-            const now = new Date().getTime();
-            // Using absolute difference to handle past/future elegantly for aesthetic
-            let diff = Math.abs(now - anchorDate) / 1000; 
-            
-            const hrs = String(Math.floor(diff / 3600)).padStart(2, '0');
-            diff %= 3600;
-            const mins = String(Math.floor(diff / 60)).padStart(2, '0');
-            const secs = String(Math.floor(diff % 60)).padStart(2, '0');
-            
-            document.getElementById('uptime').innerText = `Uptime: ${hrs}hrs : ${mins}mins : ${secs}secs since 2026-03-08 01:27:56`;
-        }
-        setInterval(updateUptime, 1000);
-        updateUptime();
+        const backgroundStyle = npc.color.includes('gradient') ? `background: ${npc.color};` : `background: ${npc.color};`;
 
-        // --- 3. Terminal Logic & Parsing ---
-        const input = document.getElementById('cmd-input');
-        const output = document.getElementById('output');
-        const termPane = document.getElementById('terminal');
-        const canvasArea = document.getElementById('canvas-area');
-        const cards = document.querySelectorAll('.card');
-
-        // Command registry mapping 
-        const routingTable = {
-            './glglstats': 'box-1',
-            'run glglstats': 'box-1',
-            './ahuzat-dibuk': 'box-2',
-            './orient-2d': 'box-3',
-            './turing-jest': 'box-4',
-            './rhymes': 'box-5',
-            './portfolio': 'box-6',
-            'cd accounts': 'box-7',
-            'cat socials': 'box-7',
-            'ls': 'DIR',
-            'ls projects': 'DIR',
-            'clear': 'CLEAR',
-            'help': 'HELP'
-        };
-
-        const projectListHtml = `
-            <br>Available executables/paths:<br>
-            <span style="color: var(--neon-blue);">./glglstats</span>      - Structural pop-chart entropy<br>
-            <span style="color: var(--neon-pink);">./ahuzat-dibuk</span>   - Geospatial parking intelligence<br>
-            <span style="color: var(--neon-orange);">./orient-2d</span>      - C++ geometric part locking<br>
-            <span style="color: var(--neon-purple);">./turing-jest</span>    - Head-to-head LLM humor arena<br>
-            <span style="color: var(--neon-green);">./rhymes</span>         - Satirical news via Chrome plugin<br>
-            <span style="color: #fff;">./portfolio</span>      - Recursive systemic loop<br>
-            <span style="color: var(--term-dim);">cd accounts</span>      - Enter external networks layer<br><br>
+        el.innerHTML = `
+            <div class="npc-label">${npc.label}</div>
+            <div class="npc-shape" style="${backgroundStyle} clip-path: ${npc.shape.includes('polygon') ? npc.shape : 'none'}"></div>
         `;
-
-        // Sync visual cursor with input
-        input.addEventListener('input', () => {
-             // Keeps native cursor hidden but allows custom blinking cursor span to sit adjacent.
+        
+        // Click to move & interact
+        el.addEventListener('pointerdown', (e) => {
+            e.stopPropagation(); // prevent world click
+            if(state.modalOpen) return;
+            state.target = { x: npc.x, y: npc.y, active: true, targetNPC: npc };
         });
 
-        // Trigger on tag click
-        function injectCmd(cmd) {
-            input.value = cmd;
-            input.focus();
-            processCommand(cmd);
-        }
+        npcsContainer.appendChild(el);
+    });
 
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                const cmd = this.value.trim();
-                if(cmd) processCommand(cmd);
-            }
-        });
+    /* --- Input Handling --- */
+    window.addEventListener('keydown', (e) => {
+        if(state.keys.hasOwnProperty(e.key)) { state.keys[e.key] = true; state.target.active = false; }
+        if(e.key === 'e' || e.key === 'E' || e.key === ' ') interact();
+        if(e.key === 'Escape') closeModal();
+    });
 
-        async function processCommand(cmdLine) {
-            // 1. Echo command to history
-            const cmdEcho = document.createElement('div');
-            cmdEcho.className = 'history-line';
-            cmdEcho.innerHTML = `<span class="history-prompt-prefix">guest@geekip.dev:~ $</span>${cmdLine}`;
-            output.appendChild(cmdEcho);
-            input.value = '';
+    window.addEventListener('keyup', (e) => {
+        if(state.keys.hasOwnProperty(e.key)) state.keys[e.key] = false;
+    });
+
+    document.getElementById('viewport').addEventListener('pointerdown', (e) => {
+        if(state.modalOpen) return;
+        // Calculate world coordinates from screen click
+        const rect = document.getElementById('viewport').getBoundingClientRect();
+        const screenCenterX = rect.width / 2;
+        const screenCenterY = rect.height / 2;
+        
+        // Because world shifts inversely to player, screen center IS player position
+        // Click relative to screen center is distance from player
+        const dx = e.clientX - screenCenterX;
+        const dy = e.clientY - screenCenterY;
+        
+        state.target = { 
+            x: state.player.x + dx, 
+            y: state.player.y + dy, 
+            active: true, targetNPC: null 
+        };
+    });
+
+    /* --- Interaction Logic --- */
+    function checkProximity() {
+        let nearest = null;
+        let minDist = 80;
+
+        npcData.forEach(npc => {
+            const dx = npc.x - state.player.x;
+            const dy = npc.y - state.player.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
             
-            // 2. Parse
-            const parsed = cmdLine.toLowerCase();
-            const action = routingTable[parsed];
-
-            if (action === 'CLEAR') {
-                output.innerHTML = '';
-            } 
-            else if (action === 'DIR' || action === 'HELP') {
-                const res = document.createElement('div');
-                res.className = 'history-line';
-                res.innerHTML = projectListHtml;
-                output.appendChild(res);
+            const npcEl = document.getElementById(`npc-${npc.id}`);
+            if(dist < minDist) {
+                nearest = npc;
+                npcEl.querySelector('.npc-shape').style.boxShadow = `0 0 30px 10px #fff`; // Highlight
+            } else {
+                npcEl.querySelector('.npc-shape').style.boxShadow = `0 0 20px currentcolor`;
             }
-            else if (action) {
-                // Execute Loading phase
-                input.disabled = true;
-                const loadingLine = document.createElement('div');
-                loadingLine.className = 'history-line';
-                output.appendChild(loadingLine);
+        });
+
+        if (nearest && !state.activeNPC) {
+            tooltip.classList.add('show');
+        } else if (!nearest) {
+            tooltip.classList.remove('show');
+        }
+        
+        state.activeNPC = nearest;
+
+        // Auto interact if click-targeting this NPC and arrived
+        if (nearest && state.target.active && state.target.targetNPC === nearest) {
+           interact();
+           state.target.active = false;
+        }
+    }
+
+    function interact() {
+        if (state.activeNPC && !state.modalOpen) {
+            openModal(state.activeNPC.html);
+        }
+    }
+
+    function openModal(htmlContent) {
+        state.modalOpen = true;
+        document.getElementById('modal-content').innerHTML = htmlContent;
+        document.getElementById('modal-container').classList.add('active');
+        state.keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false }; // reset keys
+        state.target.active = false;
+    }
+
+    window.closeModal = function() {
+        state.modalOpen = false;
+        document.getElementById('modal-container').classList.remove('active');
+        // Small timeout to clear content after animation
+        setTimeout(() => { if(!state.modalOpen) document.getElementById('modal-content').innerHTML = ''; }, 400);
+    }
+
+    /* --- Game Loop --- */
+    function update() {
+        if(!state.modalOpen) {
+            let dx = 0, dy = 0;
+
+            // Keyboard Movement
+            if (state.keys.w || state.keys.ArrowUp) dy -= 1;
+            if (state.keys.s || state.keys.ArrowDown) dy += 1;
+            if (state.keys.a || state.keys.ArrowLeft) dx -= 1;
+            if (state.keys.d || state.keys.ArrowRight) dx += 1;
+
+            if (dx !== 0 || dy !== 0) {
+                // Normalize diagonal
+                const length = Math.sqrt(dx*dx + dy*dy);
+                dx = (dx/length) * state.player.speed;
+                dy = (dy/length) * state.player.speed;
                 
-                let loadTxt = "Locating server package";
-                for(let i=0; i<3; i++){
-                    loadingLine.innerText = loadTxt;
-                    loadTxt += ".";
-                    await new Promise(r => setTimeout(r, 200));
+                state.player.x += dx;
+                state.player.y += dy;
+                
+                // Rotation calculation
+                const angle = Math.atan2(dy, dx) * (180/Math.PI);
+                playerEl.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+            } 
+            // Click Movement
+            else if (state.target.active) {
+                let tdx = state.target.x - state.player.x;
+                let tdy = state.target.y - state.player.y;
+                let dist = Math.sqrt(tdx*tdx + tdy*tdy);
+                
+                if (dist > state.player.speed) {
+                    let moveX = (tdx/dist) * state.player.speed;
+                    let moveY = (tdy/dist) * state.player.speed;
+                    state.player.x += moveX;
+                    state.player.y += moveY;
+                    
+                    const angle = Math.atan2(tdy, tdx) * (180/Math.PI);
+                    playerEl.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+                } else {
+                    state.player.x = state.target.x;
+                    state.player.y = state.target.y;
+                    state.target.active = false;
                 }
-                loadingLine.innerHTML = `<span class="success-msg">[OK] Data stream established. Rendering visual canvas.</span>`;
-                
-                // Show Card
-                displayCard(action);
-                input.disabled = false;
-                input.focus();
-            } 
-            else {
-                // Command not found
-                const err = document.createElement('div');
-                err.className = 'history-line';
-                err.innerHTML = `bash: ${parsed}: command not found. Try 'ls projects'.`;
-                output.appendChild(err);
             }
 
-            // Scroll to bottom
-            termPane.scrollTop = termPane.scrollHeight;
-        }
-
-        function displayCard(targetId) {
-            // Hide all
-            cards.forEach(c => c.classList.remove('active'));
+            // Move the world inversely to player to simulate camera tracking
+            worldEl.style.transform = `translate(${-state.player.x}px, ${-state.player.y}px)`;
             
-            // Show target
-            const target = document.getElementById(targetId);
-            if (target) {
-                target.classList.add('active');
-            }
-
-            // Mobile handling: Show canvas overlay
-            if (window.innerWidth <= 900) {
-                canvasArea.classList.add('mobile-active');
-            }
+            checkProximity();
         }
+        
+        requestAnimationFrame(update);
+    }
 
-        function closeMobileCanvas() {
-            canvasArea.classList.remove('mobile-active');
-            cards.forEach(c => c.classList.remove('active'));
-            input.focus();
-        }
+    /* --- Temporal Glitch Clock --- */
+    function updateClock() {
+        // Epoch: 2026-03-10 01:22:31 UTC
+        const epoch = new Date('2026-03-10T01:22:31Z').getTime();
+        const now = Date.now();
+        const diffSeconds = Math.floor(Math.abs(now - epoch) / 1000);
+        
+        const d = Math.floor(diffSeconds / (3600 * 24));
+        const h = Math.floor((diffSeconds % (3600 * 24)) / 3600);
+        const m = Math.floor((diffSeconds % 3600) / 60);
+        const s = diffSeconds % 60;
 
-        // Start App
-        window.onload = initBoot;
-    </script>
+        const pad = (num) => String(num).padStart(2, '0');
+        
+        // Even if the date is in the future relative to current time, it acts as an absolute difference counter as per "continually passed since the epoch"
+        document.getElementById('clock').innerText = `${pad(d)}:${pad(h)}:${pad(m)}:${pad(s)}`;
+    }
+
+    // Start Engine
+    setInterval(updateClock, 1000);
+    updateClock(); // initial call
+    requestAnimationFrame(update);
+
+</script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260308",
+          pageId: "20260310",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
