@@ -2,513 +2,611 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Geva Kipper // Night Drive Portfolio</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;700&family=Fira+Code&display=swap" rel="stylesheet">
+<title>Geva Kipper - Empire of Engineering</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
-    /* CSS Variables & Theme */
+    /* ----- GLOBAL & ART DIRECTION ----- */
     :root {
-        --cyan: #00f3ff;
-        --magenta: #ff00ff;
-        --green: #00ff41;
-        --amber: #ffb000;
-        --bg-dark: #050508;
-        --panel-bg: rgba(10, 10, 15, 0.85);
-        --font-display: 'Orbitron', sans-serif;
-        --font-body: 'Roboto', sans-serif;
-        --font-mono: 'Fira Code', monospace;
+        --vellum: #f4ecd8;
+        --vellum-dark: #d5c39f;
+        --sepia: #8b5e3c;
+        --terra: #B34233;
+        --gold: #D4AF37;
+        --iron: #434B4D;
+        --ink: #30261f;
+        --cyan: #00FFFF;
+        --pink: #FF1493;
+        
+        --font-roman: 'Cinzel', serif;
+        --font-mono: 'Space Mono', monospace;
+        --font-body: 'Cormorant Garamond', serif;
     }
 
-    /* Core Resets & Body Scroll Logic */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
     body {
-        background-color: var(--bg-dark);
-        color: #fff;
+        background-color: var(--vellum);
+        color: var(--ink);
         font-family: var(--font-body);
-        /* The exact height defines the length of our "drive" */
-        height: 15200px; 
         overflow-x: hidden;
+        /* Custom gladius cursor injected via JS, hide default */
+        cursor: none;
     }
 
-    /* 3D Scene Architecture */
-    #scene {
-        position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh;
-        perspective: 900px;
-        perspective-origin: 50% 50%;
-        overflow: hidden;
-        pointer-events: none; /* Let scroll events pass through to body */
-        z-index: 1;
-        background: radial-gradient(circle at center, transparent 30%, var(--bg-dark) 90%), #000;
-    }
+    /* Links reset */
+    a { color: inherit; text-decoration: none; cursor: none; }
 
-    /* Camera acts as the container resolving physical Z space */
-    #camera {
-        width: 100%; height: 100%;
-        position: absolute;
-        transform-style: preserve-3d;
-    }
-
-    /* World is pushed forward (+Z) by JS on scroll */
-    #world {
-        width: 100%; height: 100%;
-        position: absolute;
-        transform-style: preserve-3d;
-        /* Initial state, updated via JS */
-        transform: translateZ(0); 
-    }
-
-    /* Global Object Classes */
-    .threed-object {
-        position: absolute;
-        transform-style: preserve-3d;
-        pointer-events: auto; /* Re-enable clicks for passing objects */
-        left: 50%; /* Center origin point for easy math */
-        top: 50%;
-    }
-
-    /* The Road */
-    .highway {
-        width: 3000px;
-        height: 18000px;
-        background-color: #0b0b10;
-        /* Glowing lane dividers */
+    /* Vellum & Parallax Typography Background */
+    .map-container {
+        position: relative;
+        width: 100%;
+        min-height: 100vh;
+        /* Noise texture representing parchment */
         background-image: 
-            linear-gradient(0deg, var(--cyan) 30%, transparent 30%),
-            linear-gradient(90deg, rgba(255,0,255,0.1) 1px, transparent 1px),
-            linear-gradient(0deg, rgba(255,0,255,0.1) 1px, transparent 1px);
-        background-size: 20px 400px, 100px 100px, 100px 100px;
-        background-position: center;
-        /* Laying the road flat and extending deeply into -Z */
-        transform: translate3d(-50%, 250px, -7000px) rotateX(90deg);
-        transform-origin: center;
-        box-shadow: 0 0 100px 50px rgba(0,243,255,0.05) inset;
+            url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E"), 
+            radial-gradient(circle at 50% 50%, var(--vellum) 0%, var(--vellum-dark) 100%);
+        background-attachment: fixed;
     }
 
-    .highway::after {
-        content: '';
-        position: absolute; top:0; left:0; right:0; bottom:0;
-        background: linear-gradient(90deg, #000 5%, transparent 30%, transparent 70%, #000 95%);
+    /* Coastal/Topographic Lines */
+    .topography {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-image: 
+            radial-gradient(ellipse at 10% 20%, transparent 60%, rgba(139, 94, 60, 0.1) 61%, transparent 62%),
+            radial-gradient(ellipse at 90% 80%, transparent 50%, rgba(139, 94, 60, 0.1) 51%, transparent 52%);
+        background-size: 800px 1000px;
+        pointer-events: none;
+        z-index: 0;
     }
 
-    /* HUD System Alert */
-    .hud-overlay {
-        position: fixed; top: 20px; right: 20px;
-        font-family: var(--font-mono); color: var(--amber);
-        text-shadow: 0 0 10px var(--amber);
-        z-index: 99; text-align: right;
-        opacity: 0.8; pointer-events: none;
+    /* Dead Digital Bugs (Sea Monsters) */
+    .sea-monster {
+        position: absolute;
+        width: 150px; height: 150px;
+        opacity: 0.15;
+        pointer-events: none;
+    }
+    .monster-1 { top: 20%; left: 5%; transform: rotate(15deg); }
+    .monster-2 { top: 60%; right: 5%; transform: rotate(-25deg); }
+
+    /* Typography & Layout Shared */
+    .roman-title { font-family: var(--font-roman); text-transform: uppercase; color: var(--ink); letter-spacing: 2px;}
+    .tech-text { font-family: var(--font-mono); font-size: 0.9rem; }
+    
+    .content-wrapper {
+        position: relative;
+        z-index: 2;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding-bottom: 100px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* Primary Connecting Infrastructures */
+    .via-appia {
+        position: absolute; left: 50%; top: 300px; bottom: 0; width: 60px;
+        transform: translateX(-50%);
+        background: repeating-linear-gradient(0deg, var(--sepia), var(--sepia) 10px, transparent 10px, transparent 20px);
+        border-left: 2px solid rgba(139, 94, 60, 0.5);
+        border-right: 2px solid rgba(139, 94, 60, 0.5);
+        opacity: 0.3; z-index: -1;
     }
     
-    .scroll-instruction {
-        animation: pulse 2s infinite; font-size: 1.2rem; margin-top: 10px; color: var(--cyan);
+    .aqueduct-vertical {
+        position: absolute; left: 50%; top: 1200px; bottom: 300px; width: 80px;
+        transform: translateX(-50%);
+        background-image: 
+            radial-gradient(circle at 50% 0, transparent 15px, var(--iron) 16px, var(--iron) 18px, transparent 19px);
+        background-size: 100% 40px;
+        border-left: 4px solid var(--iron);
+        border-right: 4px solid var(--iron);
+        opacity: 0.2; z-index: -1;
     }
 
-    /* Shared Billboard Styles */
-    .billboard {
-        width: 900px;
-        background: var(--panel-bg);
-        border: 1px solid rgba(255,255,255,0.1);
-        padding: 40px;
-        border-radius: 15px;
-        backdrop-filter: blur(10px);
-        display: flex; flex-direction: column; gap: 20px;
-        color: #e0e0e0;
-        transition: transform 0.1s ease-out;
-    }
-    
-    .billboard h2 { font-family: var(--font-display); font-size: 3rem; margin-bottom: 10px; letter-spacing: 2px; }
-    .billboard p { font-size: 1.2rem; line-height: 1.6; }
-    .btn-link {
-        display: inline-block; padding: 15px 30px; text-decoration: none; font-weight: bold;
-        text-transform: uppercase; font-family: var(--font-display);
-        border-radius: 5px; text-align: center; margin-top: auto;
-        transition: all 0.3s; cursor: pointer;
-    }
-
-    /* Specific Structures & Positions */
-
-    /* Hero Gantry (Start) */
-    .gantry {
-        width: 2000px;
-        transform: translate3d(-50%, -200px, -500px);
+    /* ----- HEADER SECTION (THE CAPITAL) ----- */
+    header {
         text-align: center;
-        background: linear-gradient(90deg, transparent, rgba(0,0,0,0.8), transparent);
-        padding: 50px 0;
-        border-top: 5px solid var(--cyan);
-        border-bottom: 5px solid var(--cyan);
-    }
-    .gantry h1 {
-        font-family: var(--font-display); font-size: 8rem; color: #fff;
-        text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 40px #fff, 0 0 80px var(--cyan);
-        margin-bottom: 20px;
-    }
-    .gantry h3 { font-size: 2.5rem; font-weight: 300; }
-    .gantry .alert {
-        color: var(--amber); font-family: var(--font-mono); margin-top: 30px; font-size: 1.5rem;
-        animation: flicker 3s infinite alternate; text-shadow: 0 0 10px var(--amber);
-    }
-
-    /* BB1: GlglStats (Right) */
-    .bb1 {
-        transform: translate3d(200px, -50px, -2500px) rotateY(-15deg); 
-        border: 4px solid var(--magenta);
-        box-shadow: 0 0 30px var(--magenta), inset 0 0 20px var(--magenta);
-        animation: eqPulse 2s infinite alternate;
-    }
-    .bb1 h2 { color: var(--magenta); text-shadow: 0 0 15px var(--magenta); }
-    .bb1-graphic {
-        height: 100px; margin: 20px 0; border-radius: 5px;
-        background: 
-            repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,0,255,0.3) 10px, rgba(255,0,255,0.3) 20px),
-            repeating-linear-gradient(-45deg, transparent, transparent 15px, rgba(0,255,255,0.2) 15px, rgba(0,255,255,0.2) 30px);
-        border: 1px solid var(--magenta);
-    }
-    .bb1 .btn-link { background: transparent; border: 2px solid var(--cyan); color: var(--cyan); box-shadow: 0 0 15px var(--cyan); }
-    .bb1 .btn-link:hover { background: var(--cyan); color: #000; }
-
-    /* BB2: Ahuzat Dibuk (Left) */
-    .bb2 {
-        transform: translate3d(-1100px, -50px, -4500px) rotateY(15deg);
-        background: 
-            linear-gradient(rgba(10,10,15,0.6), rgba(10,10,15,0.6)),
-            radial-gradient(circle at 30% 50%, rgba(200,30,30,0.4), transparent 50%),
-            radial-gradient(circle at 70% 50%, rgba(30,200,30,0.4), transparent 50%);
-        background-color: var(--panel-bg);
-        border: 2px solid #555; box-shadow: 0 0 20px #f00; border-top: 5px solid #f00;
-        animation: thermalShift 5s infinite alternate ease-in-out;
-    }
-    .bb2 h2 { color: #fff; text-shadow: 0 0 15px #f00; }
-    .hanging-signs { display: flex; justify-content: space-around; margin-top: 30px; position: relative; }
-    .hanging-sign {
-        position: relative; padding: 10px 15px; background: #111; border: 1px solid var(--amber);
-        color: var(--amber); text-decoration: none; font-family: var(--font-mono); font-size: 0.9rem;
-        text-shadow: 0 0 5px var(--amber); box-shadow: 0 0 10px var(--amber); transition: 0.2s;
-    }
-    .hanging-sign::before { /* The cable */
-        content: ''; position: absolute; top: -45px; left: 50%; width: 2px; height: 45px; background: #555;
-    }
-    .hanging-sign:hover { background: var(--amber); color: #000; }
-
-    /* BB3: 2D Part Orienting (Right) */
-    .bb3-container {
-        transform: translate3d(300px, -50px, -6500px); width: 800px; height: 500px;
-    }
-    .bb3 {
-        width: 100%; height: 100%; position: absolute;
-        clip-path: polygon(10% 0, 90% 0, 100% 20%, 100% 80%, 90% 100%, 10% 100%, 0 80%, 0 20%);
-        background: #000; border: none; padding: 50px;
-        box-shadow: inset 0 0 50px rgba(0,255,65,0.5);
-        display: flex; flex-direction: column; justify-content: center;
-        /* Wireframe effect wrapper */
-        animation: floatWobble 6s infinite ease-in-out;
-    }
-    .bb3::before { /* fake border for clip-path */
-        content:''; position: absolute; top: 2px; left: 2px; right: 2px; bottom: 2px;
-        background: rgba(10,20,10,0.9); z-index: -1;
-        clip-path: polygon(10% 0, 90% 0, 100% 20%, 100% 80%, 90% 100%, 10% 100%, 0 80%, 0 20%);
-    }
-    .bb3 h2 { color: var(--green); text-shadow: 0 0 20px var(--green); margin-top:0; }
-    .bb3 .schematic {
-        width: 100%; height: 40%; border: 1px solid rgba(0,255,65,0.3); background: repeating-linear-gradient(90deg, rgba(0,255,65,0.05) 0 2px, transparent 2px 20px), repeating-linear-gradient(0deg, rgba(0,255,65,0.05) 0 2px, transparent 2px 20px);
-        margin: 15px 0; display: block; text-decoration: none; position: relative;
-    }
-    .bb3 .schematic:hover { border-color: var(--green); box-shadow: 0 0 20px inset rgba(0,255,65,0.3); }
-    .bb3 .schematic::after { content: "VIEW SOURCE ALGORITHM"; position: absolute; top:50%; left:50%; transform: translate(-50%,-50%); color: var(--green); font-family: var(--font-mono); font-weight: bold; opacity: 0; transition: 0.3s; }
-    .bb3 .schematic:hover::after { opacity: 1; text-shadow: 0 0 10px var(--green); }
-
-    /* BB4: The Turing Jest (Left) */
-    .bb4 {
-        transform: translate3d(-1100px, -50px, -8500px) rotateY(10deg);
-        background: linear-gradient(90deg, #300 0%, #000 50%, #003 100%);
-        border: 5px solid #fff; border-radius: 0; padding: 0; overflow: hidden;
-        box-shadow: -15px 0 50px #f00, 15px 0 50px #00f;
-    }
-    .bb4-inner { padding: 40px; display: flex; flex-direction: column; height: 100%; text-align: center; }
-    .bb4 h2 { font-family: 'Courier New', Courier, monospace; font-weight: bold; background: -webkit-linear-gradient(0deg, #f00, #00f); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 5px #fff); }
-    .bb4 p { font-family: 'Courier New', Courier, monospace; font-weight: bold; color: #ddd; }
-    .btn-arena {
-        background: #000; color: #fff; font-size: 2rem; padding: 20px; border: 4px solid var(--magenta);
-        margin-top: 30px; text-decoration: none; font-family: var(--font-display);
-        box-shadow: 0 0 20px var(--magenta), inset 0 0 10px var(--magenta);
-        animation: fastFlicker 0.5s infinite;
-    }
-    .btn-arena:hover { background: var(--magenta); color: #fff; box-shadow: 0 0 50px var(--magenta); }
-
-    /* BB5: Rhymes of Israel (Right) */
-    .bb5 {
-        transform: translate3d(200px, -50px, -10500px) rotateY(-10deg);
-        background: rgba(30, 20, 5, 0.9);
-        border: 1px solid var(--amber); box-shadow: 0 0 40px rgba(255, 176, 0, 0.4);
-        font-family: 'Times New Roman', Times, serif; color: #f5deb3;
-    }
-    .bb5 h2 { font-family: 'Times New Roman', Times, serif; font-size: 3.5rem; border-bottom: 2px solid var(--amber); padding-bottom: 10px; color: var(--amber); text-shadow: 0 0 10px rgba(255,176,0,0.8); }
-    .bb5 p { font-size: 1.4rem; font-style: italic; opacity: 0.9; }
-    .chrome-badge {
-        display: block; background: #fff; color: #000; text-align: center; padding: 15px;
-        text-decoration: none; font-family: var(--font-body); font-weight: bold; border-radius: 8px; margin-top: auto;
-        box-shadow: 0 0 20px #fff; transition: 0.3s; font-size: 1.2rem;
-    }
-    .chrome-badge:hover { transform: scale(1.05); box-shadow: 0 0 30px #fff; }
-
-    /* BB6: The Meta-Portfolio (Overhead) */
-    .bb6-arch {
-        transform: translate3d(-50%, -350px, -12500px);
-        width: 1400px; padding: 60px; text-align: center;
-        background: rgba(0,10,20,0.8);
-        border: 4px solid var(--cyan);
-        /* Infinity mirror effect */
-        box-shadow: 
-            inset 0 0 15px var(--cyan), inset 0 0 30px var(--cyan), inset 0 0 60px var(--bg-dark),
-            inset 0 0 65px var(--cyan), inset 0 0 80px var(--cyan), inset 0 0 100px var(--bg-dark);
-    }
-    .bb6-arch h2 { color: var(--cyan); text-shadow: 0 0 20px var(--cyan); font-size: 4rem; } 
-    .bb6-arch p { font-size: 1.5rem; margin-bottom: 30px; }
-    .exit-ramp {
-        display: inline-block; background: #053b05; border: 3px solid #0f0; color: #0f0;
-        padding: 20px 40px; font-size: 2.5rem; font-family: var(--font-display); text-decoration: none;
-        box-shadow: 0 0 30px #0f0; text-transform: uppercase; border-radius: 10px;
-    }
-    .exit-ramp span { font-family: var(--font-body); font-size: 1.2rem; display: block; margin-top: -5px; }
-    .exit-ramp:hover { background: #0a5a0a; box-shadow: 0 0 50px #0f0; }
-
-    /* City Limits (End Destination) at Z = -14200. Reached at scroll 14000. */
-    .city-limits {
-        transform: translate3d(-50%, -100px, -14200px);
-        width: 2500px; height: 1000px;
-        display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-        padding-bottom: 50px;
+        margin-top: 80px;
+        margin-bottom: 100px;
+        position: relative;
     }
     
-    .skyline {
-        position: absolute; bottom: 0; left: 0; width: 100%; height: 600px; z-index: -1;
-        /* Procedural skyline via complex background gradients */
-        background: 
-            linear-gradient(to top, #000 0%, transparent 100%),
-            linear-gradient(90deg, #111 10%, transparent 10%),
-            linear-gradient(90deg, #09090f 25%, transparent 25%),
-            linear-gradient(90deg, #151520 40%, transparent 40%);
-        background-size: 100% 100%, 150px 300px, 80px 450px, 200px 500px;
-        background-position: 0 0, 50px bottom, 200px bottom, 500px bottom;
-        background-repeat: repeat-x;
-        opacity: 0.6;
+    .temple {
+        width: 200px; height: 100px; margin: 0 auto 20px auto;
+        border-bottom: 2px solid var(--iron);
+        position: relative;
+        display: flex; justify-content: space-evenly; align-items: flex-end;
     }
+    .temple::before {
+        content: ''; position: absolute; top: -50px; left: 0; width: 0; height: 0;
+        border-left: 100px solid transparent; border-right: 100px solid transparent; border-bottom: 50px solid var(--iron);
+    }
+    .temple-pillar { width: 10px; height: 80px; background: var(--iron); }
 
-    .monolith-container {
-        display: flex; gap: 80px; align-items: flex-end; z-index: 2;
-    }
-    .monolith {
-        width: 150px; height: 400px; background: rgba(5,5,10,0.9);
-        border: 2px solid var(--cyan); border-bottom: none;
-        box-shadow: 0 0 30px rgba(0,243,255,0.3), inset 0 0 20px rgba(0,243,255,0.3);
-        display: flex; flex-direction: column; align-items: center; padding-top: 40px;
-        text-decoration: none; color: var(--cyan); font-family: var(--font-mono); transition: 0.3s;
-    }
-    .monolith:nth-child(2) { height: 500px; border-color: var(--magenta); box-shadow: 0 0 30px rgba(255,0,255,0.3), inset 0 0 20px rgba(255,0,255,0.3); color: var(--magenta); }
-    .monolith:nth-child(3) { height: 350px; border-color: var(--green); box-shadow: 0 0 30px rgba(0,255,65,0.3), inset 0 0 20px rgba(0,255,65,0.3); color: var(--green); }
+    .name-title { font-size: 4rem; color: var(--terra); font-weight: 700; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
     
-    .monolith svg { width: 60px; height: 60px; fill: currentColor; margin-bottom: 20px; filter: drop-shadow(0 0 10px currentColor); }
-    .monolith span { writing-mode: vertical-rl; text-orientation: mixed; font-size: 1.5rem; letter-spacing: 5px; }
-    .monolith:hover { transform: translateY(-20px); filter: brightness(1.5); }
-
-    /* Dashboard Bottom HUD */
-    #dashboard {
-        position: fixed; bottom: 0; left: 0; width: 100%; height: 50px;
-        background: rgba(0, 0, 0, 0.9);
-        border-top: 2px solid var(--green);
-        display: flex; align-items: center; justify-content: space-between; padding: 0 30px;
-        font-family: var(--font-mono); color: var(--green); font-size: 1rem;
-        z-index: 100; pointer-events: none;
-        box-shadow: 0 -5px 20px rgba(0,255,65,0.1);
+    .marble-banner {
+        background: linear-gradient(135deg, #fff 0%, #e0d8c8 100%);
+        border: 1px solid var(--sepia);
+        padding: 15px 40px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        display: inline-block; font-size: 1.2rem; margin-bottom: 20px;
+        border-radius: 2px; position: relative;
     }
-    .dash-typing::after { content: '_'; animation: blink 1s step-end infinite; }
-
-    /* Global Animations */
-    @keyframes flicker { 0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; } 20%, 22%, 24%, 55% { opacity: 0.3; } }
-    @keyframes fastFlicker { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
-    @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
-    @keyframes eqPulse { 0% { box-shadow: 0 0 20px var(--magenta), inset 0 0 10px var(--magenta); } 100% { box-shadow: 0 0 60px var(--magenta), inset 0 0 40px var(--magenta); } }
-    @keyframes thermalShift { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
-    @keyframes floatWobble { 0% { transform: rotateY(-10deg) rotateX(5deg); } 50% { transform: rotateY(10deg) rotateX(-5deg); } 100% { transform: rotateY(-10deg) rotateX(5deg); } }
-    @keyframes spinY { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-
-    /* Responsive adjustments */
-    @media (max-width: 1000px) {
-        .threed-object { transform: scale(0.6) translate3d(-50%, -50%, var(--z)); }
+    
+    .digital-scroll {
+        background: var(--ink); color: var(--cyan);
+        padding: 10px 20px; display: inline-block; font-size: 0.85rem;
+        border: 1px solid var(--cyan); box-shadow: 0 0 10px rgba(0,255,255,0.2);
+        max-width: 600px; margin: 0 auto; letter-spacing: -0.5px; line-height: 1.4;
     }
+
+    /* ----- PROVINCES (PROJECT SECTIONS) ----- */
+    .province-grid {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 40px; width: 100%; max-width: 1000px;
+        margin-bottom: 40px; position: relative; padding: 0 20px;
+    }
+    /* Staggered layout for organic map flow */
+    .province:nth-child(even) { transform: translateY(60px); }
+
+    .province {
+        background: rgba(230, 218, 190, 0.7);
+        border: 2px solid var(--sepia);
+        padding: 30px; border-radius: 4px; position: relative;
+        transition: all 0.5s ease; overflow: hidden;
+        backdrop-filter: blur(2px);
+    }
+
+    /* Interactive Hover State - Antiquity meets Cyberpunk */
+    .province::after {
+        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(10, 15, 20, 0.95); opacity: 0; transition: opacity 0.4s ease; z-index: 1;
+    }
+    .province:hover {
+        border-color: var(--cyan);
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.5), inset 0 0 15px rgba(255, 20, 147, 0.3);
+        transform: scale(1.02) !important;
+        z-index: 10;
+    }
+    .province:hover::after { opacity: 1; }
+
+    /* Content inside province */
+    .prov-content { position: relative; z-index: 3; transition: all 0.4s ease; display: flex; flex-direction: column; height: 100%; }
+    .province:hover .prov-content > * { color: #fff; }
+    .province:hover .roman-title { color: var(--cyan); text-shadow: 0 0 8px var(--cyan); }
+    .province:hover .prov-desc { color: #ccc; }
+
+    /* Icon / Graphic Container */
+    .prov-graphic { height: 120px; width: 100%; margin: 15px 0; position: relative; border: 1px dashed var(--sepia); display: flex; justify-content: center; align-items: center; }
+    .province:hover .prov-graphic { border-color: var(--pink); box-shadow: 0 0 10px rgba(255,20,147,0.2) inset; }
+
+    /* Graphic Specifics - Normal State */
+    .graphic-svg { fill: transparent; stroke: var(--iron); stroke-width: 2; transition: all 0.4s ease;}
+    .province:hover .graphic-svg { stroke: var(--pink); filter: drop-shadow(0 0 5px var(--pink)); }
+    
+    /* Neon Layer (Hidden normally) */
+    .neon-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.4s ease; pointer-events: none;}
+    .province:hover .neon-layer { opacity: 1; }
+
+    /* Links Area */
+    .prov-links { margin-top: auto; display: flex; gap: 15px; justify-content: center; padding-top: 20px;}
+    .interact-icon {
+        width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--gold);
+        display: flex; justify-content: center; align-items: center; color: var(--gold);
+        font-size: 1.2rem; transition: all 0.3s; background: rgba(255,255,255,0.1);
+        position: relative; z-index: 4;
+    }
+    .province:hover .interact-icon { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 10px var(--cyan); background: transparent;}
+    .interact-icon:hover { transform: scale(1.2); box-shadow: 0 0 20px var(--pink); color: var(--pink); border-color: var(--pink); }
+
+    /* Custom Project Graphics CSS Art */
+    /* Prov 1: Arena LZ77 */
+    .arena { width: 100px; height: 70px; border: 2px solid; border-radius: 50%; opacity: 0.6; }
+    .arena-inner { width: 60px; height: 30px; border: 2px solid; border-radius: 50%; margin: 20px auto; }
+    .neon-lz77 { color: var(--cyan); font-family: var(--font-mono); font-size: 10px; text-align: center; margin-top: 40px; }
+    
+    /* Prov 2: Garrison Heatmap */
+    .garrison { display: flex; gap: 5px; opacity: 0.6; }
+    .stable { width: 15px; height: 40px; border: 1px solid; }
+    .neon-heatmap { background: radial-gradient(circle at center, rgba(255,20,147,0.8) 0%, transparent 70%); mix-blend-mode: screen; }
+
+    /* Prov 3: Draft Table */
+    .draft-table { width: 80px; height: 60px; border: 1px solid; transform: skewX(-20deg); }
+    .neon-cpp { color: var(--pink); font-family: var(--font-mono); font-size: 12px; font-weight: bold; position: absolute; left: 20px; top: 20px;}
+
+    /* Prov 4: Colosseum */
+    .arch { width: 30px; height: 40px; border: 2px solid; border-top-left-radius: 15px; border-top-right-radius: 15px; float: left; margin: 5px;}
+    .neon-gladiator { position: absolute; top: 20px; width: 100%; text-align: center; color: var(--cyan); text-shadow: 0 0 5px var(--cyan); font-weight: bold; font-family: var(--font-mono);}
+
+    /* Prov 5: Fresco */
+    .fresco { width: 80px; height: 80px; border: 1px solid; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 5px;}
+    .fresco div { border: 1px solid; opacity: 0.5;}
+    .neon-rhyme { color: var(--cyan); font-family: var(--font-body); font-style: italic; font-size: 16px; position:absolute; right:10px; top:10px; }
+
+    /* Prov 6: Pantheon Mirror */
+    .dome { width: 80px; height: 40px; border: 2px solid; border-top-left-radius: 40px; border-top-right-radius: 40px; margin-bottom: 20px;}
+    .neon-mirror { background: repeating-radial-gradient(circle, transparent 0, transparent 5px, rgba(0,255,255,0.2) 6px, transparent 7px); border-radius: 50%; animation: pulse 2s infinite linear; }
+    @keyframes pulse { 0% { transform: scale(0.9); opacity: 0.5;} 50% { transform: scale(1.1); opacity: 1;} 100% { transform: scale(0.9); opacity: 0.5;} }
+
+    /* ----- THE HARBOR & FOOTER ----- */
+    .harbor {
+        width: 100%; margin-top: 100px; position: relative; overflow: hidden;
+        border-top: 4px solid var(--iron);
+        background: linear-gradient(180deg, var(--vellum-dark) 0%, #1a3a40 100%);
+        padding: 60px 20px 20px 20px;
+        color: white; text-align: center;
+    }
+
+    /* Water Glow Effect */
+    .cyan-water {
+        position: absolute; bottom: 0; left: 0; width: 100%; height: 60%;
+        background: linear-gradient(0deg, var(--cyan) 0%, transparent 100%);
+        opacity: 0.15; pointer-events: none;
+    }
+
+    /* Fleet */
+    .fleet { display: flex; justify-content: center; gap: 60px; margin-bottom: 80px; position: relative; z-index: 2;}
+    .galley {
+        width: 80px; cursor: none; transition: transform 0.3s ease; position: relative;
+    }
+    .galley:hover { filter: drop-shadow(0 0 15px var(--cyan)); transform: translateY(-5px); }
+    .galley-hull { width: 80px; height: 25px; background: var(--sepia); border-radius: 0 0 30px 30px; border: 2px solid var(--iron); position: relative;}
+    .galley-hull::before { content: ''; position: absolute; left: -10px; top: 0; width: 0; height: 0; border-top: 12px solid transparent; border-right: 15px solid var(--sepia); border-bottom: 12px solid transparent; }
+    .galley-sail { 
+        width: 60px; height: 50px; background: #fff; margin: 0 auto; margin-bottom: -5px; position: relative;
+        display: flex; justify-content: center; align-items: center; border: 1px solid var(--iron);
+        border-radius: 40% 40% 10% 10%; box-shadow: inset 0 -5px 10px rgba(0,0,0,0.2);
+    }
+    .crest { font-size: 24px; color: var(--ink); }
+    .oars { position: absolute; bottom: -10px; left: 10px; width: 60px; height: 10px; background: repeating-linear-gradient(90deg, transparent, transparent 5px, var(--gold) 5px, var(--gold) 7px);}
+
+    /* Ship Animation */
+    .sail-away { animation: sailAnim 1s ease-in forwards; }
+    @keyframes sailAnim {
+        0% { transform: translateX(0) scale(1.1); filter: drop-shadow(0 0 10px var(--cyan)); }
+        100% { transform: translateX(100vw) translateY(-10px) scale(0.8); opacity: 0; filter: drop-shadow(0 0 30px var(--cyan)); }
+    }
+
+    /* Milestone */
+    .milestone-container { margin: 0 auto; display: flex; flex-direction: column; align-items: center; position: relative; z-index: 2;}
+    .milliarium {
+        width: 120px; height: 150px;
+        background: linear-gradient(90deg, #7c8285 0%, #aaadb0 50%, #7c8285 100%);
+        border: 2px solid var(--iron);
+        border-radius: 5px 5px 0 0; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    }
+    .milliarium-cap { position: absolute; top: -15px; width: 140px; height: 15px; background: var(--iron); border-radius: 5px 5px 0 0; }
+    .milliarium-base { width: 160px; height: 20px; background: var(--iron); margin-top: -2px; }
+
+    /* Sundial */
+    .sundial {
+        background: black; padding: 10px 15px; border-radius: 3px; border: 1px solid var(--iron);
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.8), 0 0 15px rgba(0,255,255,0.2);
+        margin-top: 15px;
+    }
+    .time-digits {
+        font-family: var(--font-mono); font-size: 1.2rem; color: var(--pink); text-shadow: 0 0 5px var(--pink); font-weight: bold; letter-spacing: 2px;
+    }
+
+    .ai-credit { margin-top: 20px; font-family: var(--font-roman); font-size: 0.8rem; color: rgba(255,255,255,0.6); }
+
+    /* Custom Cursor */
+    #cursor {
+        position: fixed; top: 0; left: 0; width: 24px; height: 24px;
+        pointer-events: none; z-index: 9999;
+        transform: translate(-50%, -50%); /* Center point */
+        transition: transform 0.1s;
+    }
+    #cursor svg { width: 100%; height: 100%; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3)); }
 </style>
 </head>
 <body>
 
-    <!-- HUD Elements overlaid on screen space -->
-    <div class="hud-overlay">
-        <div>SYS_NAV: ENABLED</div>
-        <div class="scroll-instruction">[ SCROLL DOWN TO DRIVE ]</div>
+    <!-- Custom Cursor Object -->
+    <div id="cursor">
+        <!-- Minimalist Gladius SVG -->
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M50 10 L55 30 L55 70 L45 70 L45 30 Z" fill="#D4AF37" stroke="#434B4D" stroke-width="2"/>
+            <rect x="35" y="70" width="30" height="5" fill="#434B4D"/>
+            <rect x="42" y="75" width="16" height="20" fill="#8b5e3c"/>
+            <circle cx="50" cy="95" r="5" fill="#434B4D"/>
+            <path d="M50 10 L55 30 L45 30 Z" fill="#e0e0e0"/>
+        </svg>
     </div>
 
-    <div id="dashboard">
-        <div><span class="dash-typing">Architectural rendering by AI.</span></div>
-        <div>Uptime since 2026-03-14 01:25:11: <span id="timer">--:--:--</span></div>
-    </div>
+    <div class="map-container">
+        <!-- Topographic Map Background Elements -->
+        <div class="topography"></div>
+        
+        <!-- Sea Monsters / Dead Bugs -->
+        <svg class="sea-monster monster-1" viewBox="0 0 100 100">
+            <path d="M20 50 Q 50 20 80 50 T 80 90" stroke="#30261f" stroke-width="2" fill="none" stroke-dasharray="4 2"/>
+            <circle cx="20" cy="50" r="5" fill="none" stroke="#30261f"/>
+            <rect x="40" y="40" width="20" height="10" fill="none" stroke="#30261f"/>
+            <path d="M30 40 L30 30 M70 40 L70 30 M50 60 L50 80" stroke="#30261f"/>
+        </svg>
+        <svg class="sea-monster monster-2" viewBox="0 0 100 100">
+            <polygon points="50,10 90,50 50,90 10,50" fill="none" stroke="#30261f" stroke-width="2"/>
+            <circle cx="50" cy="50" r="15" fill="none" stroke="#30261f"/>
+            <line x1="50" y1="10" x2="50" y2="90" stroke="#30261f"/>
+            <line x1="10" y1="50" x2="90" y2="50" stroke="#30261f"/>
+            <text x="35" y="55" font-family="monospace" font-size="10" fill="#30261f">ERR</text>
+        </svg>
 
-    <!-- 3D Viewport wrapper -->
-    <div id="scene">
-        <div id="camera">
-            <div id="world">
+        <!-- Connecting Roads -->
+        <div class="via-appia"></div>
+        <div class="aqueduct-vertical"></div>
+
+        <!-- The Capital -->
+        <header class="content-wrapper">
+            <div class="temple">
+                <div class="temple-pillar"></div>
+                <div class="temple-pillar"></div>
+                <div class="temple-pillar"></div>
+                <div class="temple-pillar"></div>
+            </div>
+            <h1 class="roman-title name-title">Geva Kipper</h1>
+            <div class="marble-banner">
+                Currently engineering the legions of the modern world as a Software Engineer at Google.
+            </div>
+            <div class="digital-scroll tech-text">
+                > System prompt: "This realm is re-designed anew each day by artificial intelligence; an ever-changing empire."
+            </div>
+        </header>
+
+        <!-- The Provinces Sections -->
+        <div class="content-wrapper">
+            
+            <!-- Group 1: 1-3 -->
+            <div class="province-grid">
                 
-                <!-- Infinite Road Plane -->
-                <div class="threed-object highway"></div>
+                <!-- Project I -->
+                <section class="province">
+                    <div class="prov-content">
+                        <h2 class="roman-title">I. GlglStats</h2>
+                        <span class="tech-text" style="opacity: 0.7; margin-bottom: 10px; display:block;">Amphitheater of Repetition</span>
+                        <p class="prov-desc">A Python-forged instrument measuring out the rhythmic duplication within the cultural anthems of the Israeli popular charts. The algorithms chant in echoes.</p>
+                        
+                        <div class="prov-graphic">
+                            <div class="arena"><div class="arena-inner"></div></div>
+                            <div class="neon-layer neon-lz77">
+                                def lz77_compress(data):<br>
+                                &nbsp;&nbsp;return [echo for echo in song]
+                            </div>
+                        </div>
 
-                <!-- Hero Section - Z:-500 -->
-                <div class="threed-object gantry">
-                    <h1>GEVA KIPPER</h1>
-                    <h3>Software Engineer driving innovation at Google</h3>
-                    <div class="alert">[System Alert: This digital landscape is procedurally re-designed daily by AI. Expect shifting realities.]</div>
-                </div>
-
-                <!-- BB1: GlglStats - Z:-2500 -->
-                <div class="threed-object billboard bb1">
-                    <h2>GlglStats</h2>
-                    <p>Advanced statistical analysis and LZ77 compression visualization of Israeli pop-chart data.</p>
-                    <div class="bb1-graphic"></div>
-                    <!-- Autoplay Muted Demo Video -->
-                    <iframe width="100%" height="315" src="https://www.youtube.com/embed/jrKAtOsj1Lo?autoplay=1&mute=1&loop=1&playlist=jrKAtOsj1Lo" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="border:1px solid #ff00ff; pointer-events: auto;"></iframe>
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="btn-link">ACCESS DATA TERMINAL // GLGLSTATS</a>
-                </div>
-
-                <!-- BB2: Ahuzat Dibuk - Z:-4500 -->
-                <div class="threed-object billboard bb2">
-                    <h2>Ahuzat Dibuk</h2>
-                    <p>Python scraping and visualization framework generating thermal heatmaps of Tel-Aviv parking occupancy. Critical infrastructure for surviving the urban commute grid.</p>
-                    <div class="hanging-signs">
-                        <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="hanging-sign">CHANNEL 13 NEWS</a>
-                        <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="hanging-sign">MAKO MAGAZINE</a>
-                        <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="hanging-sign">SECRET TEL AVIV</a>
+                        <div class="prov-links">
+                            <a href="https://glglstats.geekip.dev" target="_blank" class="interact-icon" title="Visit Web Interface">
+                                &#9835; <!-- Lyre/Music -->
+                            </a>
+                            <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="interact-icon" title="PyData TLV Presentation">
+                                &#127917; <!-- Masks -->
+                            </a>
+                        </div>
                     </div>
-                </div>
+                </section>
 
-                <!-- BB3: 2D Part Orienting - Z:-6500 -->
-                <div class="threed-object bb3-container">
-                    <div class="bb3">
-                        <h2>2D PART ORIENTING</h2>
-                        <p>C++ computational geometry implementation simulating polygonal push-plan algorithms for automated assembly systems.</p>
-                        <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="schematic"></a>
+                <!-- Project II -->
+                <section class="province">
+                    <div class="prov-content">
+                        <h2 class="roman-title">II. Ahuzat Dibuk</h2>
+                        <span class="tech-text" style="opacity: 0.7; margin-bottom: 10px; display:block;">Chariot Garrison Grid</span>
+                        <p class="prov-desc">Clandestine sweeps of Tel-Aviv's stable ledgers (parking data). A geospatial mapping of urban chariot congestion that seized the attention of the town criers.</p>
+                        
+                        <div class="prov-graphic">
+                            <div class="garrison">
+                                <div class="stable"></div> <div class="stable"></div> <div class="stable"></div>
+                                <div class="stable"></div> <div class="stable"></div>
+                            </div>
+                            <div class="neon-layer neon-heatmap"></div>
+                        </div>
+
+                        <div class="prov-links">
+                            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="interact-icon" title="13tv Chroniclers">&#128220;</a>
+                            <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="interact-icon" title="Mako Scroll">&#128220;</a>
+                            <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="interact-icon" title="Secret Tel-Aviv Proclamation"><b>f</b></a>
+                        </div>
                     </div>
-                </div>
+                </section>
 
-                <!-- BB4: The Turing Jest - Z:-8500 -->
-                <div class="threed-object billboard bb4">
-                    <div class="bb4-inner">
-                        <h2 style="font-size: 3rem; margin-bottom: 0;">THE TURING JEST</h2>
-                        <h3 style="color: #fff; letter-spacing: 5px; margin-bottom: 20px;">LLM COMBAT ARENA</h3>
-                        <p>A procedural arena where large language models battle using puns logic, algorithms, and humor processing engines.</p>
-                        <a href="https://jest.geekip.dev" target="_blank" class="btn-arena">ENTER THE ARENA</a>
+                <!-- Project III -->
+                <section class="province">
+                    <div class="prov-content">
+                        <h2 class="roman-title">III. 2D Part Orienting</h2>
+                        <span class="tech-text" style="opacity: 0.7; margin-bottom: 10px; display:block;">Architect’s Guild</span>
+                        <p class="prov-desc">Mathematical edicts written in ancient C++. Computational geometry algorithms crafting push plans to align complex physical forms.</p>
+                        
+                        <div class="prov-graphic">
+                            <div class="draft-table"></div>
+                            <div class="neon-layer neon-cpp">
+                                struct Polygon {<br>
+                                &nbsp;&nbsp;std::vector&lt;Point&gt; v;<br>
+                                };
+                            </div>
+                        </div>
+
+                        <div class="prov-links">
+                            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="interact-icon" title="TAU Blueprint">&#9874;</a>
+                        </div>
                     </div>
-                </div>
+                </section>
 
-                <!-- BB5: Rhymes of Israel - Z:-10500 -->
-                <div class="threed-object billboard bb5">
-                    <h2>Rhymes of Israel</h2>
-                    <p>"Where algorithms meet satire."</p>
-                    <p>A retro-engineered Chrome extension utilizing LLMs to reconstruct daily Israeli news headlines into comedic rhymes.</p>
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="chrome-badge">Add to Chrome Web Store →</a>
-                </div>
+                <!-- Project IV -->
+                <section class="province">
+                    <div class="prov-content">
+                        <h2 class="roman-title">IV. The Turing Jest</h2>
+                        <span class="tech-text" style="opacity: 0.7; margin-bottom: 10px; display:block;">Colosseum of Wits</span>
+                        <p class="prov-desc">An LMSYS-like amphitheater where silicon minds (LLMs) duel for human amusement via puns. The crowd decides the victor.</p>
+                        
+                        <div class="prov-graphic">
+                            <div style="display:flex; justify-content:center; width:100%;">
+                                <div class="arch"></div><div class="arch"></div><div class="arch"></div>
+                            </div>
+                            <div class="neon-layer neon-gladiator" style="top:40px;">
+                                [LLM_1] vs [LLM_2]
+                            </div>
+                        </div>
 
-                <!-- BB6: The Meta-Portfolio - Z:-12500 -->
-                <div class="threed-object billboard bb6-arch">
-                    <h2>THE META-PORTFOLIO</h2>
-                    <p>You are traversing the architectural rendering of the site itself. Infinite recursion detected.</p>
-                    <a href="https://geekip.dev" target="_blank" class="exit-ramp">
-                        EXIT RAMP <span>geekip.dev</span>
-                    </a>
-                </div>
-
-                <!-- City Limits (End) - Z:-14200 -->
-                <div class="threed-object city-limits">
-                    <div class="skyline"></div>
-                    <div class="monolith-container">
-                        <!-- GitHub -->
-                        <a href="https://github.com/gevak" target="_blank" class="monolith">
-                            <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-1.464-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.16 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
-                            <span>GITHUB</span>
-                        </a>
-                        <!-- LinkedIn -->
-                        <a href="https://linkedin.com/in/gevakip" target="_blank" class="monolith">
-                            <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"/></svg>
-                            <span>LINKEDIN</span>
-                        </a>
-                        <!-- Facebook -->
-                        <a href="https://facebook.com/geva.kipper" target="_blank" class="monolith">
-                            <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                            <span>FACEBOOK</span>
-                        </a>
+                        <div class="prov-links">
+                            <a href="https://jest.geekip.dev" target="_blank" class="interact-icon" title="Enter the Arena">&#9876;</a>
+                        </div>
                     </div>
-                </div>
+                </section>
 
+                <!-- Project V -->
+                <section class="province">
+                    <div class="prov-content">
+                        <h2 class="roman-title">V. Rhymes of Israel</h2>
+                        <span class="tech-text" style="opacity: 0.7; margin-bottom: 10px; display:block;">Oracle’s Scribe</span>
+                        <p class="prov-desc">A digital mural injecting satirical stanzas into high-school ledgers. A Chrome artefact forged in brass.</p>
+                        
+                        <div class="prov-graphic">
+                            <div class="fresco">
+                                <div></div><div></div><div></div><div></div>
+                            </div>
+                            <div class="neon-layer neon-rhyme">"A jest<br>in jest"</div>
+                        </div>
+
+                        <div class="prov-links">
+                            <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="interact-icon" title="Chrome Arsenal">
+                                <!-- Minimal Chrome SVG shape -->
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8 0-1.4.37-2.73 1.02-3.88l4.49 7.77c1.37.93 3.03 1.25 4.67.92.38.67.97 1.24 1.7 1.62-.9.37-1.87.57-2.88.57zM5.53 7.85c1.46-2.3 3.99-3.85 6.85-3.85 2.12 0 4.07.82 5.54 2.16L12 12 5.53 7.85zM19.64 16.4C20.5 15.12 21 13.61 21 12c0-3.15-1.84-5.91-4.5-7.29l-3.37 5.84c.82.9 1.37 2.06 1.54 3.32l5.05 2.53z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Project VI -->
+                <section class="province">
+                    <div class="prov-content">
+                        <h2 class="roman-title">VI. Pantheon of Mirrors</h2>
+                        <span class="tech-text" style="opacity: 0.7; margin-bottom: 10px; display:block;">The Meta-Structure</span>
+                        <p class="prov-desc">This very realm. An interactive cartographic ledger chronicling the engineered legions. A terminal reflecting itself.</p>
+                        
+                        <div class="prov-graphic">
+                            <div class="dome"></div>
+                            <div class="neon-layer neon-mirror" style="top:20px; left:calc(50% - 20px); width:40px; height:40px;"></div>
+                        </div>
+
+                        <div class="prov-links">
+                            <a href="https://geekip.dev" class="interact-icon" title="You are here">&#10022;</a>
+                        </div>
+                    </div>
+                </section>
+                
             </div>
         </div>
+
+        <!-- The Harbor / Footer -->
+        <footer class="harbor">
+            <div class="cyan-water"></div>
+            
+            <h2 class="roman-title" style="margin-bottom: 40px; z-index:2; position:relative;">The Social Fleet</h2>
+            
+            <div class="fleet">
+                <!-- GitHub -->
+                <div class="galley" onclick="sail('https://github.com/gevak', this)" title="GitHub Fleet">
+                    <div class="galley-sail">
+                        <span class="crest">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="#30261f"><path d="M12 2A10 10 0 0 0 8.84 21.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .08 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5A10 10 0 0 0 12 2Z"/></svg>
+                        </span>
+                    </div>
+                    <div class="galley-hull"><div class="oars"></div></div>
+                </div>
+
+                <!-- LinkedIn -->
+                <div class="galley" onclick="sail('https://linkedin.com/in/gevakip', this)" title="LinkedIn Fleet">
+                    <div class="galley-sail">
+                        <span class="crest" style="font-family:sans-serif; font-weight:bold;">in</span>
+                    </div>
+                    <div class="galley-hull"><div class="oars"></div></div>
+                </div>
+
+                <!-- Facebook -->
+                <div class="galley" onclick="sail('https://facebook.com/geva.kipper', this)" title="Facebook Fleet">
+                    <div class="galley-sail">
+                        <span class="crest" style="font-family:sans-serif; font-weight:bold;">f</span>
+                    </div>
+                    <div class="galley-hull"><div class="oars"></div></div>
+                </div>
+            </div>
+
+            <div class="milestone-container">
+                <div class="milliarium">
+                    <div class="milliarium-cap"></div>
+                    <div class="sundial">
+                        <span class="tech-text" style="color:var(--iron); font-size:10px; display:block; text-align:center;">ELAPSED_SINCE [26.03.15:0150]</span>
+                        <div id="time-display" class="time-digits">00:00:00</div>
+                    </div>
+                </div>
+                <div class="milliarium-base"></div>
+                <p class="ai-credit">Cartography and architecture forged by AI Assistant (Claude 3.5 Sonnet).</p>
+            </div>
+            
+        </footer>
     </div>
 
-<script>
-    // Smooth Scroll & 3D Drive Logic
-    let currentScroll = 0;
-    let targetScroll = 0;
-    const lerpFactor = 0.08;
-    const worldElement = document.getElementById('world');
-    
-    // Max scroll capacity based on body height setup (15200px) minus window height
-    let maxScroll = document.body.scrollHeight - window.innerHeight;
+    <!-- Interactivity Scripts -->
+    <script>
+        // Custom Cursor Logic
+        const cursor = document.getElementById('cursor');
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
 
-    window.addEventListener('scroll', () => {
-        targetScroll = window.scrollY;
-        
-        // Hide scroll instruction once started
-        if(targetScroll > 50) {
-            document.querySelector('.scroll-instruction').style.opacity = '0';
+        // Hover enlargements for interactive elements over custom cursor
+        const interactives = document.querySelectorAll('a, .galley');
+        interactives.forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.style.transform = 'translate(-50%, -50%) scale(1.3)');
+            el.addEventListener('mouseleave', () => cursor.style.transform = 'translate(-50%, -50%) scale(1)');
+        });
+
+        // Digital Sundial Logic (Stopwatch from target date)
+        const targetDate = new Date('2026-03-15T01:50:32Z').getTime();
+        const display = document.getElementById('time-display');
+
+        function updateSundial() {
+            const now = Date.now();
+            // Using Math.abs to handle if the target date is in the "future" relative to local time, 
+            // maintaining the illusion of elapsed time from a fixed temporal coordinate.
+            const diff = Math.abs(now - targetDate);
+            
+            const h = Math.floor(diff / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+            display.innerText = 
+                `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }
-    });
+        setInterval(updateSundial, 1000);
+        updateSundial();
 
-    window.addEventListener('resize', () => {
-        maxScroll = document.body.scrollHeight - window.innerHeight;
-    });
-
-    function renderDrive() {
-        // Linear Interpolation for buttery smooth camera movement
-        currentScroll += (targetScroll - currentScroll) * lerpFactor;
-        
-        // Push the world space towards the camera (+Z direction)
-        worldElement.style.transform = `translateZ(${currentScroll}px)`;
-
-        // Calculate and update Dashboard Timer
-        updateTimer();
-
-        requestAnimationFrame(renderDrive);
-    }
-    
-    // Live Stopwatch functionality relative to prompt criteria
-    function updateTimer() {
-        const targetDate = new Date("2026-03-14T01:25:11").getTime();
-        const now = Date.now();
-        // Calculate absolute difference to act as uptime/downtime ticking counter
-        let diffMs = Math.abs(now - targetDate);
-        
-        let diffSeconds = Math.floor(diffMs / 1000);
-        let hours = String(Math.floor(diffSeconds / 3600)).padStart(2, '0');
-        diffSeconds %= 3600;
-        let minutes = String(Math.floor(diffSeconds / 60)).padStart(2, '0');
-        let seconds = String(diffSeconds % 60).padStart(2, '0');
-        
-        document.getElementById('timer').innerText = `${hours}:${minutes}:${seconds}`;
-    }
-
-    // Initialize animation loop
-    renderDrive();
-</script>
+        // Ship Sail Animation Logic
+        function sail(url, element) {
+            // Prevent multiple clicks
+            if(element.classList.contains('sail-away')) return;
+            
+            element.classList.add('sail-away');
+            // Wait for animation to finish before redirecting
+            setTimeout(() => {
+                window.open(url, '_blank');
+                // Remove class after delay so it resets if user comes back
+                setTimeout(()=> element.classList.remove('sail-away'), 500);
+            }, 900);
+        }
+    </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260314",
+          pageId: "20260315",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
