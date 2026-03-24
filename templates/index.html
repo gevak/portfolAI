@@ -1,501 +1,783 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - Workspace</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Share+Tech+Mono&family=Architects+Daughter&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Geva Kipper // AI Cyber-Gallery</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syncopate:wght@400;700&display=swap');
+
         :root {
-            --shadow-resting: 0 8px 15px rgba(0,0,0,0.4), 0 3px 6px rgba(0,0,0,0.2);
-            --shadow-lifted: 0 25px 40px rgba(0,0,0,0.5), 0 10px 15px rgba(0,0,0,0.3);
-            --paper: #fdfcf8;
-            --blueprint: #0f52ba;
+            --neon-blue: #00f3ff;
+            --neon-red: #ff004c;
+            --neon-purple: #b000ff;
+            --glass-bg: rgba(10, 10, 15, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.1);
         }
 
-        body, html {
+        body {
             margin: 0;
-            padding: 0;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Space Mono', monospace;
+            color: white;
+            user-select: none;
+        }
+
+        canvas {
+            display: block;
             width: 100vw;
             height: 100vh;
-            overflow: hidden;
-            font-family: 'Inter', sans-serif;
-            background-color: #1e1b19;
-            /* Desk texture */
-            background-image: 
-                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.6) 100%),
-                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
-            user-select: none;
-            -webkit-user-select: none;
         }
 
-        a {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        .draggable {
+        /* HUD & Overlay */
+        #ui-layer {
             position: absolute;
-            cursor: grab;
-            transform: rotate(var(--rot)) scale(1);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
-            box-shadow: var(--shadow-resting);
-            border-radius: 4px;
-        }
-
-        .draggable.dragging {
-            transition: none !important;
-            cursor: grabbing !important;
-            opacity: 0.95;
-            box-shadow: var(--shadow-lifted);
-        }
-
-        .draggable:hover:not(.dragging) {
-            transform: rotate(0deg) scale(1.05) translateY(-10px);
-            box-shadow: var(--shadow-lifted);
-            z-index: 999; /* Brought close to top on hover */
-        }
-
-        /* Centerpiece: Notebook */
-        #centerpiece {
-            background: #2a1c12;
-            width: 400px;
-            height: 280px;
-            border-radius: 12px;
-            padding: 10px;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.5), var(--shadow-resting);
-        }
-        .notebook-pages {
-            background-color: #f4ecd8;
-            width: 100%;
-            height: 100%;
-            border-radius: 6px;
-            box-shadow: inset 2px 0 5px rgba(0,0,0,0.1), 3px 3px 5px rgba(0,0,0,0.2) inset;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            position: relative;
+            justify-content: space-between;
         }
-        .nb-title { font-weight: 800; font-size: 2.2rem; margin-bottom: 5px; color: #1a1a1a; letter-spacing: -1px; }
-        .nb-sub { font-weight: 400; font-size: 1rem; color: #555; }
-        .sticky-note {
+
+        #blocker {
             position: absolute;
-            bottom: -15px; right: -20px;
-            background: #ffeb3b;
-            color: #222;
-            padding: 15px;
-            width: 200px;
-            transform: rotate(-5deg);
-            box-shadow: 2px 5px 10px rgba(0,0,0,0.2);
-            font-family: 'Courier Prime', monospace;
-            font-size: 0.85rem;
-            line-height: 1.4;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            transition: opacity 0.3s;
         }
 
-        /* Section 1: GlglStats (Vinyl) */
-        #glglstats {
-            width: 250px; height: 250px;
-            background: var(--paper);
-            display: flex; position: relative;
-            padding: 10px; box-sizing: border-box;
-            border: 1px solid #ddd;
-        }
-        .vinyl-disc {
-            position: absolute; right: -40px; top: 10%; width: 200px; height: 200px;
-            background: #111; border-radius: 50%;
-            box-shadow: -5px 0 10px rgba(0,0,0,0.3) inset, 2px 2px 10px rgba(0,0,0,0.4);
-            z-index: -1;
-            background-image: repeating-radial-gradient(circle, #222 0, #111 2px);
-        }
-        .lz77-grid {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; width: 100%; height: 100%;
-        }
-        .lz-cell { background: #e0e0e0; }
-        .lz-cell:nth-child(2n) { background: #f06292; }
-        .lz-cell:nth-child(3n) { background: #4dd0e1; }
-        .lz-cell:nth-child(5n) { background: #aed581; }
-        .sticker-link {
-            position: absolute; top: 10px; right: 10px;
-            width: 45px; height: 45px; background: #e53935;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 0.6rem; font-weight: bold; text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.4); border: 2px solid white; transform: rotate(15deg);
-            transition: transform 0.2s;
-        }
-        .sticker-link:hover { transform: scale(1.1) rotate(0deg); }
-        .polaroid-play {
-            position: absolute; bottom: 10px; left: 10px;
-            background: white; padding: 5px 5px 20px 5px; width: 60px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3); transform: rotate(-10deg);
-        }
-        .polaroid-img {
-            background:#333; height: 45px; display:flex; align-items:center; justify-content:center;
-            color: #bbb;
-        }
-        .polaroid-play::after { content: "PyData"; font-family: 'Architects Daughter'; font-size: 0.7rem; color: black; position: absolute; bottom: 3px; left: 10px; }
-
-        /* Section 2: Ahuzat Dibuk */
-        #ahuzat {
-            width: 220px; height: 260px;
-            background: var(--paper);
-            box-shadow: 2px 2px 0 #e8e6df, 4px 4px 0 #d9d6ce, var(--shadow-resting);
-            background-image: radial-gradient(circle at 100% 100%, rgba(255,50,0,0.15) 0%, rgba(255,200,0,0.05) 40%, transparent 70%);
-            padding: 15px; box-sizing: border-box; position: relative;
-        }
-        .citation-lines {
-            width: 100%; height: 8px; background: #ccc; margin-bottom: 15px; border-radius: 2px;
-        }
-        .clip { position: absolute; left: 20px; top: -15px; width: 20px; z-index: 10; pointer-events:none; }
-        .tab {
-            position: absolute; right: -25px; padding: 5px; font-size: 0.6rem; font-weight: 600;
-            cursor: pointer; transition: transform 0.2s; border-radius: 0 4px 4px 0;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-        }
-        .tab:hover { transform: translateX(5px); }
-        .tab-1 { top: 30px; background: #fff; border: 1px solid #ccc; color: red; }
-        .tab-2 { top: 70px; background: #fff; border: 1px solid #ccc; border-left: 2px solid green; }
-        .tab-3 { top: 120px; background: #bbdefb; color: #0d47a1; font-family: 'Architects Daughter'; font-size: 0.7rem;}
-
-        /* Section 3: 2D Part Orienting */
-        #blueprint {
-            width: 320px; height: 220px;
-            background-color: var(--blueprint);
-            background-image: 
-                linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px);
-            background-size: 20px 20px;
-            color: rgba(255,255,255,0.8);
-            font-family: 'Share Tech Mono', monospace;
-            padding: 15px; box-sizing: border-box; overflow: hidden; position: relative;
-        }
-        .wireframe { position: absolute; top:40px; right: 20px; opacity: 0.5; }
-        .ruler {
-            position: absolute; top: 40%; left: -10%; width: 120%; height: 35px;
-            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-            border-top: 1px solid rgba(255,255,255,0.4); border-bottom: 1px solid rgba(255,255,255,0.4);
-            transform: rotate(20deg); display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 0.8rem; letter-spacing: 2px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 5;
-        }
-        .ruler:hover { background: rgba(255, 255, 255, 0.2); color: #fff;}
-        .compass { position: absolute; top:0; left: 40px; width:100px; height:100px; pointer-events:none; }
-
-        /* Section 4: Turing Jest */
-        #jest {
-            width: 200px; height: 280px;
-            background: linear-gradient(90deg, #e6f2ff 50%, #ffe6e6 50%);
-            border: 1px solid #ccc; padding: 20px; box-sizing: border-box;
-            display: flex; flex-direction: column; align-items: center; justify-content: space-between; position: relative;
-        }
-        .tally { font-family: 'Architects Daughter'; font-size: 1.5rem; font-weight: bold; margin-top:20px;}
-        .gavel { position: absolute; top: -10px; right: -20px; width: 80px; pointer-events:none; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.4)); transform:rotate(45deg); }
-        .ticket-stub {
-            background:#ffca28; width: 120%; margin-left:-10%; border-top: 2px dashed #333;
-            text-align: center; padding: 10px 0; font-weight: bold; font-size: 0.8rem;
-            color: #333; box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+        .brutalist-title {
+            font-family: 'Syncopate', sans-serif;
+            font-size: 3rem;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px var(--neon-blue);
         }
 
-        /* Section 5: Rhymes of Israel */
-        #rhymes {
-            width: 220px; height: 260px; background: white;
-            background-image: linear-gradient(transparent 90%, #64b5f6 10%);
-            background-size: 100% 20px; position:relative; padding-top:20px;
-            border-left: 2px solid #ef5350; margin-left:20px; box-shadow: var(--shadow-resting);
+        .instructions {
+            text-align: center;
+            max-width: 600px;
+            line-height: 1.5;
+            color: #aaa;
         }
-        #rhymes::before {
-            content: ''; position:absolute; left:-22px; top:0; bottom:0; width:20px; background:white;
-        }
-        .doodles { position: absolute; left: 10%; top: 20%; font-family: 'Architects Daughter'; color: #1a237e; font-size: 1.2rem; line-height:1.5; opacity:0.8; }
-        .chrome-sticker {
-            position: absolute; bottom: 20px; right: 20px; width: 50px; height: 50px;
-            border-radius: 50%; background: conic-gradient(#ea4335 0 120deg, #34a853 120deg 240deg, #fbbc05 240deg 360deg);
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: inset 0 0 0 5px white, 0 3px 6px rgba(0,0,0,0.3);
-        }
-        .chrome-inner { width: 22px; height: 22px; background: #4285f4; border-radius: 50%; border: 3px solid white; }
 
-        /* Section 6: Meta Portfolio */
-        #meta {
-            width: 120px; height: 140px; background: white; padding: 8px 8px 25px 8px;
-            box-sizing: border-box; display: flex; flex-direction: column;
-            box-shadow: var(--shadow-resting);
+        kbd {
+            background: #222;
+            border: 1px solid #444;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #fff;
         }
-        .meta-glass {
-            flex: 1; background: #111; position: relative; overflow: hidden;
-            background-image: repeating-radial-gradient(circle at 50% 50%, #1e1b19 0, #1e1b19 10%, #ccc 10%, #ccc 11%);
-            box-shadow: inset 0 0 10px black;
-        }
-        .meta-glass::after {
-            content:''; position: absolute; top:-50%; left:-50%; width:200%; height:200%;
-            background: linear-gradient(45deg, rgba(255,255,255,0) 40%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 60%);
+
+        #crosshair {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 10px; height: 10px;
+            transform: translate(-50%, -50%);
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
             pointer-events: none;
         }
 
-        /* Section 7: Spilled Cards */
-        #cards { width: 160px; height: 90px; }
-        .bcard {
-            width: 160px; height: 90px; background: white; position: absolute; top:0; left:0;
-            border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
-            font-weight: 600; color: #222; transition: transform 0.3s ease;
+        /* Footer HUD */
+        #footer {
+            height: 40px;
+            background: rgba(0,0,0,0.8);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 0.8rem;
+            backdrop-filter: blur(5px);
         }
-        .bcard:nth-child(1) { transform: rotate(-5deg); z-index: 3; }
-        .bcard:nth-child(2) { transform: rotate(2deg) translate(5px, 2px); z-index: 2; }
-        .bcard:nth-child(3) { transform: rotate(-2deg) translate(-2px, 5px); z-index: 1; }
-        
-        #cards:hover .bcard:nth-child(1) { transform: rotate(-15deg) translate(-50px, -20px); }
-        #cards:hover .bcard:nth-child(2) { transform: rotate(0deg) translate(0px, 0px); }
-        #cards:hover .bcard:nth-child(3) { transform: rotate(15deg) translate(50px, 20px); }
 
-        /* Footer Clock & Nameplate */
-        #footer-ui {
-            width: 250px; background: #222; border-radius: 8px;
-            padding: 15px; box-sizing: border-box; display: flex; flex-direction: column;
-            border-top: 3px solid #444; border-bottom: 5px solid #000;
+        #stopwatch {
+            font-weight: 700;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
         }
-        .led-clock {
-            font-family: 'Share Tech Mono', monospace; font-size: 1.8rem; color: #ff3300;
-            text-align: center; text-shadow: 0 0 10px #ff3300; background: #111;
-            padding: 5px; border-radius: 4px; box-shadow: inset 0 0 5px black; margin-bottom: 10px;
+
+        /* Slide-in Exhibit Panels */
+        #exhibit-panel {
+            position: absolute;
+            top: 50%;
+            right: -500px; /* Hidden state */
+            transform: translateY(-50%);
+            width: 400px;
+            max-height: 80vh;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(15px);
+            padding: 30px;
+            transition: right 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: auto;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
         }
-        .nameplate {
-            background: linear-gradient(to bottom, #d4af37, #aa8529); color: #222;
-            padding: 8px; font-size: 0.65rem; text-align: center; font-weight: bold;
-            box-shadow: inset 0 1px 3px rgba(255,255,255,0.5), inset 0 -1px 3px rgba(0,0,0,0.4);
-            border-radius: 2px;
+
+        #exhibit-panel.active {
+            right: 40px;
         }
+
+        .panel-title {
+            font-family: 'Syncopate', sans-serif;
+            font-size: 1.2rem;
+            color: var(--neon-blue);
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            margin-top: 0;
+        }
+
+        .panel-desc {
+            font-size: 0.9rem;
+            color: #ccc;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        /* Buttons & Badges */
+        .btn-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        a.hud-btn {
+            display: block;
+            text-align: center;
+            text-decoration: none;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 10px;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            background: rgba(255,255,255,0.05);
+            transition: all 0.3s;
+        }
+
+        a.hud-btn:hover {
+            background: white;
+            color: black;
+            border-color: white;
+            box-shadow: 0 0 15px rgba(255,255,255,0.5);
+        }
+
+        .hud-notice {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-red);
+            padding: 10px 20px;
+            backdrop-filter: blur(5px);
+            color: var(--neon-red);
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
     </style>
 </head>
 <body>
 
-    <!-- Centerpiece -->
-    <div class="draggable" id="centerpiece" style="--rot: -3deg; top: 38%; left: 38%; z-index: 10;">
-        <div class="notebook-pages">
-            <div class="nb-title">Geva Kipper</div>
-            <div class="nb-sub">Software Engineer at Google</div>
-        </div>
-        <div class="sticky-note">
-            This workspace is redesigned every day by AI, forever shifting, forever changing.
+    <div id="blocker">
+        <div class="brutalist-title">System Init</div>
+        <div class="instructions">
+            <p>Welcome to the Cyber-Gallery.</p>
+            <p>Use <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or <kbd>Arrows</kbd> to move.<br>Use the mouse to look around.</p>
+            <p style="color: var(--neon-blue); margin-top:20px;">Click anywhere to enter</p>
         </div>
     </div>
 
-    <!-- S1: GlglStats -->
-    <div class="draggable" id="glglstats" style="--rot: 8deg; top: 12%; left: 65%; z-index: 5;">
-        <div class="vinyl-disc"></div>
-        <div class="lz77-grid">
-            <div class="lz-cell"></div><div class="lz-cell"></div><div class="lz-cell"></div><div class="lz-cell"></div>
-            <div class="lz-cell" style="grid-column: span 2;"></div><div class="lz-cell"></div><div class="lz-cell"></div>
-            <div class="lz-cell"></div><div class="lz-cell" style="grid-column: span 3;"></div>
-            <div class="lz-cell"></div><div class="lz-cell"></div><div class="lz-cell"></div><div class="lz-cell"></div>
-        </div>
-        <a href="https://glglstats.geekip.dev" target="_blank" class="sticker-link">Glgl</a>
-        <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="polaroid-play">
-            <div class="polaroid-img">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
-            </div>
-        </a>
-    </div>
-
-    <!-- S2: Ahuzat Dibuk -->
-    <div class="draggable" id="ahuzat" style="--rot: 15deg; top: 22%; left: 12%; z-index: 6;">
-        <!-- Paperclip SVG -->
-        <svg class="clip" viewBox="0 0 20 60" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10,55 A5,5 0 0,0 15,50 L15,10 A3,3 0 0,0 9,10 L9,45 A1,1 0 0,0 11,45 L11,15" fill="none" stroke="#d32f2f" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <div style="font-weight:bold; font-size:1.1rem; color:#444; margin-bottom:10px;text-align:right;">דו"ח חניה</div>
-        <div class="citation-lines"></div>
-        <div class="citation-lines" style="width: 80%"></div>
-        <div class="citation-lines" style="width: 90%"></div>
-        <div class="citation-lines" style="width: 60%"></div>
+    <div id="ui-layer">
+        <div class="hud-notice" id="interaction-notice">Press [ESC] to release cursor & click links</div>
+        <div id="crosshair"></div>
         
-        <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="tab tab-1">13TV</a>
-        <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="tab tab-2">Mako</a>
-        <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" class="tab tab-3">Secret TLV</a>
-    </div>
-
-    <!-- S3: 2D Part Orienting -->
-    <div class="draggable" id="blueprint" style="--rot: -12deg; top: 60%; left: 8%; z-index: 7;">
-        <b>2D_Part_Orienting</b>
-        <pre style="font-size:0.6rem; opacity:0.8;">
-void orient() {
-  Polygon p = load();
-  calc_convex_hull(p);
-  minimize_height();
-}
-        </pre>
-        <svg class="wireframe" width="100" height="100" viewBox="0 0 100 100">
-            <polygon points="10,90 50,10 90,90" fill="none" stroke="white" stroke-width="1" />
-            <polygon points="30,80 50,40 70,80" fill="none" stroke="white" stroke-width="1" stroke-dasharray="2,2" />
-        </svg>
-        <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="ruler">
-            VIEW TAU CGL PROJECT --|--|--|--|--
-        </a>
-        <svg class="compass" viewBox="0 0 100 100">
-            <circle cx="50" cy="15" r="5" fill="#aaa" stroke="#888" stroke-width="2"/>
-            <line x1="50" y1="20" x2="30" y2="90" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
-            <line x1="50" y1="20" x2="70" y2="90" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
-            <line x1="40" y1="50" x2="60" y2="50" stroke="#888" stroke-width="2"/>
-        </svg>
-    </div>
-
-    <!-- S4: Turing Jest -->
-    <div class="draggable" id="jest" style="--rot: 20deg; top: 65%; left: 75%; z-index: 6;">
-        <!-- Wooden Gavel Rectangle as simple div shape -->
-        <div class="gavel" style="height:30px; background:#5c4033; border-radius:3px; border-left: 20px solid #3c261b; border-right: 20px solid #3c261b;"></div>
-        
-        <div style="font-weight: 800; font-size: 1.2rem; text-align:center;">THE TURING<br>JEST</div>
-        <div class="tally">llL llL l</div>
-        <br>
-        <a href="https://jest.geekip.dev" target="_blank" class="ticket-stub">
-            ADMIT ONE
-        </a>
-    </div>
-
-    <!-- S5: Rhymes of Israel -->
-    <div class="draggable" id="rhymes" style="--rot: -8deg; top: 65%; left: 40%; z-index: 4;">
-        <div class="doodles">
-            Roses are red<br>
-            News is a blur<br>
-            Rhymes of Israel<br>
-            Makes it obscure
+        <div id="exhibit-panel">
+            <h2 class="panel-title" id="e-title">Exhibit</h2>
+            <div class="panel-desc" id="e-desc">Details</div>
+            <div class="btn-container" id="e-links"></div>
         </div>
-        <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="chrome-sticker">
-            <div class="chrome-inner"></div>
-        </a>
+
+        <div id="footer">
+            <div>Architecture generated by Artificial Intelligence.</div>
+            <div id="stopwatch">T+ 00:00:00</div>
+        </div>
     </div>
 
-    <!-- S6: Meta Portfolio -->
-    <div class="draggable" id="meta" style="--rot: -22deg; top: 15%; left: 40%; z-index: 3;">
-        <a href="https://geekip.dev" class="meta-glass"></a>
-    </div>
-
-    <!-- S7: Social Cards -->
-    <div class="draggable" id="cards" style="--rot: 5deg; top: 82%; left: 55%; z-index: 8;">
-        <a href="https://github.com/gevak" target="_blank" class="bcard">GitHub</a>
-        <a href="https://linkedin.com/in/gevakip" target="_blank" class="bcard">LinkedIn</a>
-        <a href="https://facebook.com/geva.kipper" target="_blank" class="bcard">Facebook</a>
-    </div>
-
-    <!-- Footer Clock & Nameplate -->
-    <div class="draggable" id="footer-ui" style="--rot: 0deg; top: 84%; left: 80%; z-index: 15; cursor: default;">
-        <div class="led-clock" id="clock-display">00:00:00</div>
-        <div class="nameplate">Workspace curated and continuously redesigned by ChatGPT</div>
-    </div>
-
-    <script>
-        // --- Drag and Drop Logic ---
-        let highestZ = 20; // Start higher than default initial z-indexes
-        let isDragging = false;
-        let currentItem = null;
-        let dragOffsetX = 0;
-        let dragOffsetY = 0;
-
-        const draggables = document.querySelectorAll('.draggable');
-
-        function startDrag(e, item) {
-            if (e.target.closest('a')) return; // Allow normal link interaction
-
-            isDragging = true;
-            currentItem = item;
-            
-            highestZ++;
-            currentItem.style.zIndex = highestZ;
-            currentItem.classList.add('dragging');
-
-            const rect = currentItem.getBoundingClientRect();
-            // Get client coords for touch or mouse
-            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-
-            // Offset within the element
-            dragOffsetX = clientX - rect.left;
-            dragOffsetY = clientY - rect.top;
-
-            // e.preventDefault(); // Don't prevent default, lets links work properly if missed by closest('a')
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
         }
+    </script>
 
-        function endDrag() {
-            if (!currentItem) return;
-            currentItem.classList.remove('dragging');
-            isDragging = false;
-            currentItem = null;
-        }
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
-        function drag(e) {
-            if (!isDragging || !currentItem) return;
-            e.preventDefault(); // prevent scrolling while dragging
+        // --- 1. SYSTEM SETUP (Time & UI) ---
+        const startTime = new Date('2026-03-24T01:27:28Z').getTime();
+        const stopwatchEl = document.getElementById('stopwatch');
 
-            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-
-            currentItem.style.left = `${clientX - dragOffsetX}px`;
-            currentItem.style.top = `${clientY - dragOffsetY}px`;
-        }
-
-        draggables.forEach(item => {
-            item.addEventListener('mousedown', (e) => startDrag(e, item));
-            item.addEventListener('touchstart', (e) => startDrag(e, item), { passive: false });
-        });
-
-        document.addEventListener('mousemove', drag);
-        document.addEventListener('touchmove', drag, { passive: false });
-
-        document.addEventListener('mouseup', endDrag);
-        document.addEventListener('touchend', endDrag);
-
-        // --- Clock Logic ---
-        const clockDisplay = document.getElementById('clock-display');
-        const targetDate = new Date('2026-03-23T01:46:08Z').getTime();
-
-        function updateClock() {
+        function updateStopwatch() {
             const now = Date.now();
-            const diff = Math.abs(now - targetDate);
+            const diffMs = Math.abs(now - startTime);
             
-            const h = Math.floor(diff / (1000 * 60 * 60));
-            const m = Math.floor((diff / (1000 * 60)) % 60);
-            const s = Math.floor((diff / 1000) % 60);
+            const totalSecs = Math.floor(diffMs / 1000);
+            const hours = Math.floor(totalSecs / 3600);
+            const mins = Math.floor((totalSecs % 3600) / 60);
+            const secs = totalSecs % 60;
 
-            clockDisplay.innerText = 
-                `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            const format = (n) => n.toString().padStart(2, '0');
+            stopwatchEl.innerText = `T+ ${format(hours)}:${format(mins)}:${format(secs)}`;
         }
+        setInterval(updateStopwatch, 1000);
+
+        // --- 2. THREE.JS BOILERPLATE ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x020202);
+        scene.fog = new THREE.FogExp2(0x020202, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 1.6, 0); // Spawn at Foyer
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // --- 3. CONTROLS & MOVEMENT MATRIX ---
+        const controls = new PointerLockControls(camera, document.body);
+        const blocker = document.getElementById('blocker');
         
-        updateClock();
-        setInterval(updateClock, 1000);
-
-        // --- Scatter Randomization ---
-        // Prompt says "varying organic rotations" and "redesigned every day by AI".
-        // To enhance the experience without losing critical UX structure, 
-        // we lightly jitter the initial hardcoded positions and rotations on load.
-        window.addEventListener('DOMContentLoaded', () => {
-            draggables.forEach(item => {
-                // Keep footer relatively pinned to prevent losing it
-                if(item.id === 'footer-ui') return;
-
-                const currentRot = parseFloat(item.style.getPropertyValue('--rot')) || 0;
-                const topStr = item.style.top;
-                const leftStr = item.style.left;
-                
-                if(topStr && leftStr) {
-                    const topVal = parseFloat(topStr);
-                    const leftVal = parseFloat(leftStr);
-                    
-                    // Jitter +/- 3% for position, +/- 5deg for rotation
-                    const newTop = topVal + (Math.random() * 6 - 3);
-                    const newLeft = leftVal + (Math.random() * 6 - 3);
-                    const newRot = currentRot + (Math.random() * 10 - 5);
-
-                    item.style.top = `${newTop}%`;
-                    item.style.left = `${newLeft}%`;
-                    item.style.setProperty('--rot', `${newRot}deg`);
-                }
-            });
+        blocker.addEventListener('click', () => controls.lock());
+        controls.addEventListener('lock', () => blocker.style.opacity = '0');
+        controls.addEventListener('unlock', () => {
+            if(!activeExhibit) blocker.style.opacity = '1'; 
         });
+
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        const moveState = { forward: false, backward: false, left: false, right: false };
+
+        document.addEventListener('keydown', (e) => {
+            switch(e.code) {
+                case 'ArrowUp': case 'KeyW': moveState.forward = true; break;
+                case 'ArrowLeft': case 'KeyA': moveState.left = true; break;
+                case 'ArrowDown': case 'KeyS': moveState.backward = true; break;
+                case 'ArrowRight': case 'KeyD': moveState.right = true; break;
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            switch(e.code) {
+                case 'ArrowUp': case 'KeyW': moveState.forward = false; break;
+                case 'ArrowLeft': case 'KeyA': moveState.left = false; break;
+                case 'ArrowDown': case 'KeyS': moveState.backward = false; break;
+                case 'ArrowRight': case 'KeyD': moveState.right = false; break;
+            }
+        });
+
+        // --- 4. ARCHITECTURE MATERIALS ---
+        const floorGeo = new THREE.PlaneGeometry(300, 300);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.1, metalness: 0.8 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        const ceiling = new THREE.Mesh(floorGeo, new THREE.MeshBasicMaterial({ color: 0x020202 }));
+        ceiling.position.y = 8;
+        ceiling.rotation.x = Math.PI / 2;
+        scene.add(ceiling);
+
+        // Glassmorphism Frosted Walls
+        const wallMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            transmission: 0.95,
+            opacity: 1,
+            metalness: 0.1,
+            roughness: 0.6,
+            ior: 1.5,
+            thickness: 2.0,
+        });
+
+        const wallBoxes = []; // For simple collision
+
+        function createWall(x, z, width, depth) {
+            const geo = new THREE.BoxGeometry(width, 8, depth);
+            const mesh = new THREE.Mesh(geo, wallMat);
+            mesh.position.set(x, 4, z);
+            scene.add(mesh);
+            
+            // Neon strip at base
+            const stripGeo = new THREE.BoxGeometry(width + 0.1, 0.1, depth + 0.1);
+            const stripMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+            const strip = new THREE.Mesh(stripGeo, stripMat);
+            strip.position.set(x, 0.05, z);
+            scene.add(strip);
+
+            // Bounding box for collision
+            wallBoxes.push(new THREE.Box3().setFromObject(mesh));
+        }
+
+        function checkCollision(pos) {
+            const playerBox = new THREE.Box3(
+                new THREE.Vector3(pos.x - 0.5, 0, pos.z - 0.5),
+                new THREE.Vector3(pos.x + 0.5, 2, pos.z + 0.5)
+            );
+            return wallBoxes.some(box => box.intersectsBox(playerBox));
+        }
+
+        // --- 5. LEVEL GENERATOR ---
+        // Corridor layout along Z axis (-). Exhibits branch off on X axis.
+        const roomCenters = [];
+        
+        // Define Architecture
+        createWall(-10, 5, 20, 2); // Foyer back wall
+        createWall(10, -5, 2, 20); // Foyer Right
+        createWall(-10, -5, 2, 20); // Foyer Left
+
+        const exhibitZSpacing = -30;
+        
+        for(let i=1; i<=6; i++) {
+            const z = exhibitZSpacing * i;
+            const side = i % 2 === 0 ? 1 : -1;
+            const rx = 15 * side;
+            
+            // Corridor walls (with gaps for rooms)
+            createWall(5 * -side, z + 15, 2, 30); // opposite wall solid
+            createWall(5 * side, z + 25, 2, 10);  // current wall split part 1
+            createWall(5 * side, z + 5, 2, 10);   // current wall split part 2
+
+            // Room enclosures
+            createWall(rx, z + 10, 20, 2); // Room front
+            createWall(rx, z - 10, 20, 2); // Room back
+            createWall(rx + (10 * side), z, 2, 20); // Room cap
+
+            roomCenters.push(new THREE.Vector3(rx, 1.6, z));
+        }
+
+        // Exit Room
+        const e7z = exhibitZSpacing * 6 - 30;
+        createWall(-10, e7z + 10, 8, 2);
+        createWall(10, e7z + 10, 8, 2);
+        roomCenters.push(new THREE.Vector3(0, 1.6, e7z - 10)); // End terminal
+
+        // --- 6. UTILITIES ---
+        const updatables = [];
+
+        function createTextTexture(text, size, color, bg = false) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            if(bg) { ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(0,0,1024,256); }
+            
+            ctx.fillStyle = color;
+            ctx.font = `bold ${size}px monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 512, 128);
+            
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            return tex;
+        }
+
+        // --- 7. THE FOYER ---
+        const foyerLight = new THREE.PointLight(0xffffff, 2, 20);
+        foyerLight.position.set(0, 5, 0);
+        scene.add(foyerLight);
+
+        // Hologram Core
+        const holoNameMat = new THREE.SpriteMaterial({ map: createTextTexture("GEVA KIPPER", 100, '#00f3ff'), transparent: true, blending: THREE.AdditiveBlending });
+        const holoName = new THREE.Sprite(holoNameMat);
+        holoName.scale.set(4, 1, 1);
+        holoName.position.set(0, 2.5, 0);
+        scene.add(holoName);
+
+        const holoDescMat = new THREE.SpriteMaterial({ map: createTextTexture("Engineering at Google // Software Solutions", 40, '#ffffff'), transparent: true });
+        const holoDesc = new THREE.Sprite(holoDescMat);
+        holoDesc.scale.set(3, 0.75, 1);
+        holoDesc.position.set(0, 2.0, 0);
+        scene.add(holoDesc);
+
+        const holoWarnMat = new THREE.SpriteMaterial({ map: createTextTexture("WARNING: Topography AI-Generated", 30, '#ff004c'), transparent: true });
+        const holoWarn = new THREE.Sprite(holoWarnMat);
+        holoWarn.scale.set(2, 0.5, 1);
+        holoWarn.position.set(0, 1.0, 0);
+        scene.add(holoWarn);
+
+        updatables.push((time) => {
+            holoName.position.y = 2.5 + Math.sin(time * 2) * 0.1;
+            holoWarn.material.opacity = Math.random() > 0.05 ? 1 : 0.2; // flickering
+        });
+
+        // Path lights
+        for(let i=0; i<30; i++) {
+            const pLight = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.2), new THREE.MeshBasicMaterial({color: 0x00f3ff}));
+            pLight.rotation.x = -Math.PI / 2;
+            pLight.position.set(0, 0.01, -2 - (i * 2));
+            scene.add(pLight);
+            updatables.push((time) => {
+                const wave = Math.sin((time * 3) - (i * 0.5));
+                pLight.material.color.setHSL(0.5, 1, wave > 0 ? wave * 0.8 : 0.05);
+            });
+        }
+
+        // --- 8. THE EXHIBITS CONTENT ---
+        
+        const exhibitData = [
+            {
+                id: 'ex1', title: 'GlglStats (LZ77 Audio Analysis)',
+                desc: 'A Python project quantifying the repetitiveness of Israeli pop music charts using LZ77 compression metrics. Visualizing the derivative entropy of commercial audio tracks.',
+                links: [
+                    { name: 'Live Metrics Site', url: 'https://glglstats.geekip.dev' },
+                    { name: 'PyData TLV Presentation', url: 'https://www.youtube.com/watch?v=jrKAtOsj1Lo' }
+                ],
+                setup: (scene, pos) => {
+                    scene.add(new THREE.PointLight(0xff00ff, 5, 20)).position.copy(pos).add(new THREE.Vector3(0,4,0));
+                    const boxes = [];
+                    const mat = new THREE.MeshStandardMaterial({ color: 0xff00ff, emissive: 0x440044 });
+                    for(let x=-2; x<=2; x+=0.5){
+                        for(let z=-2; z<=2; z+=0.5){
+                            const b = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1, 0.4), mat);
+                            b.position.set(pos.x + x, 0.5, pos.z + z);
+                            scene.add(b);
+                            boxes.push({m: b, ix: x, iz: z});
+                        }
+                    }
+                    return (time) => {
+                        boxes.forEach(b => {
+                            const scale = (Math.sin(time*5 + b.ix*2 + b.iz*2) + 1.2) * 1.5;
+                            b.m.scale.y = scale;
+                            b.m.position.y = scale / 2;
+                        });
+                    };
+                }
+            },
+            {
+                id: 'ex2', title: 'Ahuzat Dibuk (Tel-Aviv Parking)',
+                desc: 'Data scraping and visualization mapping real-time parking occupancy across Tel-Aviv grid systems, revealing urban infrastructure stress points.',
+                links: [
+                    { name: 'Channel 13 Feature', url: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/' },
+                    { name: 'Mako Tech Article', url: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm' },
+                    { name: 'Secret Tel-Aviv Discussion', url: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943' }
+                ],
+                setup: (scene, pos) => {
+                    scene.add(new THREE.PointLight(0xff5500, 5, 20)).position.copy(pos).add(new THREE.Vector3(0,2,0));
+                    const hmGeo = new THREE.PlaneGeometry(10, 10, 20, 20);
+                    const hmMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, wireframe: true, transparent:true, opacity: 0.5 });
+                    const heatmap = new THREE.Mesh(hmGeo, hmMat);
+                    heatmap.rotation.x = -Math.PI/2;
+                    heatmap.position.set(pos.x, 0.1, pos.z);
+                    scene.add(heatmap);
+                    return (time) => {
+                        const posAttr = heatmap.geometry.attributes.position;
+                        for(let i=0; i<posAttr.count; i++) {
+                            const vx = posAttr.getX(i); const vy = posAttr.getY(i);
+                            const z = Math.sin(time + vx + vy) * 0.5 + Math.cos(time * 0.5 + vx) * 0.5;
+                            posAttr.setZ(i, z>0?z*2:0);
+                        }
+                        posAttr.needsUpdate = true;
+                    }
+                }
+            },
+            {
+                id: 'ex3', title: '2D Part Orienting (Comp. Geometry)',
+                desc: 'A robust C++ implementation for constructing optimal, sensor-less mechanical push plans. Computational geometry applied to align complex polygonal entities.',
+                links: [
+                    { name: 'TAU Academic Repository', url: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/' }
+                ],
+                setup: (scene, pos) => {
+                    scene.add(new THREE.PointLight(0x00ffaa, 5, 15)).position.copy(pos).add(new THREE.Vector3(0,3,0));
+                    const poly = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5), new THREE.MeshBasicMaterial({color: 0x00ffaa, wireframe: true}));
+                    poly.position.set(pos.x, 2, pos.z);
+                    scene.add(poly);
+                    
+                    const p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 4), new THREE.MeshBasicMaterial({color: 0xffffff}));
+                    p1.rotation.z = Math.PI/2;
+                    scene.add(p1);
+                    return (time) => {
+                        poly.rotation.x += 0.01; poly.rotation.y += 0.02;
+                        p1.position.set(pos.x + Math.sin(time*2)*2, 2, pos.z);
+                    }
+                }
+            },
+            {
+                id: 'ex4', title: 'The Turing Jest',
+                desc: 'A gladiatorial arena architecture for Large Language Models. Red Team vs Blue Team competing in algorithmic comedic generation and pun explanation.',
+                links: [
+                    { name: 'Enter The Arena', url: 'https://jest.geekip.dev' }
+                ],
+                setup: (scene, pos) => {
+                    const l1 = new THREE.PointLight(0xff0000, 3, 10); l1.position.set(pos.x-1, 2, pos.z); scene.add(l1);
+                    const l2 = new THREE.PointLight(0x0000ff, 3, 10); l2.position.set(pos.x+1, 2, pos.z); scene.add(l2);
+                    
+                    const r1 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshStandardMaterial({color: 0x550000, emissive: 0xcc0000}));
+                    r1.position.set(pos.x-1.5, 1, pos.z); scene.add(r1);
+                    
+                    const r2 = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshStandardMaterial({color: 0x000055, emissive: 0x0000cc}));
+                    r2.position.set(pos.x+1.5, 1, pos.z); scene.add(r2);
+                    
+                    return (time) => {
+                        r1.material.emissiveIntensity = Math.abs(Math.sin(time*10));
+                        r2.material.emissiveIntensity = Math.abs(Math.cos(time*9));
+                    }
+                }
+            },
+            {
+                id: 'ex5', title: 'Rhymes of Israel',
+                desc: 'An LLM-powered Chrome extension transforming mundane national news headlines into rhythmic, satirical couplets overlaying browser DOM elements.',
+                links: [
+                    { name: 'Install from Chrome Web Store', url: 'https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb' }
+                ],
+                setup: (scene, pos) => {
+                    scene.add(new THREE.PointLight(0xffff00, 3, 15)).position.copy(pos).add(new THREE.Vector3(0,3,0));
+                    const book = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.2, 1), new THREE.MeshStandardMaterial({color: 0xaaaa00}));
+                    book.position.set(pos.x, 2, pos.z);
+                    scene.add(book);
+                    
+                    const pGeo = new THREE.BufferGeometry();
+                    const pCount = 500;
+                    const posArr = new Float32Array(pCount * 3);
+                    for(let i=0; i<pCount*3; i++) posArr[i] = (Math.random()-0.5)*4;
+                    pGeo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+                    const particles = new THREE.Points(pGeo, new THREE.PointsMaterial({color: 0xffffff, size: 0.05}));
+                    particles.position.copy(pos).add(new THREE.Vector3(0, 2, 0));
+                    scene.add(particles);
+
+                    return (time) => {
+                        book.rotation.y = time;
+                        particles.rotation.y = -time * 2;
+                    }
+                }
+            },
+            {
+                id: 'ex6', title: 'The Meta Portfolio Lab',
+                desc: 'A recursive spatial nod acknowledging its own existence. You are currently navigating through a 1:1 scale representation of the matrix logic observed in miniature.',
+                links: [
+                    { name: 'Re-Loop Protocol (Main)', url: 'https://geekip.dev' }
+                ],
+                setup: (scene, pos) => {
+                    scene.add(new THREE.PointLight(0xffffff, 2, 10)).position.copy(pos).add(new THREE.Vector3(0,3,0));
+                    const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1, 32), new THREE.MeshStandardMaterial({color: 0x222222}));
+                    pedestal.position.set(pos.x, 0.5, pos.z);
+                    scene.add(pedestal);
+
+                    const mazeMini = new THREE.Group();
+                    // Just a stylized mini representation
+                    for(let i=0; i<10; i++){
+                        const m = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 1), new THREE.MeshBasicMaterial({color: 0x00f3ff, wireframe: true}));
+                        m.position.set((Math.random()-0.5)*2, 0, (Math.random()-0.5)*2);
+                        mazeMini.add(m);
+                    }
+                    mazeMini.position.set(pos.x, 1.2, pos.z);
+                    scene.add(mazeMini);
+
+                    return (time) => {
+                        mazeMini.rotation.y = time * 0.5;
+                    }
+                }
+            },
+            {
+                id: 'ex7', title: 'Terminal Out // Social Vectors',
+                desc: 'End of active memory buffer. Topography limits reached. Establish external handshake protocols via standardized social network sockets.',
+                links: [
+                    { name: 'GitHub (//gevak)', url: 'https://github.com/gevak' },
+                    { name: 'LinkedIn (//gevakip)', url: 'https://linkedin.com/in/gevakip' },
+                    { name: 'Facebook (//geva.kipper)', url: 'https://facebook.com/geva.kipper' }
+                ],
+                setup: (scene, pos) => {
+                    const voidLight = new THREE.PointLight(0xffffff, 5, 30);
+                    voidLight.position.set(pos.x, 5, pos.z);
+                    scene.add(voidLight);
+
+                    // Void Box (Hides world)
+                    const vMat = new THREE.MeshBasicMaterial({color: 0x000000, side: THREE.BackSide});
+                    const voidBox = new THREE.Mesh(new THREE.BoxGeometry(30, 20, 30), vMat);
+                    voidBox.position.copy(pos);
+                    scene.add(voidBox);
+
+                    // Stars
+                    const sGeo = new THREE.BufferGeometry();
+                    const sPos = new Float32Array(500 * 3);
+                    for(let i=0; i<sPos.length; i++) sPos[i] = (Math.random()-0.5)*28;
+                    sGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
+                    const stars = new THREE.Points(sGeo, new THREE.PointsMaterial({color: 0xffffff, size: 0.1}));
+                    stars.position.copy(pos);
+                    scene.add(stars);
+
+                    // Console
+                    const cons = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 1), new THREE.MeshStandardMaterial({color: 0x111111}));
+                    cons.position.set(pos.x, 0.5, pos.z);
+                    scene.add(cons);
+
+                    const screen = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.5), new THREE.MeshBasicMaterial({map: createTextTexture("> EXIT STATUS 0", 60, '#00ff11', true)}));
+                    screen.position.set(pos.x, 1.1, pos.z+0.4);
+                    screen.rotation.x = -Math.PI/4;
+                    scene.add(screen);
+
+                    return (time) => {
+                        stars.rotation.y = time * 0.05;
+                    }
+                }
+            }
+        ];
+
+        // Instantiate exhibits
+        exhibitData.forEach((ex, index) => {
+            if(ex.setup) {
+                const updater = ex.setup(scene, roomCenters[index]);
+                if(updater) updatables.push(updater);
+            }
+        });
+
+
+        // --- 9. HUD / RAYCASTING LOGIC ---
+        const panel = document.getElementById('exhibit-panel');
+        const pTitle = document.getElementById('e-title');
+        const pDesc = document.getElementById('e-desc');
+        const pLinks = document.getElementById('e-links');
+        const notice = document.getElementById('interaction-notice');
+
+        let activeExhibit = null;
+        let lastZoneTime = 0;
+
+        function updateHUD(playerPosition) {
+            let inZone = null;
+            
+            // Check distances to room centers
+            for(let i=0; i<roomCenters.length; i++) {
+                if(playerPosition.distanceTo(roomCenters[i]) < 6) {
+                    inZone = exhibitData[i];
+                    break;
+                }
+            }
+
+            if(inZone && inZone.id !== activeExhibit) {
+                activeExhibit = inZone.id;
+                
+                // Populate HUD
+                pTitle.innerText = inZone.title;
+                pDesc.innerText = inZone.desc;
+                pLinks.innerHTML = '';
+                inZone.links.forEach(l => {
+                    const a = document.createElement('a');
+                    a.href = l.url;
+                    a.target = '_blank';
+                    a.className = 'hud-btn';
+                    a.innerText = l.name;
+                    pLinks.appendChild(a);
+                });
+
+                panel.classList.add('active');
+                notice.style.opacity = '1';
+                
+                // Audio queue mental note: adding tiny sfx here adds polish but keeping single file simple.
+            } else if (!inZone && activeExhibit) {
+                panel.classList.remove('active');
+                notice.style.opacity = '0';
+                activeExhibit = null;
+            }
+        }
+
+        // Handle Escape interacting
+        document.addEventListener('pointerlockchange', () => {
+             // If unlocked while in a zone, it means user hit ESC to click links. Hide blocker.
+            if (!document.pointerLockElement && activeExhibit) {
+                blocker.style.opacity = '0';
+                notice.innerText = "Click inside window to resume walking";
+            } else {
+                notice.innerText = "Press [ESC] to release cursor & click links";
+            }
+        });
+
+
+        // --- 10. ANIMATION LOOP ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = clock.getDelta();
+            const time = clock.getElapsedTime();
+
+            if (controls.isLocked) {
+                // Physics & Movement Setup
+                velocity.x -= velocity.x * 10.0 * dt;
+                velocity.z -= velocity.z * 10.0 * dt;
+                
+                direction.z = Number(moveState.forward) - Number(moveState.backward);
+                direction.x = Number(moveState.right) - Number(moveState.left);
+                direction.normalize();
+
+                const speed = activeExhibit ? 20.0 : 40.0; // Slow down when in exhibit zone
+
+                if (moveState.forward || moveState.backward) velocity.z -= direction.z * speed * dt;
+                if (moveState.left || moveState.right) velocity.x -= direction.x * speed * dt;
+
+                // Proposed next position
+                const currentPos = controls.getObject().position;
+                const nextPos = currentPos.clone();
+                
+                // Apply X
+                controls.moveRight(-velocity.x * dt);
+                if(checkCollision(controls.getObject().position)) {
+                    controls.getObject().position.x = currentPos.x; // Revert X
+                    velocity.x = 0;
+                }
+
+                // Apply Z
+                controls.moveForward(-velocity.z * dt);
+                if(checkCollision(controls.getObject().position)) {
+                    controls.getObject().position.z = currentPos.z; // Revert Z
+                    velocity.z = 0;
+                }
+                
+                // Keep grounded
+                controls.getObject().position.y = 1.6;
+
+                // Check HUD triggers
+                updateHUD(controls.getObject().position);
+            }
+
+            // Update Exhibits
+            updatables.forEach(fn => fn(time));
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260323",
+          pageId: "20260324",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
