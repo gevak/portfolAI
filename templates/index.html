@@ -2,534 +2,684 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - Terminal Session</title>
-    <!-- Import Fira Code for genuine coding aesthetic -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
-    
+    <title>Geva Kipper | Blueprint Architecture</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700&display=swap');
+
         :root {
-            --bg: #050505;
-            --fg: #00FF41;
-            --amber: #ffb000;
-            --glow: 0 0 4px rgba(0, 255, 65, 0.6);
-            --amber-glow: 0 0 4px rgba(255, 176, 0, 0.6);
+            --bg-base: #0A192F;
+            --grid-color: rgba(0, 243, 255, 0.07);
+            --cyan: #00f3ff;
+            --cyan-dim: rgba(0, 243, 255, 0.3);
+            --text-main: #e6f1ff;
+            --text-muted: #8892b0;
+            --glass-bg: rgba(10, 25, 47, 0.85);
+            --font-mono: 'Roboto Mono', monospace;
+            --spine-width: 2px;
         }
 
-        /* --- Global Resets & Typography --- */
-        body, html {
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            background-color: var(--bg);
-            color: var(--fg);
-            font-family: 'Fira Code', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            min-height: 100vh;
-            text-shadow: var(--glow);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: var(--font-mono);
             overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
-            cursor: text;
-        }
-
-        ::selection {
-            background: var(--fg);
-            color: var(--bg);
-            text-shadow: none;
-        }
-
-        /* --- CRT Overlays --- */
-        #crt-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none;
-            z-index: 9999;
-            box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.95);
-        }
-
-        #crt-overlay::after {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            background: linear-gradient(
-                to bottom,
-                rgba(18, 16, 16, 0) 50%,
-                rgba(0, 0, 0, 0.25) 50%
-            );
-            background-size: 100% 4px;
-            z-index: 2;
-            animation: scanlines 10s linear infinite;
-        }
-
-        @keyframes scanlines {
-            0% { background-position: 0 0; }
-            100% { background-position: 0 100%; }
-        }
-
-        /* --- Header / Boot Sequence --- */
-        header {
-            padding: 20px 25px 0 25px;
-            margin-bottom: 20px;
-        }
-
-        .motd {
-            font-size: 1.5em;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-        }
-
-        .prompt-pwd {
-            color: var(--fg);
-            margin-right: 1ch;
-        }
-
-        .typing-cursor {
-            display: inline-block;
-            width: 1ch;
-            height: 1.2em;
-            background-color: var(--fg);
-            animation: blink 1s step-end infinite;
-            box-shadow: var(--glow);
-        }
-
-        .sys-log {
-            margin-top: 15px;
-            opacity: 0.9;
-        }
-
-        .sys-notice {
-            margin-top: 5px;
-            color: var(--amber);
-            text-shadow: var(--amber-glow);
-            border: 1px dashed var(--amber);
-            padding: 5px 10px;
-            display: inline-block;
-        }
-
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-
-        /* --- Tmux Grid Layout --- */
-        main {
-            padding: 0 20px 60px 20px; /* offset for footer */
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-            flex-grow: 1;
-        }
-
-        @media (min-width: 768px) {
-            main { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        @media (min-width: 1200px) {
-            main { grid-template-columns: repeat(3, 1fr); }
-            /* Span larger panes asyncly */
-            .pane:nth-child(7) { grid-column: span 2; } 
-        }
-
-        /* --- Authentic Box-Drawing Emulation --- */
-        .pane {
-            display: flex;
-            flex-direction: column;
-            background: transparent;
-            height: 100%;
-        }
-
-        .pane-top, .pane-bot {
-            display: flex;
-            line-height: 1;
-            white-space: pre;
-            align-items: stretch;
-            color: var(--fg);
-        }
-
-        .p-fill {
-            flex-grow: 1;
-            overflow: hidden;
-            display: inline-block;
-            height: 1em;
-        }
-
-        .p-fill::before {
-            content: "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────";
-            display: block;
-        }
-
-        .pane-mid {
-            flex-grow: 1;
-            border-left: 1px solid var(--fg);
-            border-right: 1px solid var(--fg);
-            width: calc(100% - 1ch);
-            margin: 0 auto;
-            padding: 15px 12px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            box-shadow: inset 0 0 15px rgba(0, 255, 65, 0.02);
+            background-image:
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center top;
             position: relative;
         }
 
-        /* To sync visual glow of borders */
-        .pane-mid, .pane-top, .pane-bot { 
-            text-shadow: 0 0 2px var(--fg); 
-            box-shadow: 0 0 1px rgba(0, 255, 65, 0.2); 
-        }
-
-        .pane-title {
-            font-weight: 600;
-        }
-
-        /* --- Pane Contents & Utilities --- */
-        pre {
-            margin: 0;
-            font-family: inherit;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-        
-        .ascii-art {
-            color: var(--fg);
-            opacity: 0.8;
-            font-size: 1.1em;
-            line-height: 1.2;
-        }
-
-        .flex-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(0, 255, 65, 0.05);
-            padding: 5px;
-        }
-
-        .accent { color: var(--amber); text-shadow: var(--amber-glow); }
-        p { margin: 0; }
-        
-        /* Links & Interactions */
-        .link-layer {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-top: auto; /* Push links to bottom */
-            padding-top: 10px;
+        /* Ambient Sub-Grid */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 10px 10px;
+            z-index: -1;
+            pointer-events: none;
         }
 
         a {
-            color: var(--fg);
+            color: var(--cyan);
             text-decoration: none;
-            display: inline-block;
-            transition: all 0s;
-            position: relative;
-            padding: 2px 4px;
-            word-break: break-all;
-            margin-top: 2px;
+            transition: all 0.3s ease;
         }
 
-        /* Hover Invert Logic */
-        a:hover, .hover-invert:hover {
-            background-color: var(--fg);
-            color: var(--bg);
-            text-shadow: none;
-            box-shadow: none;
-            cursor: pointer;
+        a:hover {
+            text-shadow: 0 0 8px var(--cyan);
         }
 
-        a:hover::after, .hover-invert:hover::after {
-            content: "█";
+        /* Typography & Utilities */
+        h1, h2, h3 { font-weight: 500; text-transform: uppercase; letter-spacing: 2px; }
+        .tech-text { font-size: 0.85rem; color: var(--text-muted); }
+        .highlight { color: var(--cyan); }
+
+        /* Title Block Frame (Top Right) */
+        .top-legend {
             position: absolute;
-            right: -1ch;
-            top: 2px;
-            color: var(--fg);
-            background-color: transparent;
-            animation: blink 1s step-end infinite;
+            top: 40px;
+            right: 40px;
+            border: 1px dotted var(--cyan);
+            padding: 15px;
+            width: 320px;
+            background: rgba(10, 25, 47, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            border-left: 4px solid var(--cyan);
+        }
+        .top-legend-title { font-size: 0.75rem; color: var(--cyan); margin-bottom: 5px; font-weight: bold;}
+        .top-legend-text { font-size: 0.7rem; color: var(--text-muted); line-height: 1.4; }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 0 10%;
+            position: relative;
         }
 
-        /* Infinite Loop Recursive Style */
-        .recursive-loop {
-            margin: 5px 0;
-            padding-left: 1ch;
-            border-left: 2px dashed var(--amber);
-            font-style: italic;
-        }
-
-        /* --- Footer Status Bar --- */
-        footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
+        .name-svg-container {
             width: 100%;
-            background-color: var(--fg);
-            color: var(--bg);
+            max-width: 800px;
+            margin-bottom: 20px;
+        }
+
+        .name-path {
+            fill: transparent;
+            stroke: var(--text-main);
+            stroke-width: 2;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draftName 3s cubic-bezier(0.4, 0, 0.2, 1) forwards, fillName 1s 2.5s forwards;
+        }
+
+        @keyframes draftName {
+            to { stroke-dashoffset: 0; }
+        }
+        @keyframes fillName {
+            to { fill: var(--text-main); stroke: transparent; }
+        }
+
+        .tagline {
+            font-size: 1.2rem;
+            color: var(--cyan);
+            border-right: 2px solid var(--cyan);
+            white-space: nowrap;
+            overflow: hidden;
+            width: 0;
+            animation: typing 3s steps(60, end) 1s forwards, blink-caret .75s step-end infinite;
+        }
+
+        @keyframes typing { from { width: 0 } to { width: 100% } }
+        @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: var(--cyan); } }
+
+        /* Blueprint Structure */
+        .architecture-container {
+            position: relative;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 100px 0;
+        }
+
+        .spine {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: var(--spine-width);
+            background: linear-gradient(180deg, transparent, var(--cyan) 10%, var(--cyan) 90%, transparent);
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px var(--cyan-dim);
+        }
+
+        /* Node Containers */
+        .node-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 4px 15px;
-            font-weight: 600;
-            text-shadow: none;
-            box-sizing: border-box;
-            z-index: 10000;
+            width: 100%;
+            margin-bottom: 120px;
+            position: relative;
         }
 
-        .flashing {
-            animation: status-blink 1.5s step-end infinite;
+        .node-row:nth-child(even) { flex-direction: row-reverse; }
+
+        .spacer { width: 45%; }
+        .node-wrap { width: 45%; position: relative; }
+
+        /* Leader Lines */
+        .leader-line {
+            position: absolute;
+            top: 50%;
+            width: calc(11% + 20px);
+            height: 2px;
+            background: transparent;
+            border-bottom: 2px dashed var(--cyan-dim);
+            z-index: 0;
+            transition: border-color 1s;
+        }
+        .node-row:nth-child(odd) .leader-line { left: 45%; border-left: 2px dashed var(--cyan-dim); height: 50px; top: calc(50% - 50px); }
+        .node-row:nth-child(even) .leader-line { right: 45%; border-right: 2px dashed var(--cyan-dim); height: 50px; top: calc(50% - 50px); }
+
+        /* Viewport Drafting Logic */
+        .blueprint-panel {
+            position: relative;
+            padding: 30px;
+            z-index: 10;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            background: transparent;
+            transition: all 1s ease 1s;
+        }
+        
+        .blueprint-panel::before, .blueprint-panel::after {
+            content: ''; position: absolute; width: 10px; height: 10px; border: 2px solid transparent; transition: border-color 0.5s 1.5s;
+        }
+        .blueprint-panel::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .blueprint-panel::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+        .blueprint-content {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s ease 1.5s, transform 0.8s ease 1.5s;
         }
 
-        @keyframes status-blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
+        /* SVGs internal to nodes */
+        .wireframe-svg {
+            width: 100%;
+            height: 120px;
+            margin-bottom: 20px;
+            overflow: visible;
+        }
+        .draw-path {
+            fill: transparent;
+            stroke: var(--cyan);
+            stroke-width: 1.5;
+            /* Dash array set via JS */
+        }
+        
+        /* STATE: Drafted (In Viewport) */
+        .drafted .blueprint-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--cyan-dim);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+        }
+        .drafted .blueprint-panel::before, .drafted .blueprint-panel::after {
+            border-color: var(--cyan);
+        }
+        .drafted .blueprint-content {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .drafted .draw-path {
+            animation: draftElement 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
-        #uptime-clk {
-            min-width: 250px;
-            text-align: right;
+        @keyframes draftElement {
+            to { stroke-dashoffset: 0; }
+        }
+
+        /* Project Specific Styles */
+        .project-title { font-size: 1.5rem; margin-bottom: 10px; color: #fff; }
+        .project-desc { font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px; }
+        
+        .sys-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            background: transparent;
+            cursor: pointer;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        .sys-btn:hover { background: rgba(0, 243, 255, 0.1); box-shadow: 0 0 15px var(--cyan-dim); }
+        .sys-btn::before { content: '>'; margin-right: 8px; animation: blink-caret 1s infinite; }
+
+        .citation-list { list-style: none; margin-bottom: 15px; }
+        .citation-list li { margin-bottom: 8px; font-size: 0.85rem; }
+        .citation-list li::before { content: '[REF] '; color: var(--cyan); }
+
+        .embed-box { border: 1px solid var(--text-muted); padding: 5px; margin: 15px 0; background: #000; }
+        
+        .coord-marker { position: absolute; top: -20px; right: 0; font-size: 0.6rem; color: var(--cyan-dim); }
+
+        /* Interactive Elements SVG specific */
+        .interactive-poly:hover { transform: rotate(15deg); transition: transform 0.5s ease; cursor: crosshair; }
+        
+        /* Node 8 Endpoints Circuit */
+        .circuit-terminus { display: flex; justify-content: space-around; margin-top: 30px; }
+        .circuit-node {
+            display: flex; flex-direction: column; align-items: center; cursor: pointer;
+        }
+        .circuit-circle { width: 50px; height: 50px; border: 2px dashed var(--text-muted); border-radius: 50%; display: flex; justify-content: center; align-items: center; transition: all 0.3s; }
+        .circuit-node:hover .circuit-circle { border-color: var(--cyan); border-style: solid; box-shadow: 0 0 15px var(--cyan); background: var(--cyan-dim); }
+        .circuit-label { margin-top: 10px; font-size: 0.8rem; letter-spacing: 1px; }
+
+        /* Footer Manifest */
+        .manifest-footer {
+            border-top: 4px solid var(--cyan);
+            background: #061121;
+            padding: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+        }
+        .manifest-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .manifest-field { border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; position: relative; }
+        .manifest-field::before { content: ''; position: absolute; top: 0; left: 0; width: 10px; height: 10px; background: var(--cyan); }
+        .manifest-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 10px; }
+        .manifest-value { font-size: 1.1rem; color: var(--text-main); display: flex; align-items: center; }
+
+        .time-dashboard { font-family: var(--font-mono); color: var(--cyan); letter-spacing: 2px; }
+        
+        .gear-icon { margin-left: auto; width: 40px; height: 40px; animation: spin 10s linear infinite; stroke: var(--cyan); fill: none; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .hero { padding: 0 5%; }
+            .tagline { white-space: normal; animation: none; width: auto; border: none; }
+            .top-legend { position: relative; top: 0; right: 0; margin-bottom: 40px; width: 100%; }
+            .spine { left: 20px; transform: none; }
+            .node-row, .node-row:nth-child(even) { flex-direction: column; align-items: flex-end; }
+            .spacer { display: none; }
+            .node-wrap { width: calc(100% - 60px); margin-bottom: 40px; }
+            .leader-line, .node-row:nth-child(odd) .leader-line, .node-row:nth-child(even) .leader-line {
+                width: 40px; left: -40px; border-bottom: 2px dashed var(--cyan-dim); border-left: none; border-right: none; height: 2px; top: 20px;
+            }
+            .manifest-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
-    <div id="crt-overlay"></div>
-
-    <header>
-        <div class="motd">
-            <span class="prompt-pwd">root@geekip.dev:~#</span>
-            <span id="typewriter"></span><span class="typing-cursor"></span>
+    <!-- Top Architecture Legend -->
+    <div class="top-legend">
+        <div class="top-legend-title">ARCHITECTURAL MANIFEST</div>
+        <div class="top-legend-text">
+            REVISION STATUS: <span class="highlight">DYNAMIC</span><br><br>
+            Note: This interface is systematically re-designed each day by Artificial Intelligence, ensuring an ever-changing digital architecture.
         </div>
-        <div class="sys-log">
-            > system.user.current_assignment: Building <span class="hover-invert" style="display:inline-block;">[REDACTED/AWESOME]</span> software as an Engineer at Google.
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="name-svg-container">
+            <!-- Simulated Laser Drawn Typography for Geva Kipper -->
+            <svg viewBox="0 0 800 120" class="name-svg">
+                <text x="0" y="90" font-family="'Roboto Mono', monospace" font-size="80" font-weight="700" letter-spacing="-2" class="name-path">GEVA KIPPER</text>
+            </svg>
         </div>
-        <div class="sys-notice">
-            [SYS_NOTICE]: This environment is re-compiled and re-designed daily by artificial intelligence. Structural volatility is expected.
-        </div>
-    </header>
+        <div class="tagline">Currently engineering large-scale software solutions at Google.</div>
+    </section>
 
-    <main id="tmux-grid">
-        
-        <!-- PANE 1: GlglStats -->
-        <article class="pane">
-            <div class="pane-top"><span>┌──[ </span><span class="pane-title">~/projects/glglstats.exe</span><span> ]</span><span class="p-fill"></span><span>┐</span></div>
-            <div class="pane-mid">
-                <pre class="ascii-art">
-[Vol]
- ▄▃▂▅▇█▆
-                </pre>
-                <div class="desc">
-                    <p><b>> cat readme.txt</b></p>
-                    <p>LZ77 Israeli pop-chart analysis. Calculates repetitiveness in lyrics over decades.</p>
-                </div>
-                <div class="link-layer">
-                    <a href="https://glglstats.geekip.dev" target="_blank">$ ./launch_site -> https://glglstats.geekip.dev</a>
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">$ play_video --src=PyData_TLV -> [YouTube Link]</a>
-                </div>
-            </div>
-            <div class="pane-bot"><span>└</span><span class="p-fill"></span><span>┘</span></div>
-        </article>
+    <!-- Core Blueprint Architecture -->
+    <div class="architecture-container">
+        <!-- The Y-Axis Spine -->
+        <div class="spine"></div>
 
-        <!-- PANE 2: Ahuzat Dibuk -->
-        <article class="pane">
-            <div class="pane-top"><span>┌──[ </span><span class="pane-title">~/projects/ahuzat_dibuk.sh</span><span> ]</span><span class="p-fill"></span><span>┐</span></div>
-            <div class="pane-mid">
-                <pre class="ascii-art">
-P-LOT | HEATMAP
-------|--------
-[001] | . * # @ # ,
-[002] | . . * @ # *
-[003] | . , . * # #
-                </pre>
-                <div class="desc">
-                    <p>Tel-Aviv parking lot scraping project. Exposes municipal availability patterns via matrix saturation grids.</p>
-                </div>
-                <div class="link-layer">
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">[GET] 13tv.co.il/ahuzat-dibuk-report</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">[GET] mako.co.il/parking-scraper</a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">[GET] facebook.com/secret-tlv-post</a>
-                </div>
-            </div>
-            <div class="pane-bot"><span>└</span><span class="p-fill"></span><span>┘</span></div>
-        </article>
-
-        <!-- PANE 3: 2D Part Orienting -->
-        <article class="pane">
-            <div class="pane-top"><span>┌──[ </span><span class="pane-title">~/projects/part_orienting.cpp</span><span> ]</span><span class="p-fill"></span><span>┐</span></div>
-            <div class="pane-mid">
-                <div class="flex-row">
-<pre class="ascii-art accent">
-void push_plan(
-  Polygon& p,
-  double f
-);
-</pre>
-<pre class="ascii-art" style="text-align: right;">
-   /\   [F]
-  /  \ --->
- /____\
-</pre>
-                </div>
-                <div class="desc">
-                    <p>Computational geometry push plan algorithm for 2D part orienting using simulated friction manipulation.</p>
-                </div>
-                <div class="link-layer">
-                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">$ make build_part_orienting -> [CGL Tau Link]</a>
-                </div>
-            </div>
-            <div class="pane-bot"><span>└</span><span class="p-fill"></span><span>┘</span></div>
-        </article>
-
-        <!-- PANE 4: Turing Jest -->
-        <article class="pane">
-            <div class="pane-top"><span>┌──[ </span><span class="pane-title">~/projects/turing_jest.ssh</span><span> ]</span><span class="p-fill"></span><span>┐</span></div>
-            <div class="pane-mid">
-                <pre class="ascii-art" style="text-align: center; border: 1px dashed var(--fg); padding: 5px;">
-[LLM_A] vs [LLM_B]
-A R E N A   C L A S H
-                </pre>
-                <div class="desc">
-                    <p>Live matchmaking terminal. LMSYS-like arena evaluating Large Language Models strictly on pun generation and humor mechanics.</p>
-                </div>
-                <div class="link-layer">
-                    <a href="https://jest.geekip.dev" target="_blank">$ ssh guest@jest.geekip.dev</a>
-                </div>
-            </div>
-            <div class="pane-bot"><span>└</span><span class="p-fill"></span><span>┘</span></div>
-        </article>
-
-        <!-- PANE 5: Rhymes of Israel -->
-        <article class="pane">
-            <div class="pane-top"><span>┌──[ </span><span class="pane-title">~/projects/rhymes_il.deb</span><span> ]</span><span class="p-fill"></span><span>┐</span></div>
-            <div class="pane-mid">
-<pre class="ascii-art" style="background: rgba(0,255,65,0.05); padding: 5px;">
-> fn rhyme(raw_headline)
-  -> rhymed_string
-> _
-</pre>
-                <div class="desc">
-                    <p>Chrome extension utility. Yearbook-style LLM rhyming engine dynamically overlaying Israeli news sites.</p>
-                </div>
-                <div class="link-layer">
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank">$ apt-get install rhymes-of-israel -> [Chrome Store]</a>
-                </div>
-            </div>
-            <div class="pane-bot"><span>└</span><span class="p-fill"></span><span>┘</span></div>
-        </article>
-
-        <!-- PANE 6: Hatul Basak -->
-        <article class="pane">
-            <div class="pane-top"><span>┌──[ </span><span class="pane-title">~/projects/hatul_basak.bin</span><span> ]</span><span class="p-fill"></span><span>┐</span></div>
-            <div class="pane-mid">
-                <pre class="ascii-art" style="text-align: center; font-size: 1.5em; padding: 10px 0;">
-=^._.^=
-                </pre>
-                <div class="desc">
-                    <p>Hebrew Wikipedia-Trivia port. Automatic AI daily challenges and extensive user-created custom puzzle arenas.</p>
-                </div>
-                <div class="link-layer">
-                    <a href="https://hatulbasak.geekip.dev" target="_blank">$ sh run_trivia.sh -> https://hatulbasak.geekip.dev</a>
-                </div>
-            </div>
-            <div class="pane-bot"><span>└</span><span class="p-fill"></span><span>┘</span></div>
-        </article>
-
-        <!-- PANE 7: Meta Portfolio -->
-        <article class="pane">
-            <div class="pane-top"><span>┌──[ </span><span class="pane-title">~/system/meta_portfolio.sys</span><span> ]</span><span class="p-fill"></span><span>┐</span></div>
-            <div class="pane-mid">
-                <div class="desc">
-                    <p><code>> grep -r "geekip.dev" .</code></p>
-                    <div class="recursive-loop accent">
-                        [Infinite Loop Detected: You are currently traversing the portfolio website project]
+        <!-- Node 1: GlglStats -->
+        <div class="node-row">
+            <div class="spacer"></div>
+            <div class="leader-line"></div>
+            <div class="node-wrap">
+                <div class="coord-marker">SEC 01 - GLGL_ST</div>
+                <div class="blueprint-panel node-observe">
+                    <svg class="wireframe-svg" viewBox="0 0 400 120">
+                        <polyline class="draw-path" points="10,60 40,60 60,10 80,110 100,30 120,80 140,60 180,60" />
+                        <rect class="draw-path" x="200" y="30" width="40" height="60" />
+                        <rect class="draw-path" x="250" y="50" width="30" height="40" />
+                        <rect class="draw-path" x="290" y="20" width="50" height="70" />
+                        <line class="draw-path" x1="180" y1="60" x2="195" y2="60" stroke-dasharray="2 2"/>
+                    </svg>
+                    <div class="blueprint-content">
+                        <h2 class="project-title">GlglStats</h2>
+                        <div class="tech-text">ALGORITHM: Python LZ77 Compression</div>
+                        <p class="project-desc">Quantifying chronological repetitiveness in Israeli pop-charts via data compression algorithms translating to lyrical entropy.</p>
+                        <div class="embed-box">
+                            <iframe width="100%" height="180" src="https://www.youtube.com/embed/jrKAtOsj1Lo" title="PyData TLV Presentation" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                        <a href="https://glglstats.geekip.dev" target="_blank" class="sys-btn" style="width:100%; text-align:center;">INITIATE LIVE INSTANCE</a>
                     </div>
                 </div>
-                <div class="link-layer" style="margin-top: auto;">
-                    <a href="https://geekip.dev" target="_self">> return to index: https://geekip.dev</a>
+            </div>
+        </div>
+
+        <!-- Node 2: Ahuzat Dibuk -->
+        <div class="node-row">
+            <div class="node-wrap">
+                <div class="coord-marker">SEC 02 - AHUZ_DB</div>
+                <div class="blueprint-panel node-observe">
+                    <svg class="wireframe-svg" viewBox="0 0 400 120">
+                        <ellipse class="draw-path interactive-poly" cx="200" cy="60" rx="90" ry="40" />
+                        <ellipse class="draw-path" cx="200" cy="65" rx="70" ry="30" />
+                        <ellipse class="draw-path" cx="200" cy="70" rx="40" ry="15" />
+                        <path class="draw-path" d="M110,60 L200,20 L290,60" stroke-dasharray="4 4" />
+                    </svg>
+                    <div class="blueprint-content">
+                        <h2 class="project-title">Ahuzat Dibuk</h2>
+                        <div class="tech-text">DATA-VIZ: Tel-Aviv Parking Occupancy</div>
+                        <p class="project-desc">A topographical heatmap generated from scraping real-time municipal parking lot mechanics to expose spatial availability patterns.</p>
+                        <div class="tech-text" style="margin-bottom:10px;">CITATION MATRIX:</div>
+                        <ul class="citation-list">
+                            <li><a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">Channel 13 Broadcast</a></li>
+                            <li><a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">Mako Digital Publication</a></li>
+                            <li><a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank">Secret Tel Aviv Archive</a></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
-            <div class="pane-bot"><span>└</span><span class="p-fill"></span><span>┘</span></div>
-        </article>
+            <div class="leader-line"></div>
+            <div class="spacer"></div>
+        </div>
 
-        <!-- PANE 8: Social Protocols -->
-        <article class="pane">
-            <div class="pane-top"><span>┌──[ </span><span class="pane-title">~/system/social_protocols</span><span> ]</span><span class="p-fill"></span><span>┐</span></div>
-            <div class="pane-mid">
-                <div class="desc">
-                    <p>Outbound connection daemon initializing...</p>
-                    <p>Listening on external ports.</p>
-                </div>
-                <div class="link-layer">
-                    <a href="https://github.com/gevak" target="_blank">[Established] github.com/gevak</a>
-                    <a href="https://linkedin.com/in/gevakip" target="_blank">[Established] linkedin.com/in/gevakip</a>
-                    <a href="https://facebook.com/geva.kipper" target="_blank">[Established] facebook.com/geva.kipper</a>
+        <!-- Node 3: 2D Part Orienting -->
+        <div class="node-row">
+            <div class="spacer"></div>
+            <div class="leader-line"></div>
+            <div class="node-wrap">
+                 <div class="coord-marker">SEC 03 - 2D_PRT</div>
+                <div class="blueprint-panel node-observe">
+                    <svg class="wireframe-svg interactive-poly" viewBox="0 0 400 120" style="transform-origin: center;">
+                        <polygon class="draw-path" points="200,20 250,50 230,100 170,100 150,50" />
+                        <line class="draw-path" x1="120" y1="50" x2="145" y2="50" stroke-dasharray="3 3"/>
+                        <line class="draw-path" x1="280" y1="50" x2="255" y2="50" stroke-dasharray="3 3"/>
+                        <circle class="draw-path" cx="200" cy="65" r="3" />
+                    </svg>
+                    <div class="blueprint-content">
+                        <h2 class="project-title">2D Part Orienting</h2>
+                        <div class="tech-text">ENV: C++ / Computational Geometry</div>
+                        <p class="project-desc">Algorithmic rotational push planning for asymmetrical polygons, implemented within a rigorous computational geometry library.</p>
+                        <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="sys-btn">[ACCESS ALGORITHM SPECS]</a>
+                    </div>
                 </div>
             </div>
-            <div class="pane-bot"><span>└</span><span class="p-fill"></span><span>┘</span></div>
-        </article>
+        </div>
 
-    </main>
+        <!-- Node 4: The Turing Jest -->
+        <div class="node-row">
+             <div class="node-wrap">
+                <div class="coord-marker">SEC 04 - LMM_JST</div>
+                <div class="blueprint-panel node-observe">
+                    <svg class="wireframe-svg" viewBox="0 0 400 120">
+                        <rect class="draw-path" x="90" y="20" width="220" height="80" stroke-dasharray="5 5" />
+                        <path class="draw-path" d="M 130 50 C 130 30, 160 30, 160 50 C 160 70, 130 80, 150 90" />
+                        <path class="draw-path" d="M 270 50 C 270 30, 240 30, 240 50 C 240 70, 270 80, 250 90" />
+                        <line class="draw-path" x1="180" y1="60" x2="220" y2="60" />
+                        <path class="draw-path" d="M 210 50 L 220 60 L 210 70" />
+                    </svg>
+                    <div class="blueprint-content">
+                        <h2 class="project-title">The Turing Jest</h2>
+                        <div class="tech-text">ARENA: LMSYS-inspired LLM Colosseum</div>
+                        <p class="project-desc">A comparative evaluation platform where Large Language Models compete at generating and structurally dissecting puns, graded via crowd-sourced consensus.</p>
+                        <a href="https://jest.geekip.dev" target="_blank" class="sys-btn">CONNECT TO ARENA</a>
+                    </div>
+                </div>
+            </div>
+            <div class="leader-line"></div>
+            <div class="spacer"></div>
+        </div>
 
-    <footer>
-        <div class="flashing">[SYSTEM PROCESS]: Designed & Generated by Assistant AI Model</div>
-        <div id="uptime-clk">UPTIME: 00hrs 00mins 00secs</div>
+        <!-- Node 5: Rhymes of Israel -->
+        <div class="node-row">
+            <div class="spacer"></div>
+            <div class="leader-line"></div>
+            <div class="node-wrap">
+                <div class="coord-marker">SEC 05 - RHY_IL</div>
+                <div class="blueprint-panel node-observe">
+                    <svg class="wireframe-svg" viewBox="0 0 400 120">
+                        <rect class="draw-path" x="140" y="20" width="120" height="80" />
+                        <line class="draw-path" x1="150" y1="40" x2="250" y2="40" />
+                        <rect class="draw-path" x="150" y="50" width="40" height="40" />
+                        <line class="draw-path" x1="200" y1="60" x2="250" y2="60" />
+                        <line class="draw-path" x1="200" y1="75" x2="250" y2="75" />
+                        <!-- Ext icon mockup box -->
+                         <path class="draw-path" d="M300 20 h30 v30 h-30 Z" stroke-dasharray="2 2"/>
+                    </svg>
+                    <div class="blueprint-content">
+                        <h2 class="project-title">Rhymes of Israel</h2>
+                        <div class="tech-text">PLATFORM: Chrome Web Extension</div>
+                        <p class="project-desc">Leveraging generative AI to intercept and translate standard Israeli news headlines into algorithmic, comedic rhyming verse on the fly.</p>
+                        <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="sys-btn" style="border-style: dashed;">INSTALL_EXTENSION.CRX</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Node 6: Hatul Basak -->
+        <div class="node-row">
+             <div class="node-wrap">
+                <div class="coord-marker">SEC 06 - CAT_BSK</div>
+                <div class="blueprint-panel node-observe">
+                    <svg class="wireframe-svg" viewBox="0 0 400 120">
+                        <!-- Globe mesh -->
+                        <circle class="draw-path" cx="200" cy="65" r="45" />
+                        <ellipse class="draw-path" cx="200" cy="65" rx="45" ry="15" />
+                        <ellipse class="draw-path" cx="200" cy="65" rx="15" ry="45" />
+                        <!-- Cat shadow outline intersecting -->
+                        <path class="draw-path" d="M 180 30 L 190 45 L 210 45 L 220 30 L 220 50" stroke="rgba(255,255,255,0.5)" />
+                    </svg>
+                    <div class="blueprint-content">
+                        <h2 class="project-title">Hatul Basak</h2>
+                        <div class="tech-text">LOCALE: Hebrew catfishing.net port</div>
+                        <p class="project-desc">A daily trivia constraint matrix featuring AI-generated challenges alongside user-constructed thematic puzzle environments.</p>
+                        <a href="https://hatulbasak.geekip.dev" target="_blank" class="sys-btn">> EXECUTE_TRIVIA_CONSTRUCT</a>
+                    </div>
+                </div>
+            </div>
+            <div class="leader-line"></div>
+            <div class="spacer"></div>
+        </div>
+
+        <!-- Node 7: Meta Portfolio Project -->
+        <div class="node-row">
+            <div class="spacer"></div>
+            <div class="leader-line"></div>
+            <div class="node-wrap">
+                <div class="coord-marker">SEC 07 - RECURSE</div>
+                <div class="blueprint-panel node-observe">
+                    <svg class="wireframe-svg" viewBox="0 0 400 120">
+                        <rect class="draw-path" x="120" y="10" width="160" height="100" />
+                        <rect class="draw-path" x="130" y="20" width="140" height="80" />
+                        <rect class="draw-path" x="140" y="30" width="120" height="60" />
+                        <text class="draw-path" x="200" y="65" font-family="'Roboto Mono'" font-size="20" text-anchor="middle" dominant-baseline="middle">∞</text>
+                    </svg>
+                    <div class="blueprint-content">
+                        <h2 class="project-title">Meta Portfolio</h2>
+                        <div class="tech-text">STATUS: Recursive Structural Loop</div>
+                        <p class="project-desc">The structural blueprint presently under observation. A self-referential engineering interface designed to host its own structural parameters.</p>
+                        <a href="https://geekip.dev" class="sys-btn" style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+                            <span>LOOP_BACK</span>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Node 8: Endpoints -->
+        <div class="node-row" style="margin-bottom: 0;">
+             <div class="node-wrap" style="width: 100%; margin-top: 50px;">
+                <div class="blueprint-panel node-observe" style="border:none; text-align: center;">
+                    <h2 class="project-title" style="color:var(--cyan); border-bottom:1px solid var(--grid-color); padding-bottom:10px;">SOCIAL_CIRCUITRY_ENDPOINTS</h2>
+                    
+                    <div class="circuit-terminus">
+                        <!-- GitHub -->
+                        <a href="https://github.com/gevak" target="_blank" class="circuit-node">
+                            <div class="circuit-circle">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--text-main)"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                            </div>
+                            <div class="circuit-label">GITHUB</div>
+                        </a>
+                        
+                        <!-- LinkedIn -->
+                        <a href="https://linkedin.com/in/gevakip" target="_blank" class="circuit-node">
+                            <div class="circuit-circle">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--text-main)"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                            </div>
+                            <div class="circuit-label">LINKEDIN</div>
+                        </a>
+
+                        <!-- Facebook -->
+                        <a href="https://facebook.com/geva.kipper" target="_blank" class="circuit-node">
+                            <div class="circuit-circle">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--text-main)"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+                            </div>
+                            <div class="circuit-label">FACEBOOK</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> <!-- End Architecture Container -->
+
+    <!-- Title Block / Footer Manifest -->
+    <footer class="manifest-footer">
+        <div class="manifest-grid">
+            <div class="manifest-field">
+                <div class="manifest-label">STRUCTURAL ARCHITECT & DRAFTSMAN</div>
+                <div class="manifest-value">AI LLM Construct (Gemini Neural Engine)</div>
+            </div>
+            <div class="manifest-field">
+                <div class="manifest-label">ELAPSED CONSTRUCTION TIME SINCE INITIATION [2026-04-11 01:46:22]</div>
+                <div class="manifest-value">
+                    <span id="timer" class="time-dashboard">00 HRS : 00 MINS : 00 SECS</span>
+                    <svg class="gear-icon" viewBox="0 0 24 24">
+                        <path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        <circle cx="12" cy="12" r="3" stroke-width="2"></circle>
+                    </svg>
+                </div>
+            </div>
+        </div>
     </footer>
 
-    <!-- Logic Script Execution -->
+    <!-- Logic Script -->
     <script>
-        // MOTD Typewriter Effect
         document.addEventListener('DOMContentLoaded', () => {
-            const textToType = "Geva Kipper";
-            const typeTarget = document.getElementById("typewriter");
-            let index = 0;
-            const typeSpeed = 120; // ms per keystroke
+            // Function to precisely calculate and set SVG path lengths for smooth drawing
+            const setupSVGPaths = () => {
+                const paths = document.querySelectorAll('.draw-path');
+                paths.forEach(path => {
+                    // Quick length calculation. For basic shapes like rect/circle, getBBox works well enough if getTotalLength fails
+                    let length = 0;
+                    if(path.getTotalLength) {
+                        length = path.getTotalLength();
+                    } else if (path.tagName === 'rect') {
+                         length = (parseFloat(path.getAttribute('width')) + parseFloat(path.getAttribute('height'))) * 2;
+                    } else if (path.tagName === 'circle') {
+                         length = 2 * Math.PI * parseFloat(path.getAttribute('r'));
+                    } else if (path.tagName === 'ellipse') {
+                        // approximation for ellipse
+                        const rx = parseFloat(path.getAttribute('rx'));
+                        const ry = parseFloat(path.getAttribute('ry'));
+                        length = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
+                    } else {
+                        length = 1500; // safe fallback
+                    }
 
-            function typeWriter() {
-                if (index < textToType.length) {
-                    typeTarget.innerHTML += textToType.charAt(index);
-                    index++;
-                    setTimeout(typeWriter, typeSpeed + (Math.random() * 50)); // Add slight randomization for realism
-                }
+                    // For dashes, we handle them slightly differently, but for base outlines, we use the dasharray trick
+                    if(!path.hasAttribute('stroke-dasharray')) {
+                        path.style.strokeDasharray = length;
+                        path.style.strokeDashoffset = length;
+                    } else {
+                        // If it already has a dash array (like for dashed box), keep it but animate offset heavily
+                        path.style.strokeDashoffset = length*2; 
+                        // Overriding custom keyframe for pre-dashed objects
+                        path.style.animation = `draftElementDashed 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards`;
+                    }
+                });
+            };
+
+            // Inject custom keyframe for dashed elements
+            const style = document.createElement('style');
+            style.innerHTML = `@keyframes draftElementDashed { to { stroke-dashoffset: 0; } }`;
+            document.head.appendChild(style);
+
+            setupSVGPaths();
+
+            // Intersection Observer for scroll-triggered drafting
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px 0px -20% 0px', // Trigger slightly before it hits bottom
+                threshold: 0.1
+            };
+
+            const nodeObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('drafted');
+                        // Optional: Unobserve after drawing once
+                        // observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.node-observe').forEach(node => {
+                nodeObserver.observe(node);
+            });
+
+            // Timer Logic
+            const initDateStr = '2026-04-11T01:46:22Z';
+            const initDate = new Date(initDateStr).getTime();
+            const timerEl = document.getElementById('timer');
+
+            function updateTimer() {
+                const now = new Date().getTime();
+                // Treat the date as an absolute point in time. Calculate distance to it.
+                const diff = Math.abs(now - initDate);
+
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+                const formattedHours = hours.toString().padStart(2, '0');
+                const formattedMins = mins.toString().padStart(2, '0');
+                const formattedSecs = secs.toString().padStart(2, '0');
+
+                timerEl.innerText = `${formattedHours} HRS : ${formattedMins} MINS : ${formattedSecs} SECS`;
             }
-            // Add slight delay before starting sequence
-            setTimeout(typeWriter, 500);
 
-            // Uptime Clock Logic
-            const uptimeTarget = document.getElementById("uptime-clk");
-            // Strict timestamp as requested
-            const specDateStr = "2026-04-10T01:55:32";
-            const targetDate = new Date(specDateStr);
-
-            function updateUptime() {
-                const now = new Date();
-                // Raw time passed since exact timestamp (Absolute value to handle future/past robustly)
-                let diffInSeconds = Math.floor(Math.abs((now - targetDate) / 1000));
-                
-                const hours = Math.floor(diffInSeconds / 3600);
-                let remainingSeconds = diffInSeconds % 3600;
-                const minutes = Math.floor(remainingSeconds / 60);
-                const seconds = remainingSeconds % 60;
-                
-                const pad = (num) => String(num).padStart(2, '0');
-                
-                uptimeTarget.textContent = `UPTIME: [${pad(hours)}]hrs [${pad(minutes)}]mins [${pad(seconds)}]secs`;
-            }
-
-            // Init and run interval
-            updateUptime();
-            setInterval(updateUptime, 1000);
+            setInterval(updateTimer, 1000);
+            updateTimer(); // Initial call
         });
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260410",
+          pageId: "20260411",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
