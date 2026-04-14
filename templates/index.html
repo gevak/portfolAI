@@ -2,691 +2,601 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper // TELEMETRY COMMAND</title>
-    <!-- Google Fonts: JetBrains Mono (Terminal/UI), Inter (Legibility) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
-    
+    <title>Geva Kipper | Software Engineer</title>
     <style>
+        /* CSS Variables */
         :root {
-            --bg-void: #090a0f;
-            --panel-charcoal: #14161f;
-            --panel-light: #1e212f;
-            --border-metal: #2e3246;
-            --accent-cyan: #00f3ff;
-            --accent-amber: #ff9f1c;
-            --accent-red: #ff3333;
-            --accent-green: #39ff14;
+            --bg-deep: #050608;
+            --bg-glass: rgba(18, 20, 28, 0.4);
+            --border-glass: rgba(255, 255, 255, 0.08);
             --text-main: #e2e8f0;
             --text-muted: #94a3b8;
-            --font-mono: 'JetBrains Mono', monospace;
-            --font-sans: 'Inter', sans-serif;
+            --accent-red: #ff3333;
+            --accent-neon: #8b5cf6; /* Purple */
+            --accent-blue: #3b82f6; 
+            --accent-cyber: #0ea5e9;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'Space Mono', 'Fira Code', monospace;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            cursor: crosshair;
-        }
-
+        /* Reset & Base Setup */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background-color: var(--bg-void);
+            background-color: var(--bg-deep);
             color: var(--text-main);
             font-family: var(--font-sans);
-            line-height: 1.6;
-            overflow-x: hidden;
+            overflow: hidden; /* Locked until puzzle solved */
             position: relative;
-            padding-bottom: 60px; /* Space for footer */
         }
 
-        /* ===== BACKGROUND & OVERLAYS ===== */
-        .scanlines {
+        a { color: inherit; text-decoration: none; }
+        h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
+
+        /* Dynamic Fluid Background */
+        .ambient-bg {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 4px, 3px 100%;
-            pointer-events: none;
-            z-index: 999;
-            opacity: 0.6;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -2;
+            overflow: hidden;
+            background: var(--bg-deep);
+        }
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.4;
+            animation: float 20s infinite alternate ease-in-out;
+        }
+        .blob-1 { width: 50vw; height: 50vw; background: var(--accent-neon); top: -10vw; left: -10vw; }
+        .blob-2 { width: 40vw; height: 40vw; background: var(--accent-blue); bottom: -10vw; right: -5vw; animation-delay: -5s; }
+        .ambient-noise {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0.03; z-index: -1; pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
 
-        .nav-grid {
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(10vw, 5vh) scale(1.1); }
+        }
+
+        /* --- THE GATE (414 PUZZLE) --- */
+        #gate {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 200vh;
-            background-image: 
-                linear-gradient(to right, rgba(0, 243, 255, 0.05) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
-            background-size: 50px 50px;
-            pointer-events: none;
-            z-index: -1;
-            transform: translateY(-50vh) perspective(500px) rotateX(20deg);
-            animation: translateGrid 30s linear infinite;
-        }
-
-        @keyframes translateGrid {
-            from { transform: translateY(-50vh) perspective(500px) rotateX(20deg); }
-            to { transform: translateY(0vh) perspective(500px) rotateX(20deg); }
-        }
-
-        /* ===== COMMAND MODULE HEADER ===== */
-        header {
-            max-width: 1400px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-        }
-
-        .command-panel {
-            background: linear-gradient(180deg, var(--panel-light), var(--panel-charcoal));
-            border: 1px solid var(--border-metal);
-            border-radius: 8px 8px 0 0;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #000;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
             padding: 2rem;
+            color: #0c0;
+            font-family: var(--font-mono);
+            cursor: crosshair;
+            transition: opacity 1s ease;
+        }
+        .gate-header {
+            color: var(--accent-red);
+            font-size: clamp(2rem, 5vw, 4rem);
+            margin-bottom: 2rem;
+            text-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
             text-align: center;
-            position: relative;
-            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8), 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        .header-id {
-            font-family: var(--font-mono);
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            letter-spacing: 2px;
-            margin-bottom: 0.5rem;
-        }
-
-        h1 {
-            font-family: var(--font-mono);
-            font-size: 3.5rem;
-            color: var(--accent-amber);
-            text-shadow: 0 0 10px rgba(255, 159, 28, 0.5);
-            text-transform: uppercase;
-            margin: 0;
-            font-weight: 800;
-        }
-
-        .terminal-output {
-            font-family: var(--font-mono);
-            color: var(--accent-cyan);
-            margin-top: 1rem;
-            font-size: 1rem;
-            min-height: 1.5rem;
-        }
-
-        .cursor {
-            display: inline-block;
-            width: 10px;
-            height: 1.2rem;
-            background-color: var(--accent-cyan);
-            vertical-align: middle;
-            animation: blink 1s step-end infinite;
-        }
-
-        @keyframes blink { 50% { opacity: 0; } }
-
-        .caution-bar {
-            background: repeating-linear-gradient(
-                45deg,
-                #000,
-                #000 15px,
-                #ffcc00 15px,
-                #ffcc00 30px
-            );
-            border: 1px solid var(--border-metal);
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            padding: 0.5rem;
-            text-align: center;
-        }
-
-        .caution-text {
-            display: inline-block;
-            background-color: rgba(9, 10, 15, 0.9);
-            color: #ffcc00;
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
             font-weight: bold;
-            padding: 0.3rem 1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            z-index: 10;
+        }
+        .matrix-container {
+            width: 100%; height: calc(100% - 100px);
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            line-height: 1.2;
+            font-size: max(14px, 1vw);
+            position: relative;
+        }
+        .junk-param {
+            transition: opacity 0.3s ease;
+            user-select: none;
+        }
+        .target-param {
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+            cursor: pointer;
+            position: relative;
+            z-index: 100;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(255,255,255,0.8);
+            transition: all 0.8s cubic-bezier(0.8, 0, 0.2, 1);
+        }
+        .target-param:hover { background: rgba(255,255,255,0.3); }
+
+        .ripple-effect {
+            position: fixed;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(139, 92, 246, 0.5) 50%, rgba(0,0,0,0) 100%);
+            transform: translate(-50%, -50%) scale(0);
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 1;
         }
 
-        /* ===== BENTO GRID ===== */
-        .bento {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1.5rem;
+        /* --- HEADER --- */
+        header {
+            position: sticky; top: 0; left: 0; width: 100%;
+            z-index: 100;
+            padding: 2rem 5%;
+            background: linear-gradient(to bottom, rgba(5,6,8,0.95) 0%, rgba(5,6,8,0) 100%);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-bottom: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .header-content {
+            max-width: 1400px; margin: 0 auto;
+        }
+        h1.name {
+            font-size: 2.5rem; color: #fff; margin-bottom: 0.5rem;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .typing-container {
+            font-size: 1.1rem; color: var(--text-main); margin-bottom: 1rem;
+            display: inline-block; white-space: nowrap; overflow: hidden;
+            border-right: 2px solid var(--accent-neon);
+            animation: blink 0.75s step-end infinite;
+        }
+        .subtitle {
+            font-family: var(--font-mono); font-size: 0.8rem;
+            color: var(--text-muted); font-style: italic; opacity: 0.7;
+        }
+        
+        @keyframes blink { 50% { border-color: transparent } }
+
+        /* --- BENTO GRID LAYOUT --- */
+        main {
+            padding: 2rem 5% 6rem;
             max-width: 1400px;
             margin: 0 auto;
-            padding: 0 1rem 3rem 1rem;
+            position: relative;
+            z-index: 10;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-auto-rows: minmax(150px, auto);
+            gap: 20px;
         }
 
-        .panel {
-            background: linear-gradient(135deg, var(--panel-charcoal), #0b0c10);
-            border: 1px solid var(--border-metal);
-            border-radius: 8px;
-            padding: 1.5rem;
+        /* Glassmorphism Card System */
+        .bento-box {
+            background: var(--bg-glass);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: 24px;
+            padding: 24px;
+            display: flex; flex-direction: column;
             position: relative;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
-            transition: border-color 0.3s ease;
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.4s ease, box-shadow 0.4s ease;
         }
+        .bento-box:hover {
+            transform: translateY(-4px) scale(1.01);
+            border-color: rgba(139, 92, 246, 0.5); /* Neon flare default */
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 20px rgba(139, 92, 246, 0.15);
+            z-index: 2;
+        }
+        .box-title { font-size: 1.5rem; margin-bottom: 0.5rem; color: #fff; z-index: 1; }
+        .box-desc { font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; z-index: 1; flex-grow: 1; }
+        
+        /* Buttons / CTAs */
+        .bento-cta {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            margin-top: 1rem; padding: 10px 16px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; color: #fff; font-size: 0.9rem; font-weight: 500;
+            transition: all 0.2s ease; width: fit-content; z-index: 1;
+        }
+        .bento-cta:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); }
 
-        .panel:hover {
-            border-color: var(--accent-cyan);
-        }
-
-        /* Ambient Backgrounds */
-        .bg-anim {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            opacity: 0.08;
-            pointer-events: none;
-        }
-
-        .panel-content {
-            position: relative;
-            z-index: 1;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 0.5rem;
-        }
-
-        .panel-title {
-            font-family: var(--font-mono);
-            color: var(--text-main);
-            font-size: 0.9rem;
-            font-weight: 700;
-        }
-
-        .status-indicators {
-            display: flex;
-            gap: 5px;
-        }
-
-        .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: #333;
-        }
-        .dot.g { background-color: var(--accent-green); box-shadow: 0 0 5px var(--accent-green); }
-        .dot.r { background-color: var(--accent-red); box-shadow: 0 0 5px var(--accent-red); }
-        .dot.a { background-color: var(--accent-amber); box-shadow: 0 0 5px var(--accent-amber); }
-
-        .panel p {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            margin-bottom: 1.5rem;
-            flex-grow: 1;
-        }
-
-        /* Buttons & Actions */
-        .action-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-
-        .btn {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--accent-cyan);
-            text-decoration: none;
-            background: rgba(0, 243, 255, 0.05);
-            border: 1px solid var(--accent-cyan);
-            padding: 0.5rem 0.75rem;
-            text-transform: uppercase;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-        }
-
-        .btn:hover {
-            background: var(--accent-cyan);
-            color: var(--bg-void);
-            box-shadow: 0 0 10px rgba(0, 243, 255, 0.4);
-        }
-
-        /* Hardware Toggle Switch Style (For Panel 8) */
-        .btn-switch {
-            background: #1a1c23;
-            color: var(--text-main);
-            border: 2px solid #2a2d39;
-            border-bottom: 4px solid #0a0b10;
-            padding: 0.75rem 1rem;
-            font-weight: bold;
-            border-radius: 4px;
-            position: relative;
-            transform: translateY(0);
-        }
-        .btn-switch:hover {
-            background: #232630;
-            border-color: var(--accent-amber);
-            color: var(--accent-amber);
-            box-shadow: none;
-            border-bottom: 4px solid #111;
-        }
-        .btn-switch:active {
-            transform: translateY(2px);
-            border-bottom: 2px solid #0a0b10;
-        }
-
-        /* Panel Specifics & Grid Spans */
-        .p1 { grid-column: span 2; }
-        .p2 { grid-column: span 2; }
-        .p3 { grid-column: span 1; }
-        .p4 { grid-column: span 2; }
-        .p5 { grid-column: span 1; }
-        .p6 { grid-column: span 2; }
-        .p7 { grid-column: span 1; }
-        .p8 { grid-column: span 1; }
+        /* Grid specific assignments */
+        .box-glgl { grid-column: span 8; grid-row: span 2; }
+        .box-ahuzat { grid-column: span 4; grid-row: span 2; }
+        .box-2d { grid-column: span 4; grid-row: span 2; }
+        .box-jest { grid-column: span 8; grid-row: span 2; }
+        .box-rhymes { grid-column: span 5; grid-row: span 2; }
+        .box-hatul { grid-column: span 4; grid-row: span 2; }
+        .box-meta { grid-column: span 3; grid-row: span 2; }
+        .box-social { grid-column: span 12; grid-row: span 1; flex-direction: row; justify-content: center; align-items: center; gap: 4rem; }
 
         @media (max-width: 1024px) {
-            .bento { grid-template-columns: repeat(2, 1fr); }
-            .p1, .p2, .p4, .p6 { grid-column: span 2; }
-            .p3, .p5, .p7, .p8 { grid-column: span 1; }
+            .box-glgl, .box-jest { grid-column: span 12; }
+            .box-ahuzat, .box-2d, .box-rhymes, .box-hatul { grid-column: span 6; }
+            .box-meta, .box-social { grid-column: span 12; }
+            .box-social { gap: 2rem; }
         }
-
         @media (max-width: 768px) {
-            .bento { grid-template-columns: 1fr; }
-            .panel { grid-column: span 1 !important; }
-            h1 { font-size: 2.2rem; }
-            .action-group { flex-direction: column; }
-            .btn { text-align: center; justify-content: center; }
+            .bento-grid { display: flex; flex-direction: column; }
+            .box-social { gap: 1.5rem; padding: 2rem; }
         }
 
-        /* ===== SPECIFIC BACKGROUND ANIMATIONS ===== */
+        /* --- SPECIFIC BOX STYLING --- */
+        /* 1. GlglStats */
+        .bg-audio {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; opacity: 0.15;
+            background: repeating-linear-gradient(90deg, transparent, transparent 10px, var(--accent-neon) 10px, var(--accent-neon) 20px);
+            mask-image: linear-gradient(to top, black, transparent); -webkit-mask-image: linear-gradient(to top, black, transparent);
+        }
+        .glgl-content { display: flex; gap: 1.5rem; margin-top: 1rem; align-items: stretch; z-index: 1; flex-wrap: wrap; }
+        .yt-embed {
+            flex: 1; min-width: 250px; background: url('https://img.youtube.com/vi/jrKAtOsj1Lo/maxresdefault.jpg') center/cover;
+            border-radius: 12px; position: relative; border: 1px solid rgba(255,255,255,0.1); overflow: hidden;
+            min-height: 150px; display: flex; align-items: center; justify-content: center;
+        }
+        .yt-embed::after { content: '▶'; font-size: 2rem; color: #fff; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 12px; }
+
+        /* 2. Ahuzat Dibuk */
+        .box-ahuzat:hover { border-color: rgba(255, 69, 58, 0.5); }
+        .bg-heatmap {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; filter: blur(30px); opacity: 0.2; pointer-events: none;
+            background: radial-gradient(circle at 80% 20%, red 0%, transparent 40%), radial-gradient(circle at 20% 80%, orange 0%, transparent 40%);
+        }
+        .media-links { display: flex; gap: 1rem; margin-top: auto; padding-top: 1rem; z-index: 1; }
+        .media-icon {
+            width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: #fff;
+        }
+        .media-icon:hover { background: rgba(255,255,255,0.15); transform: translateY(-2px); }
+
+        /* 3. 2D Part Orienting */
+        .box-2d:hover { border-color: rgba(56, 189, 248, 0.5); }
+        .bg-wireframe {
+            position: absolute; right: -20px; bottom: -20px; width: 150px; height: 150px;
+            border: 2px dashed rgba(56, 189, 248, 0.2); border-radius: 20%;
+            animation: rotateGeom 20s linear infinite; pointer-events: none;
+        }
+        @keyframes rotateGeom { 100% { transform: rotate(360deg); } }
+
+        /* 4. The Turing Jest */
+        .box-jest { background: linear-gradient(135deg, rgba(20,20,30,0.8), rgba(20,20,30,0.8)), repeating-linear-gradient(45deg, rgba(255,0,0,0.03) 0px, transparent 1px, transparent 20px, rgba(0,100,255,0.03) 21px, transparent 40px); }
+        .box-jest:hover { border-color: rgba(239, 68, 68, 0.5); box-shadow: -10px 0 20px rgba(255,0,0,0.1), 10px 0 20px rgba(0,0,255,0.1); }
+        .arena-badge { background: #ef4444; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold;text-transform: uppercase; margin-left: 10px; vertical-align: middle;}
+
+        /* 5. Rhymes of Israel */
+        .bg-news {
+            position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; opacity: 0.05;
+            background-image: repeating-linear-gradient(0deg, #fff, #fff 1px, transparent 1px, transparent 10px);
+            clip-path: polygon(0 0, 100% 0, 100% 90%, 95% 95%, 90% 90%, 85% 95%, 80% 90%, 75% 95%, 0 100%);
+        }
         
-        /* P1: Waveform / Compression Blocks */
-        .bg-waveform { display: flex; align-items: flex-end; justify-content: space-around; padding: 10%; opacity: 0.15;}
-        .wv-bar { width: calc(100% / 15); background: var(--accent-cyan); animation: equalize 1s infinite alternate ease-in-out; }
-        @keyframes equalize { 0% { height: 10%; } 100% { height: 100%; } }
-        
-        /* P2: Thermal Heatmap */
-        .bg-thermal {
-            background: radial-gradient(circle at 30% 70%, rgba(255, 51, 51, 0.8) 0%, transparent 40%),
-                        radial-gradient(circle at 70% 30%, rgba(255, 159, 28, 0.6) 0%, transparent 50%),
-                        radial-gradient(circle at 50% 50%, rgba(0, 243, 255, 0.4) 0%, transparent 60%);
-            filter: blur(20px);
-            opacity: 0.2;
-            animation: shiftHeat 10s ease-in-out infinite alternate;
+        /* 6. Hatul Basak */
+        .box-hatul:hover { border-color: rgba(250, 204, 21, 0.5); }
+        .bg-cat {
+            position: absolute; bottom: 10px; right: 10px; width: 80px; height: 80px; opacity: 0.1;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 9c-2.3 0-4 1.5-4 1.5C6.5 11 5 12 5 13c0 2.5 1 4 3 6 1 1 2.5 1.5 4 1.5s3-.5 4-1.5c2-2 3-3.5 3-6 0-1-1.5-2.5-3-2.5 0 0-1.7-1.5-4-1.5z'/%3E%3Cpath d='M7 4l1 4M17 4l-1 4' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center;
         }
-        @keyframes shiftHeat { 0% { transform: scale(1) translate(0,0); } 100% { transform: scale(1.2) translate(10%, -10%); } }
 
-        /* P3: 2D Orient Wireframe */
-        .bg-orient { display: flex; align-items: center; justify-content: center; opacity: 0.2; }
-        .wireframe-poly {
-            width: 150px; height: 150px;
-            border: 2px dashed var(--text-main);
-            clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
-            animation: rotatePoly 20s linear infinite;
+        /* 7. The Meta Box */
+        .box-meta {
+            background: none;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), inset 0 0 0 10px rgba(0,0,0,0.3), inset 0 0 0 11px rgba(255,255,255,0.06), inset 0 0 0 20px rgba(0,0,0,0.5), inset 0 0 0 21px rgba(255,255,255,0.04);
+            border: none;
         }
-        @keyframes rotatePoly { 100% { transform: rotate(360deg); } }
-
-        /* P4: Turing Jest Streams */
-        .bg-streams { display: flex; justify-content: space-between; overflow: hidden; opacity: 0.1; font-family: var(--font-mono); font-size: 2rem; color: var(--accent-amber); word-break: break-all; line-height: 1; }
-        .stream-col { width: 45%; max-height: 150%; animation: scrollStream 5s linear infinite; }
-        .stream-col:nth-child(2) { animation-direction: reverse; animation-duration: 7s;}
-        @keyframes scrollStream { 0% { transform: translateY(-50%); } 100% { transform: translateY(0); } }
-
-        /* P5: Rhymes Matrix */
-        .bg-matrix { font-family: monospace; color: var(--accent-green); opacity: 0.15; font-size: 1.5rem; word-break: break-all; overflow: hidden; white-space: pre-wrap; text-align: justify; }
-
-        /* P6: Hatul Basak Node Graph */
-        .bg-nodes { position: relative; opacity: 0.2; }
-        .node-line { position: absolute; background: var(--text-main); transform-origin: top left; }
-        .n-dot { position: absolute; width: 6px; height: 6px; background: var(--accent-cyan); border-radius: 50%; box-shadow: 0 0 10px var(--accent-cyan); }
-
-        /* P7: Recursion Mirror */
-        .bg-recursion { display: flex; align-items: center; justify-content: center; overflow: hidden; opacity: 0.15;}
-        .box-inf {
-            width: 50px; height: 50px; border: 2px solid var(--accent-cyan);
-            animation: infScale 4s infinite cubic-bezier(0.5, 0, 0.5, 1);
+        .box-meta:hover {
+            box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.8), inset 0 0 0 10px rgba(0,0,0,0.3), inset 0 0 0 11px rgba(139, 92, 246, 0.4), inset 0 0 0 20px rgba(0,0,0,0.5), inset 0 0 0 21px rgba(139, 92, 246, 0.2);
         }
-        .box-inf:nth-child(2) { animation-delay: 1s; }
-        .box-inf:nth-child(3) { animation-delay: 2s; }
-        @keyframes infScale { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(10); opacity: 0; border-width: 1px; } }
+        .meta-btn { border-color: rgba(139, 92, 246, 0.8); background: rgba(139, 92, 246, 0.1); color: #fff; text-shadow: 0 0 8px rgba(139, 92, 246, 1); box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
 
-        /* P8: Radar Array */
-        .bg-radar { 
-            background: radial-gradient(circle, rgba(57,255,20,0.1) 0%, transparent 70%);
-            display: flex; align-items: center; justify-content: center; opacity: 0.2;
-        }
-        .radar-sweep {
-            position: absolute; width: 200px; height: 200px;
-            border-radius: 50%; border: 1px solid var(--accent-green);
-            background: conic-gradient(from 0deg, rgba(57,255,20,0) 70%, rgba(57,255,20,0.4) 100%);
-            animation: radarSpin 4s linear infinite;
-        }
-        @keyframes radarSpin { 100% { transform: rotate(360deg); } }
+        /* 8. Social Connectivity */
+        .social-link { color: rgba(255,255,255,0.5); transition: all 0.3s; display: inline-block; }
+        .social-link svg { width: 50px; height: 50px; fill: currentColor; }
+        .social-link:hover { transform: scale(1.1) translateY(-4px); }
+        .social-link.github:hover { color: #fff; filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
+        .social-link.linkedin:hover { color: #0a66c2; filter: drop-shadow(0 0 10px rgba(10,102,194,0.5)); }
+        .social-link.facebook:hover { color: #0866ff; filter: drop-shadow(0 0 10px rgba(8,102,255,0.5)); }
 
 
-        /* ===== FOOTER / TELEMETRY STATUS ===== */
+        /* --- FOOTER --- */
         footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100vw;
-            background: #090a0f;
-            border-top: 1px solid var(--border-metal);
+            border-top: 1px solid var(--border-glass);
+            padding: 1.5rem 5%;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-muted);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.5rem 2rem;
-            font-family: var(--font-mono);
-            z-index: 100;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            position: relative;
+            z-index: 10;
         }
+        .footer-left { flex: 1; min-width: 300px; }
+        .footer-right { color: var(--accent-neon); font-weight: bold; text-shadow: 0 0 8px rgba(139, 92, 246, 0.3); }
 
-        .footer-left {
-            color: var(--text-muted);
-            font-size: 0.75rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .footer-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .clock-label {
-            color: var(--text-muted);
-            font-size: 0.8rem;
-        }
-
-        .digital-clock {
-            color: var(--accent-red);
-            font-size: 1.2rem;
-            font-weight: 800;
-            font-style: italic;
-            text-shadow: 0 0 8px rgba(255, 51, 51, 0.8);
-            letter-spacing: 2px;
-        }
-
+        /* Typography Icon utility */
+        .icon { width: 16px; height: 16px; fill: currentColor; }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <!-- CRT Overlay -->
-    <div class="scanlines"></div>
-    <div class="nav-grid"></div>
+    <!-- Fluid Background Layers -->
+    <div class="ambient-bg">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="ambient-noise"></div>
+    </div>
 
-    <header>
-        <div class="command-panel">
-            <div class="header-id">COMMANDER_STATUS_ID :: 4A-98-T</div>
-            <h1>Geva Kipper</h1>
-            <div class="terminal-output">
-                <span id="typed-text"></span><span class="cursor"></span>
-            </div>
+    <!-- INITIAL STATE: The Gate -->
+    <div id="gate">
+        <div class="gate-header">HTTP 414: URI TOO LONG</div>
+        <div class="matrix-container" id="matrix-box">
+            <!-- Junk generated by JS -->
         </div>
-        <div class="caution-bar">
-            <div class="caution-text">
-                SYSTEM OVERRIDE: Warning. This terminal UI is completely re-designed each solar day by AI algorithms. Expect shifting telemetry and layout parameters.
-            </div>
+    </div>
+
+    <!-- MAIN PORTFOLIO -->
+    <header>
+        <div class="header-content">
+            <h1 class="name">Geva Kipper</h1>
+            <div id="typewriter" class="typing-container">Software Engineer currently building infrastructure at Google.</div>
+            <div class="subtitle">Notice: This website's design is regenerated daily by AI. Current state: Ephemeral.</div>
         </div>
     </header>
 
-    <main class="bento">
+    <main>
+        <div class="bento-grid">
+            
+            <!-- Box 1: GlglStats -->
+            <article class="bento-box box-glgl">
+                <div class="bg-audio"></div>
+                <h2 class="box-title">GlglStats</h2>
+                <p class="box-desc">Analyzed over a decade of Israeli pop charts using Python. Developed custom implementations of LZ77 data compression algorithms to find deep structural patterns within music lyrics entirely visually.</p>
+                <div class="glgl-content">
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="yt-embed" title="Watch PyData TLV Presentation"></a>
+                    <div style="display:flex; flex-direction: column; justify-content: flex-end;">
+                        <a href="https://glglstats.geekip.dev" target="_blank" class="bento-cta">
+                            Explore Data App
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.41l-9.59 9.59-1.41-1.41L17.59 5H14V3zM5 5h4V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4h-2v4H5V5z"/></svg>
+                        </a>
+                    </div>
+                </div>
+            </article>
 
-        <!-- Panel 1: GlglStats -->
-        <article class="panel p1">
-            <div class="bg-anim bg-waveform" id="wv-container"></div>
-            <div class="panel-content">
-                <div class="panel-header">
-                    <span class="panel-title">MISSION_01: GLGL-STATS [LZ77-PROTOCOL]</span>
-                    <div class="status-indicators"><span class="dot g"></span><span class="dot g"></span></div>
+            <!-- Box 2: Ahuzat Dibuk -->
+            <article class="bento-box box-ahuzat">
+                <div class="bg-heatmap"></div>
+                <h2 class="box-title">Ahuzat Dibuk</h2>
+                <p class="box-desc">Reverse-engineered APIs to scrape live Tel-Aviv parking data. Created high-clarity geographic heatmaps proving municipal parking deficits. The viral visualization was picked up and broadcasted by major national news networks.</p>
+                <div class="media-links">
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="media-icon" title="Channel 13 News">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12zm-5-6l-7 4V7z"/></svg>
+                    </a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="media-icon" title="Mako News">
+                        <span style="font-weight:900; font-family:sans-serif;">M</span>
+                    </a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="media-icon" title="Secret Tel Aviv">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"/></svg>
+                    </a>
                 </div>
-                <p>Telemetry indicates a Python-engineered architecture designed to measure the structural repetitiveness of Israeli pop-chart compositions. The payload utilizes LZ77 compression algorithms coupled with advanced pattern visualization systems.</p>
-                <div class="action-group">
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="btn">[ACCESS TELEMETRY: glglstats.geekip.dev]</a>
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn">[VISUAL LOG: PyData TLV Video]</a>
-                </div>
-            </div>
-        </article>
+            </article>
 
-        <!-- Panel 2: Ahuzat Dibuk -->
-        <article class="panel p2">
-            <div class="bg-anim bg-thermal"></div>
-            <div class="panel-content">
-                <div class="panel-header">
-                    <span class="panel-title">MISSION_02: AHUZAT DIBUK [PARKING_MATRIX]</span>
-                    <div class="status-indicators"><span class="dot a"></span><span class="dot g"></span></div>
-                </div>
-                <p>A continuous Python scraping and data visualization operation charting Tel-Aviv parking lot occupancy levels. Operational goal: Provide critical vehicular infrastructure intelligence for local residents.</p>
-                <div class="header-id" style="margin-bottom: 5px; color: var(--accent-amber);">INTERCEPTED BROADCASTS:</div>
-                <div class="action-group">
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="btn">[NEWS_FEED_13TV]</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="btn">[NEWS_FEED_MAKO]</a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="btn">[ARCHIVE_NODE: Facebook]</a>
-                </div>
-            </div>
-        </article>
+            <!-- Box 3: 2D Part Orienting -->
+            <article class="bento-box box-2d">
+                <div class="bg-wireframe"></div>
+                <h2 class="box-title">2D Part Orienting</h2>
+                <p class="box-desc">Computational Geometry research project. Implemented complex C++ push-plan algorithms to predict and simulate the geometric behavior of rotating polygons encountering invisible forces.</p>
+                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="bento-cta">
+                    View TAU Research
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.41l-9.59 9.59-1.41-1.41L17.59 5H14V3zM5 5h4V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4h-2v4H5V5z"/></svg>
+                </a>
+            </article>
 
-        <!-- Panel 3: 2D Part Orienting -->
-        <article class="panel p3">
-            <div class="bg-anim bg-orient"><div class="wireframe-poly"></div></div>
-            <div class="panel-content">
-                <div class="panel-header">
-                    <span class="panel-title">MISSION_03: 2D-ORIENT</span>
-                    <div class="status-indicators"><span class="dot g"></span></div>
+            <!-- Box 4: The Turing Jest -->
+            <article class="bento-box box-jest">
+                <h2 class="box-title">The Turing Jest <span class="arena-badge">Arena</span></h2>
+                <p class="box-desc">An interactive, LMSYS-style battle arena pitting state-of-the-art Large Language Models against each other in a rigorous, high-stakes pun competition. Users vote blind on the objectively funniest model outputs.</p>
+                <div style="margin-top:auto;">
+                    <a href="https://jest.geekip.dev" target="_blank" class="bento-cta" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.4);">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Enter Arena
+                    </a>
                 </div>
-                <p>C++ open-source computational geometry implementation. Architected to construct optimized push plans for rigid polygon part orientation along automated arrays.</p>
-                <div class="action-group">
-                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn">[ACCESS BLUEPRINTS]</a>
-                </div>
-            </div>
-        </article>
+            </article>
 
-        <!-- Panel 4: The Turing Jest -->
-        <article class="panel p4">
-            <div class="bg-anim bg-streams">
-                <div class="stream-col">0101TURING01<br>JEST101101<br>ARENA010<br>LLM010111</div>
-                <div class="stream-col">HUMAN00110<br>DETECTED01<br>OVERRIDE01<br>PUNS110001</div>
-            </div>
-            <div class="panel-content">
-                <div class="panel-header">
-                    <span class="panel-title">MISSION_04: TURING JEST [ARENA]</span>
-                    <div class="status-indicators"><span class="dot r"></span><span class="dot a"></span></div>
-                </div>
-                <p>An LMSYS-style adversarial battleground. Sector parameters: LLMs openly compete across syntax variables to synthesize and contextualize humor (puns), continuously evaluated by biological human operators.</p>
-                <div class="action-group">
-                    <a href="https://jest.geekip.dev" target="_blank" class="btn">[ENTER ARENA: jest.geekip.dev]</a>
-                </div>
-            </div>
-        </article>
+            <!-- Box 5: Rhymes of Israel -->
+            <article class="bento-box box-rhymes">
+                <div class="bg-news"></div>
+                <h2 class="box-title">Rhymes of Israel</h2>
+                <p class="box-desc">A satirical Chrome Extension leveraging on-device LLM capabilities to seamlessly intercept incoming local news headlines and rewrite them into rhyming couplets, reminiscent of high-school yearbooks.</p>
+                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="bento-cta">
+                    Chrome Web Store
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.41l-9.59 9.59-1.41-1.41L17.59 5H14V3zM5 5h4V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4h-2v4H5V5z"/></svg>
+                </a>
+            </article>
 
-        <!-- Panel 5: Rhymes of Israel -->
-        <article class="panel p5">
-            <div class="bg-anim bg-matrix" id="matrix-container">
-            </div>
-            <div class="panel-content">
-                <div class="panel-header">
-                    <span class="panel-title">MISSION_05: RHYMES</span>
-                    <div class="status-indicators"><span class="dot g"></span></div>
-                </div>
-                <p>Chrome architecture [YEARBOOK_PROBE]. Employs autonomous LLM subroutines to intercept and rewrite bleak localized news headlines into comedic, highschool-yearbook formatted prose.</p>
-                <div class="action-group">
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn">[INSTALL PAYLOAD]</a>
-                </div>
-            </div>
-        </article>
+            <!-- Box 6: Hatul Basak -->
+            <article class="bento-box box-hatul">
+                <div class="bg-cat"></div>
+                <h2 class="box-title">Hatul Basak</h2>
+                <p class="box-desc">The premier Hebrew port of the popular catfishing trivia format. Generates challenging, daily AI algorithmic puzzles wrapped in cultural abstractions and localization trivia.</p>
+                <a href="https://hatulbasak.geekip.dev" target="_blank" class="bento-cta">Play Game / Create Puzzle</a>
+            </article>
 
-        <!-- Panel 6: Hatul Basak -->
-        <article class="panel p6">
-            <div class="bg-anim bg-nodes" id="node-container"></div>
-            <div class="panel-content">
-                <div class="panel-header">
-                    <span class="panel-title">MISSION_06: HATUL BASAK [WIKI_TRIVIA]</span>
-                    <div class="status-indicators"><span class="dot g"></span><span class="dot g"></span><span class="dot g"></span></div>
-                </div>
-                <p>Localized Hebrew deployment of catfishing.net protocols. Integrates AI-generated daily navigation challenges and enables global civilian node creation of themed Wikipedia link-jump puzzles.</p>
-                <div class="action-group">
-                    <a href="https://hatulbasak.geekip.dev" target="_blank" class="btn">[INITIATE GAME & PUZZLE CREATOR]</a>
-                </div>
-            </div>
-        </article>
+            <!-- Box 7: The Meta Box -->
+            <article class="bento-box box-meta">
+                <h2 class="box-title">Recursion</h2>
+                <p class="box-desc">This very portfolio. A self-referential exercise in programmatic UI generation, spatial constraints, and transient web architecture.</p>
+                <a href="https://geekip.dev" class="bento-cta meta-btn">Origin.loop()</a>
+            </article>
 
-        <!-- Panel 7: Meta Portfolio -->
-        <article class="panel p7">
-            <div class="bg-anim bg-recursion">
-                <div class="box-inf" style="position:absolute;"></div>
-                <div class="box-inf" style="position:absolute;"></div>
-                <div class="box-inf" style="position:absolute;"></div>
-            </div>
-            <div class="panel-content">
-                <div class="panel-header">
-                    <span class="panel-title">MISSION_07: RECURSION_LOOP</span>
-                    <div class="status-indicators"><span class="dot a"></span></div>
-                </div>
-                <p>WARNING: Temporal paradox detected. This structural directory houses the precise portfolio terminal architecture the current operator is traversing.</p>
-                <div class="action-group">
-                    <a href="https://geekip.dev" target="_blank" class="btn">[SELF_REFERENCE: geekip.dev]</a>
-                </div>
-            </div>
-        </article>
+            <!-- Box 8: Social Connectivity -->
+            <article class="bento-box box-social">
+                <a href="https://github.com/gevak" target="_blank" class="social-link github" aria-label="GitHub">
+                    <svg viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                </a>
+                <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-link linkedin" aria-label="LinkedIn">
+                    <svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                </a>
+                <a href="https://facebook.com/geva.kipper" target="_blank" class="social-link facebook" aria-label="Facebook">
+                    <svg viewBox="0 0 24 24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>
+                </a>
+            </article>
 
-        <!-- Panel 8: Communications Array -->
-        <article class="panel p8">
-            <div class="bg-anim bg-radar"><div class="radar-sweep"></div></div>
-            <div class="panel-content">
-                <div class="panel-header">
-                    <span class="panel-title">EXTERNAL_COMMUNICATIONS</span>
-                    <div class="status-indicators"><span class="dot g"></span></div>
-                </div>
-                <p style="margin-bottom: 0.5rem;">Hardware transceiver switches online. Select channel to open external datalink.</p>
-                <div class="action-group" style="flex-direction: column; gap: 10px;">
-                    <a href="https://github.com/gevak" target="_blank" class="btn btn-switch">[COMM_01: GITHUB]</a>
-                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="btn btn-switch">[COMM_02: LINKEDIN]</a>
-                    <a href="https://facebook.com/geva.kipper" target="_blank" class="btn btn-switch">[COMM_03: FACEBOOK]</a>
-                </div>
-            </div>
-        </article>
-
+        </div>
     </main>
 
     <footer>
         <div class="footer-left">
-            <span class="dot a" style="animation: blink 2s infinite;"></span>
-            SYSTEM ARCHITECT: Structured and Generated by Autonomous AI Model
+            System Architecture & Design generated by Gemini, actualized by Geva Kipper.
         </div>
-        <div class="footer-right">
-            <span class="clock-label">T-PLUS [MISSION DURATION]:</span>
-            <span class="digital-clock" id="t-plus-clock">00:00:00</span>
+        <div class="footer-right" id="clock">
+            Δ 00:00:00:00
         </div>
     </footer>
 
     <script>
-        // --- 1. Terminal Typing Effect ---
-        const text = "Current Assignment: Executing software engineering operations at Google.";
-        let i = 0;
-        const typingSpeed = 40;
-        const typedContainer = document.getElementById("typed-text");
+        // --- 414 PUZZLE LOGIC ("The Gate") ---
+        const gate = document.getElementById('gate');
+        const matrixBox = document.getElementById('matrix-box');
+        
+        // Generate Junk Parameters
+        const junkWords = ["utm_nonsense=", "bloat_factor=99", "tracker_id=null", "payload=heavy", "redirect=loop", "cache_fail=true", "token=invalid", "session=expired", "mem_leak=", "stack_overflow="];
+        let matrixHTML = '';
+        
+        // Target is placed randomly around the middle
+        const totalItems = 500;
+        const targetIndex = Math.floor(Math.random() * 100) + 200; 
+        
+        for(let i = 0; i < totalItems; i++) {
+            if (i === targetIndex) {
+                matrixHTML += `<span class="target-param" id="unlock-btn">&unlock_portfolio=true</span> `;
+            } else {
+                const randomJunk = junkWords[Math.floor(Math.random() * junkWords.length)] + Math.floor(Math.random() * 9999);
+                matrixHTML += `<span class="junk-param">&${randomJunk}</span> `;
+            }
+        }
+        matrixBox.innerHTML = matrixHTML;
+
+        // Interaction: Wipe away junk on mousemove
+        matrixBox.addEventListener('mousemove', (e) => {
+            if (e.target.classList.contains('junk-param')) {
+                e.target.style.opacity = '0';
+            }
+        });
+
+        // Clear junk entirely on touch devices by tapping around
+        matrixBox.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (element && element.classList.contains('junk-param')) {
+                element.style.opacity = '0';
+            }
+        });
+
+        // Click Logic
+        document.getElementById('unlock-btn').addEventListener('click', function(e) {
+            const btn = this;
+            
+            // Hide all remaining junk instantly
+            document.querySelectorAll('.junk-param').forEach(el => el.style.opacity = '0');
+            
+            // Get current absolute position of the button
+            const rect = btn.getBoundingClientRect();
+            
+            // Re-anchor absolute to viewport
+            btn.style.position = 'fixed';
+            btn.style.left = rect.left + 'px';
+            btn.style.top = rect.top + 'px';
+            btn.style.zIndex = '10000';
+            
+            // Request animation frame to ensure fixed positioning applies before transform
+            requestAnimationFrame(() => {
+                // Shrink and move to center
+                btn.style.left = '50%';
+                btn.style.top = '50%';
+                btn.style.transform = 'translate(-50%, -50%) scale(0.1)';
+                btn.style.textShadow = '0 0 50px #fff';
+                btn.style.color = 'transparent';
+                btn.style.background = '#fff';
+                btn.style.borderRadius = '50%';
+                
+                setTimeout(() => {
+                    // Create Ripple
+                    const ripple = document.createElement('div');
+                    ripple.className = 'ripple-effect';
+                    
+                    // Force ripple to cover max screen dimension
+                    const maxDim = Math.max(window.innerWidth, window.innerHeight) * 2.5;
+                    ripple.style.width = maxDim + 'px';
+                    ripple.style.height = maxDim + 'px';
+                    ripple.style.left = '50%';
+                    ripple.style.top = '50%';
+                    
+                    document.body.appendChild(ripple);
+                    
+                    // Animate ripple
+                    ripple.animate([
+                        { transform: 'translate(-50%, -50%) scale(0)', opacity: 1 },
+                        { transform: 'translate(-50%, -50%) scale(1)', opacity: 0 }
+                    ], {
+                        duration: 1200,
+                        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)'
+                    });
+
+                    // Fade out the gate overlay
+                    gate.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        gate.remove();
+                        ripple.remove();
+                        btn.remove();
+                        document.body.style.overflow = 'auto'; // Unlock scroll
+                    }, 1000);
+
+                }, 800); // Time for center collapse
+            });
+        });
+
+
+        // --- HEADER TYPING ANIMATION ---
+        const typeContainer = document.getElementById('typewriter');
+        const textToType = "Software Engineer currently building Core Systems at Google.";
+        typeContainer.innerHTML = '';
+        let charIndex = 0;
         
         function typeWriter() {
-            if (i < text.length) {
-                typedContainer.innerHTML += text.charAt(i);
-                i++;
-                setTimeout(typeWriter, typingSpeed);
+            if (charIndex < textToType.length) {
+                typeContainer.innerHTML += textToType.charAt(charIndex);
+                charIndex++;
+                setTimeout(typeWriter, 50 + Math.random() * 50); // slight random delay for realism
             }
         }
-        setTimeout(typeWriter, 1000); // initial delay
+        // Start typing after initial load/puzzle (we can just start it delayed, or bind it to unlock)
+        setTimeout(typeWriter, 2000);
 
-        // --- 2. Live Elapsed T-PLUS Clock ---
-        // Target Date: 2026-04-13 02:03:28 
-        // Note: Using absolute difference ensures visual T-PLUS format showing exact elapsed/remaining structural time.
-        const targetDate = new Date("2026-04-13T02:03:28Z").getTime();
-        const clockUI = document.getElementById("t-plus-clock");
 
-        function updateClock() {
+        // --- FOOTER PARADOX STOPWATCH ---
+        const clockDisplay = document.getElementById('clock');
+        const targetDate = new Date('2026-04-14T01:57:49Z').getTime();
+
+        setInterval(() => {
             const now = new Date().getTime();
-            const diffMs = Math.abs(now - targetDate);
+            // Temporal paradox: absolute difference mathematically ticks up
+            const diff = Math.abs(targetDate - now);
             
-            // Calculate total elapsed logic 
-            const totalSeconds = Math.floor(diffMs / 1000);
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-
-            const pad = (num) => String(num).padStart(2, '0');
-            // Formats to HH:MM:SS (hours can exceed 24 intentionally for space-flight aesthetic)
-            clockUI.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-        }
-        setInterval(updateClock, 1000);
-        updateClock(); // Initial paint
-
-        // --- 3. Generative UI Flourishes (Backgrounds) ---
-        
-        // Populate P1 Waveforms
-        const wvContainer = document.getElementById("wv-container");
-        for(let j=0; j<8; j++) {
-            let bar = document.createElement('div');
-            bar.className = 'wv-bar';
-            bar.style.animationDelay = `${Math.random() * -2}s`;
-            bar.style.animationDuration = `${0.5 + Math.random()}s`;
-            wvContainer.appendChild(bar);
-        }
-
-        // Populate P5 Matrix Hebrew
-        const matrixContainer = document.getElementById("matrix-container");
-        const chars = "אבגדהוזחטיכלמנסעפצקרשת";
-        let matrixText = "";
-        for(let j=0; j<200; j++) {
-            matrixText += chars.charAt(Math.floor(Math.random() * chars.length)) + (Math.random() > 0.8 ? " \n " : " ");
-        }
-        matrixContainer.textContent = matrixText;
-
-        // Populate P6 Node Graph (Visual Only)
-        const nodeContainer = document.getElementById('node-container');
-        for(let j=0; j<5; j++) {
-            let dot = document.createElement('div');
-            dot.className = 'n-dot';
-            dot.style.top = `${20 + Math.random() * 60}%`;
-            dot.style.left = `${20 + Math.random() * 60}%`;
-            nodeContainer.appendChild(dot);
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
             
-            if(j > 0) {
-                let line = document.createElement('div');
-                line.className = 'node-line';
-                line.style.height = '1px';
-                line.style.width = '50px';
-                line.style.top = dot.style.top;
-                line.style.left = dot.style.left;
-                line.style.transform = `rotate(${Math.random() * 360}deg)`;
-                nodeContainer.appendChild(line);
-            }
-        }
+            clockDisplay.innerText = `Δ +${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
 
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260413",
+          pageId: "20260414",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
