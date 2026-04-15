@@ -2,601 +2,667 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | Software Engineer</title>
+    <title>Geva Kipper | Underwater Descent Mission</title>
     <style>
-        /* CSS Variables */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
         :root {
-            --bg-deep: #050608;
-            --bg-glass: rgba(18, 20, 28, 0.4);
-            --border-glass: rgba(255, 255, 255, 0.08);
-            --text-main: #e2e8f0;
-            --text-muted: #94a3b8;
-            --accent-red: #ff3333;
-            --accent-neon: #8b5cf6; /* Purple */
-            --accent-blue: #3b82f6; 
-            --accent-cyber: #0ea5e9;
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            --font-mono: 'Space Mono', 'Fira Code', monospace;
+            --surface: #0077be;
+            --twilight: #002244;
+            --abyss: #00040a;
+            --glass-bg: rgba(10, 25, 50, 0.4);
+            --glass-border: rgba(0, 255, 255, 0.2);
+            --neon-blue: #00f3ff;
+            --neon-green: #00ff88;
+            --text-main: #e0f2fe;
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
         }
 
-        /* Reset & Base Setup */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            background-color: var(--bg-deep);
-            color: var(--text-main);
             font-family: var(--font-sans);
-            overflow: hidden; /* Locked until puzzle solved */
+            color: var(--text-main);
+            background: linear-gradient(to bottom, var(--surface) 0%, var(--twilight) 30%, var(--abyss) 80%, #000000 100%);
+            min-height: 1000vh; /* Deep scroll */
+            overflow-x: hidden;
+            position: relative;
+            scroll-behavior: smooth;
+        }
+
+        /* Ambient floating particles */
+        #particles {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .bubble {
+            position: absolute;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            bottom: -50px;
+            animation: floatUp linear infinite;
+        }
+        @keyframes floatUp {
+            to { transform: translateY(-110vh); }
+        }
+
+        /* Fixed HUD - Submarine Frame */
+        .hud-overlay {
+            position: fixed;
+            inset: 20px;
+            pointer-events: none;
+            z-index: 1000;
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.5), 0 0 20px rgba(0, 243, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .hud-corners {
+            position: absolute;
+            inset: 0;
+        }
+        .hud-corners::before, .hud-corners::after {
+            content: ''; position: absolute; width: 40px; height: 40px; border: 2px solid var(--neon-blue); opacity: 0.5;
+        }
+        .hud-corners::before { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+        .hud-corners::after { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+
+        .depth-meter {
+            position: absolute;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: var(--font-mono);
+            font-size: 14px;
+            color: var(--neon-blue);
+            text-align: right;
+            text-shadow: 0 0 5px var(--neon-blue);
+        }
+        .depth-line {
+            width: 2px;
+            height: 200px;
+            background: linear-gradient(to bottom, transparent, var(--neon-blue), transparent);
+            margin-left: auto;
+            margin-top: 10px;
             position: relative;
         }
-
-        a { color: inherit; text-decoration: none; }
-        h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
-
-        /* Dynamic Fluid Background */
-        .ambient-bg {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: -2;
-            overflow: hidden;
-            background: var(--bg-deep);
-        }
-        .blob {
+        .depth-indicator {
             position: absolute;
-            border-radius: 50%;
-            filter: blur(100px);
-            opacity: 0.4;
-            animation: float 20s infinite alternate ease-in-out;
-        }
-        .blob-1 { width: 50vw; height: 50vw; background: var(--accent-neon); top: -10vw; left: -10vw; }
-        .blob-2 { width: 40vw; height: 40vw; background: var(--accent-blue); bottom: -10vw; right: -5vw; animation-delay: -5s; }
-        .ambient-noise {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            opacity: 0.03; z-index: -1; pointer-events: none;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            width: 10px; height: 2px; background: white;
+            right: 0; top: 0;
+            transition: top 0.1s;
         }
 
-        @keyframes float {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(10vw, 5vh) scale(1.1); }
+        /* Utilities */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            padding: 2rem;
+            pointer-events: auto;
         }
 
-        /* --- THE GATE (414 PUZZLE) --- */
-        #gate {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: #000;
-            z-index: 9999;
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px 5px 0 0;
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid var(--neon-blue);
+            color: var(--text-main);
+            text-decoration: none;
+            border-radius: 20px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: var(--neon-blue);
+            color: black;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+        .btn-green { border-color: var(--neon-green); color: var(--neon-green); }
+        .btn-green:hover { background: var(--neon-green); color: black; box-shadow: 0 0 15px var(--neon-green); }
+
+        /* Hero Layout */
+        .hero-section {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .surface-waves {
+            position: absolute;
+            top: 0; left: 0; width: 100%;
+            overflow: hidden; line-height: 0;
+            z-index: 2;
+        }
+        
+        .hero-terminal {
+            max-width: 700px;
+            text-align: center;
+            animation: fadeIn 2s ease-out;
+        }
+        
+        .hero-terminal h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50px;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .system-notice {
+            font-family: var(--font-mono);
+            color: #ff3366;
+            font-size: 0.85rem;
+            border-left: 3px solid #ff3366;
+            padding-left: 15px;
+            text-align: left;
+            margin-top: 20px;
+            animation: pulse-alert 2s infinite;
+        }
+
+        .initiate-dive {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
             flex-direction: column;
             align-items: center;
-            overflow: hidden;
-            padding: 2rem;
-            color: #0c0;
+            gap: 15px;
             font-family: var(--font-mono);
-            cursor: crosshair;
-            transition: opacity 1s ease;
-        }
-        .gate-header {
-            color: var(--accent-red);
-            font-size: clamp(2rem, 5vw, 4rem);
-            margin-bottom: 2rem;
-            text-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
-            text-align: center;
-            font-weight: bold;
-            z-index: 10;
-        }
-        .matrix-container {
-            width: 100%; height: calc(100% - 100px);
-            overflow-wrap: break-word;
-            word-wrap: break-word;
-            line-height: 1.2;
-            font-size: max(14px, 1vw);
-            position: relative;
-        }
-        .junk-param {
-            transition: opacity 0.3s ease;
-            user-select: none;
-        }
-        .target-param {
-            color: #fff;
-            background: rgba(255,255,255,0.1);
-            cursor: pointer;
-            position: relative;
-            z-index: 100;
-            font-weight: bold;
-            text-shadow: 0 0 8px rgba(255,255,255,0.8);
-            transition: all 0.8s cubic-bezier(0.8, 0, 0.2, 1);
-        }
-        .target-param:hover { background: rgba(255,255,255,0.3); }
-
-        .ripple-effect {
-            position: fixed;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(139, 92, 246, 0.5) 50%, rgba(0,0,0,0) 100%);
-            transform: translate(-50%, -50%) scale(0);
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            animation: bounce 2s infinite;
             pointer-events: none;
-            z-index: 9998;
-            opacity: 1;
         }
 
-        /* --- HEADER --- */
-        header {
-            position: sticky; top: 0; left: 0; width: 100%;
-            z-index: 100;
-            padding: 2rem 5%;
-            background: linear-gradient(to bottom, rgba(5,6,8,0.95) 0%, rgba(5,6,8,0) 100%);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border-bottom: 1px solid transparent;
-            transition: all 0.3s ease;
+        .arrow-down {
+            width: 20px; height: 20px;
+            border-right: 2px solid var(--neon-blue);
+            border-bottom: 2px solid var(--neon-blue);
+            transform: rotate(45deg);
+            box-shadow: 2px 2px 5px rgba(0,243,255,0.5);
         }
-        .header-content {
-            max-width: 1400px; margin: 0 auto;
-        }
-        h1.name {
-            font-size: 2.5rem; color: #fff; margin-bottom: 0.5rem;
-            text-transform: uppercase; letter-spacing: 0.05em;
-        }
-        .typing-container {
-            font-size: 1.1rem; color: var(--text-main); margin-bottom: 1rem;
-            display: inline-block; white-space: nowrap; overflow: hidden;
-            border-right: 2px solid var(--accent-neon);
-            animation: blink 0.75s step-end infinite;
-        }
-        .subtitle {
-            font-family: var(--font-mono); font-size: 0.8rem;
-            color: var(--text-muted); font-style: italic; opacity: 0.7;
-        }
-        
-        @keyframes blink { 50% { border-color: transparent } }
 
-        /* --- BENTO GRID LAYOUT --- */
-        main {
-            padding: 2rem 5% 6rem;
-            max-width: 1400px;
+        /* Mission Timeline (Projects) */
+        .timeline {
+            padding: 100px 5%;
+            max-width: 1200px;
             margin: 0 auto;
             position: relative;
             z-index: 10;
         }
-        .bento-grid {
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            grid-auto-rows: minmax(150px, auto);
-            gap: 20px;
-        }
 
-        /* Glassmorphism Card System */
-        .bento-box {
-            background: var(--bg-glass);
-            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--border-glass);
-            border-radius: 24px;
-            padding: 24px;
-            display: flex; flex-direction: column;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.4s ease, box-shadow 0.4s ease;
-        }
-        .bento-box:hover {
-            transform: translateY(-4px) scale(1.01);
-            border-color: rgba(139, 92, 246, 0.5); /* Neon flare default */
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 20px rgba(139, 92, 246, 0.15);
-            z-index: 2;
-        }
-        .box-title { font-size: 1.5rem; margin-bottom: 0.5rem; color: #fff; z-index: 1; }
-        .box-desc { font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; z-index: 1; flex-grow: 1; }
-        
-        /* Buttons / CTAs */
-        .bento-cta {
-            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-            margin-top: 1rem; padding: 10px 16px;
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px; color: #fff; font-size: 0.9rem; font-weight: 500;
-            transition: all 0.2s ease; width: fit-content; z-index: 1;
-        }
-        .bento-cta:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); }
-
-        /* Grid specific assignments */
-        .box-glgl { grid-column: span 8; grid-row: span 2; }
-        .box-ahuzat { grid-column: span 4; grid-row: span 2; }
-        .box-2d { grid-column: span 4; grid-row: span 2; }
-        .box-jest { grid-column: span 8; grid-row: span 2; }
-        .box-rhymes { grid-column: span 5; grid-row: span 2; }
-        .box-hatul { grid-column: span 4; grid-row: span 2; }
-        .box-meta { grid-column: span 3; grid-row: span 2; }
-        .box-social { grid-column: span 12; grid-row: span 1; flex-direction: row; justify-content: center; align-items: center; gap: 4rem; }
-
-        @media (max-width: 1024px) {
-            .box-glgl, .box-jest { grid-column: span 12; }
-            .box-ahuzat, .box-2d, .box-rhymes, .box-hatul { grid-column: span 6; }
-            .box-meta, .box-social { grid-column: span 12; }
-            .box-social { gap: 2rem; }
-        }
-        @media (max-width: 768px) {
-            .bento-grid { display: flex; flex-direction: column; }
-            .box-social { gap: 1.5rem; padding: 2rem; }
-        }
-
-        /* --- SPECIFIC BOX STYLING --- */
-        /* 1. GlglStats */
-        .bg-audio {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; opacity: 0.15;
-            background: repeating-linear-gradient(90deg, transparent, transparent 10px, var(--accent-neon) 10px, var(--accent-neon) 20px);
-            mask-image: linear-gradient(to top, black, transparent); -webkit-mask-image: linear-gradient(to top, black, transparent);
-        }
-        .glgl-content { display: flex; gap: 1.5rem; margin-top: 1rem; align-items: stretch; z-index: 1; flex-wrap: wrap; }
-        .yt-embed {
-            flex: 1; min-width: 250px; background: url('https://img.youtube.com/vi/jrKAtOsj1Lo/maxresdefault.jpg') center/cover;
-            border-radius: 12px; position: relative; border: 1px solid rgba(255,255,255,0.1); overflow: hidden;
-            min-height: 150px; display: flex; align-items: center; justify-content: center;
-        }
-        .yt-embed::after { content: '▶'; font-size: 2rem; color: #fff; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 12px; }
-
-        /* 2. Ahuzat Dibuk */
-        .box-ahuzat:hover { border-color: rgba(255, 69, 58, 0.5); }
-        .bg-heatmap {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; filter: blur(30px); opacity: 0.2; pointer-events: none;
-            background: radial-gradient(circle at 80% 20%, red 0%, transparent 40%), radial-gradient(circle at 20% 80%, orange 0%, transparent 40%);
-        }
-        .media-links { display: flex; gap: 1rem; margin-top: auto; padding-top: 1rem; z-index: 1; }
-        .media-icon {
-            width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: #fff;
-        }
-        .media-icon:hover { background: rgba(255,255,255,0.15); transform: translateY(-2px); }
-
-        /* 3. 2D Part Orienting */
-        .box-2d:hover { border-color: rgba(56, 189, 248, 0.5); }
-        .bg-wireframe {
-            position: absolute; right: -20px; bottom: -20px; width: 150px; height: 150px;
-            border: 2px dashed rgba(56, 189, 248, 0.2); border-radius: 20%;
-            animation: rotateGeom 20s linear infinite; pointer-events: none;
-        }
-        @keyframes rotateGeom { 100% { transform: rotate(360deg); } }
-
-        /* 4. The Turing Jest */
-        .box-jest { background: linear-gradient(135deg, rgba(20,20,30,0.8), rgba(20,20,30,0.8)), repeating-linear-gradient(45deg, rgba(255,0,0,0.03) 0px, transparent 1px, transparent 20px, rgba(0,100,255,0.03) 21px, transparent 40px); }
-        .box-jest:hover { border-color: rgba(239, 68, 68, 0.5); box-shadow: -10px 0 20px rgba(255,0,0,0.1), 10px 0 20px rgba(0,0,255,0.1); }
-        .arena-badge { background: #ef4444; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold;text-transform: uppercase; margin-left: 10px; vertical-align: middle;}
-
-        /* 5. Rhymes of Israel */
-        .bg-news {
-            position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; opacity: 0.05;
-            background-image: repeating-linear-gradient(0deg, #fff, #fff 1px, transparent 1px, transparent 10px);
-            clip-path: polygon(0 0, 100% 0, 100% 90%, 95% 95%, 90% 90%, 85% 95%, 80% 90%, 75% 95%, 0 100%);
-        }
-        
-        /* 6. Hatul Basak */
-        .box-hatul:hover { border-color: rgba(250, 204, 21, 0.5); }
-        .bg-cat {
-            position: absolute; bottom: 10px; right: 10px; width: 80px; height: 80px; opacity: 0.1;
-            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 9c-2.3 0-4 1.5-4 1.5C6.5 11 5 12 5 13c0 2.5 1 4 3 6 1 1 2.5 1.5 4 1.5s3-.5 4-1.5c2-2 3-3.5 3-6 0-1-1.5-2.5-3-2.5 0 0-1.7-1.5-4-1.5z'/%3E%3Cpath d='M7 4l1 4M17 4l-1 4' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center;
-        }
-
-        /* 7. The Meta Box */
-        .box-meta {
-            background: none;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), inset 0 0 0 10px rgba(0,0,0,0.3), inset 0 0 0 11px rgba(255,255,255,0.06), inset 0 0 0 20px rgba(0,0,0,0.5), inset 0 0 0 21px rgba(255,255,255,0.04);
-            border: none;
-        }
-        .box-meta:hover {
-            box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.8), inset 0 0 0 10px rgba(0,0,0,0.3), inset 0 0 0 11px rgba(139, 92, 246, 0.4), inset 0 0 0 20px rgba(0,0,0,0.5), inset 0 0 0 21px rgba(139, 92, 246, 0.2);
-        }
-        .meta-btn { border-color: rgba(139, 92, 246, 0.8); background: rgba(139, 92, 246, 0.1); color: #fff; text-shadow: 0 0 8px rgba(139, 92, 246, 1); box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
-
-        /* 8. Social Connectivity */
-        .social-link { color: rgba(255,255,255,0.5); transition: all 0.3s; display: inline-block; }
-        .social-link svg { width: 50px; height: 50px; fill: currentColor; }
-        .social-link:hover { transform: scale(1.1) translateY(-4px); }
-        .social-link.github:hover { color: #fff; filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
-        .social-link.linkedin:hover { color: #0a66c2; filter: drop-shadow(0 0 10px rgba(10,102,194,0.5)); }
-        .social-link.facebook:hover { color: #0866ff; filter: drop-shadow(0 0 10px rgba(8,102,255,0.5)); }
-
-
-        /* --- FOOTER --- */
-        footer {
-            border-top: 1px solid var(--border-glass);
-            padding: 1.5rem 5%;
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            color: var(--text-muted);
+        .project-node {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px);
+            justify-content: space-between;
+            margin-bottom: 35vh;
+            gap: 50px;
+            opacity: 0;
+            transform: translateY(100px);
+            transition: opacity 1s, transform 1s;
+        }
+        .project-node.scrolled { opacity: 1; transform: translateY(0); }
+        .project-node:nth-child(even) { flex-direction: row-reverse; }
+
+        .visual-container {
+            flex: 1;
             position: relative;
+            height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Abstract CSS Art Visuals */
+        .anomaly-visual {
+            font-size: 8rem;
+            filter: drop-shadow(0 0 20px rgba(0, 243, 255, 0.4)) brightness(0.8) sepia(0.5) hue-rotate(180deg);
+            position: relative;
+            z-index: 2;
+            transition: all 1s;
+        }
+
+        /* Sonar Sweep Animation */
+        .sonar-scanner {
+            position: absolute; top: -10%; bottom: -10%; left: 0; right: 0;
+            border-radius: 50%;
+            overflow: hidden;
+            z-index: 3;
+            pointer-events: none;
+        }
+        .sonar-line {
+            width: 100%; height: 3px;
+            background: var(--neon-green);
+            box-shadow: 0 0 20px 5px var(--neon-green);
+            position: absolute; top: 0; left: 0;
+            opacity: 0;
+        }
+        .project-node.scrolled .sonar-line {
+            animation: sweepDown 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        .project-node.scrolled .anomaly-visual {
+            filter: drop-shadow(0 0 30px var(--neon-green)) brightness(1.2);
+            transition-delay: 1s;
+        }
+
+        .hud-card {
+            flex: 1;
+            opacity: 0;
+            transform: translateX(-50px);
+            transition: all 0.8s ease-out;
+        }
+        .project-node:nth-child(even) .hud-card { transform: translateX(50px); }
+        
+        /* Reveal HUD after sweep */
+        .project-node.scrolled .hud-card {
+            opacity: 1;
+            transform: translateX(0);
+            transition-delay: 1.2s; /* Waits for sweep */
+        }
+
+        .hud-card h2 { color: var(--neon-blue); font-size: 1.8rem; margin-bottom: 10px;}
+        .hud-card p { font-size: 0.95rem; line-height: 1.6; margin-bottom: 20px; color: #a1b2c4; }
+
+        /* Specific Visual tweaks */
+        .box-1-wave { display: block; width: 100%; height: 20px; background: repeating-linear-gradient(90deg, transparent, transparent 4px, var(--neon-green) 4px, var(--neon-green) 8px); margin: 10px 0; opacity: 0.5;}
+        
+        /* The Floor - Spotlight Section */
+        .ocean-floor {
+            position: relative;
+            height: 100vh;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             z-index: 10;
         }
-        .footer-left { flex: 1; min-width: 300px; }
-        .footer-right { color: var(--accent-neon); font-weight: bold; text-shadow: 0 0 8px rgba(139, 92, 246, 0.3); }
 
-        /* Typography Icon utility */
-        .icon { width: 16px; height: 16px; fill: currentColor; }
+        .spotlight-mask {
+            position: absolute; inset: 0;
+            display: flex; justify-content: center; align-items: center;
+            -webkit-mask-image: radial-gradient(circle 250px at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
+            mask-image: radial-gradient(circle 250px at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
+            background: #000;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .floor-content {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: radial-gradient(circle at center, #001 0%, #000 100%);
+        }
+        
+        .floor-hint {
+            position: absolute; top: 20%; color: rgba(255,255,255,0.1); font-family: var(--font-mono); letter-spacing: 2px; text-align: center;
+        }
+
+        .social-pearls {
+            display: flex;
+            gap: 60px;
+            pointer-events: auto; /* Allow clicking through spotlight if needed, though mask is better handled using a container */
+        }
+
+        /* Actually to make it clickable under a mask, the mask must be on the container of the items, not an overlay */
+        .spotlight-container {
+            width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            -webkit-mask-image: radial-gradient(circle 200px at var(--mouse-x, 50%) var(--mouse-y, 50%), black 20%, transparent 80%);
+            mask-image: radial-gradient(circle 200px at var(--mouse-x, 50%) var(--mouse-y, 50%), black 20%, transparent 80%);
+        }
+
+        .pearl {
+            width: 80px; height: 80px;
+            background: radial-gradient(circle at 30% 30%, #fff, var(--neon-blue), #003366);
+            border-radius: 50%;
+            box-shadow: 0 0 40px var(--neon-blue), inset -10px -10px 20px rgba(0,0,0,0.5);
+            display: flex; justify-content: center; align-items: center;
+            text-decoration: none;
+            color: #000; font-weight: bold; font-size: 1.2rem;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: auto;
+        }
+        .pearl:hover { transform: scale(1.2); box-shadow: 0 0 60px #fff; }
+        .pearl svg { width: 40px; height: 40px; fill: #000; }
+
+        /* Footer */
+        .footer-base {
+            position: absolute; bottom: 0; width: 100%;
+            padding: 20px;
+            background: rgba(10, 10, 10, 0.9);
+            border-top: 1px solid var(--neon-blue);
+            display: flex; justify-content: space-between; align-items: center;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            z-index: 20;
+            color: #666;
+        }
+
+        .mission-timer {
+            font-size: 1.2rem;
+            color: #ff003c; /* Red LED */
+            text-shadow: 0 0 10px rgba(255, 0, 60, 0.5);
+            letter-spacing: 2px;
+        }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse-alert { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+        @keyframes bounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 10px); } }
+        @keyframes sweepDown { 0% { top:-10%; opacity:0; } 10% { opacity:1; } 90% { opacity:1; } 100% { top:110%; opacity:0; } }
+
+        @media (max-width: 900px) {
+            .project-node, .project-node:nth-child(even) { flex-direction: column; text-align: center; gap: 20px; }
+            .project-node.scrolled .hud-card { transform: translateY(0); }
+            .depth-meter { display: none; }
+            .hud-overlay { inset: 5px; border-radius: 10px; }
+            .hero-terminal h1 { font-size: 2.5rem; }
+        }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <!-- Fluid Background Layers -->
-    <div class="ambient-bg">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="ambient-noise"></div>
-    </div>
+    <!-- Ambient Particles -->
+    <div id="particles"></div>
 
-    <!-- INITIAL STATE: The Gate -->
-    <div id="gate">
-        <div class="gate-header">HTTP 414: URI TOO LONG</div>
-        <div class="matrix-container" id="matrix-box">
-            <!-- Junk generated by JS -->
+    <!-- HUD Overlay Fixed to Screen -->
+    <div class="hud-overlay">
+        <div class="hud-corners"></div>
+        <div class="depth-meter">
+            <span id="depth-text">DEPTH: 0m</span>
+            <div class="depth-line">
+                <div class="depth-indicator" id="depth-marker"></div>
+            </div>
         </div>
     </div>
 
-    <!-- MAIN PORTFOLIO -->
-    <header>
-        <div class="header-content">
-            <h1 class="name">Geva Kipper</h1>
-            <div id="typewriter" class="typing-container">Software Engineer currently building infrastructure at Google.</div>
-            <div class="subtitle">Notice: This website's design is regenerated daily by AI. Current state: Ephemeral.</div>
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="surface-waves">
+            <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/0.svg">
+                <path d="M0,64L60,74.7C120,85,240,107,360,101.3C480,96,600,64,720,53.3C840,43,960,53,1080,69.3C1200,85,1320,107,1380,117.3L1440,128L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z" fill="rgba(255,255,255,0.05)"></path>
+            </svg>
         </div>
-    </header>
-
-    <main>
-        <div class="bento-grid">
+        
+        <div class="glass-panel hero-terminal">
+            <h1>Geva Kipper</h1>
+            <div class="role-badge">Software Engineer, currently building scalable solutions and driving innovation at Google.</div>
             
-            <!-- Box 1: GlglStats -->
-            <article class="bento-box box-glgl">
-                <div class="bg-audio"></div>
-                <h2 class="box-title">GlglStats</h2>
-                <p class="box-desc">Analyzed over a decade of Israeli pop charts using Python. Developed custom implementations of LZ77 data compression algorithms to find deep structural patterns within music lyrics entirely visually.</p>
-                <div class="glgl-content">
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="yt-embed" title="Watch PyData TLV Presentation"></a>
-                    <div style="display:flex; flex-direction: column; justify-content: flex-end;">
-                        <a href="https://glglstats.geekip.dev" target="_blank" class="bento-cta">
-                            Explore Data App
-                            <svg class="icon" viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.41l-9.59 9.59-1.41-1.41L17.59 5H14V3zM5 5h4V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4h-2v4H5V5z"/></svg>
-                        </a>
-                    </div>
-                </div>
-            </article>
+            <div class="system-notice">
+                > SYSTEM NOTICE:<br>
+                > Oceanic topography is completely re-designed each day by AI and is therefore ever-changing.
+            </div>
+        </div>
 
-            <!-- Box 2: Ahuzat Dibuk -->
-            <article class="bento-box box-ahuzat">
-                <div class="bg-heatmap"></div>
-                <h2 class="box-title">Ahuzat Dibuk</h2>
-                <p class="box-desc">Reverse-engineered APIs to scrape live Tel-Aviv parking data. Created high-clarity geographic heatmaps proving municipal parking deficits. The viral visualization was picked up and broadcasted by major national news networks.</p>
-                <div class="media-links">
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="media-icon" title="Channel 13 News">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12zm-5-6l-7 4V7z"/></svg>
-                    </a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="media-icon" title="Mako News">
-                        <span style="font-weight:900; font-family:sans-serif;">M</span>
-                    </a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="media-icon" title="Secret Tel Aviv">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"/></svg>
-                    </a>
-                </div>
-            </article>
+        <div class="initiate-dive">
+            <span>INITIATE DIVE</span>
+            <div class="arrow-down"></div>
+        </div>
+    </section>
 
-            <!-- Box 3: 2D Part Orienting -->
-            <article class="bento-box box-2d">
-                <div class="bg-wireframe"></div>
-                <h2 class="box-title">2D Part Orienting</h2>
-                <p class="box-desc">Computational Geometry research project. Implemented complex C++ push-plan algorithms to predict and simulate the geometric behavior of rotating polygons encountering invisible forces.</p>
-                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="bento-cta">
-                    View TAU Research
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.41l-9.59 9.59-1.41-1.41L17.59 5H14V3zM5 5h4V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4h-2v4H5V5z"/></svg>
-                </a>
-            </article>
+    <!-- The Descent: Projects Timeline -->
+    <section class="timeline">
+        
+        <!-- Project 1 -->
+        <article class="project-node">
+            <div class="visual-container">
+                <div class="sonar-scanner"><div class="sonar-line"></div></div>
+                <div class="anomaly-visual">🎛️</div>
+            </div>
+            <div class="glass-panel hud-card">
+                <h2>GlglStats</h2>
+                <div class="box-1-wave"></div>
+                <p>Anomaly 001 detected. Bio-acoustic signatures mapped into binary structures.<br> Python LZ77 pop-chart repetitiveness analysis confirms signal compression algorithms at work.</p>
+                <a href="https://glglstats.geekip.dev" target="_blank" class="btn">Sonar Link: Project Site</a>
+                <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn btn-green">View PyData TLV Log</a>
+            </div>
+        </article>
 
-            <!-- Box 4: The Turing Jest -->
-            <article class="bento-box box-jest">
-                <h2 class="box-title">The Turing Jest <span class="arena-badge">Arena</span></h2>
-                <p class="box-desc">An interactive, LMSYS-style battle arena pitting state-of-the-art Large Language Models against each other in a rigorous, high-stakes pun competition. Users vote blind on the objectively funniest model outputs.</p>
-                <div style="margin-top:auto;">
-                    <a href="https://jest.geekip.dev" target="_blank" class="bento-cta" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.4);">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Enter Arena
-                    </a>
-                </div>
-            </article>
+        <!-- Project 2 -->
+        <article class="project-node">
+            <div class="visual-container">
+                <div class="sonar-scanner"><div class="sonar-line"></div></div>
+                <div class="anomaly-visual" style="filter: drop-shadow(0 0 20px #ff3300) sepia(1);">🪨</div>
+            </div>
+            <div class="glass-panel hud-card">
+                <h2>Ahuzat Dibuk</h2>
+                <p>Thermal signatures clustered around monolithic parking strata. Automated Python data scraping and visualization routines monitoring subterranean Tel-Aviv infrastructure capacities.</p>
+                <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="btn">Channel 13 Broadcast</a>
+                <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="btn">Mako Intel</a>
+                <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="btn btn-green">Facebook Dispatch</a>
+            </div>
+        </article>
 
-            <!-- Box 5: Rhymes of Israel -->
-            <article class="bento-box box-rhymes">
-                <div class="bg-news"></div>
-                <h2 class="box-title">Rhymes of Israel</h2>
-                <p class="box-desc">A satirical Chrome Extension leveraging on-device LLM capabilities to seamlessly intercept incoming local news headlines and rewrite them into rhyming couplets, reminiscent of high-school yearbooks.</p>
-                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="bento-cta">
-                    Chrome Web Store
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.41l-9.59 9.59-1.41-1.41L17.59 5H14V3zM5 5h4V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4h-2v4H5V5z"/></svg>
-                </a>
-            </article>
+        <!-- Project 3 -->
+        <article class="project-node">
+            <div class="visual-container">
+                <div class="sonar-scanner"><div class="sonar-line"></div></div>
+                <div class="anomaly-visual" style="font-size: 9rem; font-family: monospace;">⬡</div>
+            </div>
+            <div class="glass-panel hud-card">
+                <h2>2D Part Orienting</h2>
+                <p>Geometric fragments suspended in the current. High-performance C++ computational geometry engine active to engage precision push-plan sorting algorithms.</p>
+                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn btn-green">Access Codebase & Library</a>
+            </div>
+        </article>
 
-            <!-- Box 6: Hatul Basak -->
-            <article class="bento-box box-hatul">
-                <div class="bg-cat"></div>
-                <h2 class="box-title">Hatul Basak</h2>
-                <p class="box-desc">The premier Hebrew port of the popular catfishing trivia format. Generates challenging, daily AI algorithmic puzzles wrapped in cultural abstractions and localization trivia.</p>
-                <a href="https://hatulbasak.geekip.dev" target="_blank" class="bento-cta">Play Game / Create Puzzle</a>
-            </article>
+        <!-- Project 4 -->
+        <article class="project-node">
+            <div class="visual-container">
+                <div class="sonar-scanner"><div class="sonar-line"></div></div>
+                <div class="anomaly-visual">🎭</div>
+            </div>
+            <div class="glass-panel hud-card">
+                <h2>The Turing Jest</h2>
+                <p>Acoustic anomalies present linguistic rivalry. Ancient amphitheater structure housing an LMSYS-class LLM arena deployed strictly for combatant pun-generation.</p>
+                <a href="https://jest.geekip.dev" target="_blank" class="btn btn-green">Enter the Arena</a>
+            </div>
+        </article>
 
-            <!-- Box 7: The Meta Box -->
-            <article class="bento-box box-meta">
-                <h2 class="box-title">Recursion</h2>
-                <p class="box-desc">This very portfolio. A self-referential exercise in programmatic UI generation, spatial constraints, and transient web architecture.</p>
-                <a href="https://geekip.dev" class="bento-cta meta-btn">Origin.loop()</a>
-            </article>
+        <!-- Project 5 -->
+        <article class="project-node">
+            <div class="visual-container">
+                <div class="sonar-scanner"><div class="sonar-line"></div></div>
+                <div class="anomaly-visual" style="filter: drop-shadow(0 0 20px #ffaa00) brightness(1.2);">🤿</div>
+            </div>
+            <div class="glass-panel hud-card">
+                <h2>Rhymes of Israel</h2>
+                <p>Echoes from the surface captured. LLM Chrome extension running linguistic protocols to rewrite daily terrestrial news broadcasts into rhythmic, comedic yearbook verses.</p>
+                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn btn-green">Chrome Webstore Integration</a>
+            </div>
+        </article>
 
-            <!-- Box 8: Social Connectivity -->
-            <article class="bento-box box-social">
-                <a href="https://github.com/gevak" target="_blank" class="social-link github" aria-label="GitHub">
+        <!-- Project 6 -->
+        <article class="project-node">
+            <div class="visual-container">
+                <div class="sonar-scanner"><div class="sonar-line"></div></div>
+                <div class="anomaly-visual" style="filter: drop-shadow(0 0 20px #d400ff);">🐈‍⬛</div>
+            </div>
+            <div class="glass-panel hud-card">
+                <h2>Hatul Basak</h2>
+                <p>Enigmatic lifeform detected on deep ledge. Hebrew port of catfishing.net routing automated AI challenges and user-generated puzzles based on Wikipedia trivia nodes.</p>
+                <a href="https://hatulbasak.geekip.dev" target="_blank" class="btn btn-green">Engage Puzzle Interface</a>
+            </div>
+        </article>
+
+        <!-- Project 7 -->
+        <article class="project-node" style="margin-bottom: 10vh;">
+            <div class="visual-container">
+                <div class="sonar-scanner"><div class="sonar-line"></div></div>
+                <div class="anomaly-visual" style="border: 4px solid var(--neon-blue); border-radius: 50%; width: 150px; height: 150px; background: linear-gradient(135deg, transparent, rgba(0,243,255,0.3)); box-shadow: inset 0 0 20px var(--neon-blue);"></div>
+            </div>
+            <div class="glass-panel hud-card">
+                <h2>The Meta Portfolio</h2>
+                <p>Recursion detected. Visual sensors are reflecting the submarine's own vessel structure. This presentation module is a self-referencing artifact residing at geekip.dev.</p>
+                <a href="https://geekip.dev" class="btn btn-green">Initiate Recursion Loop</a>
+            </div>
+        </article>
+
+    </section>
+
+    <!-- The Ocean Floor -->
+    <section class="ocean-floor" id="floor-section">
+        <div class="floor-hint">CRITICAL DEPTH REACHED.<br>ENGAGE MOUSE SPOTLIGHT SCANNER.</div>
+        
+        <div class="spotlight-container" id="spotlight">
+            <div class="social-pearls">
+                <!-- GitHub -->
+                <a href="https://github.com/gevak" target="_blank" class="pearl" title="GitHub Database">
                     <svg viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                 </a>
-                <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-link linkedin" aria-label="LinkedIn">
+                <!-- LinkedIn -->
+                <a href="https://linkedin.com/in/gevakip" target="_blank" class="pearl" title="LinkedIn Network">
                     <svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
                 </a>
-                <a href="https://facebook.com/geva.kipper" target="_blank" class="social-link facebook" aria-label="Facebook">
-                    <svg viewBox="0 0 24 24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>
+                <!-- Facebook -->
+                <a href="https://facebook.com/geva.kipper" target="_blank" class="pearl" title="Facebook Comm-Link">
+                    <svg viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
                 </a>
-            </article>
-
+            </div>
         </div>
-    </main>
 
-    <footer>
-        <div class="footer-left">
-            System Architecture & Design generated by Gemini, actualized by Geva Kipper.
+        <div class="footer-base">
+            <div>Topography gen. by AI. Architecture via Claude 3.5 Sonnet.</div>
+            <div class="mission-timer" id="clock">00:00:00</div>
         </div>
-        <div class="footer-right" id="clock">
-            Δ 00:00:00:00
-        </div>
-    </footer>
+    </section>
 
+    <!-- Scripts -->
     <script>
-        // --- 414 PUZZLE LOGIC ("The Gate") ---
-        const gate = document.getElementById('gate');
-        const matrixBox = document.getElementById('matrix-box');
-        
-        // Generate Junk Parameters
-        const junkWords = ["utm_nonsense=", "bloat_factor=99", "tracker_id=null", "payload=heavy", "redirect=loop", "cache_fail=true", "token=invalid", "session=expired", "mem_leak=", "stack_overflow="];
-        let matrixHTML = '';
-        
-        // Target is placed randomly around the middle
-        const totalItems = 500;
-        const targetIndex = Math.floor(Math.random() * 100) + 200; 
-        
-        for(let i = 0; i < totalItems; i++) {
-            if (i === targetIndex) {
-                matrixHTML += `<span class="target-param" id="unlock-btn">&unlock_portfolio=true</span> `;
-            } else {
-                const randomJunk = junkWords[Math.floor(Math.random() * junkWords.length)] + Math.floor(Math.random() * 9999);
-                matrixHTML += `<span class="junk-param">&${randomJunk}</span> `;
-            }
+        // 1. Particle Generation
+        const particleContainer = document.getElementById('particles');
+        for (let i = 0; i < 40; i++) {
+            let div = document.createElement('div');
+            div.className = 'bubble';
+            let size = Math.random() * 8 + 2; // 2px to 10px
+            let left = Math.random() * 100; // 0 to 100vw
+            let duration = Math.random() * 20 + 10; // 10s to 30s
+            let delay = Math.random() * 10;
+            
+            div.style.width = `${size}px`;
+            div.style.height = `${size}px`;
+            div.style.left = `${left}vw`;
+            div.style.animationDuration = `${duration}s`;
+            div.style.animationDelay = `${delay}s`;
+            div.style.opacity = Math.random() * 0.5 + 0.1;
+            
+            particleContainer.appendChild(div);
         }
-        matrixBox.innerHTML = matrixHTML;
 
-        // Interaction: Wipe away junk on mousemove
-        matrixBox.addEventListener('mousemove', (e) => {
-            if (e.target.classList.contains('junk-param')) {
-                e.target.style.opacity = '0';
-            }
+        // 2. Scroll Logic (Depth Meter & Animations)
+        const depthText = document.getElementById('depth-text');
+        const depthMarker = document.getElementById('depth-marker');
+        const maxDepth = 10994; // Mariana Trench depth in meters
+
+        window.addEventListener('scroll', () => {
+            // Calculate scroll percentage
+            let scrollTop = window.scrollY;
+            let docHeight = document.body.offsetHeight - window.innerHeight;
+            let scrollPercent = scrollTop / docHeight;
+            
+            // Limit to 0-1 just in case of overscroll
+            scrollPercent = Math.max(0, Math.min(1, scrollPercent));
+            
+            let currentDepth = Math.floor(scrollPercent * maxDepth);
+            depthText.innerText = `DEPTH: ${currentDepth}m`;
+            depthMarker.style.top = `${scrollPercent * 100}%`;
         });
 
-        // Clear junk entirely on touch devices by tapping around
-        matrixBox.addEventListener('touchmove', (e) => {
-            const touch = e.touches[0];
-            const element = document.elementFromPoint(touch.clientX, touch.clientY);
-            if (element && element.classList.contains('junk-param')) {
-                element.style.opacity = '0';
-            }
-        });
+        // 3. Intersection Observer for Sonar Sweep & HUD reveal
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.4
+        };
 
-        // Click Logic
-        document.getElementById('unlock-btn').addEventListener('click', function(e) {
-            const btn = this;
-            
-            // Hide all remaining junk instantly
-            document.querySelectorAll('.junk-param').forEach(el => el.style.opacity = '0');
-            
-            // Get current absolute position of the button
-            const rect = btn.getBoundingClientRect();
-            
-            // Re-anchor absolute to viewport
-            btn.style.position = 'fixed';
-            btn.style.left = rect.left + 'px';
-            btn.style.top = rect.top + 'px';
-            btn.style.zIndex = '10000';
-            
-            // Request animation frame to ensure fixed positioning applies before transform
-            requestAnimationFrame(() => {
-                // Shrink and move to center
-                btn.style.left = '50%';
-                btn.style.top = '50%';
-                btn.style.transform = 'translate(-50%, -50%) scale(0.1)';
-                btn.style.textShadow = '0 0 50px #fff';
-                btn.style.color = 'transparent';
-                btn.style.background = '#fff';
-                btn.style.borderRadius = '50%';
-                
-                setTimeout(() => {
-                    // Create Ripple
-                    const ripple = document.createElement('div');
-                    ripple.className = 'ripple-effect';
-                    
-                    // Force ripple to cover max screen dimension
-                    const maxDim = Math.max(window.innerWidth, window.innerHeight) * 2.5;
-                    ripple.style.width = maxDim + 'px';
-                    ripple.style.height = maxDim + 'px';
-                    ripple.style.left = '50%';
-                    ripple.style.top = '50%';
-                    
-                    document.body.appendChild(ripple);
-                    
-                    // Animate ripple
-                    ripple.animate([
-                        { transform: 'translate(-50%, -50%) scale(0)', opacity: 1 },
-                        { transform: 'translate(-50%, -50%) scale(1)', opacity: 0 }
-                    ], {
-                        duration: 1200,
-                        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)'
-                    });
-
-                    // Fade out the gate overlay
-                    gate.style.opacity = '0';
-                    
-                    setTimeout(() => {
-                        gate.remove();
-                        ripple.remove();
-                        btn.remove();
-                        document.body.style.overflow = 'auto'; // Unlock scroll
-                    }, 1000);
-
-                }, 800); // Time for center collapse
+        const observer = new IntersectionObserver((entries, obs) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('scrolled');
+                    obs.unobserve(entry.target); // Trigger only once
+                }
             });
+        }, observerOptions);
+
+        document.querySelectorAll('.project-node').forEach(node => {
+            observer.observe(node);
         });
 
-
-        // --- HEADER TYPING ANIMATION ---
-        const typeContainer = document.getElementById('typewriter');
-        const textToType = "Software Engineer currently building Core Systems at Google.";
-        typeContainer.innerHTML = '';
-        let charIndex = 0;
+        // 4. Mouse Spotlight Logic on Ocean Floor
+        const floorSection = document.getElementById('floor-section');
+        const spotlightContainer = document.getElementById('spotlight');
         
-        function typeWriter() {
-            if (charIndex < textToType.length) {
-                typeContainer.innerHTML += textToType.charAt(charIndex);
-                charIndex++;
-                setTimeout(typeWriter, 50 + Math.random() * 50); // slight random delay for realism
-            }
-        }
-        // Start typing after initial load/puzzle (we can just start it delayed, or bind it to unlock)
-        setTimeout(typeWriter, 2000);
+        floorSection.addEventListener('mousemove', (e) => {
+            // Get mouse position relative to the section
+            const rect = floorSection.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            spotlightContainer.style.setProperty('--mouse-x', `${x}px`);
+            spotlightContainer.style.setProperty('--mouse-y', `${y}px`);
+        });
 
-
-        // --- FOOTER PARADOX STOPWATCH ---
-        const clockDisplay = document.getElementById('clock');
-        const targetDate = new Date('2026-04-14T01:57:49Z').getTime();
+        // 5. Mission Timer Logic
+        // Temporal anchor: 2026-04-15 01:54:13
+        const anchorDate = new Date("2026-04-15T01:54:13Z").getTime();
+        const clockEl = document.getElementById('clock');
 
         setInterval(() => {
             const now = new Date().getTime();
-            // Temporal paradox: absolute difference mathematically ticks up
-            const diff = Math.abs(targetDate - now);
-            
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-            
-            clockDisplay.innerText = `Δ +${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }, 1000);
+            let diff = now - anchorDate;
+            let isPast = diff >= 0;
+            diff = Math.abs(diff);
 
+            const totalSeconds = Math.floor(diff / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const mins = Math.floor((totalSeconds % 3600) / 60);
+            const secs = totalSeconds % 60;
+
+            const fHours = hours.toString().padStart(2, '0');
+            const fMins = mins.toString().padStart(2, '0');
+            const fSecs = secs.toString().padStart(2, '0');
+
+            // Format: T [-/+] HH:MM:SS
+            clockEl.innerText = `T ${isPast ? '+' : '-'} ${fHours}:${fMins}:${fSecs}`;
+        }, 1000);
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260414",
+          pageId: "20260415",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
