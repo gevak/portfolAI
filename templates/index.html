@@ -2,881 +2,828 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - 3D Escape Room Portfolio</title>
-    
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    
+    <title>Geva Kipper | Cyber-Speakeasy Lab</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Orbitron:wght@400;700&family=Pacifico&display=swap');
+
         :root {
-            --obsidian: #0b0c10;
-            --steel: #1f2833;
-            --neon-cyan: #66fcf1;
-            --neon-teal: #45a29e;
-            --neon-red: #ff3b3f;
-            --glass-bg: rgba(11, 12, 16, 0.65);
-            --glass-border: rgba(102, 252, 241, 0.3);
+            --bg-base: #0f1013;
+            --bg-darker: #08090a;
+            --cyan: #00f3ff;
+            --magenta: #ff00ff;
+            --lime: #39ff14;
+            --orange: #ff5f1f;
+            --steel-1: #3a3f47;
+            --steel-2: #1e2227;
+            --font-code: 'Fira Code', monospace;
+            --font-headers: 'Orbitron', sans-serif;
+            --font-neon: 'Pacifico', cursive;
         }
 
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+            cursor: crosshair;
         }
 
-        body, html {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: var(--obsidian);
-            font-family: 'Inter', sans-serif;
+        body {
+            background-color: var(--bg-base);
             color: #fff;
-            user-select: none;
+            font-family: var(--font-headers);
+            overflow-x: hidden;
+            scroll-behavior: smooth;
         }
 
-        #webgl-container {
-            position: absolute;
+        a { text-decoration: none; color: inherit; }
+
+        /* Canvas Background */
+        #bg-canvas {
+            position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
-        /* --- Header (Holographic) --- */
-        #header {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-            text-align: center;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            opacity: 0.6;
             pointer-events: none;
-            text-shadow: 0 0 10px rgba(102, 252, 241, 0.8), 0 0 20px rgba(102, 252, 241, 0.4);
         }
 
-        h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 2.5rem;
-            font-weight: 900;
-            color: var(--neon-cyan);
-            letter-spacing: 0.2rem;
-            margin-bottom: 5px;
-        }
-
-        .header-desc {
-            font-size: 0.9rem;
-            color: #d1d5db;
-            margin-bottom: 8px;
-        }
-
-        .subtitle {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 0.8rem;
-            color: var(--neon-red);
-            text-shadow: 0 0 5px var(--neon-red);
-            animation: glitch 3s infinite;
-        }
-
-        @keyframes glitch {
-            0% { opacity: 1; transform: translate(0); }
-            2% { transform: translate(-2px, 1px); }
-            4% { transform: translate(2px, -1px); }
-            6% { transform: translate(0); opacity: 0.8; }
-            50% { opacity: 1; }
-            95% { opacity: 1; }
-            96% { opacity: 0; }
-            97% { opacity: 1; filter: hue-rotate(90deg); }
-            98% { filter: hue-rotate(0deg); }
-            100% { opacity: 1; }
-        }
-
-        /* --- UI Card (Frosted Glass) --- */
-        #ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 20;
-            pointer-events: none;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 10%;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-
-        .ui-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 2rem;
-            width: 450px;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(102, 252, 241, 0.1);
-            pointer-events: auto;
-            transform: translateY(20px);
-            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        /* --- Header & Hero --- */
+        .hero {
             position: relative;
-        }
-
-        #ui-layer.active {
-            opacity: 1;
-        }
-        #ui-layer.active .ui-card {
-            transform: translateY(0);
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: transparent;
-            border: 1px solid var(--neon-cyan);
-            color: var(--neon-cyan);
-            font-family: 'Orbitron';
-            padding: 5px 10px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.3s;
-        }
-        
-        .close-btn:hover {
-            background: var(--neon-cyan);
-            color: var(--obsidian);
-        }
-
-        .card-title {
-            font-family: 'Orbitron', sans-serif;
-            color: var(--neon-cyan);
-            font-size: 1.8rem;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid var(--glass-border);
-            padding-bottom: 0.5rem;
-        }
-
-        .card-desc {
-            font-size: 0.95rem;
-            line-height: 1.5;
-            color: #ddd;
-            margin-bottom: 1.5rem;
-        }
-
-        .links-container {
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-        }
-
-        .action-link {
-            display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 10px 15px;
-            background: rgba(31, 40, 51, 0.8);
-            border: 1px solid var(--neon-cyan);
-            color: var(--neon-cyan);
-            text-decoration: none;
-            border-radius: 6px;
-            font-family: 'Share Tech Mono', monospace;
-            font-weight: 600;
-            text-transform: uppercase;
+            background: radial-gradient(circle at top, rgba(0, 243, 255, 0.05), transparent 60%);
+            padding-bottom: 50px;
+        }
+
+        .neon-sign {
+            font-family: var(--font-neon);
+            font-size: clamp(4rem, 8vw, 7rem);
+            color: #fff;
+            text-shadow: 
+                0 0 5px #fff, 0 0 10px #fff,
+                0 0 20px var(--magenta), 0 0 40px var(--magenta),
+                0 0 80px var(--magenta), 0 0 90px var(--magenta);
+            animation: flicker 4s infinite alternate;
+            z-index: 10;
+        }
+
+        @keyframes flicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px var(--magenta), 0 0 40px var(--magenta), 0 0 80px var(--magenta); opacity: 1; }
+            20%, 24%, 55% { text-shadow: none; opacity: 0.8; }
+        }
+
+        .plaque {
+            margin-top: 20px;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, var(--steel-1), var(--steel-2));
+            border: 2px solid #555;
+            border-radius: 5px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8), 0 10px 20px rgba(0,0,0,0.5);
+            font-family: var(--font-headers);
+            font-size: 1rem;
+            text-align: center;
             letter-spacing: 1px;
-            transition: all 0.2s;
-            position: relative;
-            overflow: hidden;
+            color: #bbb;
+            z-index: 10;
         }
 
-        .action-link:hover {
-            background: var(--neon-cyan);
-            color: var(--obsidian);
-            box-shadow: 0 0 15px var(--neon-cyan);
-        }
-
-        /* --- Footer (Steel Door & Timer) --- */
-        #footer {
+        /* Bar Counter Interface */
+        .bar-counter {
             position: absolute;
             bottom: 0;
-            left: 0;
             width: 100%;
+            height: 150px;
+            background: linear-gradient(to top, var(--steel-2) 0%, var(--steel-1) 100%);
+            border-top: 2px solid #888;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 5;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.7);
+        }
+
+        .bar-surface-glow {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--cyan);
+            box-shadow: 0 0 20px var(--cyan);
+            opacity: 0.5;
+        }
+
+        /* Chemistry Shaker Animation */
+        .lab-setup {
+            position: absolute;
+            bottom: 30px;
+            display: flex;
+            align-items: flex-end;
+            gap: 20px;
+        }
+
+        .shaker {
+            width: 40px;
             height: 80px;
+            background: linear-gradient(90deg, #ccc, #fff, #ccc);
+            border-radius: 5px 5px 20px 20px;
+            position: relative;
+            animation: pour 4s infinite ease-in-out;
+            transform-origin: bottom right;
+        }
+
+        .flask-hero {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50% 50% 10px 10px;
+            position: relative;
+            backdrop-filter: blur(5px);
+        }
+
+        .flask-hero::before { /* Neck */
+            content: '';
+            position: absolute;
+            top: -30px;
+            left: 20px;
+            width: 16px;
+            height: 30px;
+            background: rgba(255,255,255,0.1);
+            border-left: 2px solid rgba(255, 255, 255, 0.4);
+            border-right: 2px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .liquid-stream {
+            position: absolute;
+            bottom: 60px;
+            left: 28px;
+            width: 4px;
+            height: 0;
+            background: var(--lime);
+            box-shadow: 0 0 10px var(--lime);
+            animation: streamDrop 4s infinite ease-in-out;
             z-index: 10;
-            background: linear-gradient(to bottom, #111 0%, #2a2d34 10%", var(--steel) 100%);
-            border-top: 4px solid #111;
+        }
+
+        .evaporating-code {
+            position: absolute;
+            top: -40px;
+            left: 10px;
+            color: var(--cyan);
+            font-family: var(--font-code);
+            font-size: 14px;
+            opacity: 0;
+            animation: evaporate 4s infinite;
+        }
+
+        @keyframes pour {
+            0%, 20%, 100% { transform: rotate(0deg) translate(0, 0); }
+            40%, 60% { transform: rotate(110deg) translate(30px, -50px); }
+        }
+        @keyframes streamDrop {
+            0%, 35%, 65%, 100% { height: 0; opacity: 0; }
+            45%, 55% { height: 60px; opacity: 1; }
+        }
+        @keyframes evaporate {
+            0%, 50% { opacity: 0; transform: translateY(0); }
+            60% { opacity: 1; text-shadow: 0 0 10px var(--cyan); }
+            90% { opacity: 0; transform: translateY(-60px) scale(1.2); }
+            100% { opacity: 0; }
+        }
+
+        /* LED Ticker Tape */
+        .ticker-container {
+            position: absolute;
+            bottom: -2px;
+            width: 100%;
+            background: #000;
+            border-top: 1px solid var(--lime);
+            border-bottom: 1px solid var(--lime);
+            padding: 5px 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+
+        .ticker-text {
+            color: var(--lime);
+            font-family: var(--font-code);
+            font-size: 12px;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px var(--lime);
+            animation: scrollTicker 25s linear infinite;
+        }
+
+        @keyframes scrollTicker {
+            0% { transform: translateX(100vw); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* --- Tasting Menu (Portfolio) --- */
+        .menu-section {
+            padding: 80px 5%;
+            background: linear-gradient(to bottom, var(--bg-base), #0a0a0c);
+        }
+
+        .shelf-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 60px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .concoction {
+            position: relative;
+            height: 400px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            box-shadow: inset 0 10px 20px rgba(0,0,0,0.8);
+            justify-content: flex-end;
+            padding-bottom: 20px;
+            border-bottom: 8px solid rgba(80,80,80,0.4); /* Shelf */
+            box-shadow: 0 10px 20px -10px rgba(0,0,0,0.8);
+            perspective: 1000px;
         }
 
-        .timer {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 1.8rem;
-            color: var(--neon-red);
-            text-shadow: 0 0 10px var(--neon-red), 0 0 20px rgba(255, 59, 63, 0.5);
-            letter-spacing: 0.1rem;
-            margin-bottom: 5px;
-        }
-
-        .plaque-text {
-            font-size: 0.75rem;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 0.15rem;
-            background: -webkit-linear-gradient(#aaa, #555);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* Cursor Hint */
-        #cursor-hint {
+        .coaster {
             position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            width: 10px;
-            height: 10px;
-            border: 2px solid rgba(255,255,255,0.5);
+            bottom: 0px;
+            width: 100px;
+            height: 15px;
+            background: rgba(255,255,255,0.1);
             border-radius: 50%;
+            box-shadow: 0 0 20px var(--accent, var(--cyan));
+            transition: all 0.4s ease;
+        }
+
+        .concoction:hover .coaster {
+            box-shadow: 0 0 40px var(--accent, var(--cyan)), inset 0 0 15px var(--accent);
+            transform: scale(1.1);
+        }
+
+        /* Glassmorphism Base */
+        .vessel {
+            position: relative;
+            z-index: 2;
+            background: rgba(30,30,30, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 8px 32px 0 rgba(0,0,0,0.5);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            overflow: hidden;
+        }
+
+        .concoction:hover .vessel {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8), 0 0 30px var(--accent);
+        }
+
+        /* Holographic Text Output */
+        .holo-panel {
+            position: absolute;
+            top: -50px;
+            width: 250px;
+            background: rgba(0, 20, 30, 0.8);
+            border: 1px solid var(--accent);
+            border-radius: 5px;
+            padding: 15px;
+            color: #fff;
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            opacity: 0;
+            transform: translateY(20px) scale(0.9);
+            transition: all 0.4s ease;
             pointer-events: none;
-            z-index: 5;
+            backdrop-filter: blur(4px);
+            z-index: 10;
+            box-shadow: 0 0 15px var(--accent);
+            text-align: center;
+        }
+
+        .concoction:hover .holo-panel {
+            opacity: 1;
+            transform: translateY(-80px) scale(1);
+            pointer-events: auto;
+        }
+
+        .holo-panel h3 { font-family: var(--font-headers); color: var(--accent); margin-bottom: 8px; }
+        .holo-panel p { margin-bottom: 12px; color: #ccc; }
+
+        .btn-link {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 2px;
+            border: 1px solid var(--accent);
+            background: rgba(0,0,0,0.5);
+            color: var(--accent);
+            text-decoration: none;
+            text-transform: uppercase;
+            font-size: 0.75rem;
             transition: all 0.2s;
+            cursor: pointer;
         }
-        #cursor-hint.interactable {
-            border-color: var(--neon-cyan);
-            transform: translate(-50%, -50%) scale(1.5);
-            background: rgba(102, 252, 241, 0.2);
+        .btn-link:hover { background: var(--accent); color: #000; box-shadow: 0 0 10px var(--accent); }
+
+        /* --- Specific Modules --- */
+
+        /* Module 1: GlglStats (Pousse-Café) */
+        .mod-1 { --accent: var(--magenta); }
+        .mod-1 .vessel { width: 60px; height: 160px; border-radius: 5px 5px 8px 8px; }
+        .m1-liquid {
+            width: 100%;
+            height: 80%;
+            background: linear-gradient(to top, var(--magenta) 0%, var(--magenta) 25%, var(--cyan) 25%, var(--cyan) 50%, #ffff00 50%, #ffff00 75%, var(--lime) 75%, var(--lime) 100%);
+            transition: height 0.4s ease;
         }
+        .concoction.mod-1:hover .m1-liquid { height: 95%; animation: bubbleLiquid 2s infinite alternate; }
+
+        @keyframes bubbleLiquid {
+            0% { filter: contrast(1) brightness(1); }
+            100% { filter: contrast(1.5) brightness(1.2); }
+        }
+
+        /* Module 2: Ahuzat Dibuk (Rocks Glass Heatmap) */
+        .mod-2 { --accent: #ff4500; }
+        .mod-2 .vessel { width: 90px; height: 100px; border-radius: 5px 5px 20px 20px; }
+        .m2-liquid {
+            width: 100%; height: 60%;
+            background: radial-gradient(circle at bottom, #ff0000, #ff4500, #ffa500);
+            position: relative;
+            overflow: hidden;
+        }
+        .concoction.mod-2:hover .m2-liquid { height: 80%; }
+        .concoction.mod-2:hover .m2-liquid::after {
+            content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
+            background: radial-gradient(circle at 50% 120%, rgba(255,255,255,0.8), transparent);
+            animation: boil 0.5s infinite alternate;
+        }
+        @keyframes boil { 0% { transform: scale(1); opacity:0.5;} 100% { transform: scale(1.1); opacity: 1;} }
+        
+        .garnish-picks { position: absolute; top: -30px; display: flex; gap: 5px; opacity: 0; transition: 0.3s; z-index:20;}
+        .concoction.mod-2:hover .garnish-picks { opacity: 1; top: -45px; }
+        .pick { width: 2px; height: 40px; background: #ccc; position: relative; transform: rotate(15deg); }
+        .pick:nth-child(2) { transform: rotate(-10deg); }
+        .pick-label { position: absolute; top: -15px; left:-10px; background: #fff; color: #000; font-size: 8px; font-family: sans-serif; padding: 2px; border: 1px solid #000;}
+
+        /* Module 3: 2D Part Orienting (Geometric Ice) */
+        .mod-3 { --accent: #0044ff; }
+        .mod-3 .coaster-link { position: absolute; bottom:0; width: 100px; height: 15px; cursor: pointer; z-index:3; }
+        .mod-3 .vessel { width: 100px; height: 110px; border-radius: 5px 5px 15px 15px; background: rgba(0, 68, 255, 0.1); }
+        .ice-container { width: 100%; height: 100%; position: relative; }
+        .ice { position: absolute; width: 20px; height: 20px; border: 1px solid var(--accent); background: rgba(255,255,255,0.3); backdrop-filter: blur(2px); transition: all 0.5s ease; box-shadow: inset 0 0 5px var(--accent); }
+        
+        /* Scattered state */
+        .ice:nth-child(1) { top: 70%; left: 10%; transform: rotate(15deg); }
+        .ice:nth-child(2) { top: 60%; left: 50%; transform: rotate(-25deg); }
+        .ice:nth-child(3) { top: 80%; left: 60%; transform: rotate(45deg); }
+        .ice:nth-child(4) { top: 50%; left: 20%; transform: rotate(10deg); }
+        
+        /* Aligned square on hover */
+        .concoction.mod-3:hover .ice:nth-child(1) { top: 50%; left: 50%; margin-top:-20px; margin-left:-20px; transform: rotate(0deg); }
+        .concoction.mod-3:hover .ice:nth-child(2) { top: 50%; left: 50%; margin-top:-20px; margin-left:0px; transform: rotate(0deg); }
+        .concoction.mod-3:hover .ice:nth-child(3) { top: 50%; left: 50%; margin-top:0px; margin-left:-20px; transform: rotate(0deg); }
+        .concoction.mod-3:hover .ice:nth-child(4) { top: 50%; left: 50%; margin-top:0px; margin-left:0px; transform: rotate(0deg); }
+
+        /* Module 4: The Turing Jest (Connected Tubes) */
+        .mod-4 { --accent: #ffdd00; }
+        .mod-4 .vessel { background: none; border: none; box-shadow: none; display: flex; gap: 20px; align-items: flex-end; width: 120px; height: 150px; overflow: visible;}
+        .tube { width: 35px; height: 120px; background: rgba(30,30,30,0.4); border: 2px solid rgba(255,255,255,0.2); border-radius: 20px; position: relative; overflow: hidden; }
+        .tube-liq { width: 100%; height: 50%; position: absolute; bottom:0;}
+        .tube-1 .tube-liq { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+        .tube-2 .tube-liq { background: var(--magenta); box-shadow: 0 0 10px var(--magenta); }
+        .bridge { position: absolute; top: 70px; left: 35px; width: 40px; height: 10px; background: rgba(255,255,255,0.1); border-top: 2px solid rgba(255,255,255,0.2); border-bottom: 2px solid rgba(255,255,255,0.2); z-index: 0; overflow:hidden;}
+        
+        .spark { width: 5px; height: 5px; background: var(--accent); border-radius: 50%; position: absolute; top: 2px; opacity:0; }
+        .concoction.mod-4:hover .spark {
+            animation: sparkFly 0.5s infinite linear;
+            box-shadow: 0 0 10px var(--accent);
+        }
+        @keyframes sparkFly { 0% { left: 0; opacity:1; } 100% { left: 100%; opacity:1; } }
+
+        /* Module 5: Rhymes of Israel (Martini) */
+        .mod-5 { --accent: var(--cyan); }
+        .martini-base { width: 100px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 160px; position: relative; z-index: 2;}
+        .martini-bowl { width: 90px; height: 60px; clip-path: polygon(0 0, 100% 0, 50% 100%); background: rgba(255,255,255,0.1); border-top: 2px solid #fff; position: relative; display: flex; justify-content: center;}
+        .martini-stem { width: 4px; height: 70px; background: rgba(255,255,255,0.3); }
+        .martini-foot { width: 60px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 50%; }
+        
+        .rhyme-pour { position: absolute; bottom: 100%; color: var(--cyan); font-family: var(--font-code); font-size: 10px; line-height: 1; opacity: 0; text-shadow: 0 0 5px var(--cyan); white-space: nowrap; transform-origin: bottom center; transform: rotate(-90deg) translateX(40px);}
+        .concoction.mod-5:hover .rhyme-pour { animation: pourRhyme 2s infinite linear; }
+        @keyframes pourRhyme { 0% { opacity: 0; transform: rotate(-90deg) translateX(40px); } 50% { opacity: 1; } 100% { opacity: 0; transform: rotate(-90deg) translateX(-40px); } }
+        
+        /* Module 6: Hatul Basak (Cat Flask) */
+        .mod-6 { --accent: #9d00ff; }
+        .mod-6 .vessel { width: 100px; height: 120px; border-radius: 50% 50% 40% 40%; background: rgba(30,30,30,0.6); position: relative; }
+        .mod-6 .vessel::before, .mod-6 .vessel::after { content: ''; position: absolute; top: -15px; width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-bottom: 25px solid rgba(255,255,255,0.2); }
+        .mod-6 .vessel::before { left: 5px; transform: rotate(-20deg); }
+        .mod-6 .vessel::after { right: 5px; transform: rotate(20deg); }
+        .cat-liquid { position: absolute; bottom:0; width: 100%; height: 60%; background: var(--accent); border-radius: 0 0 40% 40%; box-shadow: inset 0 0 20px #000, 0 0 20px var(--accent); transition: height 0.3s;}
+        .concoction.mod-6:hover .cat-liquid { height: 75%; }
+        .floating-w { position: absolute; font-family: serif; color: #fff; opacity:0; font-size: 14px; text-shadow: 0 0 5px #fff;}
+        .concoction.mod-6:hover .floating-w:nth-child(2) { animation: floatW 2s infinite ease-in; left: 30%; bottom: 10%;}
+        .concoction.mod-6:hover .floating-w:nth-child(3) { animation: floatW 2.5s infinite ease-in 0.5s; right: 30%; bottom: 5%;}
+        @keyframes floatW { 0% { transform: translateY(0) rotate(0); opacity:1;} 100% { transform: translateY(-80px) rotate(180deg); opacity:0;} }
+
+        /* Module 7: The Meta Project (Tiny Mirror) */
+        .mod-7 { --accent: #ffffff; }
+        .mod-7 .vessel { width: 40px; height: 60px; border-radius: 2px 2px 20px 20px; transition: transform 0.3s; }
+        .mirror-liq { width: 100%; height: 40px; position: absolute; top: 10px; border-radius: 50%; background: radial-gradient(circle at center, #fff, #bbb, #555); box-shadow: inset 2px 2px 10px rgba(0,0,0,0.8), 0 0 10px #fff; transform: scaleX(-1); }
+        .concoction.mod-7:hover .vessel { transform: scale(1.5); }
+        .concoction.mod-7 a.mod-7-link { position: absolute; inset: 0; z-index: 10; cursor: pointer; }
+
+        /* Module 8: Social Connections (UV Tip Jar) */
+        .mod-8 { --accent: #8a2be2; }
+        .mod-8 .vessel { width: 110px; height: 140px; border-radius: 10px; background: rgba(10,0,20,0.5); border: 2px solid var(--accent); box-shadow: 0 0 15px var(--accent), inset 0 0 20px rgba(138, 43, 226, 0.4); }
+        .plasma-field { position: absolute; inset:0; background: radial-gradient(circle, rgba(138,43,226,0.2) 0%, transparent 70%); }
+        .card-container { position: absolute; bottom: 20px; display: flex; flex-direction: column; gap: 5px; width: 80%; }
+        .b-card { background: rgba(255,255,255,0.1); border: 1px solid var(--accent); color: #fff; font-size: 10px; padding: 5px; text-align: center; border-radius: 3px; backdrop-filter: blur(2px); transition: 0.3s; text-decoration: none;}
+        .concoction.mod-8 .b-card { animation: floatCard 4s infinite alternate ease-in-out; }
+        .b-card:nth-child(1) { animation-delay: 0s; transform: rotate(-5deg); }
+        .b-card:nth-child(2) { animation-delay: 1s; transform: rotate(5deg); }
+        .b-card:nth-child(3) { animation-delay: 2s; transform: rotate(-2deg); }
+        .concoction.mod-8:hover .b-card { background: rgba(138,43,226,0.6); box-shadow: 0 0 10px var(--accent); }
+        .b-card:hover { filter: brightness(1.5) scale(1.1); z-index: 5;}
+        @keyframes floatCard { 0% { transform: translateY(0) rotate(-5deg); } 100% { transform: translateY(-15px) rotate(5deg); } }
+
+        /* --- Footer --- */
+        footer {
+            background: #050505;
+            padding: 40px 20px;
+            border-top: 4px solid #333;
+            box-shadow: inset 0 10px 20px rgba(0,0,0,0.9);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .credit-text {
+            color: #666;
+            font-family: var(--font-headers);
+            font-style: italic;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            text-shadow: -1px -1px 1px #000, 1px 1px 1px #222;
+        }
+
+        .nixie-clock {
+            display: flex;
+            gap: 10px;
+            padding: 15px 25px;
+            background: #111;
+            border: 2px solid #222;
+            border-radius: 8px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(255, 95, 31, 0.1);
+        }
+
+        .nixie-clock div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .nixie-digits {
+            font-family: var(--font-code);
+            font-size: 2.5rem;
+            color: transparent;
+            -webkit-text-stroke: 1px rgba(255, 95, 31, 0.3);
+            text-shadow: 
+                0 0 5px var(--orange), 
+                0 0 10px var(--orange), 
+                0 0 20px var(--orange);
+            position: relative;
+        }
+
+        .nixie-label {
+            font-family: sans-serif;
+            font-size: 0.6rem;
+            color: #555;
+            margin-top: 5px;
+            text-transform: uppercase;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .shelf-container { grid-template-columns: 1fr; }
+            .neon-sign { font-size: 3rem; }
+            .lab-setup { transform: scale(0.8); }
+        }
+
     </style>
 </head>
 <body>
 
-    <!-- WebGL Canvas Container -->
-    <div id="webgl-container"></div>
-    <div id="cursor-hint"></div>
+    <!-- Canvas for Particle Background -->
+    <canvas id="bg-canvas"></canvas>
 
-    <!-- Holographic Header -->
-    <div id="header">
-        <h1>Geva Kipper</h1>
-        <p class="header-desc">Currently building the future of web infrastructure as a Software Engineer at Google.</p>
-        <p class="subtitle">Warning: Room layout is re-designed daily by AI and is thus ever-changing.</p>
-    </div>
+    <!-- Header & Hero Section -->
+    <section class="hero">
+        <h1 class="neon-sign">Geva Kipper</h1>
+        <div class="plaque">
+            <p>Currently brewing up solutions and mixing code as a Software Engineer at Google.</p>
+        </div>
 
-    <!-- Frosted Glass UI Overlay -->
-    <div id="ui-layer">
-        <div class="ui-card">
-            <button class="close-btn" id="close-btn">RETURN</button>
-            <h2 class="card-title" id="card-title">Project Name</h2>
-            <p class="card-desc" id="card-desc">Project description goes here...</p>
-            <div class="links-container" id="card-links">
-                <!-- Links injected via JS -->
+        <div class="bar-counter">
+            <div class="bar-surface-glow"></div>
+            
+            <div class="lab-setup">
+                <div class="shaker"></div>
+                <div class="flask-hero">
+                    <div class="liquid-stream"></div>
+                    <div class="evaporating-code">git commit -m<br>sudo apt-get<br>01101011<br>{ data }</div>
+                </div>
+            </div>
+            
+            <div class="ticker-container">
+                <div class="ticker-text">
+                    Menu changes daily: This space is re-designed every day by AI and is thus ever-changing. --- Menu changes daily: This space is re-designed every day by AI and is thus ever-changing. --- Menu changes daily: This space is re-designed every day by AI and is thus ever-changing.
+                </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- Footer Timer Plaque -->
-    <div id="footer">
-        <div class="timer" id="timer-display">0000:00:00:00</div>
-        <div class="plaque-text">Escape Room Environment Architected and Hallucinated by AI</div>
-    </div>
+    <!-- Tasting Menu (Projects) -->
+    <section class="menu-section">
+        <div class="shelf-container">
 
-    <!-- Import Maps for Modern Three.js and GSAP via CDN -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+            <!-- Module 1: GlglStats -->
+            <div class="concoction mod-1">
+                <div class="coaster"></div>
+                <div class="vessel">
+                    <div class="m1-liquid"></div>
+                </div>
+                <div class="holo-panel">
+                    <h3>GlglStats</h3>
+                    <p>Python project measuring and visualizing repetition in Israeli pop-chart songs using LZ77 patterns.</p>
+                    <a href="https://glglstats.geekip.dev" target="_blank" class="btn-link">Live Site</a>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn-link">PyData Talk</a>
+                </div>
+            </div>
 
-    <!-- Main Logic -->
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+            <!-- Module 2: Ahuzat Dibuk -->
+            <div class="concoction mod-2">
+                <div class="coaster"></div>
+                <div class="garnish-picks">
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="pick"><span class="pick-label">Ch13</span></a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="pick"><span class="pick-label">Mako</span></a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" class="pick"><span class="pick-label">Sec.TLV</span></a>
+                </div>
+                <div class="vessel">
+                    <div class="m2-liquid"></div>
+                </div>
+                <div class="holo-panel">
+                    <h3>Ahuzat Dibuk</h3>
+                    <p>Scraping and heat-map data visualization project mapping Tel-Aviv parking lot occupancy.</p>
+                </div>
+            </div>
 
-        // --- Data Configuration ---
-        const projects = [
-            {
-                title: "GlglStats",
-                desc: "A Python project measuring the repetitiveness of Israeli pop-chart songs using LZ77 compression and visualizing repetition patterns. Encased within a vintage, golden 3D tape deck retrofitted with LED data audio dials.",
-                links: [
-                    { label: "Launch Simulator", url: "https://glglstats.geekip.dev" },
-                    { label: "PyData TLV Presentation", url: "https://www.youtube.com/watch?v=jrKAtOsj1Lo" }
-                ]
-            },
-            {
-                title: "Ahuzat Dibuk",
-                desc: "A Python scraping and data visualization piece analyzing car parking lot occupancy, represented here as a glowing miniature topographical map of Tel-Aviv under a glass cloche.",
-                links: [
-                    { label: "Channel 13 Coverage", url: "https://13tv.co.il/item/news/domestic/internal/parking-902956407/" },
-                    { label: "Mako Coverage", url: "https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" },
-                    { label: "Secret Tel-Aviv Origin", url: "https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" }
-                ]
-            },
-            {
-                title: "2D Part Orienting",
-                desc: "A C++ implementation algorithm in an open-source computational geometry library used for constructing push plans. Simulated by a levitating kinetic polygon suspended and oriented inside rotating metal rings.",
-                links: [
-                    { label: "Initialize Push Plan (TAU CGL)", url: "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" }
-                ]
-            },
-            {
-                title: "The Turing Jest",
-                desc: "An LMSYS-like arena where LLMs compete at making and explaining puns, rated by users. Bound within a dual-faced digital theater mask executing simulated reasoning checks.",
-                links: [
-                    { label: "Enter The Arena", url: "https://jest.geekip.dev" }
-                ]
-            },
-            {
-                title: "Rhymes of Israel",
-                desc: "A Chrome extension utilizing an LLM to rewrite Israeli news headlines into comedic, high-school yearbook-style rhymes. Morphs dynamically into a glowing digital news tablet.",
-                links: [
-                    { label: "Install Module (Chrome Store)", url: "https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" }
-                ]
-            },
-            {
-                title: "Hatul Basak",
-                desc: "A Hebrew port of catfishing.net and Wikipedia-based Trivia game (AI-generated daily challenges & custom themes). Disguised as an interactable obsidian scatter-puzzle.",
-                links: [
-                    { label: "Execute Game Terminal", url: "https://hatulbasak.geekip.dev" }
-                ]
-            },
-            {
-                title: "The Simulation Meta",
-                desc: "You are looking at it. This very site is an intricately coded 3D environment architected as a sleek, futuristic escape room to house my digital consciousness and portfolio.",
-                links: [
-                    { label: "∞ Recurse Simulation", url: "https://geekip.dev" }
-                ]
-            },
-            {
-                title: "Security & Biometrics matrix",
-                desc: "Developer social indexing node. Validating handprint biometrics grants access to source communications matrix.",
-                links: [
-                    { label: "GitHub Access", url: "https://github.com/gevak" },
-                    { label: "LinkedIn Access", url: "https://linkedin.com/in/gevakip" },
-                    { label: "Facebook Access", url: "https://facebook.com/geva.kipper" }
-                ]
-            }
-        ];
+            <!-- Module 3: 2D Part Orienting -->
+            <div class="concoction mod-3">
+                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="coaster coaster-link"></a>
+                <div class="vessel">
+                    <div class="ice-container">
+                        <div class="ice"></div>
+                        <div class="ice"></div>
+                        <div class="ice"></div>
+                        <div class="ice"></div>
+                    </div>
+                </div>
+                <div class="holo-panel">
+                    <h3>2D Part Orienting</h3>
+                    <p>C++ implementation constructing a 'push plan' for mathematically orienting polygons. Click coaster for TAU page.</p>
+                </div>
+            </div>
 
-        // --- Scene Setup ---
-        const container = document.getElementById('webgl-container');
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x0b0c10, 0.03);
+            <!-- Module 4: The Turing Jest -->
+            <div class="concoction mod-4">
+                <div class="coaster"></div>
+                <div class="vessel">
+                    <div class="tube tube-1"><div class="tube-liq"></div></div>
+                    <div class="bridge"><div class="spark"></div></div>
+                    <div class="tube tube-2"><div class="tube-liq"></div></div>
+                </div>
+                <div class="holo-panel">
+                    <h3>The Turing Jest</h3>
+                    <p>An LMSYS-like arena where competing LLMs make and explain puns, rated by humans.</p>
+                    <a href="https://jest.geekip.dev" target="_blank" class="btn-link">Enter Arena</a>
+                </div>
+            </div>
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-        const centerPos = new THREE.Vector3(0, 1.6, 0); // Player head height
-        camera.position.copy(centerPos);
+            <!-- Module 5: Rhymes of Israel -->
+            <div class="concoction mod-5">
+                <div class="coaster"></div>
+                <div class="martini-base">
+                    <div class="martini-bowl">
+                        <div class="rhyme-pour">Roses are red, violets are blue, LLMs write rhymes, and news is too!</div>
+                    </div>
+                    <div class="martini-stem"></div>
+                    <div class="martini-foot"></div>
+                </div>
+                <div class="holo-panel">
+                    <h3>Rhymes of Israel</h3>
+                    <p>Chrome extension utilizing LLMs to rewrite Israeli news headlines into comedic rhyming couplets.</p>
+                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn-link">Install Olive</a>
+                </div>
+            </div>
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        container.appendChild(renderer.domElement);
+            <!-- Module 6: Hatul Basak -->
+            <div class="concoction mod-6">
+                <div class="coaster"></div>
+                <div class="vessel">
+                    <div class="cat-liquid"></div>
+                    <div class="floating-w">W</div>
+                    <div class="floating-w">W</div>
+                </div>
+                <div class="holo-panel">
+                    <h3>Hatul Basak</h3>
+                    <p>Hebrew port of catfishing.net: A Wikipedia trivia game with AI-generated challenges.</p>
+                    <a href="https://hatulbasak.geekip.dev" target="_blank" class="btn-link" style="border-radius: 10px 0 10px 0;">Play</a>
+                    <a href="https://hatulbasak.geekip.dev" target="_blank" class="btn-link" style="border-radius: 0 10px 0 10px;">Create</a>
+                </div>
+            </div>
 
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enablePan = false;
-        controls.enableZoom = false; // Zoom handled by GSAP
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        // Restrict camera to look around from center
-        controls.target.set(0, 1.6, -1);
+            <!-- Module 7: The Meta Project -->
+            <div class="concoction mod-7">
+                <div class="coaster"></div>
+                <div class="vessel">
+                    <div class="mirror-liq"></div>
+                </div>
+                <a href="https://geekip.dev" class="mod-7-link"></a>
+                <div class="holo-panel">
+                    <h3>The Meta Project</h3>
+                    <p>A portfolio website project (how meta! That's the site you are building. Click glass to loop).</p>
+                </div>
+            </div>
 
-        // --- Materials & Styling ---
-        const matObsidian = new THREE.MeshPhysicalMaterial({ color: 0x050508, roughness: 0.1, metalness: 0.8, clearcoat: 1.0 });
-        const matSteel = new THREE.MeshStandardMaterial({ color: 0x22252a, roughness: 0.6, metalness: 0.7 });
-        const matGold = new THREE.MeshStandardMaterial({ color: 0xc5a059, roughness: 0.2, metalness: 1.0 });
-        const matGlass = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 0.9, opacity: 1, metalness: 0, roughness: 0.1, ior: 1.5, thickness: 0.5, transparent: true });
+            <!-- Module 8: Social Connections -->
+            <div class="concoction mod-8">
+                <div class="coaster"></div>
+                <div class="vessel">
+                    <div class="plasma-field"></div>
+                    <div class="card-container">
+                        <a href="https://github.com/gevak" target="_blank" class="b-card">GitHub</a>
+                        <a href="https://linkedin.com/in/gevakip" target="_blank" class="b-card">LinkedIn</a>
+                        <a href="https://facebook.com/geva.kipper" target="_blank" class="b-card">Facebook</a>
+                    </div>
+                </div>
+                <div class="holo-panel">
+                    <h3>Tip Jar</h3>
+                    <p>Drop a connection into the plasma field.</p>
+                </div>
+            </div>
 
-        // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0x0a101f, 1.5);
-        scene.add(ambientLight);
+        </div>
+    </section>
+
+    <!-- Footer Machinery -->
+    <footer>
+        <p class="credit-text">Formula devised, mixed, and styled by an AI Model.</p>
         
-        const centerLight = new THREE.PointLight(0x66fcf1, 5, 20);
-        centerLight.position.set(0, 8, 0);
-        centerLight.castShadow = true;
-        scene.add(centerLight);
+        <div class="nixie-clock">
+            <div>
+                <span class="nixie-digits" id="nx-hr">00</span>
+                <span class="nixie-label">Hours</span>
+            </div>
+            <div style="color:var(--orange); font-size:2rem; line-height:1; font-family:var(--font-code); align-self:center;">:</div>
+            <div>
+                <span class="nixie-digits" id="nx-min">00</span>
+                <span class="nixie-label">Minutes</span>
+            </div>
+            <div style="color:var(--orange); font-size:2rem; line-height:1; font-family:var(--font-code); align-self:center;">:</div>
+            <div>
+                <span class="nixie-digits" id="nx-sec">00</span>
+                <span class="nixie-label">Seconds</span>
+            </div>
+        </div>
+    </footer>
 
-        // --- Environment (The Vault) ---
-        // Floor
-        const floorGeo = new THREE.CylinderGeometry(20, 20, 1, 64);
-        const floor = new THREE.Mesh(floorGeo, matObsidian);
-        floor.position.y = -0.5;
-        floor.receiveShadow = true;
-        scene.add(floor);
+    <script>
+        /* --- Background Particle System --- */
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
 
-        // Walls
-        const wallGeo = new THREE.CylinderGeometry(20, 20, 15, 64, 1, true);
-        const wallMat = new THREE.MeshStandardMaterial({ color: 0x111, roughness: 0.9, side: THREE.BackSide });
-        const wall = new THREE.Mesh(wallGeo, wallMat);
-        wall.position.y = 7;
-        scene.add(wall);
+        const chars = ['0', '1', '{', '}', '>'];
+        const colors = ['#00f3ff', '#39ff14', '#ffffff'];
+        let particles = [];
 
-        // --- Interactive Objects Array ---
-        const interactables = [];
-        const radius = 12; // Distance from center
-
-        // Utilities to build stylized geometries
-        function addPedestal(position, angle) {
-            const pedGeo = new THREE.CylinderGeometry(0.8, 1, 1.2, 8);
-            const pedestal = new THREE.Mesh(pedGeo, matSteel);
-            pedestal.position.copy(position);
-            pedestal.position.y = 0.6; // sit on floor
-            pedestal.lookAt(0, 0.6, 0);
-            pedestal.receiveShadow = true;
-            pedestal.castShadow = true;
-            scene.add(pedestal);
-
-            // Add a neon ring around pedestal
-            const ringGeo = new THREE.TorusGeometry(1.2, 0.05, 16, 64);
-            const ringMat = new THREE.MeshBasicMaterial({ color: 0x45a29e });
-            const ring = new THREE.Mesh(ringGeo, ringMat);
-            ring.rotation.x = Math.PI / 2;
-            ring.position.copy(pedestal.position);
-            ring.position.y = 0.05;
-            scene.add(ring);
-
-            return pedestal.position.clone().setY(1.5); // Return surface position
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
         }
 
-        function createHitbox(mesh, index) {
-            const geo = new THREE.BoxGeometry(2, 2.5, 2);
-            const mat = new THREE.MeshBasicMaterial({ visible: false }); // Invisible to eye, visible to raycaster
-            const hitbox = new THREE.Mesh(geo, mat);
-            hitbox.position.copy(mesh.position);
-            hitbox.userData = { id: index };
-            scene.add(hitbox);
-            interactables.push(hitbox);
-        }
-
-        // Object 0: GlglStats (Tape Deck)
-        function buildTapeDeck(pos, index) {
-            const group = new THREE.Group();
-            group.position.copy(pos);
-            const deck = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 1), matGold);
-            deck.castShadow = true;
-            group.add(deck);
-            
-            // Waveform visualizer
-            const waveGroup = new THREE.Group();
-            for(let i=0; i<10; i++) {
-                const bar = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshBasicMaterial({color: 0x66fcf1}));
-                bar.position.set(-0.6 + i*0.13, 0.3, 0);
-                waveGroup.add(bar);
-            }
-            group.add(waveGroup);
-            
-            group.userData.anim = (time) => {
-                waveGroup.children.forEach((bar, i) => {
-                    const h = 0.1 + Math.abs(Math.sin(time*5 + i)) * 0.4;
-                    bar.scale.y = h * 10;
-                    bar.position.y = 0.25 + (h / 2);
-                });
-            };
-            scene.add(group);
-            createHitbox(group, index);
-            return group;
-        }
-
-        // Object 1: Ahuzat Dibuk (Map/Cloche)
-        function buildMapCloche(pos, index) {
-            const group = new THREE.Group();
-            group.position.copy(pos);
-            
-            const cloche = new THREE.Mesh(new THREE.SphereGeometry(0.7, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), matGlass);
-            cloche.position.y = -0.2;
-            group.add(cloche);
-
-            const mapData = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.2, 16, 16), new THREE.MeshStandardMaterial({ color: 0x880000, emissive: 0x220000, wireframe: true}));
-            mapData.rotation.x = -Math.PI / 2;
-            mapData.position.y = -0.19;
-            group.add(mapData);
-
-            let heatActive = false;
-            group.userData.trigger = () => { heatActive = !heatActive };
-            group.userData.anim = (time) => {
-                if(heatActive) {
-                    mapData.material.color.setHex(0x00ff00);
-                    mapData.material.emissive.setHex(0x004400);
-                } else {
-                    mapData.material.color.setHex(0xff0000);
-                    mapData.material.emissive.setHex(0x220000);
-                }
-            };
-            scene.add(group);
-            createHitbox(group, index);
-            return group;
-        }
-
-        // Object 2: 2D Part Orienting
-        function buildKineticPolygon(pos, index) {
-            const group = new THREE.Group();
-            group.position.copy(pos);
-
-            const ring1 = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.05, 16, 32), matSteel);
-            const ring2 = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.05, 16, 32), matSteel);
-            const poly = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3), new THREE.MeshStandardMaterial({color: 0x66fcf1, emissive: 0x114444}));
-            
-            group.add(ring1, ring2, poly);
-
-            group.userData.anim = (time) => {
-                ring1.rotation.x = time;
-                ring1.rotation.y = time * 0.5;
-                ring2.rotation.y = -time;
-                ring2.rotation.z = time * 0.8;
-                poly.rotation.x = time * 0.2;
-            };
-            scene.add(group);
-            createHitbox(group, index);
-            return group;
-        }
-
-        // Object 3: The Turing Jest (Masks)
-        function buildMasks(pos, index) {
-            const group = new THREE.Group();
-            group.position.copy(pos);
-
-            const matMask = new THREE.MeshStandardMaterial({color: 0xeeeeee, roughness: 0.4});
-            const mask1 = new THREE.Mesh(new THREE.SphereGeometry(0.4, 32, 16, 0, Math.PI, 0, Math.PI), matMask);
-            mask1.position.set(-0.3, 0, 0);
-            mask1.rotation.y = -Math.PI/4;
-
-            const mask2 = new THREE.Mesh(new THREE.SphereGeometry(0.4, 32, 16, 0, Math.PI, 0, Math.PI), matObsidian);
-            mask2.position.set(0.3, 0, 0);
-            mask2.rotation.y = Math.PI/4;
-
-            group.add(mask1, mask2);
-            
-            group.userData.anim = (time) => {
-                mask1.position.y = Math.sin(time * 2) * 0.1;
-                mask2.position.y = Math.cos(time * 2) * 0.1;
-            };
-            scene.add(group);
-            createHitbox(group, index);
-            return group;
-        }
-
-        // Object 4: Rhymes of Israel (Yearbook -> Tablet)
-        function buildYearbook(pos, index) {
-            const group = new THREE.Group();
-            group.position.copy(pos);
-
-            const book = new THREE.Mesh(new THREE.BoxGeometry(1, 0.15, 1.4), new THREE.MeshStandardMaterial({color: 0x000033}));
-            const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.2), new THREE.MeshBasicMaterial({color: 0x45a29e}));
-            screen.rotation.x = -Math.PI / 2;
-            screen.position.y = 0.08;
-            group.add(book, screen);
-
-            group.userData.trigger = () => {
-                gsap.to(screen.material.color, {r: 0.4, g: 0.98, b: 0.94, duration: 0.5}); // glow up
-            }
-            scene.add(group);
-            createHitbox(group, index);
-            return group;
-        }
-
-        // Object 5: Hatul Basak (Puzzle Box)
-        function buildPuzzleBox(pos, index) {
-            const group = new THREE.Group();
-            group.position.copy(pos);
-
-            const box = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), matObsidian);
-            group.add(box);
-
-            const pieces = [];
-            const pMat = new THREE.MeshStandardMaterial({color: 0xffffff});
-            for(let i=0; i<5; i++) {
-                const p = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), pMat);
-                p.position.set((Math.random()-0.5)*2, (Math.random()-0.5)*2, (Math.random()-0.5)*2);
-                group.add(p);
-                pieces.push({mesh: p, orig: p.position.clone()});
+        class Particle {
+            constructor() {
+                this.reset();
+                this.y = Math.random() * height; // Initial random spread
             }
 
-            let scattered = true;
-            group.userData.trigger = () => {
-                scattered = !scattered;
-                pieces.forEach(p => {
-                    if(!scattered) {
-                         gsap.to(p.mesh.position, {x:0, y:0, z:0, duration: 1, ease: "back.inOut(1.7)"});
-                    } else {
-                         gsap.to(p.mesh.position, {x: p.orig.x, y: p.orig.y, z: p.orig.z, duration: 1});
-                    }
-                });
-            };
-            scene.add(group);
-            createHitbox(group, index);
-            return group;
-        }
-
-        // Object 6: The Simulation Meta (Mirror)
-        function buildMirror(pos, index) {
-            const group = new THREE.Group();
-            group.position.copy(pos);
-
-            const frame = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.8, 0.1), matSteel);
-            const mirrorMat = new THREE.MeshPhysicalMaterial({roughness: 0, metalness: 1, color: 0xaaaaaa});
-            const glass = new THREE.Mesh(new THREE.PlaneGeometry(1, 1.6), mirrorMat);
-            glass.position.z = 0.06;
-            group.add(frame, glass);
-
-            group.userData.trigger = () => {
-                gsap.to(glass.scale, {x: 0.9, y: 0.9, duration: 0.2, yoyo: true, repeat: 1});
+            reset() {
+                this.x = Math.random() * width;
+                this.y = height + 20;
+                this.size = Math.random() * 10 + 8;
+                this.speedY = Math.random() * 1.5 + 0.5;
+                this.char = chars[Math.floor(Math.random() * chars.length)];
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.opacity = Math.random() * 0.5 + 0.1;
+                this.wobble = Math.random() * Math.PI * 2;
+                this.wobbleSpeed = Math.random() * 0.05;
             }
-            scene.add(group);
-            createHitbox(group, index);
-            return group;
-        }
 
-        // Object 7: Security Matrix (Terminal)
-        function buildTerminal(pos, index) {
-            const group = new THREE.Group();
-            group.position.copy(pos);
+            update() {
+                this.y -= this.speedY;
+                this.wobble += this.wobbleSpeed;
+                this.x += Math.sin(this.wobble) * 0.5;
 
-            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 1.5, 8), matSteel);
-            base.rotation.x = Math.PI / 4;
-            const panel = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1), new THREE.MeshBasicMaterial({color: 0xff3b3f}));
-            panel.position.set(0, 0.4, 0.4);
-            panel.rotation.x = -Math.PI / 4;
-            group.add(base, panel);
-
-            group.userData.anim = (time) => {
-                panel.material.color.setHSL(0, 1, 0.3 + Math.abs(Math.sin(time*4))*0.2); // Pulse red
-            };
-            scene.add(group);
-            createHitbox(group, index);
-            return group;
-        }
-
-        const buildFunctions = [buildTapeDeck, buildMapCloche, buildKineticPolygon, buildMasks, buildYearbook, buildPuzzleBox, buildMirror, buildTerminal];
-        const activeObjectScripts = [];
-
-        // Distribute objects in a circle
-        for (let i = 0; i < 8; i++) {
-            const angle = (i / 8) * Math.PI * 2;
-            const x = Math.cos(angle) * radius;
-            const z = Math.sin(angle) * radius;
-            const basePos = new THREE.Vector3(x, 0, z);
-            
-            const surfacePos = addPedestal(basePos, angle);
-            const objGroup = buildFunctions[i](surfacePos, i);
-
-            // Add local light
-            const pLight = new THREE.PointLight(0x45a29e, 1, 4);
-            pLight.position.copy(surfacePos).add(new THREE.Vector3(0, 1, 0));
-            scene.add(pLight);
-
-            // Orient towards center
-            objGroup.lookAt(0, surfacePos.y, 0);
-            
-            if(objGroup.userData.anim) {
-                activeObjectScripts.push(objGroup.userData.anim);
-            }
-        }
-
-        // Add Exit Door behind Terminal (Object 7 is at index 7)
-        const doorGeo = new THREE.BoxGeometry(4, 8, 1);
-        const door = new THREE.Mesh(doorGeo, matSteel);
-        const doorAngle = (7 / 8) * Math.PI * 2;
-        door.position.set(Math.cos(doorAngle) * 19, 4, Math.sin(doorAngle) * 19);
-        door.lookAt(0, 4, 0);
-        scene.add(door);
-
-        // --- Interaction Logic ---
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-        let isUIVisible = false;
-        let animationActive = true;
-
-        const cursorHint = document.getElementById('cursor-hint');
-
-        window.addEventListener('pointermove', (e) => {
-            if(isUIVisible) return;
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(interactables);
-            
-            if(intersects.length > 0) {
-                cursorHint.classList.add('interactable');
-                document.body.style.cursor = 'pointer';
-            } else {
-                cursorHint.classList.remove('interactable');
-                document.body.style.cursor = 'default';
-            }
-        });
-
-        window.addEventListener('pointerdown', (e) => {
-            if(isUIVisible || e.target.closest('#ui-layer')) return;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(interactables);
-
-            if(intersects.length > 0) {
-                const targetObj = intersects[0].object;
-                const dataIndex = targetObj.userData.id;
-                
-                // Trigger assigned animation if exists (find group associated with hitbox)
-                // Hitbox shares exact position with group. 
-                const siblings = scene.children.filter(c => c.type === 'Group' && c.position.distanceTo(targetObj.position) < 0.1);
-                if(siblings[0] && siblings[0].userData.trigger) {
-                    siblings[0].userData.trigger();
+                // Change char occasionally
+                if (Math.random() < 0.01) {
+                    this.char = chars[Math.floor(Math.random() * chars.length)];
                 }
 
-                focusCameraOn(targetObj, dataIndex);
-            }
-        });
-
-        function focusCameraOn(targetMesh, dataIndex) {
-            isUIVisible = true;
-            controls.enabled = false;
-            cursorHint.style.opacity = 0;
-
-            const tPos = targetMesh.position.clone();
-            // Calculate a position slightly in front and up from the object, facing it from the center
-            const dirToCenter = new THREE.Vector3(0, tPos.y, 0).sub(tPos).normalize();
-            const camPos = tPos.clone().add(dirToCenter.multiplyScalar(4)).add(new THREE.Vector3(0, 1, 0));
-
-            // Animate Camera Position
-            gsap.to(camera.position, {
-                x: camPos.x,
-                y: camPos.y,
-                z: camPos.z,
-                duration: 1.5,
-                ease: "power3.inOut"
-            });
-
-            // Animate Camera LookAt target
-            gsap.to(controls.target, {
-                x: tPos.x,
-                y: tPos.y,
-                z: tPos.z,
-                duration: 1.5,
-                ease: "power3.inOut",
-                onUpdate: () => controls.update(),
-                onComplete: () => showUI(dataIndex)
-            });
-        }
-
-        const uiLayer = document.getElementById('ui-layer');
-        const uiTitle = document.getElementById('card-title');
-        const uiDesc = document.getElementById('card-desc');
-        const uiLinks = document.getElementById('card-links');
-
-        function showUI(index) {
-            const data = projects[index];
-            uiTitle.innerText = data.title;
-            uiDesc.innerText = data.desc;
-            
-            uiLinks.innerHTML = '';
-            data.links.forEach(link => {
-                const a = document.createElement('a');
-                a.href = link.url;
-                a.target = "_blank";
-                a.className = "action-link";
-                a.innerText = link.label;
-                uiLinks.appendChild(a);
-            });
-
-            uiLayer.classList.add('active');
-        }
-
-        document.getElementById('close-btn').addEventListener('click', () => {
-            uiLayer.classList.remove('active');
-            
-            // Revert Camera
-            gsap.to(camera.position, {
-                x: centerPos.x,
-                y: centerPos.y,
-                z: centerPos.z,
-                duration: 1.5,
-                ease: "power3.inOut"
-            });
-
-            // Look forward slightly
-            const forward = new THREE.Vector3(0, 1.6, -1);
-            gsap.to(controls.target, {
-                x: forward.x,
-                y: forward.y,
-                z: forward.z,
-                duration: 1.5,
-                ease: "power3.inOut",
-                onComplete: () => {
-                    controls.enabled = true;
-                    isUIVisible = false;
-                    cursorHint.style.opacity = 1;
+                if (this.y < -20) {
+                    this.reset();
                 }
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.opacity;
+                ctx.font = `${this.size}px 'Fira Code', monospace`;
+                ctx.fillText(this.char, this.x, this.y);
+            }
+        }
+
+        function initParticles() {
+            for (let i = 0; i < 50; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, width, height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
             });
-        });
+            requestAnimationFrame(animateParticles);
+        }
 
-        // --- Timer Logic ---
-        const timerDisplay = document.getElementById('timer-display');
-        // Calculate duration Since specific date. Counting UP acting as "locked in elapsed time".
-        const startDate = new Date('2026-04-20T02:03:25Z').getTime();
+        window.addEventListener('resize', resize);
+        resize();
+        initParticles();
+        animateParticles();
 
-        function updateTimer() {
+
+        /* --- Nixie Clock Logic --- */
+        const elHr = document.getElementById('nx-hr');
+        const elMin = document.getElementById('nx-min');
+        const elSec = document.getElementById('nx-sec');
+        
+        // Ignition date specified in prompt
+        const ignitionDate = new Date('2026-04-22T01:59:31Z').getTime();
+
+        function updateClock() {
             const now = Date.now();
-            let ms = Math.abs(now - startDate); // Use absolute to force count up representation
+            // Calculate absolute difference (acting as uptime elapsed, regardless of future/past relation)
+            let diff = Math.abs(now - ignitionDate) / 1000;
 
-            const hours = Math.floor(ms / (1000 * 60 * 60));
-            ms -= hours * 1000 * 60 * 60;
-            const mins = Math.floor(ms / (1000 * 60));
-            ms -= mins * 1000 * 60;
-            const secs = Math.floor(ms / 1000);
-            ms -= secs * 1000;
-            const frames = Math.floor(ms / 16); // Approx 60fps frame count representation for style
+            const hours = Math.floor(diff / 3600);
+            diff -= hours * 3600;
+            const minutes = Math.floor(diff / 60);
+            diff -= minutes * 60;
+            const seconds = Math.floor(diff);
 
-            const pad = (num, size) => ('000000' + num).slice(-size);
-            timerDisplay.innerText = `${pad(hours, 4)}:${pad(mins, 2)}:${pad(secs, 2)}:${pad(frames, 2)}`;
-            requestAnimationFrame(updateTimer);
-        }
-        updateTimer();
-
-        // --- Main Render Loop ---
-        const clock = new THREE.Clock();
-
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            const elapsedTime = clock.getElapsedTime();
-
-            if(animationActive) {
-                // Execute individual object procedural animations
-                activeObjectScripts.forEach(script => script(elapsedTime));
-                
-                // Slow rotation of vault ambient mechanics could go here.
-            }
-
-            if(!isUIVisible) {
-                controls.update(); // only allow user view adjustment when UI is closed
-            }
-            
-            renderer.render(scene, camera);
+            elHr.innerText = String(hours).padStart(2, '0');
+            elMin.innerText = String(minutes).padStart(2, '0');
+            elSec.innerText = String(seconds).padStart(2, '0');
         }
 
-        // --- Resize Handler ---
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        animate();
+        setInterval(updateClock, 1000);
+        updateClock(); /* Initial call */
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260420",
+          pageId: "20260422",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
