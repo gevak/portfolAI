@@ -6,7 +6,7 @@ from datetime import datetime
 import archive_utils
 import utils
 
-MODEL = 'openrouter/google/gemini-3.1-pro-preview'
+MODEL = 'openrouter/deepseek/deepseek-v4-pro'
 
 LIKE_BUTTON_CODE = """<!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
