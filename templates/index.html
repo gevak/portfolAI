@@ -2,555 +2,819 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - Interactive Environment</title>
-    
+    <title>Geva Kipper - Neo-IDE Portfolio</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400&family=VT323&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         :root {
-            /* Palette & Design Tokens */
-            --bg-canvas: #f2f2eb;
-            --grid-color: #dfdfd7;
-            --sys-black: #050505;
-            --sys-white: #ffffff;
-            --sys-gray: #c0c0c0;
-            --sys-dark-gray: #808080;
-            --sys-blue: #000080;
-            --sys-accent: #008080;
+            /* Palette & Theme Variables */
+            --bg-base: #09090b;
+            --glass-bg: rgba(24, 24, 27, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
             
-            --font-pixel: 'VT323', monospace;
-            --font-mono: 'IBM Plex Mono', monospace;
+            --text-primary: #e4e4e7;
+            --text-secondary: #a1a1aa;
             
-            --shadow: 4px 4px 0px 0px var(--sys-black);
-            --border-thick: 2px solid var(--sys-black);
-            --border-thin: 1px solid var(--sys-black);
+            --neon-cyan: #00f3ff;
+            --neon-green: #39ff14;
+            --neon-magenta: #ff00ff;
+            --warning-amber: #f59e0b;
             
-            --menu-height: 40px;
-            --ticker-height: 25px;
-            --taskbar-height: 45px;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-sans: 'Inter', sans-serif;
+            --font-serif: 'Playfair Display', serif;
+            
+            /* Syntax Highlighting */
+            --syn-keyword: #ff7b72;
+            --syn-string: #a5d6ff;
+            --syn-var: #79c0ff;
+            --syn-comment: #8b949e;
         }
 
-        /* Global Reset */
-        * { box-sizing: border-box; }
-        body, html {
-            margin: 0; padding: 0;
-            width: 100vw; height: 100vh;
-            overflow: hidden; /* Prevent scrolling, single viewport application */
-            background-color: var(--bg-canvas);
-            font-family: var(--font-mono);
-            color: var(--sys-black);
-            user-select: none;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
-        /* Retro Canvas Grid Pattern */
-        body::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            z-index: -1;
-            background-image: 
-                linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
-                linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
-            background-size: 8px 8px;
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            height: 100vh;
+            overflow: hidden; /* Prevent scrolling during IDE phase */
+            display: flex;
+            flex-direction: column;
+            background-image: radial-gradient(circle at top right, rgba(0, 243, 255, 0.05), transparent 40%),
+                              radial-gradient(circle at bottom left, rgba(255, 0, 255, 0.05), transparent 40%);
         }
 
-        /* ----- HEADER & TICKER ----- */
-        #header {
-            position: absolute; top: 0; left: 0; width: 100%;
-            z-index: 10000;
-        }
-        .menu-bar {
-            height: var(--menu-height);
-            background-color: var(--sys-black);
-            color: var(--sys-white);
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 15px; border-bottom: var(--border-thick);
-        }
-        .menu-bar .brand {
-            font-family: var(--font-pixel);
-            font-size: 26px; font-weight: bold; letter-spacing: 1px;
-            text-shadow: 2px 2px 0px rgba(255,255,255,0.2);
-        }
-        .menu-bar .tagline {
-            font-size: 14px;
-            text-align: right;
-            opacity: 0.9;
-            flex-grow: 1; margin-left: 20px;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        /* ----- GLASSMORPHISM UTILY ----- */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
         }
 
-        .ticker {
-            height: var(--ticker-height);
-            background-color: var(--sys-black);
-            color: var(--sys-white);
-            border-bottom: var(--border-thick);
-            overflow: hidden; white-space: nowrap;
-            display: flex; align-items: center;
-        }
-        .ticker-text {
-            font-family: var(--font-pixel);
-            font-size: 18px; letter-spacing: 1px;
-            display: inline-block;
-            padding-left: 100%;
-            animation: marquee 20s linear infinite;
-        }
-        @keyframes marquee {
-            0% { transform: translateX(0%); }
-            100% { transform: translateX(-100%); }
-        }
-
-        /* ----- DESKTOP & ICONS ----- */
-        #desktop {
+        /* ----- MAIN IDE LAYOUT (UNCOMPILED) ----- */
+        #workspace {
+            display: flex;
+            flex-grow: 1;
+            height: calc(100vh - 25px); /* Minus status bar */
             position: relative;
-            width: 100%; 
-            height: calc(100vh - var(--menu-height) - var(--ticker-height) - var(--taskbar-height));
-            top: calc(var(--menu-height) + var(--ticker-height));
+            z-index: 10;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        /* File Explorer (Left Pane) */
+        .file-explorer {
+            width: 250px;
+            border-right: 1px solid var(--glass-border);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .explorer-title {
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            font-size: 0.75rem;
+            color: var(--text-primary);
+        }
+        .file-tree ul { list-style: none; padding-left: 10px; }
+        .file-tree li { padding: 4px 0; cursor: default; }
+        .file-tree .active { color: var(--neon-cyan); }
+        .file-tree i { margin-right: 8px; width: 14px; text-align: center; }
+
+        /* Code Editor (Center Pane) */
+        .editor-pane {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding: 2rem 3rem;
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .code-line { display: flex; margin-bottom: 4px; }
+        .line-num { color: #4b5563; min-width: 30px; user-select: none; text-align: right; margin-right: 20px; }
+        
+        .type-keyword { color: var(--syn-keyword); }
+        .type-var { color: var(--syn-var); }
+        .type-string { color: var(--syn-string); }
+        .type-comment { color: var(--syn-comment); font-style: italic; }
+        
+        .warning-glow {
+            color: var(--warning-amber);
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+            font-style: italic;
+        }
+
+        /* Action Button */
+        .btn-compile {
+            position: absolute;
+            top: 2rem;
+            right: 3rem;
+            background: transparent;
+            color: var(--neon-green);
+            border: 1px solid var(--neon-green);
+            padding: 10px 20px;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2), inset 0 0 5px rgba(57, 255, 20, 0.1);
+            transition: all 0.3s ease;
+            animation: pulse-border 2s infinite;
+            z-index: 50;
+        }
+        .btn-compile:hover {
+            background: rgba(57, 255, 20, 0.1);
+            box-shadow: 0 0 20px rgba(57, 255, 20, 0.4), inset 0 0 10px rgba(57, 255, 20, 0.2);
+            text-shadow: 0 0 8px var(--neon-green);
+        }
+        .btn-compile:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            animation: none;
+        }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(57, 255, 20, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); }
+        }
+
+        /* Terminal (Bottom Pane) */
+        .terminal-pane {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0;
+            background: rgba(0, 0, 0, 0.85);
+            border-top: 1px solid var(--glass-border);
+            backdrop-filter: blur(15px);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
             overflow: hidden;
-        }
-
-        .desktop-icon {
-            position: absolute; width: 80px;
-            display: flex; flex-direction: column; align-items: center;
-            text-align: center; cursor: pointer;
-            padding: 5px; border: 1px dashed transparent;
-        }
-        .desktop-icon:hover, .desktop-icon.selected {
-            border: 1px dotted var(--sys-black);
-            background-color: rgba(0,0,0,0.05);
-        }
-        .icon-graphic {
-            font-size: 40px; line-height: 1; margin-bottom: 5px;
-            filter: drop-shadow(2px 2px 0px rgba(0,0,0,1));
-        }
-        .icon-title {
-            font-family: var(--font-pixel);
-            font-size: 16px; line-height: 1.1;
-            background: var(--bg-canvas);
-            padding: 2px;
-        }
-
-        /* ----- WINDOWS SYSTEM ----- */
-        .window {
-            position: absolute; display: none;
-            background-color: var(--sys-gray);
-            border: var(--border-thick);
-            box-shadow: var(--shadow);
-            width: 450px; max-width: 90vw;
+            transition: height 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 20;
+            display: flex;
             flex-direction: column;
         }
-        .window.active { display: flex; }
-        
-        .title-bar {
-            background-color: var(--sys-black); color: var(--sys-white);
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 4px 8px; cursor: move;
-            border-bottom: var(--border-thick);
+        .terminal-pane.active {
+            height: clamp(250px, 40vh, 400px);
         }
-        .title-bar-text {
-            font-family: var(--font-pixel); font-size: 20px; text-transform: uppercase;
+        .term-header {
+            padding: 8px 15px;
+            background: #1e1e1e;
+            border-bottom: 1px solid #333;
+            color: #ccc;
+            font-size: 0.75rem;
+            display: flex;
+            gap: 10px;
         }
-        .close-btn {
-            background-color: var(--sys-gray); border: var(--border-thick);
-            color: var(--sys-black); cursor: pointer;
-            font-family: var(--font-mono); font-weight: bold;
-            width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
-            box-shadow: 2px 2px 0px 0px var(--sys-black);
-            padding-bottom: 2px;
+        .term-content {
+            padding: 15px;
+            flex-grow: 1;
+            overflow-y: auto;
+            color: #d4d4d4;
         }
-        .close-btn:active {
-            box-shadow: 0px 0px 0px 0px var(--sys-black); transform: translate(2px, 2px);
-        }
-        
-        .window-content {
-            padding: 20px; overflow-y: auto; max-height: 60vh;
-            font-size: 14px; line-height: 1.5; color: var(--sys-black);
-            user-select: text; /* Allow text selection inside windows */
-        }
-        .window-content p { margin-top: 0; }
+        .log-line { margin-bottom: 5px; opacity: 0; animation: fadeIn 0.2s forwards; }
+        .log-time { color: #858585; margin-right: 10px; }
+        .log-success { color: var(--neon-green); }
+        .log-info { color: var(--neon-cyan); }
+        .log-warn { color: var(--warning-amber); }
 
-        /* Generic UI Controls inside windows */
-        .btn-group { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px; }
-        
-        a.retro-btn {
-            text-decoration: none; display: inline-block;
-            background-color: var(--bg-canvas); color: var(--sys-black);
-            border: var(--border-thick); box-shadow: var(--shadow);
-            padding: 8px 16px; font-weight: bold; cursor: pointer;
-            font-family: var(--font-pixel); font-size: 18px; text-transform: uppercase;
-            transition: all 0.05s linear;
-        }
-        a.retro-btn:active {
-            box-shadow: 0 0 0 transparent; transform: translate(4px, 4px);
-        }
-        
-        a.classic-link { color: var(--sys-blue); text-decoration: underline; cursor: pointer; }
-        a.classic-link:hover { color: var(--sys-accent); }
+        @keyframes fadeIn { to { opacity: 1; } }
 
-        /* Window-Specific Styling Hacks */
-        .win-dibuk-content {
-            background: linear-gradient(90deg, transparent 49%, rgba(0,0,0,0.1) 49%, rgba(0,0,0,0.1) 51%, transparent 51%), 
-                        linear-gradient(0deg, transparent 49%, rgba(0,0,0,0.1) 49%, rgba(0,0,0,0.1) 51%, transparent 51%);
-            background-size: 20px 20px;
-            padding: 15px; border: 1px inset var(--sys-dark-gray); background-color: #fff;
-        }
-        .win-rhymes-installer {
-            background-color: var(--sys-gray);
-            border-top: 2px solid #fff; border-left: 2px solid #fff;
-            border-bottom: 2px solid var(--sys-dark-gray); border-right: 2px solid var(--sys-dark-gray);
-            padding: 20px; display: flex; align-items: center; gap: 15px;
-        }
-        .network-grid {
-            display: flex; justify-content: space-around; padding: 20px 0;
-        }
-        .network-icon {
-            display: flex; flex-direction: column; align-items: center; text-decoration: none; color: black;
-            font-family: var(--font-pixel); font-size: 16px;
-        }
-        .network-icon svg { width: 48px; height: 48px; margin-bottom: 10px; filter: drop-shadow(4px 4px 0px black); }
-        .network-icon:hover { transform: scale(1.05); }
-
-        /* ----- FOOTER / TASKBAR ----- */
-        #taskbar {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            height: var(--taskbar-height);
-            background-color: var(--sys-gray); border-top: var(--border-thick);
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0 10px; z-index: 10000;
-        }
-        .taskbar-left {
-            font-weight: bold; font-size: 14px;
-        }
-        .taskbar-right {
-            border-top: 2px solid var(--sys-dark-gray); border-left: 2px solid var(--sys-dark-gray);
-            border-bottom: 2px solid var(--sys-white); border-right: 2px solid var(--sys-white);
-            background-color: #000; color: #0f0;
-            padding: 4px 12px; font-family: var(--font-mono); font-size: 16px; font-weight: bold;
-            box-shadow: inset 2px 2px 0px #000; letter-spacing: 2px;
+        /* ----- COMPILED GUI (GRID) ----- */
+        #compiled-gui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: calc(100vh - 25px);
+            z-index: 5; /* Behind workspace initially */
+            opacity: 0;
+            visibility: hidden;
+            overflow-y: auto;
+            padding: 40px;
+            transition: opacity 1s ease, visibility 1s ease;
         }
 
-        /* Mobile Adjustments */
+        #compiled-gui.show {
+            z-index: 20; /* Move above */
+            opacity: 1;
+            visibility: visible;
+        }
+
+        body.compiled {
+            overflow: auto; /* allow scrolling after compile */
+        }
+
+        .masonry-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-auto-rows: 280px;
+            gap: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Generic Card Styling */
+        .card {
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+        }
+        .card-content {
+            padding: 25px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 2;
+        }
+        .card-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 10px; }
+        .card-desc { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.5; flex-grow: 1;}
+        .card-actions { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;}
+        
+        .btn-link {
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        /* Specific Cards */
+        /* Box 1: GlglStats (Waveform / Compression config) */
+        .card-glgl {
+            background: linear-gradient(180deg, #111827 0%, #032b30 100%);
+            border: 1px solid var(--neon-cyan);
+            grid-row: span 2;
+        }
+        .card-glgl::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(90deg, rgba(0, 243, 255, 0.05) 0px, rgba(0, 243, 255, 0.05) 2px, transparent 2px, transparent 10px);
+            z-index: 1; pointer-events: none;
+        }
+        .card-glgl .btn-link.cyan { background: rgba(0, 243, 255, 0.1); color: var(--neon-cyan); border: 1px solid var(--neon-cyan); }
+        .card-glgl .btn-link.cyan:hover { background: rgba(0, 243, 255, 0.2); box-shadow: 0 0 10px rgba(0, 243, 255, 0.3); }
+
+        /* Box 2: Ahuzat Dibuk (Heatmap & Mini Dock) */
+        .card-ahuzat {
+            background: linear-gradient(135deg, #450a0a 0%, #78350f 50%, #b45309 100%);
+            border: 1px solid rgba(255,100,0,0.3);
+        }
+        .mini-dock {
+            display: flex;
+            gap: 12px;
+            background: rgba(0,0,0,0.4);
+            padding: 10px;
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .mini-dock a {
+            color: #fff; opacity: 0.7; font-size: 1.2rem; transition: all 0.2s;
+        }
+        .mini-dock a:hover { opacity: 1; transform: scale(1.2); color: var(--warning-amber); }
+
+        /* Box 3: 2D Part Orienting (C++ Header / Wireframe) */
+        .card-2d {
+            background: #0d1117;
+            border: 1px solid #3fb950;
+            font-family: var(--font-mono);
+        }
+        .card-2d .card-title { color: #d2a8ff; font-size: 1.1rem; }
+        .card-2d .card-desc { color: #8b949e; font-size: 0.85rem;}
+        .wireframe-container {
+            position: absolute; right: 10px; bottom: 10px; width: 100px; height: 100px; pointer-events: none; opacity: 0.3;
+        }
+        .poly1, .poly2 {
+            position: absolute; width: 40px; height: 40px; border: 2px solid #3fb950; transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .poly1 { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); top: 10px; left: 10px; }
+        .poly2 { clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); bottom: 10px; right: 10px; }
+        .card-2d:hover .poly1 { transform: translate(25px, 20px) rotate(90deg); opacity: 0.8; }
+        .card-2d:hover .poly2 { transform: translate(-20px, -20px) scale(0.8); opacity: 0.8; }
+        .card-2d .btn-link { background: #238636; color: white; border: none; font-family: var(--font-sans); }
+
+        /* Box 4: The Turing Jest (Combat / LMSYS) */
+        .card-jest {
+            background: #161b22;
+            border: 1px solid #30363d;
+            grid-column: span 2;
+        }
+        .chat-arena {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; position: relative;
+        }
+        .bubble {
+            padding: 10px 15px; border-radius: 15px; font-size: 0.85rem; max-width: 45%; position: relative;
+            font-family: var(--font-sans); font-weight: 500;
+        }
+        .bubble.left { background: rgba(248, 81, 73, 0.15); color: #f85149; border: 1px solid rgba(248, 81, 73, 0.3); border-bottom-left-radius: 2px;}
+        .bubble.right { background: rgba(88, 166, 255, 0.15); color: #58a6ff; border: 1px solid rgba(88, 166, 255, 0.3); border-bottom-right-radius: 2px; text-align: right;}
+        .vs-badge {
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            background: #30363d; padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 0.7rem; color: #fff;
+        }
+        .card-jest .btn-link { background: linear-gradient(90deg, #f85149, #58a6ff); color: white; border: none; }
+
+        /* Box 5: Rhymes of Israel (Chrome Pop-up) */
+        .card-rhymes {
+            background: #ffffff;
+            color: #333;
+            border: 1px solid #dadce0;
+            border-top: 24px solid #f1f3f4; /* Faked browser bar */
+            border-radius: 8px 8px 0 0;
+            background-image: 
+                radial-gradient(circle at 20% 30%, #e8eaed 2px, transparent 2px),
+                radial-gradient(circle at 80% 60%, #e8eaed 3px, transparent 3px),
+                radial-gradient(circle at 50% 80%, #e8eaed 2px, transparent 2px);
+        }
+        .card-rhymes::before {
+            content: '• • •'; font-size: 10px; color: #9aa0a6; position: absolute; top: -18px; left: 10px; letter-spacing: 2px;
+        }
+        .card-rhymes .card-title { color: #202124; }
+        .card-rhymes .card-desc { color: #5f6368; }
+        .btn-chrome { background: #1a73e8; color: white; border: none; border-radius: 4px; }
+        .btn-chrome:hover { background: #1557b0; }
+
+        /* Box 6: Hatul Basak (Wiki Serif Trivia) */
+        .card-hatul {
+            background: #fdfdfc;
+            color: #202122;
+            border: 1px solid #a2a9b1;
+            font-family: var(--font-serif);
+        }
+        .card-hatul .card-title {
+            border-bottom: 1px solid #a2a9b1; padding-bottom: 5px; margin-bottom: 15px; font-weight: normal; font-size: 1.6rem;
+        }
+        .card-hatul .card-desc { font-family: var(--font-sans); color: #54595d; }
+        .trivia-box {
+            background: #f8f9fa; border: 1px solid #eaecf0; padding: 10px; margin-top: 10px; font-size: 0.85rem; font-style: italic; border-left: 4px solid #36c;
+        }
+        .card-hatul .btn-link { background: #36c; color: white; border: none; font-family: var(--font-sans); }
+
+        /* Box 7: Meta Portfolio (Inception Window) */
+        .card-meta {
+            background: #000;
+            border: 1px solid #333;
+            box-shadow: 
+                inset 0 0 0 4px #111, inset 0 0 0 5px #333,
+                inset 0 0 0 12px #111, inset 0 0 0 13px #444,
+                inset 0 0 0 20px #111, inset 0 0 0 21px #555;
+            display: flex; align-items: center; justify-content: center; text-align: center;
+        }
+        .card-meta .card-content { padding: 40px; }
+        .card-meta .card-title { color: var(--neon-magenta); text-shadow: 0 0 10px rgba(255,0,255,0.5); }
+        .card-meta .btn-link { background: transparent; border: 1px solid var(--neon-magenta); color: var(--neon-magenta); margin: 0 auto; }
+        .card-meta .btn-link:hover { background: rgba(255,0,255,0.1); box-shadow: 0 0 10px rgba(255,0,255,0.4); }
+
+        /* Box 8: Social Connectivity (Minimal CLI) */
+        .card-social {
+            background: #000;
+            border: 1px solid #111;
+            font-family: var(--font-mono);
+            grid-column: span 2;
+        }
+        .card-social .card-content { justify-content: center; }
+        .social-cli { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 15px; }
+        .social-cli li { font-size: 0.95rem; display: flex; align-items: center; gap: 10px;}
+        .cli-prompt { color: var(--neon-green); font-weight: bold; }
+        .cli-cmd { color: #a5d6ff; }
+        .cli-link { color: var(--text-secondary); text-decoration: none; transition: color 0.2s;}
+        .social-cli li:hover .cli-link { color: #fff; text-decoration: underline; }
+
+        /* ----- STATUS BAR (BOTTOM) ----- */
+        .status-bar {
+            height: 25px;
+            background: #007acc; /* VS Code Blue standard, adjust to dark theme */
+            background: #1e1e1e;
+            border-top: 1px solid var(--glass-border);
+            color: #ccc;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            z-index: 100;
+        }
+
+        .status-left i { margin-right: 5px; color: var(--neon-cyan); }
+        .status-right { background: #2d2d30; padding: 0 10px; height: 100%; display: flex; align-items: center;}
+
+        /* Utilities */
+        .hidden { display: none !important; }
+        
         @media (max-width: 768px) {
-            .menu-bar .tagline { display: none; }
-            .taskbar-left { font-size: 10px; }
-            .window { width: 90vw !important; }
+            .file-explorer { display: none; }
+            .card-glgl, .card-jest, .card-social { grid-column: span 1; grid-row: span 1; }
+            .editor-pane { padding: 1.5rem; }
+            .btn-compile { top: 1rem; right: 1rem; font-size: 0.8rem; padding: 8px 12px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Header UI -->
-    <header id="header">
-        <div class="menu-bar">
-            <span class="brand">Geva Kipper</span>
-            <span class="tagline">Software Engineer building the future of Cloud Infrastructure at Google.</span>
-        </div>
-        <div class="ticker">
-            <div class="ticker-text">System Note: This website interface is hallucinated and re-designed each day by AI, making it an ever-changing digital environment.</div>
-        </div>
-    </header>
+    <!-- PRIMARY UNCOMPILED IDE WORKSPACE -->
+    <main id="workspace">
+        
+        <aside class="file-explorer glass-panel">
+            <div class="explorer-title">Explorer</div>
+            <div class="file-tree">
+                <ul>
+                    <li><i class="fa-solid fa-chevron-down"></i> PORTFOLIO_V2</li>
+                    <ul style="padding-left: 20px;">
+                        <li><i class="fa-regular fa-folder"></i> src</li>
+                        <li><i class="fa-regular fa-folder"></i> components</li>
+                        <li><i class="fa-regular fa-folder"></i> assets</li>
+                        <li class="active"><i class="fa-brands fa-js" style="color: #f7df1e;"></i> main.js</li>
+                        <li><i class="fa-solid fa-file-code" style="color: #38bdf8;"></i> styles.css</li>
+                        <li><i class="fa-solid fa-gear" style="color: #6b7280;"></i> package.json</li>
+                    </ul>
+                </ul>
+            </div>
+        </aside>
 
-    <!-- Desktop Environment -->
-    <div id="desktop">
-        <!-- Icons injected via JS -->
+        <section class="editor-pane glass-panel">
+            <button id="btn-compile" class="btn-compile"><i class="fa-solid fa-play"></i> Compile & Run</button>
+            
+            <div class="code-editor">
+                <div class="code-line">
+                    <span class="line-num">1</span>
+                    <span class="type-comment">/**</span>
+                </div>
+                <div class="code-line">
+                    <span class="line-num">2</span>
+                    <span class="type-comment">&nbsp;* Initializes the Developer Entity.</span>
+                </div>
+                <div class="code-line">
+                    <span class="line-num">3</span>
+                    <span class="type-comment">&nbsp;*/</span>
+                </div>
+                <div class="code-line">
+                    <span class="line-num">4</span>
+                    <span class="type-keyword">const</span>&nbsp;<span class="type-var">developer</span>&nbsp;=&nbsp;<span class="type-string">"Geva Kipper"</span>;
+                </div>
+                <div class="code-line">
+                    <span class="line-num">5</span>
+                </div>
+                <div class="code-line">
+                    <span class="line-num">6</span>
+                    <span class="type-keyword">const</span>&nbsp;<span class="type-var">status</span>&nbsp;=&nbsp;<span class="type-string">"Currently building scalable solutions and engineering at Google."</span>;
+                </div>
+                <div class="code-line">
+                    <span class="line-num">7</span>
+                </div>
+                <div class="code-line">
+                    <span class="line-num">8</span>
+                    <span class="type-comment warning-glow">// WARNING: This website is re-designed each day by AI and is thus ever-changing.</span>
+                </div>
+                <div class="code-line">
+                    <span class="line-num">9</span>
+                </div>
+                <div class="code-line">
+                    <span class="line-num">10</span>
+                    <span class="type-keyword">function</span>&nbsp;<span class="type-var">initPortfolio</span>()&nbsp;{
+                </div>
+                <div class="code-line">
+                    <span class="line-num">11</span>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="type-var">system</span>.<span class="type-keyword">compile</span>(developer, status);
+                </div>
+                <div class="code-line">
+                    <span class="line-num">12</span>
+                    }
+                </div>
+                <div class="code-line">
+                    <span class="line-num">13</span>
+                </div>
+                <div class="code-line">
+                    <span class="line-num">14</span>
+                    <span class="type-var">initPortfolio</span>();
+                </div>
+                <div class="code-line" style="margin-top: 20px; opacity: 0.5;">
+                    <span class="line-num">~</span>
+                </div>
+                <div class="code-line" style="opacity: 0.5;">
+                    <span class="line-num">~</span>
+                </div>
+            </div>
+            
+            <!-- Inactive Terminal -->
+            <div id="terminal" class="terminal-pane">
+                <div class="term-header">
+                    <span>TERMINAL</span>
+                    <span>OUTPUT</span>
+                    <span>DEBUG CONSOLE</span>
+                </div>
+                <div id="term-content" class="term-content">
+                    <!-- Logs injected via JS -->
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- COMPILED GUI LAYER (Initially Hidden) -->
+    <div id="compiled-gui">
+        <div class="masonry-grid">
+            
+            <!-- Box 1: GlglStats -->
+            <div class="card glass-panel card-glgl">
+                <div class="card-content">
+                    <div class="card-title">GlglStats</div>
+                    <div class="card-desc">
+                        A comprehensive data analytics platform and visualization tool analyzing Galgalatz radio station statistics. Uses advanced parsing and lightweight rendering. 
+                        Presented deep-dive methodology at PyData Tel Aviv.
+                    </div>
+                    <div class="card-actions">
+                        <a href="https://glglstats.geekip.dev" target="_blank" class="btn-link cyan"><i class="fa-solid fa-arrow-up-right-from-square"></i> Live App</a>
+                        <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn-link cyan"><i class="fa-solid fa-play"></i> PyData Talk</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 2: Ahuzat Dibuk -->
+            <div class="card glass-panel card-ahuzat">
+                <div class="card-content">
+                    <div class="card-title">Ahuzat Dibuk</div>
+                    <div class="card-desc">
+                        An automated scraper mapping real-time Tel-Aviv parking availability. It exposes patterns in urban infrastructure and caused a significant stir in local media and communities.
+                    </div>
+                    <div class="card-actions" style="margin-top: auto;">
+                        <div class="mini-dock">
+                            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" title="Channel 13 News" target="_blank"><i class="fa-solid fa-tv"></i></a>
+                            <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" title="Mako Tek" target="_blank"><i class="fa-regular fa-newspaper"></i></a>
+                            <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" title="Secret Tel Aviv" target="_blank"><i class="fa-brands fa-facebook"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 3: 2D Part Orienting -->
+            <div class="card glass-panel card-2d">
+                <div class="wireframe-container">
+                    <div class="poly1"></div>
+                    <div class="poly2"></div>
+                </div>
+                <div class="card-content">
+                    <div class="card-title">#include &lt;orient.h&gt;</div>
+                    <div class="card-desc">
+                        // Computational Geometry Project<br>
+                        // Algorithm implementation for orienting 2D polygonal parts using a parallel-jaw gripper, minimizing uncertainty via push operations.<br><br>
+                        std::cout << "O(n^2 log n) complexity";
+                    </div>
+                    <div class="card-actions">
+                        <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn-link"><i class="fa-brands fa-github-alt"></i> Source & Info</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 4: The Turing Jest -->
+            <div class="card glass-panel card-jest">
+                <div class="card-content">
+                    <div class="chat-arena">
+                        <div class="bubble left">"Tell me a joke about a buffer overflow..."</div>
+                        <div class="vs-badge">VS</div>
+                        <div class="bubble right">"A C programmer walks into a bar and orders %s beers."</div>
+                    </div>
+                    <div class="card-title">The Turing Jest</div>
+                    <div class="card-desc">
+                        An LMSYS-style combat arena evaluating LLM humor capabilities. Users act as blind judges in head-to-head model battles, generating elo-ratings for comedic timing and creativity across various architectures.
+                    </div>
+                    <div class="card-actions">
+                        <a href="https://jest.geekip.dev" target="_blank" class="btn-link"><i class="fa-solid fa-gavel"></i> Enter the Arena</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 5: Rhymes of Israel -->
+            <div class="card card-rhymes">
+                <div class="card-content">
+                    <div class="card-title">Rhymes of Israel</div>
+                    <div class="card-desc">
+                        A browser extension adding playful, culturally relevant Israeli rhyming slang and doodles across your browsing experience. Injecting local charm into the sterile web.
+                    </div>
+                    <div class="card-actions" style="margin-top:auto">
+                        <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn-link btn-chrome"><i class="fa-brands fa-chrome"></i> Install Extension</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 6: Hatul Basak -->
+            <div class="card card-hatul">
+                <div class="card-content">
+                    <div class="card-title">Hatul Basak</div>
+                    <div class="card-desc">
+                        A daily linguistic trivia puzzle wrapped in a classic encyclopedic aesthetic. Figure out the connections, decode the wordplays, and test your Hebrew lexical elasticity.
+                    </div>
+                    <div class="trivia-box">
+                        Daily Challenge #402: "What links a feline and a military operation?"
+                    </div>
+                    <div class="card-actions">
+                        <a href="https://hatulbasak.geekip.dev" target="_blank" class="btn-link"><i class="fa-solid fa-puzzle-piece"></i> Play Daily Puzzle</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Box 7: Meta Portfolio -->
+            <div class="card card-meta">
+                <div class="card-content">
+                    <div class="card-title">The Meta Portfolio</div>
+                    <div class="card-desc" style="color: #aaa;">
+                        A recursive observation. You are currently viewing a fractal representation of the system designed to represent the system.
+                    </div>
+                    <div class="card-actions">
+                        <a href="https://geekip.dev" target="_self" class="btn-link"><i class="fa-solid fa-infinity"></i> return this;</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 8: Social Connectivity -->
+            <div class="card card-social">
+                <div class="card-content">
+                    <ul class="social-cli">
+                        <li>
+                            <span class="cli-prompt">$</span>
+                            <span class="cli-cmd">cat</span> ~/.github_profile
+                            <a href="https://github.com/gevak" target="_blank" class="cli-link">github.com/gevak</a>
+                        </li>
+                        <li>
+                            <span class="cli-prompt">$</span>
+                            <span class="cli-cmd">curl</span> -L api.linkedin.com/user
+                            <a href="https://linkedin.com/in/gevakip" target="_blank" class="cli-link">linkedin.com/in/gevakip</a>
+                        </li>
+                        <li>
+                            <span class="cli-prompt">$</span>
+                            <span class="cli-cmd">ping</span> graph.facebook.com
+                            <a href="https://facebook.com/geva.kipper" target="_blank" class="cli-link">facebook.com/geva.kipper</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
     </div>
 
-    <!-- Container for dynamic windows injected via JS -->
-    <div id="windows-container"></div>
-
-    <!-- Taskbar UI -->
-    <footer id="taskbar">
-        <div class="taskbar-left">Designed and Generated by an Artificial Intelligence Model.</div>
-        <div class="taskbar-right" id="stopwatch" title="Elapsed base time: 2026-04-28 02:14:35">00:00:00</div>
+    <!-- STICKY STATUS BAR -->
+    <footer class="status-bar">
+        <div class="status-left">
+            <i class="fa-solid fa-bolt"></i> System compiled and generated by AI
+        </div>
+        <div class="status-right" id="stopwatch">
+            00:00:00
+        </div>
     </footer>
 
-
+    <!-- INTERACTIVITY LOGIC -->
     <script>
-        // --- Core Data defining the File System / Windows ---
-        const systemFiles = [
-            {
-                id: 'glglstats',
-                title: 'GlglStats.exe',
-                icon: '🎵',
-                x: 3, y: 5,
-                content: `
-                    <div style="display: flex; gap: 15px; margin-bottom: 10px;">
-                        <div style="font-size: 50px;">🎵</div>
-                        <div>
-                            <p><b>GlglStats</b> is a Python project measuring the repetitiveness of Israeli pop-chart songs utilizing LZ77 compression algorithms. It elegantly visualizes underlying structural patterns in famous national tracks.</p>
-                        </div>
-                    </div>
-                    <div class="btn-group">
-                        <a class="retro-btn" href="https://glglstats.geekip.dev" target="_blank">View Live Analysis</a>
-                        <a class="retro-btn" href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank">PyData TLV Presentation</a>
-                    </div>
-                `
-            },
-            {
-                id: 'ahuzat',
-                title: 'Ahuzat_Dibuk.dat',
-                icon: '🅿️',
-                x: 3, y: 25,
-                content: `
-                    <div class="win-dibuk-content">
-                        <p><strong>Ahuzat Dibuk</strong> maps Tel-Aviv parking lot occupancy for local residents through rigorous Python web scraping and data visualization techniques.</p>
-                        <p>Original Publication: <a class="classic-link" href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank">Secret Tel Aviv Post</a></p>
-                    </div>
-                    <div class="btn-group">
-                        <a class="retro-btn" href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">Press: Channel 13</a>
-                        <a class="retro-btn" href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">Press: Mako</a>
-                    </div>
-                `
-            },
-            {
-                id: 'part-orienting',
-                title: '2D_Part_Orienting.cpp',
-                icon: '📐',
-                x: 3, y: 45,
-                content: `
-                    <div style="text-align:center; margin-bottom:15px;">
-                        <svg width="120" height="120" viewBox="0 0 100 100" style="filter: drop-shadow(4px 4px 0px #000);">
-                            <polygon points="50,10 90,40 70,90 30,90 10,40" fill="none" stroke="#000" stroke-width="4"/>
-                            <circle cx="50" cy="50" r="3" fill="#000"/>
-                        </svg>
-                    </div>
-                    <p>A C++ implementation operating within an open-source computational geometry library. This project focuses on building an optimal, efficient push plan to orient complex polygons.</p>
-                    <div class="btn-group" style="justify-content: center;">
-                        <a class="retro-btn" href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank">View Code & Docs</a>
-                    </div>
-                `
-            },
-            {
-                id: 'turing-jest',
-                title: 'The_Turing_Jest.url',
-                icon: '🎭',
-                x: 3, y: 65,
-                content: `
-                    <div style="font-size: 60px; text-align: center; margin-bottom: 10px;">🎭</div>
-                    <p>Welcome to an LMSYS-styled competitive arena where generative LLMs battle over generating and intricately explaining puns. Results are graded live by community user ratings.</p>
-                    <div class="btn-group" style="justify-content: center;">
-                        <a class="retro-btn" href="https://jest.geekip.dev" target="_blank">Enter the Arena</a>
-                    </div>
-                `
-            },
-            {
-                id: 'rhymes',
-                title: 'Rhymes_of_Israel.exe',
-                icon: '💾',
-                x: 80, y: 5,
-                content: `
-                    <div class="win-rhymes-installer">
-                        <div style="font-size: 48px;">🧙‍♂️</div>
-                        <div>
-                            <h3 style="margin-top:0;">Install Wizard</h3>
-                            <p>This browser plugin utilizes sophisticated LLMs to dynamically rewrite depressing Israeli news headlines into comedic, high-school yearbook-style rhymes.</p>
-                        </div>
-                    </div>
-                    <div class="btn-group" style="justify-content: flex-end;">
-                        <a class="retro-btn" href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" style="background:#008080; color:#fff;">Install Plugin</a>
-                    </div>
-                `
-            },
-            {
-                id: 'hatul-basak',
-                title: 'Hatul_Basak.game',
-                icon: '🐟',
-                x: 80, y: 25,
-                content: `
-                    <div style="display:flex; align-items:center; gap:20px; font-family:var(--font-pixel);">
-                        <div style="font-size:80px;">🐟</div>
-                        <p style="font-size: 20px;">A Hebrew port of the hit Wikipedia trivia game <a class="classic-link" href="https://catfishing.net" target="_blank">catfishing.net</a>. Uses AI to craft daily challenges and allows players to formulate their own themed puzzles.</p>
-                    </div>
-                    <div class="btn-group">
-                        <a class="retro-btn" href="https://hatulbasak.geekip.dev" target="_blank">Play Daily Puzzle</a>
-                    </div>
-                `
-            },
-            {
-                id: 'meta-portfolio',
-                title: 'Portfolio_Recursion',
-                icon: '🗂️',
-                x: 80, y: 45,
-                content: `
-                    <div style="text-align:center;">
-                        <div style="font-size:40px;">📁 <span style="font-size: 20px;">➔</span> 📂</div>
-                        <br>
-                        <p><strong>A portfolio website project.</strong></p>
-                        <p>How incredibly meta! The project detailed in this folder is the precise digital environment you are navigating right now.</p>
-                        <div class="btn-group" style="justify-content:center;">
-                            <a class="retro-btn" href="https://geekip.dev" target="_blank">Execute Loop (geekip.dev)</a>
-                        </div>
-                    </div>
-                `
-            },
-            {
-                id: 'network',
-                title: 'My Network Places',
-                icon: '🌐',
-                x: 80, y: 65,
-                content: `
-                    <p style="text-align:center; font-weight:bold;">Remote Host Connections Setup</p>
-                    <div class="network-grid">
-                        <a class="network-icon" href="https://github.com/gevak" target="_blank">
-                            <svg viewBox="0 0 24 24"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.1-.8.1-.8.1-.8 1.2.1 1.9 1.2 1.9 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg>
-                            GitHub
-                        </a>
-                        <a class="network-icon" href="https://linkedin.com/in/gevakip" target="_blank">
-                            <svg viewBox="0 0 24 24"><path d="M20.4 20.5H16.8v-5.6c0-1.3 0-3-1.8-3s-2.1 1.4-2.1 2.9v5.7H9.3V9H12.8v1.6c.5-1 1.8-2 3.7-2 4 0 4.7 2.6 4.7 6v5.9zM5.3 7.4A2.1 2.1 0 1 1 5.3 3.3a2.1 2.1 0 0 1 0 4.2zM7.1 20.5H3.6V9H7.1v11.5z"/></svg>
-                            LinkedIn
-                        </a>
-                        <a class="network-icon" href="https://facebook.com/geva.kipper" target="_blank">
-                            <svg viewBox="0 0 24 24"><path d="M22.6 12A10.6 10.6 0 0 0 12 1.4 10.6 10.6 0 0 0 1.4 12c0 5.3 3.8 9.7 9 10.5V15H7.7v-3h2.7V9.7c0-2.6 1.6-4 3.9-4 1.1 0 2.3.2 2.3.2v2.5h-1.3c-1.3 0-1.7.8-1.7 1.6V12h2.9l-.5 3h-2.4v7.5a10.6 10.6 0 0 0 9-10.5z"/></svg>
-                            Facebook
-                        </a>
-                    </div>
-                `
-            }
-        ];
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnCompile = document.getElementById('btn-compile');
+            const terminal = document.getElementById('terminal');
+            const termContent = document.getElementById('term-content');
+            const workspace = document.getElementById('workspace');
+            const compiledGui = document.getElementById('compiled-gui');
+            const stopwatchEl = document.getElementById('stopwatch');
 
-        // --- Initialization ---
-        const desktop = document.getElementById('desktop');
-        const winContainer = document.getElementById('windows-container');
-        let globalZIndex = 100; // Starting z-index for windows
-
-        // Build UI Elements
-        systemFiles.forEach(file => {
-            // 1. Create Desktop Icon
-            const icon = document.createElement('div');
-            icon.className = 'desktop-icon';
-            icon.style.left = file.x + '%';
-            icon.style.top = file.y + '%';
-            icon.innerHTML = `<div class="icon-graphic">${file.icon}</div><div class="icon-title">${file.title}</div>`;
+            // --- STOPWATCH LOGIC ---
+            // "elapsed time since 2026-04-29 02:17:05"
+            // Note: treating timestamp as a strict point of absolute difference.
+            const targetDate = new Date('2026-04-29T02:17:05').getTime();
             
-            // Icon Selection Interaction
-            icon.addEventListener('mousedown', (e) => {
-                document.querySelectorAll('.desktop-icon').forEach(el => el.classList.remove('selected'));
-                icon.classList.add('selected');
-                e.stopPropagation();
+            function updateStopwatch() {
+                const now = Date.now();
+                const diffSecs = Math.floor(Math.abs(now - targetDate) / 1000);
+                
+                const hours = Math.floor(diffSecs / 3600);
+                const minutes = Math.floor((diffSecs % 3600) / 60);
+                const seconds = diffSecs % 60;
+                
+                const hFormat = String(hours).padStart(2, '0');
+                const mFormat = String(minutes).padStart(2, '0');
+                const sFormat = String(seconds).padStart(2, '0');
+                
+                stopwatchEl.textContent = `${hFormat}:${mFormat}:${sFormat}`;
+            }
+            
+            setInterval(updateStopwatch, 1000);
+            updateStopwatch(); // run once immediately
+
+            // --- COMPILE ANIMATION LOGIC ---
+            const buildLogs = [
+                { text: "> Initiating build sequence...", type: "info", delay: 300 },
+                { text: "[yarn] Resolving dependencies...", type: "log", delay: 700 },
+                { text: "[webpack] Building projects...", type: "log", delay: 400 },
+                { text: "WARN: Unused variables detected in memory.", type: "warn", delay: 600 },
+                { text: "[module] Linking GlglStats core...", type: "log", delay: 300 },
+                { text: "[module] Scraping Ahuzat Dibuk endpoints...", type: "log", delay: 800 },
+                { text: "[module] Injecting Turing Jest LLM logic...", type: "log", delay: 400 },
+                { text: "Optimizing CSS Grid payloads...", type: "log", delay: 900 },
+                { text: "[success] Build complete with exit code 0.", type: "success", delay: 500 },
+                { text: "> Launching Compiled GUI...", type: "info", delay: 600 }
+            ];
+
+            function addLogLine(logObj) {
+                const line = document.createElement('div');
+                line.className = 'log-line';
+                
+                const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: "numeric", minute: "numeric", second: "numeric", fractionalSecondDigits: 2 });
+                
+                let textClass = "";
+                if(logObj.type === "success") textClass = "log-success";
+                if(logObj.type === "info") textClass = "log-info";
+                if(logObj.type === "warn") textClass = "log-warn";
+
+                line.innerHTML = `<span class="log-time">[${time}]</span> <span class="${textClass}">${logObj.text}</span>`;
+                termContent.appendChild(line);
+                termContent.scrollTop = termContent.scrollHeight; // auto-scroll
+            }
+
+            btnCompile.addEventListener('click', () => {
+                btnCompile.disabled = true;
+                btnCompile.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Compiling...';
+                
+                // Show terminal
+                terminal.classList.add('active');
+
+                // Process logs
+                let totalDelay = 0;
+                buildLogs.forEach((log, index) => {
+                    totalDelay += log.delay;
+                    setTimeout(() => {
+                        addLogLine(log);
+                        
+                        // If it's the last log, trigger the transition
+                        if (index === buildLogs.length - 1) {
+                            setTimeout(() => {
+                                transitionToGUI();
+                            }, 800); // short pause after final log
+                        }
+                    }, totalDelay);
+                });
             });
 
-            // Double Click to Open Window
-            icon.addEventListener('dblclick', () => {
-                openWindow(file.id);
-            });
-            desktop.appendChild(icon);
-
-            // 2. Create Window Element (hidden by default)
-            const win = document.createElement('div');
-            win.id = 'win-' + file.id;
-            win.className = 'window';
-            
-            // Center calculation for spawn
-            const spawnX = Math.max(10, Math.floor(Math.random() * (window.innerWidth - 500)));
-            const spawnY = Math.max(80, Math.floor(Math.random() * (window.innerHeight - 400)));
-            win.style.left = spawnX + 'px';
-            win.style.top = spawnY + 'px';
-
-            win.innerHTML = `
-                <div class="title-bar">
-                    <div class="title-bar-text">${file.title}</div>
-                    <button class="close-btn" onclick="closeWindow('${file.id}')">X</button>
-                </div>
-                <div class="window-content">${file.content}</div>
-            `;
-            
-            // Bring to front on click
-            win.addEventListener('mousedown', () => bringToFront(win));
-            winContainer.appendChild(win);
-        });
-
-        // Deselect icons when clicking empty desktop space
-        document.body.addEventListener('mousedown', () => {
-            document.querySelectorAll('.desktop-icon').forEach(el => el.classList.remove('selected'));
-        });
-
-        // --- Window Management Logic ---
-        function openWindow(id) {
-            const win = document.getElementById('win-' + id);
-            win.classList.add('active');
-            bringToFront(win);
-        }
-
-        function closeWindow(id) {
-            const win = document.getElementById('win-' + id);
-            win.classList.remove('active');
-        }
-
-        function bringToFront(win) {
-            globalZIndex++;
-            win.style.zIndex = globalZIndex;
-        }
-
-        // --- Window Dragging Logic ---
-        let isDragging = false;
-        let activeWindow = null;
-        let dragOffsetX = 0;
-        let dragOffsetY = 0;
-
-        document.addEventListener('mousedown', function(e) {
-            const titleBar = e.target.closest('.title-bar');
-            if (titleBar && !e.target.closest('.close-btn')) {
-                activeWindow = titleBar.parentElement;
-                isDragging = true;
-                bringToFront(activeWindow);
+            function transitionToGUI() {
+                // Fade out workspace (IDE)
+                workspace.style.transform = 'scale(0.95)';
+                workspace.style.opacity = '0';
                 
-                // Calculate position of mouse inside the window
-                const rect = activeWindow.getBoundingClientRect();
-                dragOffsetX = e.clientX - rect.left;
-                dragOffsetY = e.clientY - rect.top;
+                setTimeout(() => {
+                    workspace.classList.add('hidden');
+                    
+                    // Show Compiled GUI
+                    compiledGui.classList.add('show');
+                    document.body.classList.add('compiled');
+                }, 800);
             }
         });
-
-        document.addEventListener('mousemove', function(e) {
-            if (isDragging && activeWindow) {
-                let newX = e.clientX - dragOffsetX;
-                let newY = e.clientY - dragOffsetY;
-                
-                // Keep window title bar somewhat within viewports
-                newY = Math.max(65, newY); // Don't drag under header
-                
-                activeWindow.style.left = newX + 'px';
-                activeWindow.style.top = newY + 'px';
-            }
-        });
-
-        document.addEventListener('mouseup', () => {
-            isDragging = false;
-            activeWindow = null;
-        });
-
-        // --- Real-time Stopwatch Logic ---
-        const clockDisplay = document.getElementById('stopwatch');
-        // Baseline timestamp defined in spec
-        const baselineTime = new Date('2026-04-28T02:14:35').getTime();
-
-        function updateClock() {
-            const now = Date.now();
-            let diffTotalMs = now - baselineTime;
-            
-            // Handle logical formatting depending if view date is before or after baseline
-            const sign = diffTotalMs < 0 ? "T-" : "";
-            const absMs = Math.abs(diffTotalMs);
-            
-            const totalSecs = Math.floor(absMs / 1000);
-            
-            const hours = String(Math.floor(totalSecs / 3600)).padStart(2, '0');
-            const minutes = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0');
-            const seconds = String(totalSecs % 60).padStart(2, '0');
-            
-            clockDisplay.innerText = `${sign}${hours}:${minutes}:${seconds}`;
-        }
-
-        // Update clock every second
-        setInterval(updateClock, 1000);
-        updateClock(); // Initial paint
-
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260428",
+          pageId: "20260429",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
