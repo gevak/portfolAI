@@ -1,820 +1,728 @@
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - Neo-IDE Portfolio</title>
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
-    <!-- Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geva Kipper | Terminal Portal</title>
+<style>
+    /* Reset & Hardware Acceleration */
+    * { 
+        box-sizing: border-box; 
+        margin: 0; 
+        padding: 0;
+        -webkit-font-smoothing: antialiased;
+    }
     
-    <style>
-        :root {
-            /* Palette & Theme Variables */
-            --bg-base: #09090b;
-            --glass-bg: rgba(24, 24, 27, 0.65);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            
-            --text-primary: #e4e4e7;
-            --text-secondary: #a1a1aa;
-            
-            --neon-cyan: #00f3ff;
-            --neon-green: #39ff14;
-            --neon-magenta: #ff00ff;
-            --warning-amber: #f59e0b;
-            
-            --font-mono: 'JetBrains Mono', monospace;
-            --font-sans: 'Inter', sans-serif;
-            --font-serif: 'Playfair Display', serif;
-            
-            /* Syntax Highlighting */
-            --syn-keyword: #ff7b72;
-            --syn-string: #a5d6ff;
-            --syn-var: #79c0ff;
-            --syn-comment: #8b949e;
-        }
+    :root {
+        --bg-gradient: linear-gradient(145deg, #11141a, #07090c);
+        --accent-amber: #ffb300;
+        --accent-white: #e0f7fa;
+        --neon-blue: #00e5ff;
+        --neon-pink: #ff007f;
+    }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+    body {
+        margin: 0;
+        background: #030508;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: #fff;
+        overflow-x: hidden;
+    }
 
-        body {
-            background-color: var(--bg-base);
-            color: var(--text-primary);
-            font-family: var(--font-sans);
-            height: 100vh;
-            overflow: hidden; /* Prevent scrolling during IDE phase */
-            display: flex;
-            flex-direction: column;
-            background-image: radial-gradient(circle at top right, rgba(0, 243, 255, 0.05), transparent 40%),
-                              radial-gradient(circle at bottom left, rgba(255, 0, 255, 0.05), transparent 40%);
-        }
+    /* Machine Facade Container */
+    .vending-machine {
+        max-width: 1000px;
+        margin: 0 auto;
+        min-height: 100vh;
+        background: var(--bg-gradient);
+        position: relative;
+        border-left: 25px solid #1a1e26;
+        border-right: 25px solid #1a1e26;
+        box-shadow: inset 0 0 100px rgba(0,0,0,0.9), 0 0 50px rgba(0,0,0,1);
+        padding-top: 140px; 
+        padding-bottom: 120px;
+    }
 
-        /* ----- GLASSMORPHISM UTILY ----- */
-        .glass-panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--glass-shadow);
-        }
+    /* Ambient LED Strips */
+    .vending-machine::before, .vending-machine::after {
+        content: '';
+        position: fixed;
+        top: 0; height: 100vh; width: 4px;
+        z-index: 50;
+        border-radius: 4px;
+    }
+    .vending-machine::before {
+        left: calc(50% - 485px); /* Align with internal edge */
+        background: var(--accent-white);
+        box-shadow: 0 0 15px 3px rgba(224, 247, 250, 0.4);
+    }
+    .vending-machine::after {
+        right: calc(50% - 485px);
+        background: var(--accent-amber);
+        box-shadow: 0 0 15px 3px rgba(255, 179, 0, 0.3);
+    }
+    
+    /* Media query to hide edge lights on small screens where container fills screen */
+    @media (max-width: 1000px) {
+        .vending-machine::before, .vending-machine::after { display: none; }
+    }
 
-        /* ----- MAIN IDE LAYOUT (UNCOMPILED) ----- */
-        #workspace {
-            display: flex;
-            flex-grow: 1;
-            height: calc(100vh - 25px); /* Minus status bar */
-            position: relative;
-            z-index: 10;
-            transition: opacity 0.8s ease, transform 0.8s ease;
-        }
+    /* --- Header: Marquee --- */
+    .marquee-container {
+        position: fixed;
+        top: 0; left: 50%;
+        transform: translateX(-50%);
+        width: 100%; max-width: 1000px;
+        background: #000;
+        border: 4px solid #333;
+        border-top: none;
+        z-index: 100;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 15px rgba(255,179,0,0.1);
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+    }
+    
+    .marquee-oled {
+        padding: 15px 10px;
+        background: radial-gradient(ellipse at center, #111 0%, #000 100%);
+    }
 
-        /* File Explorer (Left Pane) */
-        .file-explorer {
-            width: 250px;
-            border-right: 1px solid var(--glass-border);
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            font-family: var(--font-sans);
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-        .explorer-title {
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 1px;
-            margin-bottom: 20px;
-            font-size: 0.75rem;
-            color: var(--text-primary);
-        }
-        .file-tree ul { list-style: none; padding-left: 10px; }
-        .file-tree li { padding: 4px 0; cursor: default; }
-        .file-tree .active { color: var(--neon-cyan); }
-        .file-tree i { margin-right: 8px; width: 14px; text-align: center; }
+    .marquee-title {
+        font-size: 2.2rem;
+        font-weight: 800;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--accent-white);
+        text-shadow: 0 0 10px rgba(224, 247, 250, 0.5);
+        margin-bottom: 5px;
+    }
 
-        /* Code Editor (Center Pane) */
-        .editor-pane {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            padding: 2rem 3rem;
-            font-family: var(--font-mono);
-            font-size: 1.1rem;
-            line-height: 1.6;
-        }
+    .marquee-status {
+        font-size: 0.9rem;
+        color: #aaa;
+        font-weight: 300;
+        letter-spacing: 0.5px;
+    }
 
-        .code-line { display: flex; margin-bottom: 4px; }
-        .line-num { color: #4b5563; min-width: 30px; user-select: none; text-align: right; margin-right: 20px; }
-        
-        .type-keyword { color: var(--syn-keyword); }
-        .type-var { color: var(--syn-var); }
-        .type-string { color: var(--syn-string); }
-        .type-comment { color: var(--syn-comment); font-style: italic; }
-        
-        .warning-glow {
-            color: var(--warning-amber);
-            text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
-            font-style: italic;
-        }
+    .ticker-bar {
+        background: #0a0a0a;
+        overflow: hidden;
+        white-space: nowrap;
+        padding: 8px 0;
+        border-top: 1px solid #222;
+        border-bottom-left-radius: 6px;
+        border-bottom-right-radius: 6px;
+    }
 
-        /* Action Button */
-        .btn-compile {
-            position: absolute;
-            top: 2rem;
-            right: 3rem;
-            background: transparent;
-            color: var(--neon-green);
-            border: 1px solid var(--neon-green);
-            padding: 10px 20px;
-            font-family: var(--font-mono);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-            border-radius: 4px;
-            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2), inset 0 0 5px rgba(57, 255, 20, 0.1);
-            transition: all 0.3s ease;
-            animation: pulse-border 2s infinite;
-            z-index: 50;
-        }
-        .btn-compile:hover {
-            background: rgba(57, 255, 20, 0.1);
-            box-shadow: 0 0 20px rgba(57, 255, 20, 0.4), inset 0 0 10px rgba(57, 255, 20, 0.2);
-            text-shadow: 0 0 8px var(--neon-green);
-        }
-        .btn-compile:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            animation: none;
-        }
+    .ticker-text {
+        display: inline-block;
+        font-family: 'Courier New', Courier, monospace;
+        color: var(--accent-amber);
+        font-size: 0.8rem;
+        text-shadow: 0 0 5px rgba(255, 179, 0, 0.5);
+        animation: slideTicker 15s linear infinite;
+    }
 
-        @keyframes pulse-border {
-            0% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.4); }
-            70% { box-shadow: 0 0 0 15px rgba(57, 255, 20, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); }
-        }
+    @keyframes slideTicker {
+        0% { transform: translate3d(100%, 0, 0); }
+        100% { transform: translate3d(-100%, 0, 0); }
+    }
 
-        /* Terminal (Bottom Pane) */
-        .terminal-pane {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 0;
-            background: rgba(0, 0, 0, 0.85);
-            border-top: 1px solid var(--glass-border);
-            backdrop-filter: blur(15px);
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            overflow: hidden;
-            transition: height 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 20;
-            display: flex;
-            flex-direction: column;
-        }
-        .terminal-pane.active {
-            height: clamp(250px, 40vh, 400px);
-        }
-        .term-header {
-            padding: 8px 15px;
-            background: #1e1e1e;
-            border-bottom: 1px solid #333;
-            color: #ccc;
-            font-size: 0.75rem;
-            display: flex;
-            gap: 10px;
-        }
-        .term-content {
-            padding: 15px;
-            flex-grow: 1;
-            overflow-y: auto;
-            color: #d4d4d4;
-        }
-        .log-line { margin-bottom: 5px; opacity: 0; animation: fadeIn 0.2s forwards; }
-        .log-time { color: #858585; margin-right: 10px; }
-        .log-success { color: var(--neon-green); }
-        .log-info { color: var(--neon-cyan); }
-        .log-warn { color: var(--warning-amber); }
+    /* --- The Glass Window (Viewport) --- */
+    .glass-window {
+        padding: 30px;
+        position: relative;
+    }
+    
+    .shelf {
+        border-bottom: 12px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 10px 15px rgba(0,0,0,0.6), inset 0 2px 3px rgba(255,255,255,0.15);
+        margin-bottom: 50px;
+        display: flex;
+        justify-content: space-around;
+        align-items: flex-end;
+        padding-bottom: 5px;
+        flex-wrap: wrap;
+        backdrop-filter: blur(2px);
+    }
 
-        @keyframes fadeIn { to { opacity: 1; } }
+    /* --- Inventory Slots --- */
+    .slot {
+        display: flex;
+        align-items: flex-end;
+        position: relative;
+        cursor: pointer;
+        padding: 10px;
+        margin: 10px;
+        perspective: 800px;
+        transition: transform 0.2s;
+    }
 
-        /* ----- COMPILED GUI (GRID) ----- */
-        #compiled-gui {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: calc(100vh - 25px);
-            z-index: 5; /* Behind workspace initially */
-            opacity: 0;
-            visibility: hidden;
-            overflow-y: auto;
-            padding: 40px;
-            transition: opacity 1s ease, visibility 1s ease;
-        }
+    /* The Coil */
+    .coil {
+        width: 25px;
+        height: 110px;
+        background: repeating-linear-gradient(0deg, #666, #999 4px, #eee 6px, #444 8px);
+        border-radius: 12px;
+        margin-right: -10px;
+        z-index: 2;
+        box-shadow: inset 4px 0 8px rgba(0,0,0,0.8), 2px 0 4px rgba(0,0,0,0.5);
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transform-origin: bottom center;
+    }
 
-        #compiled-gui.show {
-            z-index: 20; /* Move above */
-            opacity: 1;
-            visibility: visible;
-        }
+    .slot:hover .coil {
+        transform: rotateX(15deg) rotateY(15deg) scale(1.05);
+        filter: brightness(1.3);
+    }
 
-        body.compiled {
-            overflow: auto; /* allow scrolling after compile */
-        }
+    /* The Product Base */
+    .product {
+        position: relative;
+        z-index: 1;
+        transition: all 0.3s ease;
+        transform-origin: bottom center;
+    }
+    
+    .slot:hover .product {
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.2));
+    }
 
-        .masonry-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            grid-auto-rows: 280px;
-            gap: 24px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+    .product.dispense-anim {
+        animation: drop 0.7s cubic-bezier(0.5, 0, 1, 0.5) forwards;
+    }
 
-        /* Generic Card Styling */
-        .card {
-            border-radius: 12px;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            text-decoration: none;
-            color: inherit;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
-        }
-        .card-content {
-            padding: 25px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            z-index: 2;
-        }
-        .card-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 10px; }
-        .card-desc { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.5; flex-grow: 1;}
-        .card-actions { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;}
-        
-        .btn-link {
-            padding: 8px 16px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 0.85rem;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s;
-            cursor: pointer;
-            z-index: 10;
-        }
+    @keyframes drop {
+        0% { transform: translateY(0) rotate(0); opacity: 1; }
+        100% { transform: translateY(100vh) rotate(20deg); opacity: 0; }
+    }
 
-        /* Specific Cards */
-        /* Box 1: GlglStats (Waveform / Compression config) */
-        .card-glgl {
-            background: linear-gradient(180deg, #111827 0%, #032b30 100%);
-            border: 1px solid var(--neon-cyan);
-            grid-row: span 2;
-        }
-        .card-glgl::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: repeating-linear-gradient(90deg, rgba(0, 243, 255, 0.05) 0px, rgba(0, 243, 255, 0.05) 2px, transparent 2px, transparent 10px);
-            z-index: 1; pointer-events: none;
-        }
-        .card-glgl .btn-link.cyan { background: rgba(0, 243, 255, 0.1); color: var(--neon-cyan); border: 1px solid var(--neon-cyan); }
-        .card-glgl .btn-link.cyan:hover { background: rgba(0, 243, 255, 0.2); box-shadow: 0 0 10px rgba(0, 243, 255, 0.3); }
+    /* --- Visual Assets (Pure CSS Art) --- */
+    
+    /* 01: GlglStats (Cassette) */
+    .art-cassette {
+        width: 90px; height: 60px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 4px;
+        border: 2px solid #aaa;
+        backdrop-filter: blur(5px);
+        display: flex; justify-content: space-evenly; align-items: center;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    }
+    .art-cassette::before, .art-cassette::after {
+        content: ''; width: 22px; height: 22px;
+        background: #111; border-radius: 50%; border: 3px solid #eee;
+    }
 
-        /* Box 2: Ahuzat Dibuk (Heatmap & Mini Dock) */
-        .card-ahuzat {
-            background: linear-gradient(135deg, #450a0a 0%, #78350f 50%, #b45309 100%);
-            border: 1px solid rgba(255,100,0,0.3);
-        }
-        .mini-dock {
-            display: flex;
-            gap: 12px;
-            background: rgba(0,0,0,0.4);
-            padding: 10px;
-            border-radius: 12px;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .mini-dock a {
-            color: #fff; opacity: 0.7; font-size: 1.2rem; transition: all 0.2s;
-        }
-        .mini-dock a:hover { opacity: 1; transform: scale(1.2); color: var(--warning-amber); }
+    /* 02: Ahuzat Dibuk (Blister Car) */
+    .art-blister {
+        width: 70px; height: 100px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.4);
+        border-radius: 8px; position: relative;
+    }
+    .art-blister .car {
+        position: absolute; bottom: 15px; left: 10px;
+        width: 50px; height: 25px; border-radius: 12px 12px 3px 3px;
+        background: linear-gradient(to right, #0011ff, #00e5ff, #00ff2a, #ffbb00, #ff0000);
+        box-shadow: inset 0 -3px 0 rgba(0,0,0,0.5);
+    }
 
-        /* Box 3: 2D Part Orienting (C++ Header / Wireframe) */
-        .card-2d {
-            background: #0d1117;
-            border: 1px solid #3fb950;
-            font-family: var(--font-mono);
-        }
-        .card-2d .card-title { color: #d2a8ff; font-size: 1.1rem; }
-        .card-2d .card-desc { color: #8b949e; font-size: 0.85rem;}
-        .wireframe-container {
-            position: absolute; right: 10px; bottom: 10px; width: 100px; height: 100px; pointer-events: none; opacity: 0.3;
-        }
-        .poly1, .poly2 {
-            position: absolute; width: 40px; height: 40px; border: 2px solid #3fb950; transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .poly1 { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); top: 10px; left: 10px; }
-        .poly2 { clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); bottom: 10px; right: 10px; }
-        .card-2d:hover .poly1 { transform: translate(25px, 20px) rotate(90deg); opacity: 0.8; }
-        .card-2d:hover .poly2 { transform: translate(-20px, -20px) scale(0.8); opacity: 0.8; }
-        .card-2d .btn-link { background: #238636; color: white; border: none; font-family: var(--font-sans); }
+    /* 03: 2D Part Orienting (Puzzle Box) */
+    .art-puzzle {
+        width: 70px; height: 75px;
+        background: repeating-conic-gradient(from 0deg, #3a4b6b 0deg 45deg, #1d263b 45deg 90deg);
+        clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        box-shadow: inset 0 0 10px rgba(255,255,255,0.2);
+    }
 
-        /* Box 4: The Turing Jest (Combat / LMSYS) */
-        .card-jest {
-            background: #161b22;
-            border: 1px solid #30363d;
-            grid-column: span 2;
-        }
-        .chat-arena {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; position: relative;
-        }
-        .bubble {
-            padding: 10px 15px; border-radius: 15px; font-size: 0.85rem; max-width: 45%; position: relative;
-            font-family: var(--font-sans); font-weight: 500;
-        }
-        .bubble.left { background: rgba(248, 81, 73, 0.15); color: #f85149; border: 1px solid rgba(248, 81, 73, 0.3); border-bottom-left-radius: 2px;}
-        .bubble.right { background: rgba(88, 166, 255, 0.15); color: #58a6ff; border: 1px solid rgba(88, 166, 255, 0.3); border-bottom-right-radius: 2px; text-align: right;}
-        .vs-badge {
-            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-            background: #30363d; padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 0.7rem; color: #fff;
-        }
-        .card-jest .btn-link { background: linear-gradient(90deg, #f85149, #58a6ff); color: white; border: none; }
+    /* 04: The Turing Jest (Card Deck) */
+    .art-deck {
+        width: 60px; height: 85px;
+        background: linear-gradient(135deg, #e5e5e5 0%, #ffffff 50%, #b3b3b3 100%);
+        border-radius: 4px; border: 1px solid #777;
+        box-shadow: -2px 2px 0 #999, -4px 4px 0 #666;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 32px;
+    }
+    
+    /* 05: Rhymes of Israel (Rolled Paper) */
+    .art-paper {
+        width: 80px; height: 28px;
+        background: repeating-linear-gradient(90deg, #ddd, #ddd 3px, #999 4px, #ddd 5px);
+        border-radius: 14px; border: 1px solid #777;
+        position: relative; margin-bottom: 20px; /* offset visual center */
+    }
+    .art-paper::after {
+        content: ''; position: absolute; left: 50%; top: -5px; bottom: -5px; width: 4px;
+        background: var(--neon-pink); transform: translateX(-50%);
+        box-shadow: 0 0 8px var(--neon-pink); border-radius: 2px;
+    }
 
-        /* Box 5: Rhymes of Israel (Chrome Pop-up) */
-        .card-rhymes {
-            background: #ffffff;
-            color: #333;
-            border: 1px solid #dadce0;
-            border-top: 24px solid #f1f3f4; /* Faked browser bar */
-            border-radius: 8px 8px 0 0;
-            background-image: 
-                radial-gradient(circle at 20% 30%, #e8eaed 2px, transparent 2px),
-                radial-gradient(circle at 80% 60%, #e8eaed 3px, transparent 3px),
-                radial-gradient(circle at 50% 80%, #e8eaed 2px, transparent 2px);
-        }
-        .card-rhymes::before {
-            content: '• • •'; font-size: 10px; color: #9aa0a6; position: absolute; top: -18px; left: 10px; letter-spacing: 2px;
-        }
-        .card-rhymes .card-title { color: #202124; }
-        .card-rhymes .card-desc { color: #5f6368; }
-        .btn-chrome { background: #1a73e8; color: white; border: none; border-radius: 4px; }
-        .btn-chrome:hover { background: #1557b0; }
+    /* 06: Hatul Basak (Cat Food Tin) */
+    .art-tin {
+        width: 65px; height: 45px;
+        background: linear-gradient(to bottom, #d9d9d9 0%, #8c8c8c 50%, #d9d9d9 100%);
+        border-radius: 10px; position: relative;
+        border-top: 3px solid #eee; border-bottom: 3px solid #777;
+    }
+    .art-tin::before { /* Graduation cap */
+        content: '🎓'; position: absolute; top: -20px; left: 15px; font-size: 28px;
+    }
 
-        /* Box 6: Hatul Basak (Wiki Serif Trivia) */
-        .card-hatul {
-            background: #fdfdfc;
-            color: #202122;
-            border: 1px solid #a2a9b1;
-            font-family: var(--font-serif);
-        }
-        .card-hatul .card-title {
-            border-bottom: 1px solid #a2a9b1; padding-bottom: 5px; margin-bottom: 15px; font-weight: normal; font-size: 1.6rem;
-        }
-        .card-hatul .card-desc { font-family: var(--font-sans); color: #54595d; }
-        .trivia-box {
-            background: #f8f9fa; border: 1px solid #eaecf0; padding: 10px; margin-top: 10px; font-size: 0.85rem; font-style: italic; border-left: 4px solid #36c;
-        }
-        .card-hatul .btn-link { background: #36c; color: white; border: none; font-family: var(--font-sans); }
+    /* 07: Meta Portfolio (Snowglobe) */
+    .art-globe {
+        width: 70px; height: 70px;
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.1) 60%, transparent 100%);
+        border-radius: 50%; border: 1px solid rgba(255,255,255,0.4);
+        position: relative;
+    }
+    .art-globe::before { /* Base */
+        content: ''; position: absolute; bottom: -8px; left: 15px; width: 40px; height: 12px;
+        background: #222; border-radius: 2px;
+    }
+    .art-globe::after { /* Tiny machine inside */
+        content: ''; position: absolute; bottom: 5px; left: 25px; width: 20px; height: 35px;
+        background: #111; border: 1px solid var(--neon-blue); box-shadow: 0 0 5px var(--neon-blue);
+    }
 
-        /* Box 7: Meta Portfolio (Inception Window) */
-        .card-meta {
-            background: #000;
-            border: 1px solid #333;
-            box-shadow: 
-                inset 0 0 0 4px #111, inset 0 0 0 5px #333,
-                inset 0 0 0 12px #111, inset 0 0 0 13px #444,
-                inset 0 0 0 20px #111, inset 0 0 0 21px #555;
-            display: flex; align-items: center; justify-content: center; text-align: center;
-        }
-        .card-meta .card-content { padding: 40px; }
-        .card-meta .card-title { color: var(--neon-magenta); text-shadow: 0 0 10px rgba(255,0,255,0.5); }
-        .card-meta .btn-link { background: transparent; border: 1px solid var(--neon-magenta); color: var(--neon-magenta); margin: 0 auto; }
-        .card-meta .btn-link:hover { background: rgba(255,0,255,0.1); box-shadow: 0 0 10px rgba(255,0,255,0.4); }
+    /* 08: Connections (Energy Cans) */
+    .art-cans {
+        display: flex; gap: 4px; align-items: flex-end; width: 80px; justify-content: center;
+    }
+    .art-can {
+        width: 22px; height: 60px;
+        background: linear-gradient(90deg, #111 0%, #333 50%, #111 100%);
+        border-radius: 4px; border-top: 2px solid #666; position: relative;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .art-can::after {
+        content: attr(data-letter); color: #333; font-weight: bold; font-family: sans-serif;
+        text-shadow: 1px 1px 0 #555;
+    }
 
-        /* Box 8: Social Connectivity (Minimal CLI) */
-        .card-social {
-            background: #000;
-            border: 1px solid #111;
-            font-family: var(--font-mono);
-            grid-column: span 2;
-        }
-        .card-social .card-content { justify-content: center; }
-        .social-cli { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 15px; }
-        .social-cli li { font-size: 0.95rem; display: flex; align-items: center; gap: 10px;}
-        .cli-prompt { color: var(--neon-green); font-weight: bold; }
-        .cli-cmd { color: #a5d6ff; }
-        .cli-link { color: var(--text-secondary); text-decoration: none; transition: color 0.2s;}
-        .social-cli li:hover .cli-link { color: #fff; text-decoration: underline; }
+    /* --- Footer: Dispense Tray --- */
+    .dispense-tray {
+        position: fixed;
+        bottom: 0; left: 50%; transform: translateX(-50%);
+        width: 100%; max-width: 1000px; height: 100px;
+        background: linear-gradient(to top, #0f1115, #222731 90%, #1a1d24);
+        border-top: 8px solid #000;
+        z-index: 100;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        box-shadow: 0 -15px 30px rgba(0,0,0,0.8);
+        border-top-left-radius: 4px; border-top-right-radius: 4px;
+    }
 
-        /* ----- STATUS BAR (BOTTOM) ----- */
-        .status-bar {
-            height: 25px;
-            background: #007acc; /* VS Code Blue standard, adjust to dark theme */
-            background: #1e1e1e;
-            border-top: 1px solid var(--glass-border);
-            color: #ccc;
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 15px;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            z-index: 100;
-        }
+    .tray-flap {
+        width: 80%; height: 8px;
+        background: #000;
+        box-shadow: inset 0 3px 6px rgba(0,0,0,1), 0 1px 1px rgba(255,255,255,0.1);
+        margin-bottom: 12px;
+        border-radius: 2px;
+    }
 
-        .status-left i { margin-right: 5px; color: var(--neon-cyan); }
-        .status-right { background: #2d2d30; padding: 0 10px; height: 100%; display: flex; align-items: center;}
+    .tray-engraving {
+        color: #111;
+        text-shadow: 1px 1px 0px rgba(255,255,255,0.1), -1px -1px 0px rgba(0,0,0,0.8);
+        font-size: 0.7rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        font-weight: bold;
+    }
 
-        /* Utilities */
-        .hidden { display: none !important; }
-        
-        @media (max-width: 768px) {
-            .file-explorer { display: none; }
-            .card-glgl, .card-jest, .card-social { grid-column: span 1; grid-row: span 1; }
-            .editor-pane { padding: 1.5rem; }
-            .btn-compile { top: 1rem; right: 1rem; font-size: 0.8rem; padding: 8px 12px; }
-        }
-    </style>
+    .timer-module {
+        margin-top: 6px;
+        background: #000;
+        padding: 4px 12px;
+        border-radius: 4px;
+        border: 2px solid #200;
+        box-shadow: inset 0 0 10px #000, 0 0 12px rgba(255,0,0,0.4);
+    }
+    .timer-text {
+        font-family: 'Courier New', Courier, monospace;
+        color: #ff0000;
+        font-weight: bold;
+        font-size: 1rem;
+        text-shadow: 0 0 8px #ff0000;
+        letter-spacing: 1px;
+    }
+
+    /* --- Modal Overlay (Nutritional Facts / Packaging) --- */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(0,0,0,0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 1000;
+        opacity: 0; pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+        opacity: 1; pointer-events: auto;
+    }
+
+    .modal-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
+        width: 90%; max-width: 450px;
+        padding: 30px;
+        box-shadow: 0 25px 50px rgba(0,0,0,0.5), inset 0 0 20px rgba(255,255,255,0.05);
+        transform: translateY(30px) scale(0.95);
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+    }
+
+    .modal-overlay.active .modal-card {
+        transform: translateY(0) scale(1);
+    }
+
+    .modal-close {
+        position: absolute; top: 15px; right: 20px;
+        color: #fff; font-size: 1.5rem; text-decoration: none;
+        opacity: 0.6; transition: opacity 0.2s; cursor: pointer;
+    }
+    .modal-close:hover { opacity: 1; }
+
+    /* Nutritional Label Styling inside Modal */
+    .nutrition-header {
+        border-bottom: 4px solid #fff;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    .nutrition-title {
+        font-size: 2.5rem; font-weight: 900; letter-spacing: -1px; margin: 0;
+    }
+    .nutrition-subtitle {
+        font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;
+    }
+    
+    .nutrition-body {
+        font-size: 0.95rem; line-height: 1.6; color: #ccc;
+        margin-bottom: 25px;
+    }
+    .nutrition-body p { margin-bottom: 10px; }
+    .nutrition-body strong { color: #fff; }
+
+    .modal-actions {
+        display: flex; flex-direction: column; gap: 10px;
+    }
+
+    .btn {
+        display: block; padding: 12px; text-align: center;
+        border-radius: 6px; text-decoration: none; font-weight: bold;
+        text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    
+    .btn-neon {
+        background: transparent; color: var(--neon-blue);
+        border: 2px solid var(--neon-blue);
+        box-shadow: 0 0 10px rgba(0, 229, 255, 0.2), inset 0 0 10px rgba(0, 229, 255, 0.1);
+    }
+    .btn-neon:hover {
+        background: var(--neon-blue); color: #000; box-shadow: 0 0 20px var(--neon-blue);
+    }
+
+    .btn-outline {
+        background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.3); color: #fff;
+    }
+    .btn-outline:hover { background: rgba(255,255,255,0.15); border-color: #fff; }
+
+</style>
 </head>
 <body>
 
-    <!-- PRIMARY UNCOMPILED IDE WORKSPACE -->
-    <main id="workspace">
+    <div class="vending-machine">
         
-        <aside class="file-explorer glass-panel">
-            <div class="explorer-title">Explorer</div>
-            <div class="file-tree">
-                <ul>
-                    <li><i class="fa-solid fa-chevron-down"></i> PORTFOLIO_V2</li>
-                    <ul style="padding-left: 20px;">
-                        <li><i class="fa-regular fa-folder"></i> src</li>
-                        <li><i class="fa-regular fa-folder"></i> components</li>
-                        <li><i class="fa-regular fa-folder"></i> assets</li>
-                        <li class="active"><i class="fa-brands fa-js" style="color: #f7df1e;"></i> main.js</li>
-                        <li><i class="fa-solid fa-file-code" style="color: #38bdf8;"></i> styles.css</li>
-                        <li><i class="fa-solid fa-gear" style="color: #6b7280;"></i> package.json</li>
-                    </ul>
-                </ul>
+        <!-- HEADER -->
+        <header class="marquee-container">
+            <div class="marquee-oled">
+                <h1 class="marquee-title">Geva Kipper</h1>
+                <div class="marquee-status">Currently engineering scalable solutions as a Software Engineer at Google.</div>
             </div>
-        </aside>
+            <div class="ticker-bar">
+                <div class="ticker-text">SYSTEM NOTIFICATION: This website's layout and interface is re-designed each day by AI and is thus ever-changing. &nbsp;&nbsp;&nbsp; // &nbsp;&nbsp;&nbsp; SYSTEM NOTIFICATION: This website's layout and interface is re-designed each day by AI and is thus ever-changing.</div>
+            </div>
+        </header>
 
-        <section class="editor-pane glass-panel">
-            <button id="btn-compile" class="btn-compile"><i class="fa-solid fa-play"></i> Compile & Run</button>
+        <!-- VIEWPORT -->
+        <main class="glass-window">
             
-            <div class="code-editor">
-                <div class="code-line">
-                    <span class="line-num">1</span>
-                    <span class="type-comment">/**</span>
+            <!-- Shelf 1 -->
+            <div class="shelf">
+                <!-- Slot 1 -->
+                <div class="slot" data-id="glgl">
+                    <div class="coil"></div>
+                    <div class="product"><div class="art-cassette"></div></div>
                 </div>
-                <div class="code-line">
-                    <span class="line-num">2</span>
-                    <span class="type-comment">&nbsp;* Initializes the Developer Entity.</span>
+                <!-- Slot 2 -->
+                <div class="slot" data-id="ahuzat">
+                    <div class="coil"></div>
+                    <div class="product"><div class="art-blister"><div class="car"></div></div></div>
                 </div>
-                <div class="code-line">
-                    <span class="line-num">3</span>
-                    <span class="type-comment">&nbsp;*/</span>
-                </div>
-                <div class="code-line">
-                    <span class="line-num">4</span>
-                    <span class="type-keyword">const</span>&nbsp;<span class="type-var">developer</span>&nbsp;=&nbsp;<span class="type-string">"Geva Kipper"</span>;
-                </div>
-                <div class="code-line">
-                    <span class="line-num">5</span>
-                </div>
-                <div class="code-line">
-                    <span class="line-num">6</span>
-                    <span class="type-keyword">const</span>&nbsp;<span class="type-var">status</span>&nbsp;=&nbsp;<span class="type-string">"Currently building scalable solutions and engineering at Google."</span>;
-                </div>
-                <div class="code-line">
-                    <span class="line-num">7</span>
-                </div>
-                <div class="code-line">
-                    <span class="line-num">8</span>
-                    <span class="type-comment warning-glow">// WARNING: This website is re-designed each day by AI and is thus ever-changing.</span>
-                </div>
-                <div class="code-line">
-                    <span class="line-num">9</span>
-                </div>
-                <div class="code-line">
-                    <span class="line-num">10</span>
-                    <span class="type-keyword">function</span>&nbsp;<span class="type-var">initPortfolio</span>()&nbsp;{
-                </div>
-                <div class="code-line">
-                    <span class="line-num">11</span>
-                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="type-var">system</span>.<span class="type-keyword">compile</span>(developer, status);
-                </div>
-                <div class="code-line">
-                    <span class="line-num">12</span>
-                    }
-                </div>
-                <div class="code-line">
-                    <span class="line-num">13</span>
-                </div>
-                <div class="code-line">
-                    <span class="line-num">14</span>
-                    <span class="type-var">initPortfolio</span>();
-                </div>
-                <div class="code-line" style="margin-top: 20px; opacity: 0.5;">
-                    <span class="line-num">~</span>
-                </div>
-                <div class="code-line" style="opacity: 0.5;">
-                    <span class="line-num">~</span>
-                </div>
-            </div>
-            
-            <!-- Inactive Terminal -->
-            <div id="terminal" class="terminal-pane">
-                <div class="term-header">
-                    <span>TERMINAL</span>
-                    <span>OUTPUT</span>
-                    <span>DEBUG CONSOLE</span>
-                </div>
-                <div id="term-content" class="term-content">
-                    <!-- Logs injected via JS -->
+                <!-- Slot 3 -->
+                <div class="slot" data-id="orienting">
+                    <div class="coil"></div>
+                    <div class="product"><div class="art-puzzle"></div></div>
                 </div>
             </div>
 
-        </section>
-    </main>
-
-    <!-- COMPILED GUI LAYER (Initially Hidden) -->
-    <div id="compiled-gui">
-        <div class="masonry-grid">
-            
-            <!-- Box 1: GlglStats -->
-            <div class="card glass-panel card-glgl">
-                <div class="card-content">
-                    <div class="card-title">GlglStats</div>
-                    <div class="card-desc">
-                        A comprehensive data analytics platform and visualization tool analyzing Galgalatz radio station statistics. Uses advanced parsing and lightweight rendering. 
-                        Presented deep-dive methodology at PyData Tel Aviv.
-                    </div>
-                    <div class="card-actions">
-                        <a href="https://glglstats.geekip.dev" target="_blank" class="btn-link cyan"><i class="fa-solid fa-arrow-up-right-from-square"></i> Live App</a>
-                        <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn-link cyan"><i class="fa-solid fa-play"></i> PyData Talk</a>
-                    </div>
+            <!-- Shelf 2 -->
+            <div class="shelf">
+                <!-- Slot 4 -->
+                <div class="slot" data-id="jest">
+                    <div class="coil"></div>
+                    <div class="product"><div class="art-deck"></div></div>
+                </div>
+                <!-- Slot 5 -->
+                <div class="slot" data-id="rhymes">
+                    <div class="coil"></div>
+                    <div class="product"><div class="art-paper"></div></div>
+                </div>
+                <!-- Slot 6 -->
+                <div class="slot" data-id="hatul">
+                    <div class="coil"></div>
+                    <div class="product"><div class="art-tin"></div></div>
                 </div>
             </div>
 
-            <!-- Box 2: Ahuzat Dibuk -->
-            <div class="card glass-panel card-ahuzat">
-                <div class="card-content">
-                    <div class="card-title">Ahuzat Dibuk</div>
-                    <div class="card-desc">
-                        An automated scraper mapping real-time Tel-Aviv parking availability. It exposes patterns in urban infrastructure and caused a significant stir in local media and communities.
-                    </div>
-                    <div class="card-actions" style="margin-top: auto;">
-                        <div class="mini-dock">
-                            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" title="Channel 13 News" target="_blank"><i class="fa-solid fa-tv"></i></a>
-                            <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" title="Mako Tek" target="_blank"><i class="fa-regular fa-newspaper"></i></a>
-                            <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" title="Secret Tel Aviv" target="_blank"><i class="fa-brands fa-facebook"></i></a>
+            <!-- Shelf 3 -->
+            <div class="shelf">
+                <!-- Slot 7 -->
+                <div class="slot" data-id="meta">
+                    <div class="coil"></div>
+                    <div class="product"><div class="art-globe"></div></div>
+                </div>
+                <!-- Slot 8 -->
+                <div class="slot" data-id="connect">
+                    <div class="coil"></div>
+                    <div class="product">
+                        <div class="art-cans">
+                            <div class="art-can" data-letter="G"></div>
+                            <div class="art-can" data-letter="L"></div>
+                            <div class="art-can" data-letter="F"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Box 3: 2D Part Orienting -->
-            <div class="card glass-panel card-2d">
-                <div class="wireframe-container">
-                    <div class="poly1"></div>
-                    <div class="poly2"></div>
-                </div>
-                <div class="card-content">
-                    <div class="card-title">#include &lt;orient.h&gt;</div>
-                    <div class="card-desc">
-                        // Computational Geometry Project<br>
-                        // Algorithm implementation for orienting 2D polygonal parts using a parallel-jaw gripper, minimizing uncertainty via push operations.<br><br>
-                        std::cout << "O(n^2 log n) complexity";
-                    </div>
-                    <div class="card-actions">
-                        <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn-link"><i class="fa-brands fa-github-alt"></i> Source & Info</a>
-                    </div>
-                </div>
-            </div>
+        </main>
 
-            <!-- Box 4: The Turing Jest -->
-            <div class="card glass-panel card-jest">
-                <div class="card-content">
-                    <div class="chat-arena">
-                        <div class="bubble left">"Tell me a joke about a buffer overflow..."</div>
-                        <div class="vs-badge">VS</div>
-                        <div class="bubble right">"A C programmer walks into a bar and orders %s beers."</div>
-                    </div>
-                    <div class="card-title">The Turing Jest</div>
-                    <div class="card-desc">
-                        An LMSYS-style combat arena evaluating LLM humor capabilities. Users act as blind judges in head-to-head model battles, generating elo-ratings for comedic timing and creativity across various architectures.
-                    </div>
-                    <div class="card-actions">
-                        <a href="https://jest.geekip.dev" target="_blank" class="btn-link"><i class="fa-solid fa-gavel"></i> Enter the Arena</a>
-                    </div>
-                </div>
+        <!-- FOOTER -->
+        <footer class="dispense-tray">
+            <div class="tray-flap"></div>
+            <div class="tray-engraving">System Architecture and UI Generation by an AI Model</div>
+            <div class="timer-module">
+                <div class="timer-text" id="sys-timer">00:00:00</div>
             </div>
+        </footer>
 
-            <!-- Box 5: Rhymes of Israel -->
-            <div class="card card-rhymes">
-                <div class="card-content">
-                    <div class="card-title">Rhymes of Israel</div>
-                    <div class="card-desc">
-                        A browser extension adding playful, culturally relevant Israeli rhyming slang and doodles across your browsing experience. Injecting local charm into the sterile web.
-                    </div>
-                    <div class="card-actions" style="margin-top:auto">
-                        <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn-link btn-chrome"><i class="fa-brands fa-chrome"></i> Install Extension</a>
-                    </div>
-                </div>
-            </div>
+    </div>
 
-            <!-- Box 6: Hatul Basak -->
-            <div class="card card-hatul">
-                <div class="card-content">
-                    <div class="card-title">Hatul Basak</div>
-                    <div class="card-desc">
-                        A daily linguistic trivia puzzle wrapped in a classic encyclopedic aesthetic. Figure out the connections, decode the wordplays, and test your Hebrew lexical elasticity.
-                    </div>
-                    <div class="trivia-box">
-                        Daily Challenge #402: "What links a feline and a military operation?"
-                    </div>
-                    <div class="card-actions">
-                        <a href="https://hatulbasak.geekip.dev" target="_blank" class="btn-link"><i class="fa-solid fa-puzzle-piece"></i> Play Daily Puzzle</a>
-                    </div>
-                </div>
+    <!-- MODAL -->
+    <div class="modal-overlay" id="product-modal">
+        <div class="modal-card">
+            <a class="modal-close" id="modal-close">&times;</a>
+            <div class="nutrition-header">
+                <div class="nutrition-subtitle">Nutrition Facts / Project Specs</div>
+                <h2 class="nutrition-title" id="modal-title">Project Name</h2>
             </div>
-            
-            <!-- Box 7: Meta Portfolio -->
-            <div class="card card-meta">
-                <div class="card-content">
-                    <div class="card-title">The Meta Portfolio</div>
-                    <div class="card-desc" style="color: #aaa;">
-                        A recursive observation. You are currently viewing a fractal representation of the system designed to represent the system.
-                    </div>
-                    <div class="card-actions">
-                        <a href="https://geekip.dev" target="_self" class="btn-link"><i class="fa-solid fa-infinity"></i> return this;</a>
-                    </div>
-                </div>
+            <div class="nutrition-body" id="modal-body">
+                Details go here...
             </div>
-
-            <!-- Box 8: Social Connectivity -->
-            <div class="card card-social">
-                <div class="card-content">
-                    <ul class="social-cli">
-                        <li>
-                            <span class="cli-prompt">$</span>
-                            <span class="cli-cmd">cat</span> ~/.github_profile
-                            <a href="https://github.com/gevak" target="_blank" class="cli-link">github.com/gevak</a>
-                        </li>
-                        <li>
-                            <span class="cli-prompt">$</span>
-                            <span class="cli-cmd">curl</span> -L api.linkedin.com/user
-                            <a href="https://linkedin.com/in/gevakip" target="_blank" class="cli-link">linkedin.com/in/gevakip</a>
-                        </li>
-                        <li>
-                            <span class="cli-prompt">$</span>
-                            <span class="cli-cmd">ping</span> graph.facebook.com
-                            <a href="https://facebook.com/geva.kipper" target="_blank" class="cli-link">facebook.com/geva.kipper</a>
-                        </li>
-                    </ul>
-                </div>
+            <div class="modal-actions" id="modal-actions">
+                <!-- Buttons injected via JS -->
             </div>
-
         </div>
     </div>
 
-    <!-- STICKY STATUS BAR -->
-    <footer class="status-bar">
-        <div class="status-left">
-            <i class="fa-solid fa-bolt"></i> System compiled and generated by AI
-        </div>
-        <div class="status-right" id="stopwatch">
-            00:00:00
-        </div>
-    </footer>
+<script>
+    // Project Database
+    const inventory = {
+        'glgl': {
+            title: 'GlglStats',
+            htmlDetails: `
+                <p><strong>Ingredients:</strong> Python, LZ77 Compression Algorithm.</p>
+                <p><strong>Description:</strong> A project measuring the repetitiveness of Israeli pop-chart songs. By utilizing LZ77 compression, it structurally analyzes audio and outputs striking audio-waveform visualizations to expose musical patterns.</p>
+            `,
+            buttons: [
+                { label: 'Live Site', url: 'https://glglstats.geekip.dev', class: 'btn-neon' },
+                { label: 'Watch Talk (PyData)', url: 'https://www.youtube.com/watch?v=jrKAtOsj1Lo', class: 'btn-outline' }
+            ]
+        },
+        'ahuzat': {
+            title: 'Ahuzat Dibuk',
+            htmlDetails: `
+                <p><strong>Ingredients:</strong> Python Scraping, Data Visualization.</p>
+                <p><strong>Description:</strong> An intricate scraping and data visualization project tracking Tel-Aviv parking lot occupancy. Uncovered deep insights into urban mobility patterns presented via detailed heat-maps.</p>
+            `,
+            buttons: [
+                { label: 'Original Secret TLV Post', url: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943', class: 'btn-neon' },
+                { label: 'Press: Channel 13', url: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/', class: 'btn-outline' },
+                { label: 'Press: Mako', url: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm', class: 'btn-outline' }
+            ]
+        },
+        'orienting': {
+            title: '2D Part Orienting',
+            htmlDetails: `
+                <p><strong>Ingredients:</strong> C++, Computational Geometry.</p>
+                <p><strong>Description:</strong> An open-source computational geometry library implementation. Constructs a calculated 'push plan' to perfectly orient polygon shapes.</p>
+            `,
+            buttons: [
+                { label: 'View Algorithm & Code', url: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/', class: 'btn-neon' }
+            ]
+        },
+        'jest': {
+            title: 'The Turing Jest',
+            htmlDetails: `
+                <p><strong>Ingredients:</strong> LLMs, Web App Architecture.</p>
+                <p><strong>Description:</strong> An LMSYS-style arena where various Large Language Models compete to formulate and explain puns. Responses are blindly rated by human users to establish a comedic leaderboard.</p>
+            `,
+            buttons: [
+                { label: 'Enter Arena', url: 'https://jest.geekip.dev', class: 'btn-neon' }
+            ]
+        },
+        'rhymes': {
+            title: 'Rhymes of Israel',
+            htmlDetails: `
+                <p><strong>Ingredients:</strong> LLM Integration, Chrome Extension.</p>
+                <p><strong>Description:</strong> A satirical Chrome extension that intercepts Israeli news headlines on the fly and utilizes LLMs to rewrite them into comedic rhymes.</p>
+            `,
+            buttons: [
+                { label: 'Add to Chrome', url: 'https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb', class: 'btn-neon' }
+            ]
+        },
+        'hatul': {
+            title: 'Hatul Basak',
+            htmlDetails: `
+                <p><strong>Ingredients:</strong> Wikipedia API, Generative AI.</p>
+                <p><strong>Description:</strong> The designated Hebrew port of catfishing.net. A sophisticated Wikipedia-based trivia game providing daily AI-generated challenges alongside user-created thematic puzzles.</p>
+            `,
+            buttons: [
+                { label: 'Play & Create', url: 'https://hatulbasak.geekip.dev', class: 'btn-neon' }
+            ]
+        },
+        'meta': {
+            title: 'Meta Portfolio',
+            htmlDetails: `
+                <p><strong>Ingredients:</strong> AI Generation, Single-File Architecture.</p>
+                <p><strong>Description:</strong> You are currently viewing it. A self-aware portfolio project conceptualized and physically modeled as an interactive vending machine.</p>
+            `,
+            buttons: [
+                { label: 'Self-Reference (geekip.dev)', url: 'https://geekip.dev', class: 'btn-neon' }
+            ]
+        },
+        'connect': {
+            title: 'The Connections',
+            htmlDetails: `
+                <p><strong>Ingredients:</strong> Hyperlinks, Social Networking.</p>
+                <p><strong>Description:</strong> Select an external portal to establish a direct communication link or review underlying source code histories.</p>
+            `,
+            buttons: [
+                { label: 'GitHub', url: 'https://github.com/gevak', class: 'btn-neon' },
+                { label: 'LinkedIn', url: 'https://linkedin.com/in/gevakip', class: 'btn-outline' },
+                { label: 'Facebook', url: 'https://facebook.com/geva.kipper', class: 'btn-outline' }
+            ]
+        }
+    };
 
-    <!-- INTERACTIVITY LOGIC -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const btnCompile = document.getElementById('btn-compile');
-            const terminal = document.getElementById('terminal');
-            const termContent = document.getElementById('term-content');
-            const workspace = document.getElementById('workspace');
-            const compiledGui = document.getElementById('compiled-gui');
-            const stopwatchEl = document.getElementById('stopwatch');
+    // Dispense Interaction Logic
+    const slots = document.querySelectorAll('.slot');
+    const modal = document.getElementById('product-modal');
+    const modalCloseBtn = document.getElementById('modal-close');
+    let isAnimating = false;
+    let activeProductNode = null;
 
-            // --- STOPWATCH LOGIC ---
-            // "elapsed time since 2026-04-29 02:17:05"
-            // Note: treating timestamp as a strict point of absolute difference.
-            const targetDate = new Date('2026-04-29T02:17:05').getTime();
+    slots.forEach(slot => {
+        slot.addEventListener('click', function() {
+            if (isAnimating) return;
+            const itemId = this.getAttribute('data-id');
+            const data = inventory[itemId];
+            if(!data) return;
+
+            isAnimating = true;
+            activeProductNode = this.querySelector('.product');
             
-            function updateStopwatch() {
-                const now = Date.now();
-                const diffSecs = Math.floor(Math.abs(now - targetDate) / 1000);
-                
-                const hours = Math.floor(diffSecs / 3600);
-                const minutes = Math.floor((diffSecs % 3600) / 60);
-                const seconds = diffSecs % 60;
-                
-                const hFormat = String(hours).padStart(2, '0');
-                const mFormat = String(minutes).padStart(2, '0');
-                const sFormat = String(seconds).padStart(2, '0');
-                
-                stopwatchEl.textContent = `${hFormat}:${mFormat}:${sFormat}`;
-            }
-            
-            setInterval(updateStopwatch, 1000);
-            updateStopwatch(); // run once immediately
+            // Trigger animation
+            activeProductNode.classList.add('dispense-anim');
 
-            // --- COMPILE ANIMATION LOGIC ---
-            const buildLogs = [
-                { text: "> Initiating build sequence...", type: "info", delay: 300 },
-                { text: "[yarn] Resolving dependencies...", type: "log", delay: 700 },
-                { text: "[webpack] Building projects...", type: "log", delay: 400 },
-                { text: "WARN: Unused variables detected in memory.", type: "warn", delay: 600 },
-                { text: "[module] Linking GlglStats core...", type: "log", delay: 300 },
-                { text: "[module] Scraping Ahuzat Dibuk endpoints...", type: "log", delay: 800 },
-                { text: "[module] Injecting Turing Jest LLM logic...", type: "log", delay: 400 },
-                { text: "Optimizing CSS Grid payloads...", type: "log", delay: 900 },
-                { text: "[success] Build complete with exit code 0.", type: "success", delay: 500 },
-                { text: "> Launching Compiled GUI...", type: "info", delay: 600 }
-            ];
-
-            function addLogLine(logObj) {
-                const line = document.createElement('div');
-                line.className = 'log-line';
-                
-                const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: "numeric", minute: "numeric", second: "numeric", fractionalSecondDigits: 2 });
-                
-                let textClass = "";
-                if(logObj.type === "success") textClass = "log-success";
-                if(logObj.type === "info") textClass = "log-info";
-                if(logObj.type === "warn") textClass = "log-warn";
-
-                line.innerHTML = `<span class="log-time">[${time}]</span> <span class="${textClass}">${logObj.text}</span>`;
-                termContent.appendChild(line);
-                termContent.scrollTop = termContent.scrollHeight; // auto-scroll
-            }
-
-            btnCompile.addEventListener('click', () => {
-                btnCompile.disabled = true;
-                btnCompile.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Compiling...';
-                
-                // Show terminal
-                terminal.classList.add('active');
-
-                // Process logs
-                let totalDelay = 0;
-                buildLogs.forEach((log, index) => {
-                    totalDelay += log.delay;
-                    setTimeout(() => {
-                        addLogLine(log);
-                        
-                        // If it's the last log, trigger the transition
-                        if (index === buildLogs.length - 1) {
-                            setTimeout(() => {
-                                transitionToGUI();
-                            }, 800); // short pause after final log
-                        }
-                    }, totalDelay);
-                });
-            });
-
-            function transitionToGUI() {
-                // Fade out workspace (IDE)
-                workspace.style.transform = 'scale(0.95)';
-                workspace.style.opacity = '0';
-                
-                setTimeout(() => {
-                    workspace.classList.add('hidden');
-                    
-                    // Show Compiled GUI
-                    compiledGui.classList.add('show');
-                    document.body.classList.add('compiled');
-                }, 800);
-            }
+            // Wait for drop animation to end before showing modal
+            setTimeout(() => {
+                populateModal(data);
+                modal.classList.add('active');
+                isAnimating = false;
+            }, 700); // matches CSS animation duration
         });
-    </script>
+    });
+
+    function populateModal(data) {
+        document.getElementById('modal-title').textContent = data.title;
+        document.getElementById('modal-body').innerHTML = data.htmlDetails;
+        
+        const actionsContainer = document.getElementById('modal-actions');
+        actionsContainer.innerHTML = ''; // clear old
+
+        data.buttons.forEach(btn => {
+            const a = document.createElement('a');
+            a.href = btn.url;
+            a.className = 'btn ' + btn.class;
+            a.textContent = btn.label;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            actionsContainer.appendChild(a);
+        });
+    }
+
+    function closeModal() {
+        modal.classList.remove('active');
+        // Reset dispensed item immediately behind closed modal
+        if (activeProductNode) {
+            activeProductNode.classList.remove('dispense-anim');
+            activeProductNode = null;
+        }
+    }
+
+    modalCloseBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal(); // close on backdrop click
+    });
+
+    // Temporal Anchor Timer Logic
+    const timerElement = document.getElementById('sys-timer');
+    // Format: YYYY-MM-DDTHH:mm:ss based on spec "2026-05-01 02:29:21"
+    const anchorDate = new Date("2026-05-01T02:29:21");
+
+    function updateTimer() {
+        const now = new Date();
+        // Calculate absolute difference to always tick upward as per spec
+        const diffMs = Math.abs(now - anchorDate);
+
+        const h = Math.floor(diffMs / (1000 * 60 * 60));
+        const m = Math.floor((diffMs / (1000 * 60)) % 60);
+        const s = Math.floor((diffMs / 1000) % 60);
+
+        // Pad with zeros
+        const fH = String(h).padStart(2, '0');
+        const fM = String(m).padStart(2, '0');
+        const fS = String(s).padStart(2, '0');
+
+        timerElement.textContent = `${fH}:${fM}:${fS}`;
+    }
+
+    setInterval(updateTimer, 1000);
+    updateTimer(); // Initial call to prevent 1-second delay
+</script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260429",
+          pageId: "20260501",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
