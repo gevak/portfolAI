@@ -1,728 +1,667 @@
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Geva Kipper | Terminal Portal</title>
-<style>
-    /* Reset & Hardware Acceleration */
-    * { 
-        box-sizing: border-box; 
-        margin: 0; 
-        padding: 0;
-        -webkit-font-smoothing: antialiased;
-    }
-    
-    :root {
-        --bg-gradient: linear-gradient(145deg, #11141a, #07090c);
-        --accent-amber: #ffb300;
-        --accent-white: #e0f7fa;
-        --neon-blue: #00e5ff;
-        --neon-pink: #ff007f;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper // Neo-Retro OS</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Variables */
+        :root {
+            --bg-sage: #3F524C;
+            --menubar-bg: #FFFFFF;
+            --menubar-text: #000000;
+            --accent-yellow: #FFEA00;
+            
+            /* Glassmorphism Variables */
+            --glass-bg: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4);
+            --beveled-light: inset 2px 2px 0px rgba(255,255,255,0.6);
+            --beveled-dark: inset -2px -2px 0px rgba(0,0,0,0.2);
 
-    body {
-        margin: 0;
-        background: #030508;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        color: #fff;
-        overflow-x: hidden;
-    }
+            --font-pixel: 'VT323', monospace;
+            --font-body: 'JetBrains Mono', monospace;
+        }
 
-    /* Machine Facade Container */
-    .vending-machine {
-        max-width: 1000px;
-        margin: 0 auto;
-        min-height: 100vh;
-        background: var(--bg-gradient);
-        position: relative;
-        border-left: 25px solid #1a1e26;
-        border-right: 25px solid #1a1e26;
-        box-shadow: inset 0 0 100px rgba(0,0,0,0.9), 0 0 50px rgba(0,0,0,1);
-        padding-top: 140px; 
-        padding-bottom: 120px;
-    }
+        /* Global Resets */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
 
-    /* Ambient LED Strips */
-    .vending-machine::before, .vending-machine::after {
-        content: '';
-        position: fixed;
-        top: 0; height: 100vh; width: 4px;
-        z-index: 50;
-        border-radius: 4px;
-    }
-    .vending-machine::before {
-        left: calc(50% - 485px); /* Align with internal edge */
-        background: var(--accent-white);
-        box-shadow: 0 0 15px 3px rgba(224, 247, 250, 0.4);
-    }
-    .vending-machine::after {
-        right: calc(50% - 485px);
-        background: var(--accent-amber);
-        box-shadow: 0 0 15px 3px rgba(255, 179, 0, 0.3);
-    }
-    
-    /* Media query to hide edge lights on small screens where container fills screen */
-    @media (max-width: 1000px) {
-        .vending-machine::before, .vending-machine::after { display: none; }
-    }
+        body, html {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: var(--bg-sage);
+            font-family: var(--font-body);
+            color: #fff;
+        }
 
-    /* --- Header: Marquee --- */
-    .marquee-container {
-        position: fixed;
-        top: 0; left: 50%;
-        transform: translateX(-50%);
-        width: 100%; max-width: 1000px;
-        background: #000;
-        border: 4px solid #333;
-        border-top: none;
-        z-index: 100;
-        text-align: center;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 15px rgba(255,179,0,0.1);
-        border-bottom-left-radius: 10px;
-        border-bottom-right-radius: 10px;
-    }
-    
-    .marquee-oled {
-        padding: 15px 10px;
-        background: radial-gradient(ellipse at center, #111 0%, #000 100%);
-    }
+        /* CRT Overlay & Vignette */
+        .crt-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.8);
+            animation: flicker 0.15s infinite;
+        }
 
-    .marquee-title {
-        font-size: 2.2rem;
-        font-weight: 800;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        color: var(--accent-white);
-        text-shadow: 0 0 10px rgba(224, 247, 250, 0.5);
-        margin-bottom: 5px;
-    }
+        @keyframes flicker {
+            0% { opacity: 0.95; }
+            50% { opacity: 1; }
+            100% { opacity: 0.98; }
+        }
 
-    .marquee-status {
-        font-size: 0.9rem;
-        color: #aaa;
-        font-weight: 300;
-        letter-spacing: 0.5px;
-    }
+        /* Top Menu Bar */
+        .top-menu {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 28px;
+            background-color: var(--menubar-bg);
+            color: var(--menubar-text);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px;
+            font-size: 12px;
+            font-weight: 700;
+            z-index: 1000;
+            border-bottom: 2px solid #aaa;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        
+        .pulse-yellow {
+            color: #d4a000;
+            text-shadow: 0 0 5px rgba(255, 234, 0, 0.8);
+            animation: pulseText 2s ease-in-out infinite;
+        }
 
-    .ticker-bar {
-        background: #0a0a0a;
-        overflow: hidden;
-        white-space: nowrap;
-        padding: 8px 0;
-        border-top: 1px solid #222;
-        border-bottom-left-radius: 6px;
-        border-bottom-right-radius: 6px;
-    }
+        @keyframes pulseText {
+            0%, 100% { opacity: 1; text-shadow: 0 0 5px rgba(255, 234, 0, 0.8); }
+            50% { opacity: 0.6; text-shadow: 0 0 15px rgba(255, 234, 0, 1); }
+        }
 
-    .ticker-text {
-        display: inline-block;
-        font-family: 'Courier New', Courier, monospace;
-        color: var(--accent-amber);
-        font-size: 0.8rem;
-        text-shadow: 0 0 5px rgba(255, 179, 0, 0.5);
-        animation: slideTicker 15s linear infinite;
-    }
+        /* Taskbar */
+        .taskbar {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%; height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+        }
 
-    @keyframes slideTicker {
-        0% { transform: translate3d(100%, 0, 0); }
-        100% { transform: translate3d(-100%, 0, 0); }
-    }
+        .taskbar-badge {
+            background: linear-gradient(135deg, #e0e0e0, #999);
+            color: #222;
+            padding: 4px 10px;
+            font-family: var(--font-pixel);
+            font-size: 18px;
+            border: 1px solid #777;
+            box-shadow: 1px 1px 0 #fff inset, -1px -1px 0 #555 inset;
+            text-transform: uppercase;
+        }
 
-    /* --- The Glass Window (Viewport) --- */
-    .glass-window {
-        padding: 30px;
-        position: relative;
-    }
-    
-    .shelf {
-        border-bottom: 12px solid rgba(255, 255, 255, 0.05);
-        box-shadow: 0 10px 15px rgba(0,0,0,0.6), inset 0 2px 3px rgba(255,255,255,0.15);
-        margin-bottom: 50px;
-        display: flex;
-        justify-content: space-around;
-        align-items: flex-end;
-        padding-bottom: 5px;
-        flex-wrap: wrap;
-        backdrop-filter: blur(2px);
-    }
+        .lcd-clock {
+            font-family: var(--font-pixel);
+            font-size: 24px;
+            color: #0f0;
+            background: #111;
+            padding: 2px 10px;
+            border: 2px inset #333;
+            text-shadow: 0 0 5px #0f0;
+            letter-spacing: 2px;
+        }
 
-    /* --- Inventory Slots --- */
-    .slot {
-        display: flex;
-        align-items: flex-end;
-        position: relative;
-        cursor: pointer;
-        padding: 10px;
-        margin: 10px;
-        perspective: 800px;
-        transition: transform 0.2s;
-    }
+        /* Desktop Container */
+        .desktop {
+            position: absolute;
+            top: 28px;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            overflow: hidden;
+        }
 
-    /* The Coil */
-    .coil {
-        width: 25px;
-        height: 110px;
-        background: repeating-linear-gradient(0deg, #666, #999 4px, #eee 6px, #444 8px);
-        border-radius: 12px;
-        margin-right: -10px;
-        z-index: 2;
-        box-shadow: inset 4px 0 8px rgba(0,0,0,0.8), 2px 0 4px rgba(0,0,0,0.5);
-        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        transform-origin: bottom center;
-    }
+        /* Desktop Folders */
+        .folder {
+            position: absolute;
+            width: 80px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.1s, filter 0.1s;
+        }
+        
+        .folder:active {
+            transform: scale(0.95);
+        }
 
-    .slot:hover .coil {
-        transform: rotateX(15deg) rotateY(15deg) scale(1.05);
-        filter: brightness(1.3);
-    }
+        .folder svg {
+            width: 60px;
+            height: 60px;
+            filter: drop-shadow(2px 8px 6px rgba(0,0,0,0.4));
+            transition: filter 0.2s;
+        }
 
-    /* The Product Base */
-    .product {
-        position: relative;
-        z-index: 1;
-        transition: all 0.3s ease;
-        transform-origin: bottom center;
-    }
-    
-    .slot:hover .product {
-        transform: scale(1.1);
-        filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.2));
-    }
+        .folder span {
+            display: block;
+            margin-top: 4px;
+            font-size: 12px;
+            background: rgba(0,0,0,0.5);
+            padding: 2px 4px;
+            border-radius: 4px;
+            text-shadow: 1px 1px 0 #000;
+        }
 
-    .product.dispense-anim {
-        animation: drop 0.7s cubic-bezier(0.5, 0, 1, 0.5) forwards;
-    }
+        /* Window Class (Glassmorphism) */
+        .window {
+            position: absolute;
+            width: 600px;
+            height: 450px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--beveled-light), var(--beveled-dark), var(--glass-shadow);
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            
+            /* Hidden by default */
+            visibility: hidden;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                        transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                        visibility 0.25s;
+        }
 
-    @keyframes drop {
-        0% { transform: translateY(0) rotate(0); opacity: 1; }
-        100% { transform: translateY(100vh) rotate(20deg); opacity: 0; }
-    }
+        .window.open {
+            visibility: visible;
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .window.maximized {
+            width: 100% !important;
+            height: 100% !important;
+            top: 0 !important;
+            left: 0 !important;
+            transform: none !important;
+        }
 
-    /* --- Visual Assets (Pure CSS Art) --- */
-    
-    /* 01: GlglStats (Cassette) */
-    .art-cassette {
-        width: 90px; height: 60px;
-        background: rgba(255,255,255,0.1);
-        border-radius: 4px;
-        border: 2px solid #aaa;
-        backdrop-filter: blur(5px);
-        display: flex; justify-content: space-evenly; align-items: center;
-        box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-    }
-    .art-cassette::before, .art-cassette::after {
-        content: ''; width: 22px; height: 22px;
-        background: #111; border-radius: 50%; border: 3px solid #eee;
-    }
+        .titlebar {
+            height: 30px;
+            background: linear-gradient(90deg, rgba(100,100,100,0.8), rgba(60,60,60,0.8));
+            border-bottom: 1px solid rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            cursor: grab;
+            font-family: var(--font-pixel);
+            font-size: 20px;
+            letter-spacing: 1px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        
+        .titlebar:active { flex: grabbing; }
 
-    /* 02: Ahuzat Dibuk (Blister Car) */
-    .art-blister {
-        width: 70px; height: 100px;
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.4);
-        border-radius: 8px; position: relative;
-    }
-    .art-blister .car {
-        position: absolute; bottom: 15px; left: 10px;
-        width: 50px; height: 25px; border-radius: 12px 12px 3px 3px;
-        background: linear-gradient(to right, #0011ff, #00e5ff, #00ff2a, #ffbb00, #ff0000);
-        box-shadow: inset 0 -3px 0 rgba(0,0,0,0.5);
-    }
+        .window-controls {
+            display: flex;
+            gap: 6px;
+        }
 
-    /* 03: 2D Part Orienting (Puzzle Box) */
-    .art-puzzle {
-        width: 70px; height: 75px;
-        background: repeating-conic-gradient(from 0deg, #3a4b6b 0deg 45deg, #1d263b 45deg 90deg);
-        clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-        box-shadow: inset 0 0 10px rgba(255,255,255,0.2);
-    }
+        .win-btn {
+            width: 14px; height: 14px;
+            border: 1px solid #000;
+            box-shadow: inset 1px 1px 0 rgba(255,255,255,0.8);
+            cursor: pointer;
+        }
+        .btn-close { background: #ff5c5c; }
+        .btn-max { background: #00ca56; }
+        .btn-min { background: #ffbd4c; }
 
-    /* 04: The Turing Jest (Card Deck) */
-    .art-deck {
-        width: 60px; height: 85px;
-        background: linear-gradient(135deg, #e5e5e5 0%, #ffffff 50%, #b3b3b3 100%);
-        border-radius: 4px; border: 1px solid #777;
-        box-shadow: -2px 2px 0 #999, -4px 4px 0 #666;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 32px;
-    }
-    
-    /* 05: Rhymes of Israel (Rolled Paper) */
-    .art-paper {
-        width: 80px; height: 28px;
-        background: repeating-linear-gradient(90deg, #ddd, #ddd 3px, #999 4px, #ddd 5px);
-        border-radius: 14px; border: 1px solid #777;
-        position: relative; margin-bottom: 20px; /* offset visual center */
-    }
-    .art-paper::after {
-        content: ''; position: absolute; left: 50%; top: -5px; bottom: -5px; width: 4px;
-        background: var(--neon-pink); transform: translateX(-50%);
-        box-shadow: 0 0 8px var(--neon-pink); border-radius: 2px;
-    }
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+        }
 
-    /* 06: Hatul Basak (Cat Food Tin) */
-    .art-tin {
-        width: 65px; height: 45px;
-        background: linear-gradient(to bottom, #d9d9d9 0%, #8c8c8c 50%, #d9d9d9 100%);
-        border-radius: 10px; position: relative;
-        border-top: 3px solid #eee; border-bottom: 3px solid #777;
-    }
-    .art-tin::before { /* Graduation cap */
-        content: '🎓'; position: absolute; top: -20px; left: 15px; font-size: 28px;
-    }
+        /* Reusable Link Styles */
+        a { color: #88ccff; text-decoration: none; font-weight: bold; }
+        a:hover { text-decoration: underline; color: #fff; }
+        
+        .action-btn {
+            display: inline-block;
+            background: linear-gradient(#eee, #ccc);
+            color: #000;
+            padding: 8px 16px;
+            border: 2px solid #000;
+            box-shadow: inset 1px 1px 0 #fff;
+            font-family: var(--font-pixel);
+            font-size: 20px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        .action-btn:active { background: #bbb; box-shadow: inset -1px -1px 0 #fff; }
 
-    /* 07: Meta Portfolio (Snowglobe) */
-    .art-globe {
-        width: 70px; height: 70px;
-        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.1) 60%, transparent 100%);
-        border-radius: 50%; border: 1px solid rgba(255,255,255,0.4);
-        position: relative;
-    }
-    .art-globe::before { /* Base */
-        content: ''; position: absolute; bottom: -8px; left: 15px; width: 40px; height: 12px;
-        background: #222; border-radius: 2px;
-    }
-    .art-globe::after { /* Tiny machine inside */
-        content: ''; position: absolute; bottom: 5px; left: 25px; width: 20px; height: 35px;
-        background: #111; border: 1px solid var(--neon-blue); box-shadow: 0 0 5px var(--neon-blue);
-    }
+        /* App 1: GlglStats Viewer */
+        .app-stats .content { background: #1a1a1a; display: flex; flex-direction: column; gap: 15px;}
+        .visualizer { display: flex; gap: 4px; height: 60px; align-items: flex-end; justify-content: center;}
+        .bar { width: 15px; background: cyan; box-shadow: 0 0 10px cyan; animation: bounce 1s infinite alternate ease-in-out; }
+        .bar:nth-child(1) { height: 20%; animation-delay: 0.1s;} .bar:nth-child(2) { height: 50%; animation-delay: 0.3s;}
+        .bar:nth-child(3) { height: 90%; animation-delay: 0.2s;} .bar:nth-child(4) { height: 30%; animation-delay: 0.5s;}
+        .bar:nth-child(5) { height: 70%; animation-delay: 0.4s;}
+        @keyframes bounce { to { height: 10px; } }
+        .iframe-container { width: 100%; padding-top: 56.25%; position: relative; border: 2px solid #333; }
+        .iframe-container iframe { position: absolute; top:0; left:0; width:100%; height:100%; }
 
-    /* 08: Connections (Energy Cans) */
-    .art-cans {
-        display: flex; gap: 4px; align-items: flex-end; width: 80px; justify-content: center;
-    }
-    .art-can {
-        width: 22px; height: 60px;
-        background: linear-gradient(90deg, #111 0%, #333 50%, #111 100%);
-        border-radius: 4px; border-top: 2px solid #666; position: relative;
-        display: flex; align-items: center; justify-content: center;
-    }
-    .art-can::after {
-        content: attr(data-letter); color: #333; font-weight: bold; font-family: sans-serif;
-        text-shadow: 1px 1px 0 #555;
-    }
+        /* App 2: Ahuzat Dibuk Radar */
+        .app-radar .content {
+            background-color: #001100;
+            background-image: repeating-linear-gradient(rgba(0, 255, 0, 0.4) 1px, transparent 1px, transparent 20px),
+                              repeating-linear-gradient(90deg, rgba(0, 255, 0, 0.4) 1px, transparent 1px, transparent 20px);
+            color: #0fa; font-family: var(--font-body);
+        }
+        .radar-scan { position: absolute;width: 200%;height: 2px;background: #0fa;box-shadow: 0 0 15px 5px #0fa;animation: scan 4s linear infinite; top: 0; left: -50%; }
+        @keyframes scan { to { transform: translateY(500px); } }
+        .icon-grid { display: flex; gap: 20px; margin-top: 20px; }
+        .data-icon { border: 2px solid #0fa; padding: 10px; text-align: center; background: rgba(0,255,0,0.1); width: 120px; cursor: pointer; }
+        .data-icon:hover { background: #0fa; color: #000; }
 
-    /* --- Footer: Dispense Tray --- */
-    .dispense-tray {
-        position: fixed;
-        bottom: 0; left: 50%; transform: translateX(-50%);
-        width: 100%; max-width: 1000px; height: 100px;
-        background: linear-gradient(to top, #0f1115, #222731 90%, #1a1d24);
-        border-top: 8px solid #000;
-        z-index: 100;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        box-shadow: 0 -15px 30px rgba(0,0,0,0.8);
-        border-top-left-radius: 4px; border-top-right-radius: 4px;
-    }
+        /* App 3: 2D Part CAD */
+        .app-cad .content { background: #0000AA; display: flex; }
+        .blueprint { flex: 1; background-image: linear-gradient(#4444FF 1px, transparent 1px), linear-gradient(90deg, #4444FF 1px, transparent 1px); background-size: 20px 20px; display: flex; align-items: center; justify-content: center; border-right: 2px inset #fff; }
+        .rotating-vector { fill: transparent; stroke: #0ff; stroke-width: 4; width: 150px; animation: orient 6s infinite steps(10); }
+        @keyframes orient { 100% { transform: rotate(360deg); } }
+        .cad-terminal { width: 250px; background: #000; color: #aaa; padding: 10px; font-size: 11px; }
 
-    .tray-flap {
-        width: 80%; height: 8px;
-        background: #000;
-        box-shadow: inset 0 3px 6px rgba(0,0,0,1), 0 1px 1px rgba(255,255,255,0.1);
-        margin-bottom: 12px;
-        border-radius: 2px;
-    }
+        /* App 4: Turing Jest */
+        .app-arena .content { background: #000; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 30px;}
+        .arena-title { font-family: var(--font-pixel); font-size: 50px; color: #ff0055; text-shadow: 4px 4px 0 #550000; letter-spacing: 2px; }
+        .btn-enter-arena { background: #ff0000; color: #fff; font-size: 30px; font-family: var(--font-pixel); padding: 15px 40px; border: 4px outset #ff5555; animation: flashRed 0.5s infinite alternate; text-decoration: none;}
+        @keyframes flashRed { to { background: #880000; border-color: #550000; box-shadow: 0 0 20px red; } }
 
-    .tray-engraving {
-        color: #111;
-        text-shadow: 1px 1px 0px rgba(255,255,255,0.1), -1px -1px 0px rgba(0,0,0,0.8);
-        font-size: 0.7rem;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        font-weight: bold;
-    }
+        /* App 5: Rhymes Scrapbook */
+        .app-scrapbook .content { background: #f4ecd8; overflow: auto; padding: 30px; position: relative;}
+        .clipping { background: #fff; padding: 15px; border: 1px solid #ccc; box-shadow: 2px 2px 10px rgba(0,0,0,0.1); transform: rotate(-2deg); font-family: 'Times New Roman', serif; color: #222; margin-bottom: 20px;}
+        .tape { position: absolute; width: 60px; height: 20px; background: rgba(255,255,255,0.4); border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 1px 2px rgba(0,0,0,0.1); transform: rotate(45deg); top: -5px; left: -10px; }
+        .floppy-install { position: absolute; bottom: 20px; right: 20px; width: 120px; background: #2b2b2b; color: #fff; padding: 15px; text-align: center; border: 2px inset #555; text-decoration: none; font-family: var(--font-pixel); font-size: 16px;}
+        .floppy-install::before { content: ''; display: block; height: 30px; background: #ddd; margin-bottom: 10px; }
 
-    .timer-module {
-        margin-top: 6px;
-        background: #000;
-        padding: 4px 12px;
-        border-radius: 4px;
-        border: 2px solid #200;
-        box-shadow: inset 0 0 10px #000, 0 0 12px rgba(255,0,0,0.4);
-    }
-    .timer-text {
-        font-family: 'Courier New', Courier, monospace;
-        color: #ff0000;
-        font-weight: bold;
-        font-size: 1rem;
-        text-shadow: 0 0 8px #ff0000;
-        letter-spacing: 1px;
-    }
+        /* App 6: Hatul Basak */
+        .app-trivia .content { background: repeating-linear-gradient(45deg, #eee, #eee 10px, #ddd 10px, #ddd 20px); display: flex; align-items: center; justify-content: center;}
+        .hypercard { background: #fff; border: 3px solid #000; width: 80%; height: 80%; padding: 20px; color: #000; box-shadow: 10px 10px 0 #000; text-align: center;}
+        .play-btn-huge { display: inline-block; margin-top: 40px; background: #ff00ff; color: #fff; border: 4px solid #000; padding: 10px 30px; font-family: var(--font-pixel); font-size: 28px; box-shadow: 4px 4px 0 #000;}
+        .play-btn-huge:active { transform: translate(4px, 4px); box-shadow: none; }
 
-    /* --- Modal Overlay (Nutritional Facts / Packaging) --- */
-    .modal-overlay {
-        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-        background: rgba(0,0,0,0.7);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        display: flex; align-items: center; justify-content: center;
-        z-index: 1000;
-        opacity: 0; pointer-events: none;
-        transition: opacity 0.3s ease;
-    }
+        /* App 7: Meta IDE */
+        .app-ide .content { background: #1e1e1e; color: #d4d4d4; font-size: 14px; display: flex; flex-direction: column;}
+        .ide-code { flex: 1; overflow: auto; padding: 10px; white-space: pre; line-height: 1.5; }
+        .syntax-html { color: #569cd6; } .syntax-tag { color: #4ec9b0; } .syntax-attr { color: #9cdcfe; } .syntax-val { color: #ce9178; }
+        .compile-bar { background: #333; padding: 10px; text-align: right; border-top: 1px solid #555;}
 
-    .modal-overlay.active {
-        opacity: 1; pointer-events: auto;
-    }
+        /* App 8: Rolodex / Network */
+        .app-network .content { background: #aeb8b3; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 40px;}
+        .id-card { background: #e0e0e0; border: 2px solid #fff; border-right-color: #888; border-bottom-color: #888; padding: 20px; color: #333; text-decoration: none; display: flex; align-items: center; gap: 15px; box-shadow: 5px 5px 15px rgba(0,0,0,0.3); transition: transform 0.1s;}
+        .id-card:active { transform: translate(2px, 2px); box-shadow: 3px 3px 5px rgba(0,0,0,0.3); }
+        .id-pic { width: 50px; height: 50px; background: #666; border: 2px inset #aaa; }
 
-    .modal-card {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 16px;
-        width: 90%; max-width: 450px;
-        padding: 30px;
-        box-shadow: 0 25px 50px rgba(0,0,0,0.5), inset 0 0 20px rgba(255,255,255,0.05);
-        transform: translateY(30px) scale(0.95);
-        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        position: relative;
-    }
-
-    .modal-overlay.active .modal-card {
-        transform: translateY(0) scale(1);
-    }
-
-    .modal-close {
-        position: absolute; top: 15px; right: 20px;
-        color: #fff; font-size: 1.5rem; text-decoration: none;
-        opacity: 0.6; transition: opacity 0.2s; cursor: pointer;
-    }
-    .modal-close:hover { opacity: 1; }
-
-    /* Nutritional Label Styling inside Modal */
-    .nutrition-header {
-        border-bottom: 4px solid #fff;
-        padding-bottom: 10px;
-        margin-bottom: 15px;
-    }
-    .nutrition-title {
-        font-size: 2.5rem; font-weight: 900; letter-spacing: -1px; margin: 0;
-    }
-    .nutrition-subtitle {
-        font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;
-    }
-    
-    .nutrition-body {
-        font-size: 0.95rem; line-height: 1.6; color: #ccc;
-        margin-bottom: 25px;
-    }
-    .nutrition-body p { margin-bottom: 10px; }
-    .nutrition-body strong { color: #fff; }
-
-    .modal-actions {
-        display: flex; flex-direction: column; gap: 10px;
-    }
-
-    .btn {
-        display: block; padding: 12px; text-align: center;
-        border-radius: 6px; text-decoration: none; font-weight: bold;
-        text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px;
-        transition: all 0.2s;
-        cursor: pointer;
-    }
-    
-    .btn-neon {
-        background: transparent; color: var(--neon-blue);
-        border: 2px solid var(--neon-blue);
-        box-shadow: 0 0 10px rgba(0, 229, 255, 0.2), inset 0 0 10px rgba(0, 229, 255, 0.1);
-    }
-    .btn-neon:hover {
-        background: var(--neon-blue); color: #000; box-shadow: 0 0 20px var(--neon-blue);
-    }
-
-    .btn-outline {
-        background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.3); color: #fff;
-    }
-    .btn-outline:hover { background: rgba(255,255,255,0.15); border-color: #fff; }
-
-</style>
+    </style>
 </head>
 <body>
 
-    <div class="vending-machine">
-        
-        <!-- HEADER -->
-        <header class="marquee-container">
-            <div class="marquee-oled">
-                <h1 class="marquee-title">Geva Kipper</h1>
-                <div class="marquee-status">Currently engineering scalable solutions as a Software Engineer at Google.</div>
-            </div>
-            <div class="ticker-bar">
-                <div class="ticker-text">SYSTEM NOTIFICATION: This website's layout and interface is re-designed each day by AI and is thus ever-changing. &nbsp;&nbsp;&nbsp; // &nbsp;&nbsp;&nbsp; SYSTEM NOTIFICATION: This website's layout and interface is re-designed each day by AI and is thus ever-changing.</div>
-            </div>
-        </header>
+    <div class="crt-overlay"></div>
 
-        <!-- VIEWPORT -->
-        <main class="glass-window">
-            
-            <!-- Shelf 1 -->
-            <div class="shelf">
-                <!-- Slot 1 -->
-                <div class="slot" data-id="glgl">
-                    <div class="coil"></div>
-                    <div class="product"><div class="art-cassette"></div></div>
-                </div>
-                <!-- Slot 2 -->
-                <div class="slot" data-id="ahuzat">
-                    <div class="coil"></div>
-                    <div class="product"><div class="art-blister"><div class="car"></div></div></div>
-                </div>
-                <!-- Slot 3 -->
-                <div class="slot" data-id="orienting">
-                    <div class="coil"></div>
-                    <div class="product"><div class="art-puzzle"></div></div>
-                </div>
-            </div>
-
-            <!-- Shelf 2 -->
-            <div class="shelf">
-                <!-- Slot 4 -->
-                <div class="slot" data-id="jest">
-                    <div class="coil"></div>
-                    <div class="product"><div class="art-deck"></div></div>
-                </div>
-                <!-- Slot 5 -->
-                <div class="slot" data-id="rhymes">
-                    <div class="coil"></div>
-                    <div class="product"><div class="art-paper"></div></div>
-                </div>
-                <!-- Slot 6 -->
-                <div class="slot" data-id="hatul">
-                    <div class="coil"></div>
-                    <div class="product"><div class="art-tin"></div></div>
-                </div>
-            </div>
-
-            <!-- Shelf 3 -->
-            <div class="shelf">
-                <!-- Slot 7 -->
-                <div class="slot" data-id="meta">
-                    <div class="coil"></div>
-                    <div class="product"><div class="art-globe"></div></div>
-                </div>
-                <!-- Slot 8 -->
-                <div class="slot" data-id="connect">
-                    <div class="coil"></div>
-                    <div class="product">
-                        <div class="art-cans">
-                            <div class="art-can" data-letter="G"></div>
-                            <div class="art-can" data-letter="L"></div>
-                            <div class="art-can" data-letter="F"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </main>
-
-        <!-- FOOTER -->
-        <footer class="dispense-tray">
-            <div class="tray-flap"></div>
-            <div class="tray-engraving">System Architecture and UI Generation by an AI Model</div>
-            <div class="timer-module">
-                <div class="timer-text" id="sys-timer">00:00:00</div>
-            </div>
-        </footer>
-
-    </div>
-
-    <!-- MODAL -->
-    <div class="modal-overlay" id="product-modal">
-        <div class="modal-card">
-            <a class="modal-close" id="modal-close">&times;</a>
-            <div class="nutrition-header">
-                <div class="nutrition-subtitle">Nutrition Facts / Project Specs</div>
-                <h2 class="nutrition-title" id="modal-title">Project Name</h2>
-            </div>
-            <div class="nutrition-body" id="modal-body">
-                Details go here...
-            </div>
-            <div class="modal-actions" id="modal-actions">
-                <!-- Buttons injected via JS -->
-            </div>
+    <!-- Menu Bar -->
+    <div class="top-menu">
+        <div class="menu-left">
+            Geva Kipper // Software Engineer at Google, currently building scalable infrastructure and pushing the boundaries of web technologies.
+        </div>
+        <div class="menu-right pulse-yellow">
+            System Note: Daily AI Re-design Active. Layout and aesthetics are ever-changing.
         </div>
     </div>
 
-<script>
-    // Project Database
-    const inventory = {
-        'glgl': {
-            title: 'GlglStats',
-            htmlDetails: `
-                <p><strong>Ingredients:</strong> Python, LZ77 Compression Algorithm.</p>
-                <p><strong>Description:</strong> A project measuring the repetitiveness of Israeli pop-chart songs. By utilizing LZ77 compression, it structurally analyzes audio and outputs striking audio-waveform visualizations to expose musical patterns.</p>
-            `,
-            buttons: [
-                { label: 'Live Site', url: 'https://glglstats.geekip.dev', class: 'btn-neon' },
-                { label: 'Watch Talk (PyData)', url: 'https://www.youtube.com/watch?v=jrKAtOsj1Lo', class: 'btn-outline' }
-            ]
-        },
-        'ahuzat': {
-            title: 'Ahuzat Dibuk',
-            htmlDetails: `
-                <p><strong>Ingredients:</strong> Python Scraping, Data Visualization.</p>
-                <p><strong>Description:</strong> An intricate scraping and data visualization project tracking Tel-Aviv parking lot occupancy. Uncovered deep insights into urban mobility patterns presented via detailed heat-maps.</p>
-            `,
-            buttons: [
-                { label: 'Original Secret TLV Post', url: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943', class: 'btn-neon' },
-                { label: 'Press: Channel 13', url: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/', class: 'btn-outline' },
-                { label: 'Press: Mako', url: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm', class: 'btn-outline' }
-            ]
-        },
-        'orienting': {
-            title: '2D Part Orienting',
-            htmlDetails: `
-                <p><strong>Ingredients:</strong> C++, Computational Geometry.</p>
-                <p><strong>Description:</strong> An open-source computational geometry library implementation. Constructs a calculated 'push plan' to perfectly orient polygon shapes.</p>
-            `,
-            buttons: [
-                { label: 'View Algorithm & Code', url: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/', class: 'btn-neon' }
-            ]
-        },
-        'jest': {
-            title: 'The Turing Jest',
-            htmlDetails: `
-                <p><strong>Ingredients:</strong> LLMs, Web App Architecture.</p>
-                <p><strong>Description:</strong> An LMSYS-style arena where various Large Language Models compete to formulate and explain puns. Responses are blindly rated by human users to establish a comedic leaderboard.</p>
-            `,
-            buttons: [
-                { label: 'Enter Arena', url: 'https://jest.geekip.dev', class: 'btn-neon' }
-            ]
-        },
-        'rhymes': {
-            title: 'Rhymes of Israel',
-            htmlDetails: `
-                <p><strong>Ingredients:</strong> LLM Integration, Chrome Extension.</p>
-                <p><strong>Description:</strong> A satirical Chrome extension that intercepts Israeli news headlines on the fly and utilizes LLMs to rewrite them into comedic rhymes.</p>
-            `,
-            buttons: [
-                { label: 'Add to Chrome', url: 'https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb', class: 'btn-neon' }
-            ]
-        },
-        'hatul': {
-            title: 'Hatul Basak',
-            htmlDetails: `
-                <p><strong>Ingredients:</strong> Wikipedia API, Generative AI.</p>
-                <p><strong>Description:</strong> The designated Hebrew port of catfishing.net. A sophisticated Wikipedia-based trivia game providing daily AI-generated challenges alongside user-created thematic puzzles.</p>
-            `,
-            buttons: [
-                { label: 'Play & Create', url: 'https://hatulbasak.geekip.dev', class: 'btn-neon' }
-            ]
-        },
-        'meta': {
-            title: 'Meta Portfolio',
-            htmlDetails: `
-                <p><strong>Ingredients:</strong> AI Generation, Single-File Architecture.</p>
-                <p><strong>Description:</strong> You are currently viewing it. A self-aware portfolio project conceptualized and physically modeled as an interactive vending machine.</p>
-            `,
-            buttons: [
-                { label: 'Self-Reference (geekip.dev)', url: 'https://geekip.dev', class: 'btn-neon' }
-            ]
-        },
-        'connect': {
-            title: 'The Connections',
-            htmlDetails: `
-                <p><strong>Ingredients:</strong> Hyperlinks, Social Networking.</p>
-                <p><strong>Description:</strong> Select an external portal to establish a direct communication link or review underlying source code histories.</p>
-            `,
-            buttons: [
-                { label: 'GitHub', url: 'https://github.com/gevak', class: 'btn-neon' },
-                { label: 'LinkedIn', url: 'https://linkedin.com/in/gevakip', class: 'btn-outline' },
-                { label: 'Facebook', url: 'https://facebook.com/geva.kipper', class: 'btn-outline' }
-            ]
-        }
-    };
-
-    // Dispense Interaction Logic
-    const slots = document.querySelectorAll('.slot');
-    const modal = document.getElementById('product-modal');
-    const modalCloseBtn = document.getElementById('modal-close');
-    let isAnimating = false;
-    let activeProductNode = null;
-
-    slots.forEach(slot => {
-        slot.addEventListener('click', function() {
-            if (isAnimating) return;
-            const itemId = this.getAttribute('data-id');
-            const data = inventory[itemId];
-            if(!data) return;
-
-            isAnimating = true;
-            activeProductNode = this.querySelector('.product');
-            
-            // Trigger animation
-            activeProductNode.classList.add('dispense-anim');
-
-            // Wait for drop animation to end before showing modal
-            setTimeout(() => {
-                populateModal(data);
-                modal.classList.add('active');
-                isAnimating = false;
-            }, 700); // matches CSS animation duration
-        });
-    });
-
-    function populateModal(data) {
-        document.getElementById('modal-title').textContent = data.title;
-        document.getElementById('modal-body').innerHTML = data.htmlDetails;
+    <!-- Desktop Environment -->
+    <div class="desktop" id="desktop">
         
-        const actionsContainer = document.getElementById('modal-actions');
-        actionsContainer.innerHTML = ''; // clear old
+        <!-- Icons (Positioned randomly for desktop look) -->
+        <div class="folder" data-target="win-stats" style="top: 20px; left: 20px;">
+            <svg viewBox="0 0 100 100" fill="#f4d03f"><path d="M10,20 L40,20 L50,30 L90,30 L90,80 L10,80 Z"/></svg>
+            <span>GlglStats App</span>
+        </div>
+        <div class="folder" data-target="win-radar" style="top: 120px; left: 20px;">
+            <svg viewBox="0 0 100 100" fill="#a4c639"><path d="M10,20 L40,20 L50,30 L90,30 L90,80 L10,80 Z"/></svg>
+            <span>Ahuzat Dibuk</span>
+        </div>
+        <div class="folder" data-target="win-cad" style="top: 20px; left: 120px;">
+            <svg viewBox="0 0 100 100" fill="#3498db"><path d="M10,20 L40,20 L50,30 L90,30 L90,80 L10,80 Z"/></svg>
+            <span>2D Part CAD</span>
+        </div>
+        <div class="folder" data-target="win-arena" style="top: 120px; left: 120px;">
+            <svg viewBox="0 0 100 100" fill="#e74c3c"><path d="M10,20 L40,20 L50,30 L90,30 L90,80 L10,80 Z"/></svg>
+            <span>Turing Jest</span>
+        </div>
+        <div class="folder" data-target="win-rhymes" style="top: 20px; left: 90%;"> 
+            <svg viewBox="0 0 100 100" fill="#f1c40f"><path d="M10,20 L40,20 L50,30 L90,30 L90,80 L10,80 Z"/></svg>
+            <span>Rhymes Ext</span>
+        </div>
+        <div class="folder" data-target="win-trivia" style="top: 120px; left: 90%;">
+            <svg viewBox="0 0 100 100" fill="#9b59b6"><path d="M10,20 L40,20 L50,30 L90,30 L90,80 L10,80 Z"/></svg>
+            <span>Hatul Basak</span>
+        </div>
+        <div class="folder" data-target="win-ide" style="top: 220px; left: 20px;">
+            <svg viewBox="0 0 100 100" fill="#34495e"><path d="M10,20 L40,20 L50,30 L90,30 L90,80 L10,80 Z"/></svg>
+            <span>Meta IDE</span>
+        </div>
+        <div class="folder" data-target="win-network" style="top: 320px; left: 20px;">
+            <svg viewBox="0 0 100 100" fill="#95a5a6"><path d="M10,20 L40,20 L50,30 L90,30 L90,80 L10,80 Z"/></svg>
+            <span>Rolodex</span>
+        </div>
 
-        data.buttons.forEach(btn => {
-            const a = document.createElement('a');
-            a.href = btn.url;
-            a.className = 'btn ' + btn.class;
-            a.textContent = btn.label;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            actionsContainer.appendChild(a);
-        });
-    }
+        <!-- Windows -->
 
-    function closeModal() {
-        modal.classList.remove('active');
-        // Reset dispensed item immediately behind closed modal
-        if (activeProductNode) {
-            activeProductNode.classList.remove('dispense-anim');
-            activeProductNode = null;
+        <!-- 1. GlglStats -->
+        <div class="window app-stats" id="win-stats" style="top:50px; left:200px;">
+            <div class="titlebar"><span>GlglStats Viewer App</span> <div class="window-controls"><div class="win-btn btn-min" onclick="minWindow(this)"></div><div class="win-btn btn-max" onclick="maxWindow(this)"></div><div class="win-btn btn-close" onclick="closeWindow(this)"></div></div></div>
+            <div class="content">
+                <div class="visualizer">
+                    <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                </div>
+                <div class="iframe-container">
+                    <iframe src="https://www.youtube.com/embed/jrKAtOsj1Lo" title="PyData Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+                <div style="text-align:center; padding: 10px;">
+                    <a class="action-btn" href="https://glglstats.geekip.dev" target="_blank">Launch Live LZ77 Project</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Ahuzat Dibuk -->
+        <div class="window app-radar" id="win-radar" style="top:80px; left:230px;">
+            <div class="titlebar"><span>Ahuzat Dibuk Heat-Map Radar</span> <div class="window-controls"><div class="win-btn btn-min" onclick="minWindow(this)"></div><div class="win-btn btn-max" onclick="maxWindow(this)"></div><div class="win-btn btn-close" onclick="closeWindow(this)"></div></div></div>
+            <div class="content">
+                <div class="radar-scan"></div>
+                <h2 style="font-family: var(--font-pixel); font-size:30px; margin-bottom: 20px;">TARGET OCCUPANCY ACQUIRED</h2>
+                <p>Telemetry data collected via Python automated scraping. Municipal parking density mapped and analyzed.</p>
+                <div class="icon-grid">
+                    <a class="data-icon" href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">
+                        <div>📼</div> Data Tape 1<br><small>13TV News</small>
+                    </a>
+                    <a class="data-icon" href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">
+                        <div>📼</div> Data Tape 2<br><small>Mako News</small>
+                    </a>
+                    <a class="data-icon" href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank">
+                        <div>☎️</div> BBS Notice<br><small>Secret Tel Aviv</small>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. CAD -->
+        <div class="window app-cad" id="win-cad" style="top:110px; left:260px;">
+            <div class="titlebar"><span>2D Part Orienting CAD Editor</span> <div class="window-controls"><div class="win-btn btn-min" onclick="minWindow(this)"></div><div class="win-btn btn-max" onclick="maxWindow(this)"></div><div class="win-btn btn-close" onclick="closeWindow(this)"></div></div></div>
+            <div class="content">
+                <div class="blueprint">
+                    <svg viewBox="0 0 100 100" class="rotating-vector">
+                        <polygon points="50,10 90,40 70,90 30,90 10,40" />
+                    </svg>
+                </div>
+                <div class="cad-terminal">
+                    <p style="color:#0f0;">> INIT C++ ALGORITHM ENGINE</p>
+                    <p>> LOADING POLYGON DATA...</p>
+                    <p>> CALCULATING PUSH-PLANS...</p>
+                    <p>> Computational geometry functions optimal state.</p>
+                    <br><br>
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" style="color: #0ff; text-decoration: underline;">[ACCESS RESEARCH REPOSITORY]</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Turing Jest -->
+        <div class="window app-arena" id="win-arena" style="top:140px; left:290px;">
+            <div class="titlebar"><span>The Turing Jest Arena.exe</span> <div class="window-controls"><div class="win-btn btn-min" onclick="minWindow(this)"></div><div class="win-btn btn-max" onclick="maxWindow(this)"></div><div class="win-btn btn-close" onclick="closeWindow(this)"></div></div></div>
+            <div class="content">
+                <div>
+                    <h1 class="arena-title">CHOOSE YOUR LLM</h1>
+                    <p style="color: #0f0; margin: 20px; font-family: var(--font-pixel); font-size: 20px;">LMSYS-style arena for pun battles. Only the wittiest model survives.</p>
+                </div>
+                <a class="btn-enter-arena" href="https://jest.geekip.dev" target="_blank">INSERT COIN TO ENTER ARENA</a>
+            </div>
+        </div>
+
+        <!-- 5. Scrapbook -->
+        <div class="window app-scrapbook" id="win-rhymes" style="top:170px; left:320px;">
+            <div class="titlebar"><span>Rhymes of Israel Scrapbook</span> <div class="window-controls"><div class="win-btn btn-min" onclick="minWindow(this)"></div><div class="win-btn btn-max" onclick="maxWindow(this)"></div><div class="win-btn btn-close" onclick="closeWindow(this)"></div></div></div>
+            <div class="content">
+                <div style="font-family: var(--font-pixel); font-size: 28px; margin-bottom: 20px; color:#532;">Highschool Yearbook /// News Clippings</div>
+                
+                <div class="clipping">
+                    <div class="tape"></div>
+                    <h3 style="font-family: inherit;">Daily Headline Rewritten</h3>
+                    <p>This dynamic LLM Chrome extension takes sterile news and injects poetry.</p>
+                </div>
+                <div class="clipping" style="transform: rotate(3deg); margin-left: 20px;">
+                    <div class="tape"></div>
+                    <p>"A lyrical lens on reality." - Automatically generated across domestic sites.</p>
+                </div>
+
+                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="floppy-install">Install<br>Extension</a>
+            </div>
+        </div>
+
+        <!-- 6. Hatul Basak -->
+        <div class="window app-trivia" id="win-trivia" style="top:200px; left:350px;">
+            <div class="titlebar"><span>Hatul Basak Trivia Terminal</span> <div class="window-controls"><div class="win-btn btn-min" onclick="minWindow(this)"></div><div class="win-btn btn-max" onclick="maxWindow(this)"></div><div class="win-btn btn-close" onclick="closeWindow(this)"></div></div></div>
+            <div class="content">
+                <div class="hypercard">
+                    <h1 style="font-family: var(--font-pixel); font-size: 40px; margin-top:20px;">HATUL BASAK</h1>
+                    <p style="margin-top:20px; font-size: 18px;">Navigate the Wikipedia labyrinth. Solve AI-generated daily mechanics and master user-themed puzzles.</p>
+                    <a href="https://hatulbasak.geekip.dev" target="_blank" class="play-btn-huge" style="text-decoration:none;">PLAY DAILY CHALLENGE</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Meta IDE -->
+        <div class="window app-ide" id="win-ide" style="top:60px; left:100px; width:700px; height:500px;">
+            <div class="titlebar"><span>Meta Portfolio IDE - index.html</span> <div class="window-controls"><div class="win-btn btn-min" onclick="minWindow(this)"></div><div class="win-btn btn-max" onclick="maxWindow(this)"></div><div class="win-btn btn-close" onclick="closeWindow(this)"></div></div></div>
+            <div class="content" style="padding:0;">
+                <div class="ide-code"><span class="syntax-html">&lt;!DOCTYPE <span class="syntax-attr">html</span>&gt;</span>
+<span class="syntax-html">&lt;<span class="syntax-tag">html</span>&gt;</span>
+    <span class="syntax-html">&lt;<span class="syntax-tag">head</span>&gt;</span>
+        <span class="syntax-html">&lt;<span class="syntax-tag">title</span>&gt;</span>Geva Kipper Portfolio<span class="syntax-html">&lt;/<span class="syntax-tag">title</span>&gt;</span>
+        <span class="syntax-html">&lt;<span class="syntax-tag">style</span>&gt;</span>
+            <span style="color:#c586c0">.desktop</span> { 
+                <span class="syntax-attr">background</span>: <span class="syntax-val">sage-green</span>; 
+            }
+        <span class="syntax-html">&lt;/<span class="syntax-tag">style</span>&gt;</span>
+    <span class="syntax-html">&lt;/<span class="syntax-tag">head</span>&gt;</span>
+    <span class="syntax-html">&lt;<span class="syntax-tag">body</span>&gt;</span>
+        <span style="color:#6a9955">&lt;!-- Building scalable infrastructure one div at a time --&gt;</span>
+        <span class="syntax-html">&lt;<span class="syntax-tag">div</span> <span class="syntax-attr">class</span>=<span class="syntax-val">"window"</span>&gt;</span>
+            Console.log("Hello, World!");
+        <span class="syntax-html">&lt;/<span class="syntax-tag">div</span>&gt;</span>
+    <span class="syntax-html">&lt;/<span class="syntax-tag">body</span>&gt;</span>
+<span class="syntax-html">&lt;/<span class="syntax-tag">html</span>&gt;</span></div>
+                <div class="compile-bar">
+                    <a href="https://geekip.dev" class="action-btn">Compile & View Root</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. Rolodex -->
+        <div class="window app-network" id="win-network" style="top:250px; left:300px;">
+            <div class="titlebar"><span>Network Connections / Rolodex</span> <div class="window-controls"><div class="win-btn btn-min" onclick="minWindow(this)"></div><div class="win-btn btn-max" onclick="maxWindow(this)"></div><div class="win-btn btn-close" onclick="closeWindow(this)"></div></div></div>
+            <div class="content">
+                <a href="https://github.com/gevak" target="_blank" class="id-card">
+                    <div class="id-pic" style="background:#333;"></div>
+                    <div><strong>GitHub</strong><br>gevak</div>
+                </a>
+                <a href="https://linkedin.com/in/gevakip" target="_blank" class="id-card">
+                    <div class="id-pic" style="background:#0a66c2;"></div>
+                    <div><strong>LinkedIn</strong><br>gevakip</div>
+                </a>
+                <a href="https://facebook.com/geva.kipper" target="_blank" class="id-card">
+                    <div class="id-pic" style="background:#1877f2;"></div>
+                    <div><strong>Facebook</strong><br>geva.kipper</div>
+                </a>
+                <a href="https://geekip.dev" target="_blank" class="id-card">
+                    <div class="id-pic" style="background:linear-gradient(45deg, #f09, #0ff);"></div>
+                    <div><strong>Website Root</strong><br>geekip.dev</div>
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Taskbar -->
+    <div class="taskbar">
+        <div class="taskbar-badge">
+            System Architecture & Design generated by AI Model
+        </div>
+        <div class="lcd-clock" id="uptime-clock">
+            00:00:00
+        </div>
+    </div>
+
+    <script>
+        // System Uptime Clock
+        const epochString = "2026-05-02T02:06:22";
+        const epochDate = new Date(epochString).getTime();
+        const clockElem = document.getElementById('uptime-clock');
+
+        function updateClock() {
+            const now = Date.now();
+            // Show absolute elapsed time regardless of past/future
+            let diffSeconds = Math.abs(Math.floor((now - epochDate) / 1000));
+            
+            const hours = Math.floor(diffSeconds / 3600);
+            diffSeconds %= 3600;
+            const minutes = Math.floor(diffSeconds / 60);
+            const seconds = diffSeconds % 60;
+
+            const pad = (num) => num.toString().padStart(2, '0');
+            clockElem.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
         }
-    }
+        setInterval(updateClock, 1000);
+        updateClock();
 
-    modalCloseBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal(); // close on backdrop click
-    });
+        // Window Management System
+        let zIndexCounter = 100;
+        
+        function bringToFront(el) {
+            zIndexCounter++;
+            el.style.zIndex = zIndexCounter;
+        }
 
-    // Temporal Anchor Timer Logic
-    const timerElement = document.getElementById('sys-timer');
-    // Format: YYYY-MM-DDTHH:mm:ss based on spec "2026-05-01 02:29:21"
-    const anchorDate = new Date("2026-05-01T02:29:21");
+        // Folder Double Click to Open Window
+        document.querySelectorAll('.folder').forEach(folder => {
+            folder.addEventListener('dblclick', function(e) {
+                const targetId = this.getAttribute('data-target');
+                const win = document.getElementById(targetId);
+                if (win) {
+                    bringToFront(win);
+                    win.classList.add('open');
+                }
+            });
+            // Focus on single click
+            folder.addEventListener('mousedown', function() {
+                bringToFront(this);
+            })
+        });
 
-    function updateTimer() {
-        const now = new Date();
-        // Calculate absolute difference to always tick upward as per spec
-        const diffMs = Math.abs(now - anchorDate);
+        // Window Controls
+        window.closeWindow = function(btn) {
+            const win = btn.closest('.window');
+            win.classList.remove('open');
+            win.classList.remove('maximized');
+        }
+        
+        window.maxWindow = function(btn) {
+            const win = btn.closest('.window');
+            win.classList.toggle('maximized');
+            bringToFront(win);
+        }
 
-        const h = Math.floor(diffMs / (1000 * 60 * 60));
-        const m = Math.floor((diffMs / (1000 * 60)) % 60);
-        const s = Math.floor((diffMs / 1000) % 60);
+        window.minWindow = function(btn) {
+            // Simplified minimize: just close it with transition
+            const win = btn.closest('.window');
+            win.classList.remove('open');
+        }
 
-        // Pad with zeros
-        const fH = String(h).padStart(2, '0');
-        const fM = String(m).padStart(2, '0');
-        const fS = String(s).padStart(2, '0');
+        // Draggable Logic
+        function makeDraggable(element, handleSelector) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            const handle = handleSelector ? element.querySelector(handleSelector) : element;
+            
+            if (handle) {
+                handle.onmousedown = dragMouseDown;
+            }
 
-        timerElement.textContent = `${fH}:${fM}:${fS}`;
-    }
+            // Click focus for windows
+            element.addEventListener('mousedown', () => bringToFront(element));
 
-    setInterval(updateTimer, 1000);
-    updateTimer(); // Initial call to prevent 1-second delay
-</script>
+            function dragMouseDown(e) {
+                // Prevent drag if clicking on buttons
+                if(e.target.classList.contains('win-btn') || e.target.tagName.toLowerCase() === 'a') return;
+                
+                e.preventDefault();
+                bringToFront(element);
+                
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e.preventDefault();
+                // Prevent dragging if maximized
+                if (element.classList.contains('maximized')) return;
+
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                
+                element.style.top = (element.offsetTop - pos2) + "px";
+                element.style.left = (element.offsetLeft - pos1) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+            }
+        }
+
+        // Apply drag to folders and windows
+        document.querySelectorAll('.folder').forEach(folder => {
+            makeDraggable(folder);
+        });
+
+        document.querySelectorAll('.window').forEach(win => {
+            makeDraggable(win, '.titlebar');
+        });
+
+    </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260501",
+          pageId: "20260502",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
