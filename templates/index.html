@@ -2,612 +2,708 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | Software Engineer</title>
-    <!-- Google Fonts for sleek typography -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Space+Mono&display=swap" rel="stylesheet">
-    
+    <title>Geva Kipper - Dev Portfolio</title>
     <style>
-        /* CSS Variables */
         :root {
-            --color-obsidian: #0b0c10;
-            --color-blue: #45f3ff;
-            --color-purple: #9d4edd;
-            --glass-bg: rgba(20, 25, 35, 0.4);
-            --glass-border: rgba(255, 255, 255, 0.15);
-            --transition: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --obsidian: #050508;
+            --obsidian-light: #0d0d14;
+            --neon-cyan: #00f3ff;
+            --neon-purple: #9d00ff;
+            --neon-pink: #ff0055;
+            --glass-bg: rgba(20, 20, 30, 0.4);
+            --glass-border: rgba(0, 243, 255, 0.1);
+            --glass-border-hover: rgba(0, 243, 255, 0.8);
+            --pet-pulse: 1;
         }
 
-        /* Reset & Base */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body, html {
-            width: 100%;
-            height: 100%;
-            font-family: 'Plus Jakarta Sans', sans-serif;
+        @font-face {
+            font-family: 'Geist Mono';
+            src: url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            cursor: none; /* Custom cursor via JS fallback if desired, keeping minimal */
+        }
+
+        body {
+            background-color: var(--obsidian);
             color: #fff;
-            background-color: var(--color-obsidian);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             overflow-x: hidden;
+            line-height: 1.6;
             scroll-behavior: smooth;
         }
 
-        /* WebGL Background Canvas */
-        #glcanvas {
+        /* Background & Overlays */
+        #bg-canvas, #overlay-canvas {
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: -1;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             pointer-events: none;
+            z-index: 0;
+        }
+        #overlay-canvas { z-index: 10; }
+
+        /* Typography */
+        h1, h2, h3 { font-weight: 800; }
+        .mono { font-family: 'Space Mono', monospace; }
+        
+        a {
+            color: var(--neon-cyan);
+            text-decoration: none;
+            transition: text-shadow 0.3s, color 0.3s;
+        }
+        a:hover {
+            color: #fff;
+            text-shadow: 0 0 8px var(--neon-cyan);
         }
 
-        /* Glassmorphism Utilities */
-        .glass {
+        /* Layout */
+        .layout {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Left: Pet Habitat */
+        .habitat-wrapper {
+            width: 40%;
+            position: relative;
+        }
+        .habitat {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: radial-gradient(circle at center, rgba(0,243,255,0.05) 0%, transparent 70%);
+        }
+        #pet-canvas {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 20px rgba(0,243,255,0.2));
+        }
+
+        /* Right: Content */
+        .content {
+            width: 60%;
+            padding: 6rem 4rem 10rem 4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Hero Section */
+        .hero {
+            margin-bottom: 4rem;
+        }
+        .hero-title {
+            font-size: 5rem;
+            letter-spacing: -2px;
+            background: linear-gradient(-45deg, #00f3ff, #9d00ff, #ff0055, #00f3ff);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientGen 8s ease infinite;
+            line-height: 1.1;
+            margin-bottom: 1rem;
+        }
+        @keyframes gradientGen {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .hero-desc {
+            font-size: 1.5rem;
+            color: #ccc;
+            margin-bottom: 2rem;
+            font-weight: 300;
+        }
+        .hero-subtitle {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.5);
+            opacity: 0;
+            transform: translateY(10px);
+            animation: fadeInSub 2s ease forwards 1s;
+        }
+        @keyframes fadeInSub {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Project Cards (Glassmorphism) */
+        .card {
             background: var(--glass-bg);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid var(--glass-border);
             border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-        }
-
-        /* Layout Main */
-        .main-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 150vh; /* Allow scroll for interaction */
-            padding-bottom: 100px;
-        }
-
-        /* Header Layout */
-        header {
-            text-align: center;
-            margin-top: 8vh;
-            padding: 0 20px;
-            z-index: 10;
+            padding: 2.5rem;
             position: relative;
-        }
-        h1.glow-text {
-            font-size: 3.5rem;
-            font-weight: 800;
-            margin-bottom: 10px;
-            text-shadow: 0 0 15px var(--color-blue), 0 0 30px var(--color-purple);
-            letter-spacing: -1.5px;
-        }
-        .subtitle {
-            font-size: 1.2rem;
-            font-weight: 300;
-            margin-bottom: 20px;
-            color: #d1d5db;
-        }
-
-        /* Typewriter & Shimmer */
-        .typewriter-container { min-height: 24px; }
-        .typewriter {
-            display: inline-block;
             overflow: hidden;
-            white-space: nowrap;
-            border-right: 2px solid var(--color-blue);
-            font-family: 'Space Mono', monospace;
-            font-size: 0.95rem;
-            color: #a8b2d1;
-            /* Shimmer Effect merged with typing */
-            animation: typing 4s steps(50, end), blink 0.75s step-end infinite, shimmer 3s infinite linear alternate 4s;
-        }
-        @keyframes typing { from { width: 0 } to { width: 100% } }
-        @keyframes blink { from, to { border-color: transparent } 50% { border-color: var(--color-blue) } }
-        @keyframes shimmer { 
-            0% { text-shadow: 0 0 5px rgba(255,255,255,0.2); } 
-            100% { text-shadow: 0 0 10px var(--color-purple), 0 0 20px var(--color-blue); color: #fff;}
-        }
-
-        /* Pyramid Layout (3D Perspective Engine) */
-        .pyramid-scene {
-            perspective: 1600px;
-            margin-top: 80px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            z-index: 5;
-        }
-        .pyramid-wrapper {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             transform-style: preserve-3d;
-            /* Base tilt, updated by JS on scroll */
-            transform: rotateX(45deg) rotateZ(0deg);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 30px;
-            will-change: transform;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-
-        /* Tier Containers */
-        .tier {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            transform-style: preserve-3d;
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.05), transparent);
+            transform: skewX(-20deg);
+            transition: 0.5s;
         }
-
-        /* Crystalline Blocks */
-        .block {
-            position: relative;
-            cursor: pointer;
-            text-decoration: none;
-            color: #fff;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            overflow: hidden;
-            transition: all 0.5s var(--transition);
-        }
-
-        /* Default Sizes forms a pyramid */
-        .tier-4 .block { width: 320px; height: 160px; } /* Base */
-        .tier-3 .block { width: 280px; height: 150px; } /* Cognitive */
-        .tier-2 .block { width: 440px; height: 140px; } /* Portfolio */
-        .tier-1 .block { width: 150px; height: 150px; border-radius: 50%; display: flex; align-items: center; justify-content: center; } /* Apex */
-
-        /* Internal Block Layout */
-        .block-header {
-            font-size: 1.3rem;
-            font-weight: 600;
-            z-index: 2;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-        }
-        .block-desc {
-            font-size: 0.9rem;
-            color: #cbd5e1;
-            margin-top: 10px;
-            opacity: 0.8;
-            max-height: 0;
-            transition: all 0.4s ease;
-            z-index: 2;
-        }
-        .block-links {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.3s ease;
-            z-index: 2;
-            flex-wrap: wrap;
-        }
-        .link-btn {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid var(--color-blue);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            color: #fff;
-            text-decoration: none;
-            transition: 0.3s;
-        }
-        .link-btn:hover { background: var(--color-blue); color: #000; box-shadow: 0 0 10px var(--color-blue); }
-
-        /* Block Hover Expansion & 3D Pop-out */
-        .block:hover {
-            /* Counter parent rotate, stand up, and pull forward over sibling blocks */
-            transform: rotateX(-35deg) translateZ(80px) scale(1.15);
-            background: rgba(40, 45, 60, 0.85);
-            box-shadow: 0 15px 45px rgba(69, 243, 255, 0.2), inset 0 0 15px rgba(157, 78, 221, 0.3);
-            border-color: var(--color-blue);
-            z-index: 100;
-        }
-        /* Mobile adjustment for hover math */
-        @media(max-width: 800px) {
-            .block:hover { transform: rotateX(-20deg) translateZ(40px) scale(1.05); }
-        }
+        .card:hover { border-color: var(--glass-border-hover); box-shadow: 0 15px 40px rgba(0,243,255,0.15); transform: translateY(-5px); }
+        .card:hover::before { left: 150%; }
         
-        .block:hover .block-desc { opacity: 1; max-height: 100px; }
-        .block:hover .block-links { opacity: 1; transform: translateY(0); }
-
-        /* --- Specific Project Backgrounds & Animations --- */
-        .bg-layer { position: absolute; top:0; left:0; right:0; bottom:0; z-index: 1; opacity: 0.2; transition: opacity 0.3s; }
-        .block:hover .bg-layer { opacity: 0.1; } /* Darken bg slightly on read */
-
-        /* Base: Ahuzat Dibuk */
-        .bg-ahuzat {
-            background-image: linear-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.2) 1px, transparent 1px);
-            background-size: 20px 20px;
+        .card h2 { font-size: 2rem; margin-bottom: 1rem; position: relative; z-index: 2; }
+        .card p { color: #a0a0b0; position: relative; z-index: 2; margin-bottom: 1.5rem; }
+        .card-links { display: flex; gap: 1rem; flex-wrap: wrap; position: relative; z-index: 2; align-items: center; }
+        
+        .btn {
+            background: rgba(0, 243, 255, 0.1); border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan); padding: 0.5rem 1rem; border-radius: 4px;
+            font-family: 'Space Mono', monospace; font-size: 0.85rem; text-transform: uppercase;
+            transition: all 0.3s;
         }
+        .btn:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 15px var(--neon-cyan); }
+        .icon-link { font-size: 1.5rem; color: #fff; opacity: 0.7; transition: 0.3s; display: flex; align-items: center; justify-content: center;}
+        .icon-link:hover { opacity: 1; color: var(--neon-pink); transform: scale(1.1); text-shadow: none; }
 
-        /* Base: GlglStats (Heatmap) */
-        .bg-glgl {
-            background: radial-gradient(circle at 80% 20%, rgba(255, 0, 100, 0.5) 0%, transparent 40%),
-                        radial-gradient(circle at 20% 80%, rgba(255, 200, 0, 0.4) 0%, transparent 50%),
-                        radial-gradient(circle at 50% 50%, rgba(0, 255, 255, 0.3) 0%, transparent 60%);
+        /* Specific Card Effects */
+        /* Box 1: LZ77 Wave */
+        .card-1:hover {
+            background: linear-gradient(90deg, var(--glass-bg), rgba(0,243,255,0.1), var(--glass-bg));
+            background-size: 200% 100%;
+            animation: lz77 1.5s infinite linear;
         }
+        @keyframes lz77 { 0% {background-position: 100% 0;} 100% {background-position: -100% 0;} }
 
-        /* Base: 2D Part Orienting */
-        .bg-orient::before {
-            content:''; position: absolute; width: 40px; height: 40px; border: 2px solid #fff;
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
-            animation: spin-orient 4s infinite cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        }
-        @keyframes spin-orient { 
-            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1.2); border-radius: 0%; }
-            50% { transform: translate(-50%, -50%) rotate(180deg) scale(0.8); border-radius: 50%; }
-            100% { transform: translate(-50%, -50%) rotate(360deg) scale(1.2); border-radius: 0%; }
-        }
+        /* Box 2: Heatmap */
+        .card-2 { transition: background 1s; }
+        .card-2:hover { background: radial-gradient(circle at center, rgba(255,0,0,0.15), rgba(0,0,255,0.1) 80%, var(--glass-bg)); }
 
-        /* Tier 2: The Turing Jest */
-        .bg-jest { background-image: radial-gradient(circle, rgba(157,78,221,0.3) 2px, transparent 2px); background-size: 15px 15px; }
-        .bg-jest::before, .bg-jest::after {
-            content:''; position: absolute; width: 30px; height: 20px; background: rgba(255,255,255,0.7); border-radius: 10px; bottom: 20px;
+        /* Box 3: Wireframe Blueprint */
+        .card-3-bg {
+            position: absolute; inset: 0; opacity: 0; transition: opacity 0.5s;
+            background-image: linear-gradient(rgba(0,243,255,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(0,243,255,0.2) 1px, transparent 1px);
+            background-size: 20px 20px; z-index: 0; pointer-events: none;
         }
-        .bg-jest::before { left: 40px; animation: bounce-chat 2s infinite; border-bottom-left-radius: 0; }
-        .bg-jest::after { right: 40px; animation: bounce-chat 2s infinite 1s; border-bottom-right-radius: 0; background: var(--color-blue); }
-        @keyframes bounce-chat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        .card-3:hover .card-3-bg { opacity: 1; animation: mapPan 10s linear infinite; }
+        @keyframes mapPan { to { background-position: 40px 40px; } }
 
-        /* Tier 2: Rhymes of Israel */
-        .bg-rhymes {
-            background: repeating-linear-gradient(0deg, transparent, transparent 15px, rgba(255,255,255,0.05) 15px, rgba(255,255,255,0.05) 30px);
-            font-family: serif; 
-        }
+        /* Box 4: Masks/Neural Nets */
+        .neural-bg { position:absolute; right: -20px; top: -20px; opacity: 0.1; font-size: 8rem; transition: 0.4s; }
+        .card-4:hover .neural-bg { color: var(--neon-purple); opacity: 0.3; transform: scale(1.1) rotate(5deg); }
 
-        /* Tier 2: Hatul Basak */
-        .bg-hatul {
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ffffff"><path d="M12 9A3 3 0 0 0 9 12A3 3 0 0 0 12 15A3 3 0 0 0 15 12A3 3 0 0 0 12 9M12 17A5 5 0 0 1 7 12A5 5 0 0 1 12 7A5 5 0 0 1 17 12A5 5 0 0 1 12 17M12 4.5C7 4.5 2.73 7.61 1 12C2.73 16.39 7 19.5 12 19.5C17 19.5 21.27 16.39 23 12C21.27 7.61 17 4.5 12 4.5Z"/></svg>');
-            background-position: center; background-repeat: no-repeat; background-size: 80px; opacity: 0.1;
-        }
+        /* Box 5: Yearbook Neon Cutout */
+        .card-5 { border-radius: 2px; }
+        .card-5:hover { box-shadow: 4px 4px 0 var(--neon-pink), -4px -4px 0 var(--neon-cyan); }
 
-        /* Tier 1: Project Portfolio (Meta) */
-        .bg-meta {
-            box-shadow: inset 0 0 0 4px rgba(255,255,255,0.1), inset 0 0 0 12px rgba(69,243,255,0.1), inset 0 0 0 24px rgba(157,78,221,0.1);
-        }
+        /* Box 6: Hatul Basak */
+        .cat-wiki-silhouette { position: absolute; right: 0; bottom: 0; width: 150px; height: 150px; opacity: 0.05; background: url('data:image/svg+xml;utf8,<svg fill="%23ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>') no-repeat right bottom/contain; transition: 0.5s; }
+        .card-6:hover .cat-wiki-silhouette { opacity: 0.2; transform: translateY(-10px); }
 
-        /* Apex: Social Icons Carousel */
-        .apex-inner { transform-style: preserve-3d; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
-        .apex-icns { 
-            position: relative; width: 40px; height: 40px; transform-style: preserve-3d;
-            animation: apex-spin 10s linear infinite; 
-        }
-        .icon { position: absolute; top:0; left:0; font-size: 24px; color: #fff; text-decoration: none; display:block; width: 40px; height:40px; display:flex; justify-content:center; align-items:center; opacity:0.8; transition:0.3s;}
-        .icon:hover { opacity:1; color: var(--color-blue); text-shadow: 0 0 10px var(--color-blue); }
-        .icon-gh { transform: rotateY(0deg) translateZ(40px); }
-        .icon-in { transform: rotateY(120deg) translateZ(40px); }
-        .icon-fb { transform: rotateY(240deg) translateZ(40px); }
-        @keyframes apex-spin { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
+        /* Box 7: Infinity Mirror */
+        .card-7 { transition: box-shadow 0.3s; }
+        .card-7:hover { box-shadow: inset 0 0 0 2px #000, inset 0 0 0 4px var(--neon-cyan), inset 0 0 0 8px #000, inset 0 0 0 10px var(--neon-purple), inset 0 0 0 14px #000, inset 0 0 0 16px var(--neon-pink), 0 10px 30px rgba(0,0,0,0.8); }
 
-        /* Footer Stopwatch */
+        /* Box 8: Hub */
+        .card-8 { display: flex; justify-content: space-around; padding: 4rem 2rem; border-color: transparent; background: transparent; box-shadow: none; }
+        .hub-icon { fill: currentColor; width: 48px; height: 48px; color: rgba(255,255,255,0.3); transition: 0.3s; transform: scale(var(--pet-pulse)); filter: drop-shadow(0 0 10px transparent); }
+        .hub-icon:hover { color: var(--neon-cyan); filter: drop-shadow(0 0 15px var(--neon-cyan)); transform: scale(calc(var(--pet-pulse) * 1.2)); }
+
+        /* Footer */
         footer {
-            margin-top: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            padding: 30px;
-            z-index: 10;
+            position: relative; z-index: 10;
+            background: #020202; border-top: 1px solid #111;
+            padding: 2rem 4rem; text-align: right;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .credit-line {
-            font-size: 0.85rem;
-            color: rgba(255,255,255,0.5);
-            letter-spacing: 1px;
-            text-transform: uppercase;
+        .footer-text { font-size: 0.8rem; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+        .stopwatch-container { display: flex; align-items: baseline; gap: 1rem; }
+        .stopwatch-label { font-size: 0.7rem; color: #444; text-transform: uppercase; }
+        .stopwatch { font-size: 1.5rem; color: #f00; text-shadow: 0 0 10px rgba(255,0,0,0.5); font-weight: bold; letter-spacing: 2px; }
+
+        /* Mobile Adjustments */
+        @media (max-width: 1024px) {
+            .hero-title { font-size: 3.5rem; }
+            .content { padding: 4rem 2rem; width: 55%; }
+            .habitat-wrapper { width: 45%; }
         }
-        .timer-container {
-            font-family: 'Space Mono', monospace;
-            font-size: 1.5rem;
-            color: var(--color-blue);
-            text-shadow: 0 0 8px var(--color-blue);
-            background: var(--glass-bg);
-            border: 1px solid var(--color-purple);
-            padding: 10px 20px;
-            border-radius: 8px;
+        @media (max-width: 768px) {
+            .layout { flex-direction: column; }
+            .habitat-wrapper { width: 100%; height: 40vh; position: sticky; top: 0; z-index: 5; background: var(--obsidian); border-bottom: 1px solid var(--glass-border); }
+            .habitat { height: 100%; }
+            .content { width: 100%; padding: 2rem 1.5rem; }
+            footer { flex-direction: column; text-align: center; gap: 1rem; padding: 2rem 1rem; }
         }
 
-        /* Responsive Layout wrapping */
-        @media (max-width: 1100px) {
-            .pyramid-wrapper { transform: rotateX(25deg); gap: 15px;}
-            .tier {flex-wrap: wrap;}
-            .tier-4 .block, .tier-3 .block { width: 45%; height:auto; min-height: 140px;}
-            .tier-2 .block { width: 95%;}
-        }
-        @media (max-width: 600px) {
-            .tier-4 .block, .tier-3 .block { width: 90%; }
-        }
-        
-        /* Basic SVG icons for Apex */
-        svg { width: 24px; height: 24px; fill: currentColor; }
+        /* Essential SVG Icons internal stylesheet */
+        svg { display: inline-block; vertical-align: middle; }
     </style>
 </head>
 <body>
 
-    <!-- WebGL Background -->
-    <canvas id="glcanvas"></canvas>
+    <canvas id="bg-canvas"></canvas>
+    <canvas id="overlay-canvas"></canvas>
 
-    <div class="main-container">
-        
-        <!-- Header -->
-        <header>
-            <h1 class="glow-text">Geva Kipper</h1>
-            <p class="subtitle">Software Engineer at Google, solving complex scale and infrastructure challenges.</p>
-            <div class="typewriter-container">
-                <span class="typewriter">This website is re-designed each day by AI and is thus ever-changing.</span>
+    <div class="layout">
+        <aside class="habitat-wrapper">
+            <div class="habitat" id="habitatBox">
+                <canvas id="pet-canvas"></canvas>
             </div>
-        </header>
+        </aside>
 
-        <!-- Interactive Isometric Pyramid -->
-        <div class="pyramid-scene">
-            <div class="pyramid-wrapper" id="pyramid">
-                
-                <!-- PEAK TIER (Self-Actualization / Connection) -->
-                <div class="tier tier-1">
-                    <div class="block glass apex">
-                        <div class="apex-inner">
-                            <div class="apex-icns">
-                                <a href="https://github.com/gevak" target="_blank" class="icon icon-gh" title="GitHub">
-                                    <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-                                </a>
-                                <a href="https://linkedin.com/in/gevakip" target="_blank" class="icon icon-in" title="LinkedIn">
-                                    <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                                </a>
-                                <a href="https://facebook.com/geva.kipper" target="_blank" class="icon icon-fb" title="Facebook">
-                                    <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <main class="content">
+            <section class="hero">
+                <h1 class="hero-title">Geva Kipper</h1>
+                <p class="hero-desc">Taking on complex engineering challenges and building scalable software solutions at Google.</p>
+                <p class="hero-subtitle mono">This website is redesigned each day by AI and is thus ever-changing.</p>
+            </section>
 
-                <!-- ESTIMATION TIER (Meta Awareness) -->
-                <div class="tier tier-2">
-                    <div class="block glass portfolio" onclick="window.location.href='https://geekip.dev'">
-                        <div class="bg-layer bg-meta"></div>
-                        <div class="block-header">Project Portfolio</div>
-                        <div class="block-desc">A meta-awareness exploration. The website itself is the project, mapped as the architectural summit of technical and creative progression.</div>
-                        <div class="block-links">
-                            <a href="https://geekip.dev" class="link-btn">geekip.dev</a>
-                        </div>
+            <section id="projects">
+                <!-- Box 1: GlglStats -->
+                <article class="card card-1" data-project="1">
+                    <h2>GlglStats</h2>
+                    <p>LZ77 audio wave analysis, statistics, and insights platform.</p>
+                    <div class="card-links">
+                        <a href="https://glglstats.geekip.dev" target="_blank" class="btn">Launch Platform</a>
+                        <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="icon-link" aria-label="PyData TLV Presentation">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+                        </a>
                     </div>
-                </div>
+                </article>
 
-                <!-- COGNITION TIER (Advanced AI & Interactive Logic) -->
-                <div class="tier tier-3">
-                    <div class="block glass" onclick="window.open('https://jest.geekip.dev')">
-                        <div class="bg-layer bg-jest"></div>
-                        <div class="block-header">The Turing Jest</div>
-                        <div class="block-desc">An LMSYS-like interactive arena for Large Language Model pun battles. Evaluating model wit through combat.</div>
-                        <div class="block-links">
-                            <a href="https://jest.geekip.dev" target="_blank" class="link-btn">jest.geekip.dev</a>
-                        </div>
+                <!-- Box 2: Ahuzat Dibuk -->
+                <article class="card card-2" data-project="2">
+                    <h2>Ahuzat Dibuk</h2>
+                    <p>Tel-Aviv parking scraper generating heatmaps of urban density and availability.</p>
+                    <div class="card-links">
+                        <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="mono">Channel 13</a>
+                        <span style="color:#555">•</span>
+                        <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="mono">Mako</a>
+                        <span style="color:#555">•</span>
+                        <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" class="mono">Secret Tel-Aviv</a>
                     </div>
-                    
-                    <div class="block glass" onclick="window.open('https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb')">
-                        <div class="bg-layer bg-rhymes"></div>
-                        <div class="block-header" style="font-family: serif;">Rhymes of Israel</div>
-                        <div class="block-desc">LLM Chrome Extension dynamically transforming standard news articles into comedic, stylized lyrical rhymes.</div>
-                        <div class="block-links">
-                            <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="link-btn">Chrome Web Store</a>
-                        </div>
-                    </div>
-                    
-                    <div class="block glass" onclick="window.open('https://hatulbasak.geekip.dev')">
-                        <div class="bg-layer bg-hatul"></div>
-                        <div class="block-header">Hatul Basak</div>
-                        <div class="block-desc">Hebrew Wikipedia-based trivia game ecosystem featuring AI-generated daily challenges and rigorous user-curated puzzles.</div>
-                        <div class="block-links">
-                            <a href="https://hatulbasak.geekip.dev" target="_blank" class="link-btn">hatulbasak.geekip.dev</a>
-                        </div>
-                    </div>
-                </div>
+                </article>
 
-                <!-- PHYSIOLOGICAL TIER (Foundations: Data, Algorithms, Core Logic) -->
-                <div class="tier tier-4">
-                    <div class="block glass" onclick="window.open('https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943')">
-                        <div class="bg-layer bg-ahuzat"></div>
-                        <div class="block-header">Ahuzat Dibuk</div>
-                        <div class="block-desc">Python-based data scraping and analytics mapping real-time Tel-Aviv parking occupancy. Visualizing urban infrastructure.</div>
-                        <div class="block-links">
-                            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="link-btn">Channel 13 News</a>
-                            <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="link-btn">Mako Feature</a>
-                            <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="link-btn">Secret Tel Aviv</a>
-                        </div>
+                <!-- Box 3: 2D Part Orienting -->
+                <article class="card card-3" data-project="3">
+                    <div class="card-3-bg"></div>
+                    <h2>2D Part Orienting</h2>
+                    <p>C++ computational geometry implementation for complex polygon wireframe orientation.</p>
+                    <div class="card-links">
+                        <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn">View Open-Source CGAL</a>
                     </div>
-                    
-                    <div class="block glass" onclick="window.open('https://glglstats.geekip.dev')">
-                        <div class="bg-layer bg-glgl"></div>
-                        <div class="block-header">GlglStats</div>
-                        <div class="block-header" style="font-size:0.8rem; opacity:0.6; margin-top:-2px;">LZ77 Optimization</div>
-                        <div class="block-desc">Python-driven analytical deep dive into pop-chart rhythms and trends, processing vast datasets for musical metadata.</div>
-                        <div class="block-links">
-                            <a href="https://glglstats.geekip.dev" target="_blank" class="link-btn">glglstats.geekip.dev</a>
-                            <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="link-btn">PyData Setup</a>
-                        </div>
+                </article>
+
+                <!-- Box 4: The Turing Jest -->
+                <article class="card card-4" data-project="4">
+                    <div class="neural-bg">🎭</div>
+                    <h2>The Turing Jest</h2>
+                    <p>A localized, LMSYS-like arena bridging neural network outputs with comedic theater structures.</p>
+                    <div class="card-links">
+                        <a href="https://jest.geekip.dev" target="_blank" class="btn">Enter Arena</a>
                     </div>
-                    
-                    <div class="block glass" onclick="window.open('https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/')">
-                        <div class="bg-layer bg-orient"></div>
-                        <div class="block-header">2D Part Orienting</div>
-                        <div class="block-desc">Robust C++ algorithmic implementation tailored for an open-source computational geometry library handling polygon orientation.</div>
-                        <div class="block-links">
-                            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="link-btn">TAU CG Library</a>
-                        </div>
+                </article>
+
+                <!-- Box 5: Rhymes of Israel -->
+                <article class="card card-5" data-project="5">
+                    <h2>Rhymes of Israel</h2>
+                    <p>Playful Chrome extension remixing phonetic elements across the web.</p>
+                    <div class="card-links">
+                        <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn">Install Extension</a>
                     </div>
-                </div>
+                </article>
 
-            </div>
-        </div>
+                <!-- Box 6: Hatul Basak -->
+                <article class="card card-6" data-project="6">
+                    <div class="cat-wiki-silhouette"></div>
+                    <h2>Hatul Basak</h2>
+                    <p>An intricate trivia game weaving feline logic with Wikipedia puzzle pieces.</p>
+                    <div class="card-links">
+                        <a href="https://hatulbasak.geekip.dev" target="_blank" class="btn">Play / Create</a>
+                    </div>
+                </article>
 
-        <!-- Footer Output -->
-        <footer>
-            <span class="credit-line">Design and Architecture generated by AI Model.</span>
-            <div class="timer-container" id="stopwatch">00D : 00H : 00M : 00S</div>
-        </footer>
+                <!-- Box 7: Portfolio Meta -->
+                <article class="card card-7" data-project="7">
+                    <h2>Meta-Dev</h2>
+                    <p>An introspective structural loop capturing the essence of portfolio design concepts.</p>
+                    <div class="card-links">
+                        <a href="https://geekip.dev" class="btn">Execute Self-Reference</a>
+                    </div>
+                </article>
 
+                <!-- Box 8: Hub -->
+                <article class="card card-8" data-project="8">
+                    <a href="https://github.com/gevak" target="_blank" aria-label="GitHub">
+                        <svg class="hub-icon" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    </a>
+                    <a href="https://linkedin.com/in/gevakip" target="_blank" aria-label="LinkedIn">
+                        <svg class="hub-icon" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                    </a>
+                    <a href="https://facebook.com/geva.kipper" target="_blank" aria-label="Facebook">
+                        <svg class="hub-icon" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+                    </a>
+                </article>
+            </section>
+        </main>
     </div>
 
-    <!-- JavaScript Interactions & WebGL Rendering -->
+    <footer>
+        <div class="footer-text mono">Design conceptualized and actively hallucinated by an AI language model.</div>
+        <div class="stopwatch-container mono">
+            <span class="stopwatch-label">TEMPUS</span>
+            <div id="stopwatch" class="stopwatch">00:00:00</div>
+        </div>
+    </footer>
+
     <script>
-        /*******************************************************
-         * 1. 3D Scroll Interaction implementation
-         *******************************************************/
-        const pyramid = document.getElementById('pyramid');
-        let currentScroll = window.scrollY;
-        
-        function updatePyramidTransform() {
-            currentScroll = window.scrollY;
-            // Base transform: rotateX(45deg)
-            // As user scrolls, we gently modify tilt and scale to invite interaction
-            let rotationX = 45 - (currentScroll * 0.015);
-            // Cap the rotation so it doesn't break perspective entirely
-            if(rotationX < 20) rotationX = 20; 
-            
-            let rotationZ = (currentScroll * 0.01) - 2; // subtle twist
-            let scale = 1 + (currentScroll * 0.0002);
-            
-            pyramid.style.transform = `rotateX(${rotationX}deg) rotateZ(${rotationZ}deg) scale(${scale})`;
-            requestAnimationFrame(updatePyramidTransform);
-        }
-        // Start scroll loop
-        requestAnimationFrame(updatePyramidTransform);
+        // --- System Data ---
+        const EPOCH_DATE = new Date('2026-05-04T02:10:59Z').getTime();
+        const rootVars = document.documentElement.style;
 
-
-        /*******************************************************
-         * 2. Real-Time Stopwatch (Anchor: 2026-05-03 02:12:17)
-         *******************************************************/
-        const anchorDate = new Date("2026-05-03T02:12:17Z").getTime();
-        const stopwatchEl = document.getElementById('stopwatch');
-
+        // --- Stopwatch Logic ---
         function updateStopwatch() {
             const now = new Date().getTime();
-            // We use absolute difference to keep it functioning dynamically 
-            // whether current time is before or past the anchor.
-            const diff = Math.abs(now - anchorDate);
-
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-            const pad = (num) => num.toString().padStart(2, '0');
-            stopwatchEl.innerText = `${pad(days)}D : ${pad(hours)}H : ${pad(minutes)}M : ${pad(seconds)}S`;
+            const diff = Math.abs(now - EPOCH_DATE); // Elapsed or remaining absolute
+            const h = Math.floor(diff / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            document.getElementById('stopwatch').innerText = 
+                `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
         }
         setInterval(updateStopwatch, 1000);
-        updateStopwatch(); // Initial call
+        updateStopwatch();
 
+        // --- Background Canvas (Data Particles) ---
+        const bgCanvas = document.getElementById('bg-canvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        let width, height;
+        let particles = [];
 
-        /*******************************************************
-         * 3. Fluid WebGL Gradient Background Generator 
-         *******************************************************/
-        const canvas = document.getElementById('glcanvas');
-        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            bgCanvas.width = width;
+            bgCanvas.height = height;
+            
+            const overlay = document.getElementById('overlay-canvas');
+            overlay.width = width;
+            overlay.height = height;
 
-        if (gl) {
-            // Resize handler mapping
-            function resizeCanvas() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-                gl.viewport(0, 0, canvas.width, canvas.height);
-            }
-            window.addEventListener('resize', resizeCanvas);
-            resizeCanvas();
-
-            // Vertex Shader: Maps canvas coordinates directly over the screen
-            const vsSource = `
-                attribute vec2 position;
-                void main() {
-                    gl_Position = vec4(position, 0.0, 1.0);
-                }
-            `;
-
-            // Fragment Shader: Creating the obsidian, blue, purple math logic 
-            const fsSource = `
-                precision mediump float;
-                uniform float u_time;
-                uniform vec2 u_resolution;
-
-                void main() {
-                    vec2 uv = gl_FragCoord.xy / u_resolution.xy;
-                    
-                    // Colors mapped to prompt specification
-                    vec3 colObsidian = vec3(0.043, 0.047, 0.063); // #0b0c10
-                    vec3 colBlue     = vec3(0.270, 0.953, 1.0);   // #45f3ff
-                    vec3 colPurple   = vec3(0.615, 0.305, 0.866); // #9d4edd
-                    
-                    // Generating layered waves based on time and coords
-                    float wave1 = sin((uv.x + u_time * 0.05) * 4.0) * cos((uv.y - u_time * 0.05) * 3.0);
-                    float wave2 = sin((uv.x - u_time * 0.08) * 2.0 + wave1) * 0.5;
-                    float wave3 = cos((uv.y + u_time * 0.03) * 5.0 - wave2);
-
-                    // Map math to blend gradients smoothly
-                    float blendBlue = smoothstep(-1.2, 1.2, wave1 + wave3);
-                    float blendPurple = smoothstep(-1.0, 1.0, wave2 - wave1);
-                    
-                    // Calculate final composite 
-                    vec3 finalCol = colObsidian; // base
-                    // Incorporate slight hue shifts 
-                    finalCol = mix(finalCol, colPurple, blendPurple * 0.3); // add purple shadows
-                    finalCol = mix(finalCol, colBlue, blendBlue * 0.2);     // add electric blue highlights
-
-                    // Slight subtle vignette based on edges
-                    float distCenter = distance(uv, vec2(0.5, 0.5));
-                    finalCol *= 1.0 - (distCenter * 0.6);
-
-                    gl_FragColor = vec4(finalCol, 1.0);
-                }
-            `;
-
-            // Compile Shaders Util Array
-            function compileShader(type, source) {
-                const shader = gl.createShader(type);
-                gl.shaderSource(shader, source);
-                gl.compileShader(shader);
-                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                    console.error('Shader Gen Error:', gl.getShaderInfoLog(shader));
-                    gl.deleteShader(shader); return null;
-                }
-                return shader;
-            }
-
-            const vertexShader = compileShader(gl.VERTEX_SHADER, vsSource);
-            const fragmentShader = compileShader(gl.FRAGMENT_SHADER, fsSource);
-
-            const program = gl.createProgram();
-            gl.attachShader(program, vertexShader);
-            gl.attachShader(program, fragmentShader);
-            gl.linkProgram(program);
-            gl.useProgram(program);
-
-            // Create flat geometry buffer taking entire screen
-            const buffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-                -1.0, -1.0,  1.0, -1.0, -1.0,  1.0,
-                -1.0,  1.0,  1.0, -1.0,  1.0,  1.0
-            ]), gl.STATIC_DRAW);
-
-            const posLoc = gl.getAttribLocation(program, "position");
-            gl.enableVertexAttribArray(posLoc);
-            gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
-
-            const timeLoc = gl.getUniformLocation(program, "u_time");
-            const resLoc = gl.getUniformLocation(program, "u_resolution");
-
-            // Animation Render Loop
-            let startTime = Date.now();
-            function renderShader() {
-                const currentTime = (Date.now() - startTime) / 1000.0;
-                gl.uniform1f(timeLoc, currentTime);
-                gl.uniform2f(resLoc, canvas.width, canvas.height);
-                gl.drawArrays(gl.TRIANGLES, 0, 6);
-                requestAnimationFrame(renderShader);
-            }
-            renderShader();
-
-        } else {
-            // CSS Fallback if WebGL isn't supported by browser (Safety Guard)
-            document.body.style.background = `linear-gradient(135deg, var(--color-obsidian) 40%, #151a28 80%, #221438 100%)`;
+            const petCanvas = document.getElementById('pet-canvas');
+            const habitatBox = document.getElementById('habitatBox');
+            petCanvas.width = habitatBox.clientWidth;
+            petCanvas.height = habitatBox.clientHeight;
         }
-        
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = Math.random() * -1 - 0.5;
+                this.size = Math.random() * 2 + 0.5;
+                this.alpha = Math.random() * 0.5 + 0.1;
+                this.color = Math.random() > 0.8 ? '#00f3ff' : '#ffffff';
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.y < 0) { this.y = height; this.x = Math.random() * width; }
+            }
+            draw(ctx) {
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            for(let i=0; i<80; i++) particles.push(new Particle());
+        }
+
+        // --- Overlay Canvas (Data Streams) ---
+        const overlayCanvas = document.getElementById('overlay-canvas');
+        const overlayCtx = overlayCanvas.getContext('2d');
+        let activeCards = new Set();
+        let scrollProgress = 0;
+
+        // Track Scroll for Evolution and Streams
+        function handleScroll() {
+            const totalScroll = document.body.scrollHeight - window.innerHeight;
+            scrollProgress = Math.min(1, Math.max(0, window.scrollY / totalScroll));
+            
+            // Check active cards via simple rect math instead of raw IntersectionObserver for smooth continuous lines
+            activeCards.clear();
+            document.querySelectorAll('.card').forEach(card => {
+                const rect = card.getBoundingClientRect();
+                if (rect.top < window.innerHeight && rect.bottom > 0) {
+                    activeCards.add(card);
+                }
+            });
+        }
+        window.addEventListener('scroll', handleScroll);
+
+        function drawStreams(time) {
+            overlayCtx.clearRect(0, 0, width, height);
+            
+            const petCanvas = document.getElementById('pet-canvas');
+            const petRect = petCanvas.getBoundingClientRect();
+            const petCx = petRect.left + petRect.width / 2;
+            const petCy = petRect.top + petRect.height / 2;
+
+            activeCards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const cardCx = rect.left + 20; // Edge of card
+                const cardCy = rect.top + rect.height / 2;
+
+                // Draw Bezier Curve stream
+                overlayCtx.beginPath();
+                overlayCtx.moveTo(cardCx, cardCy);
+                const cp1x = cardCx - 100;
+                const cp1y = cardCy;
+                const cp2x = petCx + 100;
+                const cp2y = petCy;
+                overlayCtx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, petCx, petCy);
+                
+                // Styling
+                const dashOffset = time * -0.05;
+                overlayCtx.setLineDash([10, 20]);
+                overlayCtx.lineDashOffset = dashOffset;
+                
+                // Color based on project type slightly
+                let color = "rgba(0, 243, 255, 0.4)";
+                if(card.classList.contains('card-2')) color = "rgba(255, 0, 85, 0.3)";
+                if(card.classList.contains('card-4')) color = "rgba(157, 0, 255, 0.3)";
+
+                overlayCtx.strokeStyle = color;
+                overlayCtx.lineWidth = 2;
+                overlayCtx.stroke();
+                
+                // Glowing particle along path
+                overlayCtx.setLineDash([]);
+                const t = (Math.sin(time*0.002) + 1)/2; // Ping pong 0-1
+                const px = (1-t)**3*cardCx + 3*(1-t)**2*t*cp1x + 3*(1-t)*t**2*cp2x + t**3*petCx;
+                const py = (1-t)**3*cardCy + 3*(1-t)**2*t*cp1y + 3*(1-t)*t**2*cp2y + t**3*petCy;
+                
+                overlayCtx.beginPath();
+                overlayCtx.arc(px,py, 4, 0, Math.PI*2);
+                overlayCtx.fillStyle = '#fff';
+                overlayCtx.shadowColor = '#00f3ff';
+                overlayCtx.shadowBlur = 10;
+                overlayCtx.fill();
+                overlayCtx.shadowBlur = 0; // reset
+            });
+        }
+
+        // --- Virtual Pet Logic ---
+        const pCanvas = document.getElementById('pet-canvas');
+        const pCtx = pCanvas.getContext('2d');
+
+        function drawVirtualPet(time) {
+            const w = pCanvas.width;
+            const h = pCanvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            
+            pCtx.clearRect(0, 0, w, h);
+
+            // Compute Base Pulse
+            const pulseRate = 0.002 + (scrollProgress * 0.003);
+            const pulse = 1 + 0.1 * Math.sin(time * pulseRate);
+            rootVars.setProperty('--pet-pulse', pulse); // Syncs Box 8 icons
+
+            pCtx.save();
+            pCtx.translate(cx, cy);
+            pCtx.scale(pulse, pulse);
+
+            // 0. Base Core (Always visible)
+            const coreRad = 20 + scrollProgress * 10;
+            const coreGrad = pCtx.createRadialGradient(0,0,0, 0,0,coreRad*2);
+            coreGrad.addColorStop(0, '#fff');
+            coreGrad.addColorStop(0.5, '#00f3ff');
+            coreGrad.addColorStop(1, 'transparent');
+            pCtx.fillStyle = coreGrad;
+            pCtx.beginPath(); pCtx.arc(0,0, coreRad*2, 0, Math.PI*2); pCtx.fill();
+
+            // 1. Data Mode Limbs (Music / Stats - Progress > 0.1)
+            if (scrollProgress > 0.1) {
+                const limbFactor = Math.min((scrollProgress - 0.1) * 3, 1);
+                pCtx.strokeStyle = `rgba(0, 243, 255, ${limbFactor * 0.5})`;
+                pCtx.lineWidth = 2;
+                for(let i=0; i<4; i++) {
+                    const angle = (Math.PI/2 * i) + (time*0.001);
+                    pCtx.save();
+                    pCtx.rotate(angle);
+                    pCtx.beginPath();
+                    pCtx.moveTo(coreRad, 0);
+                    // Sine wave limb
+                    for(let x=0; x<50 * limbFactor; x++) {
+                        pCtx.lineTo(coreRad + x, Math.sin(x*0.2 + time*0.005) * 10 * limbFactor);
+                    }
+                    pCtx.stroke();
+                    pCtx.restore();
+                }
+            }
+
+            // 2. Grid Shell (Map/Density - Progress > 0.25)
+            if (scrollProgress > 0.25) {
+                const gridFactor = Math.min((scrollProgress - 0.25) * 3, 1);
+                const shellRad = coreRad * 2.5;
+                pCtx.strokeStyle = `rgba(0, 243, 255, ${gridFactor * 0.3})`;
+                pCtx.lineWidth = 1;
+                
+                // Rings
+                for(let i=1; i<=3; i++) {
+                    pCtx.beginPath(); pCtx.arc(0,0, shellRad * (i/3) * gridFactor, 0, Math.PI*2); pCtx.stroke();
+                }
+                // Radials
+                for(let i=0; i<8; i++) {
+                    const a = (Math.PI/4) * i + (time*0.0005);
+                    pCtx.beginPath();
+                    pCtx.moveTo(Math.cos(a)*coreRad, Math.sin(a)*coreRad);
+                    pCtx.lineTo(Math.cos(a)*shellRad*gridFactor, Math.sin(a)*shellRad*gridFactor);
+                    pCtx.stroke();
+                }
+            }
+
+            // 3. Sharp Facets (C++ Geometry - Progress > 0.4)
+            if (scrollProgress > 0.4) {
+                const geoFactor = Math.min((scrollProgress - 0.4) * 3, 1);
+                const s = 60 * geoFactor;
+                const rot = time * 0.001;
+                
+                pCtx.save();
+                pCtx.rotate(-rot);
+                pCtx.strokeStyle = `rgba(255, 0, 85, ${geoFactor * 0.6})`;
+                pCtx.fillStyle = `rgba(20, 20, 30, ${geoFactor * 0.4})`;
+                pCtx.lineWidth = 1.5;
+
+                // Draw isometric-like octahedron projection
+                const pts = [
+                    {x: 0, y: -s}, {x: s*0.8, y: s*0.2}, {x: 0, y: s}, {x: -s*0.8, y: s*0.2},
+                    {x: 0, y: 0} // inner point
+                ];
+                
+                const faces = [
+                    [0,1,4], [1,2,4], [2,3,4], [3,0,4]
+                ];
+
+                faces.forEach(f => {
+                    pCtx.beginPath();
+                    pCtx.moveTo(pts[f[0]].x, pts[f[0]].y);
+                    pCtx.lineTo(pts[f[1]].x, pts[f[1]].y);
+                    pCtx.lineTo(pts[f[2]].x, pts[f[2]].y);
+                    pCtx.closePath();
+                    pCtx.fill();
+                    pCtx.stroke();
+                });
+                pCtx.restore();
+            }
+
+            // 4. Digital Eyes (AI/Sentience - Progress > 0.6)
+            if (scrollProgress > 0.6) {
+                const eyeFactor = Math.min((scrollProgress - 0.6) * 3, 1);
+                const eyeDist = 20;
+                const eyeY = -10;
+                const lookX = Math.sin(time*0.002) * 5;
+                
+                pCtx.fillStyle = `rgba(255, 255, 255, ${eyeFactor})`;
+                pCtx.shadowColor = '#9d00ff';
+                pCtx.shadowBlur = 15;
+                
+                // Left Eye
+                pCtx.beginPath();
+                pCtx.ellipse(-eyeDist + lookX, eyeY, 4*eyeFactor, 8*eyeFactor, 0, 0, Math.PI*2);
+                pCtx.fill();
+                
+                // Right Eye
+                pCtx.beginPath();
+                pCtx.ellipse(eyeDist + lookX, eyeY, 4*eyeFactor, 8*eyeFactor, 0, 0, Math.PI*2);
+                pCtx.fill();
+                
+                pCtx.shadowBlur = 0;
+            }
+
+            // 5. Feline Ears (Trivia/Cat - Progress > 0.8)
+            if (scrollProgress > 0.8) {
+                const earFactor = Math.min((scrollProgress - 0.8) * 4, 1);
+                pCtx.fillStyle = `rgba(0, 243, 255, ${earFactor * 0.5})`;
+                pCtx.strokeStyle = `rgba(0, 243, 255, ${earFactor})`;
+                
+                const earY = -30 * earFactor;
+                const earX = 25;
+                
+                // Left Ear
+                pCtx.beginPath();
+                pCtx.moveTo(-earX + 10, earY + 10);
+                pCtx.lineTo(-earX - 10, earY + 10);
+                pCtx.lineTo(-earX, earY - 20);
+                pCtx.closePath();
+                pCtx.fill(); pCtx.stroke();
+
+                // Right Ear
+                pCtx.beginPath();
+                pCtx.moveTo(earX - 10, earY + 10);
+                pCtx.lineTo(earX + 10, earY + 10);
+                pCtx.lineTo(earX, earY - 20);
+                pCtx.closePath();
+                pCtx.fill(); pCtx.stroke();
+            }
+
+            pCtx.restore();
+        }
+
+        // --- Main Animation Loop ---
+        function animate(time) {
+            bgCtx.clearRect(0, 0, width, height);
+            
+            // Background
+            particles.forEach(p => {
+                p.update();
+                p.draw(bgCtx);
+            });
+
+            // Virtual Pet
+            drawVirtualPet(time);
+
+            // Connections
+            drawStreams(time);
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- Initialization ---
+        window.addEventListener('resize', resize);
+        resize();
+        initParticles();
+        handleScroll();
+        requestAnimationFrame(animate);
+
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260503",
+          pageId: "20260504",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
