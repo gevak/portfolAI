@@ -2,655 +2,598 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | Software Engineer</title>
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@100;400&display=swap" rel="stylesheet">
-    <!-- Matter.js Physics Engine -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-    
+    <title>Geva Kipper // Battle Encounter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #060913;
-            --bg-grid: rgba(255, 255, 255, 0.03);
-            --cyan: #00f0ff;
-            --magenta: #ff003c;
-            --glass-bg: rgba(20, 30, 50, 0.45);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --glass-blur: blur(12px);
-            --metallic-gradient: linear-gradient(to bottom, #ffffff 0%, #b4bcf0 40%, #7b8de6 50%, #4f63c2 55%, #c8cff4 100%);
+            --bg-color: #07070b;
+            --glass-bg: rgba(20, 25, 45, 0.45);
+            --glass-border: rgba(100, 200, 255, 0.15);
+            --cyan: #00f3ff;
+            --magenta: #ff0073;
+            --green: #39ff14;
+            --orange: #ff5e00;
+            --purple: #b026ff;
+            --text-main: #e2e8f0;
+            --font-ui: 'Orbitron', sans-serif;
+            --font-text: 'Rajdhani', sans-serif;
+            --font-code: 'Fira Code', monospace;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         body {
             background-color: var(--bg-color);
-            color: #fff;
-            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+            font-family: var(--font-text);
             overflow-x: hidden;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
         }
 
-        /* Animated Grid Background */
-        .background {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1;
-            background-size: 50px 50px;
-            background-image: 
-                linear-gradient(to right, var(--bg-grid) 1px, transparent 1px),
-                linear-gradient(to bottom, var(--bg-grid) 1px, transparent 1px);
-            mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
-            -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
-            perspective: 500px;
+        /* --- Particle System --- */
+        .particles {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0; overflow: hidden;
+        }
+        .particle {
+            position: absolute;
+            background: var(--cyan);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float-up linear infinite;
+        }
+        @keyframes float-up {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            50% { opacity: 0.6; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
         }
 
-        /* Header */
-        header {
-            text-align: center;
-            padding: 2.5rem 1rem 1rem 1rem;
-            z-index: 10;
-        }
-
-        h1.metallic {
-            font-family: 'Orbitron', sans-serif;
-            font-size: clamp(2.5rem, 5vw, 4rem);
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            background: var(--metallic-gradient);
-            -webkit-background-clip: text;
-            color: transparent;
-            margin-bottom: 0.5rem;
-            filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.3));
-        }
-
-        .subtitle {
-            font-size: 1.1rem;
-            font-weight: 300;
-            color: #cbd5e1;
-            margin-bottom: 0.8rem;
-        }
-
-        .holo-text {
-            font-size: 0.9rem;
-            font-style: italic;
-            color: rgba(255, 255, 255, 0.7);
-            animation: holoPulse 3s infinite alternate;
-        }
-
-        @keyframes holoPulse {
-            0% { text-shadow: 1px 1px 3px rgba(0,255,255,0.4), -1px -1px 3px rgba(255,0,255,0.4); }
-            100% { text-shadow: 2px 2px 8px rgba(0,255,255,0.8), -2px -2px 8px rgba(255,0,255,0.8); }
-        }
-
-        /* Main Stage (Claw Machine) */
-        main {
-            flex: 1;
+        /* --- Layout --- */
+        .container {
+            position: relative;
+            z-index: 1;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            flex-direction: column;
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            flex-grow: 1;
             padding: 1rem;
         }
 
-        #machine-wrapper {
-            width: 100%; maxWidth: 840px;
-            display: flex; justify-content: center;
-            position: relative;
-        }
+        a { text-decoration: none; color: inherit; }
 
-        #machine-container {
-            width: 800px; height: 600px;
-            background: var(--glass-bg);
+        /* --- HUD (Top) --- */
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            font-family: var(--font-ui);
+            text-transform: uppercase;
+        }
+        .hud-bar {
+            width: 300px;
+            background: rgba(0,0,0,0.5);
             border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 0 30px rgba(0,240,255,0.05);
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
+            border-radius: 4px;
+            padding: 5px;
             position: relative;
-            transform-origin: top center;
-            cursor: pointer;
-            overflow: hidden;
+        }
+        .hud-fill {
+            height: 10px;
+            border-radius: 2px;
+            box-shadow: 0 0 10px currentColor;
+        }
+        .hero-hp .hud-fill { width: 100%; background: var(--cyan); color: var(--cyan); }
+        .enemy-hp .hud-fill { width: 100%; background: var(--magenta); color: var(--magenta); animation: pulse-hp 3s infinite alternate; }
+        .hud-labels { display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 5px; color: #8892b0; }
+
+        @keyframes pulse-hp { 0% { width: 100%; } 100% { width: 95%; } }
+
+        /* --- Battle Stage --- */
+        .battle-stage {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 35vh;
+            padding: 0 4rem;
+            position: relative;
+            margin-bottom: 1rem;
         }
 
-        /* Decorative Machine Accents */
-        .machine-accent {
-            position: absolute; border-radius: 5px;
-            background: var(--cyan); box-shadow: 0 0 10px var(--cyan);
+        /* Avatar (Hero) */
+        .avatar {
+            width: 150px; height: 150px;
+            position: relative;
+            animation: hover-float 4s ease-in-out infinite;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            filter: drop-shadow(0 0 20px rgba(0, 243, 255, 0.4));
         }
-        .accent-top { top: 0; left: 5%; width: 90%; height: 3px; background: var(--magenta); box-shadow: 0 0 10px var(--magenta); }
-        .accent-left { top: 5%; left: 0; width: 3px; height: 90%; }
-        .accent-right { top: 5%; right: 0; width: 3px; height: 90%; }
+        .avatar svg { width: 100%; height: 100%; }
         
-        #chute {
-            position: absolute;
-            bottom: 20px; right: 20px;
-            width: 120px; height: 100px;
-            border: 2px solid rgba(255, 0, 60, 0.4);
-            border-radius: 10px;
-            background: rgba(255, 0, 60, 0.05);
-            box-shadow: inset 0 0 20px rgba(255,0,60,0.2), 0 0 20px rgba(255,0,60,0.1);
+        /* Attack Animation Triggered by JS/Hover */
+        .avatar.attacking {
+            transform: translateX(80px) scale(1.15) rotate(10deg);
+            filter: drop-shadow(0 0 40px rgba(0, 243, 255, 0.8));
+            animation: none;
         }
 
-        /* Real-time sync DOM layer for Physics */
-        #physics-layer { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; }
-
-        .capsule {
+        /* Software Bug (Enemy) */
+        .monster {
+            width: 180px; height: 180px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: hover-float 5s ease-in-out infinite reverse;
+        }
+        .glitch-code {
             position: absolute;
-            width: 60px; height: 60px;
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            color: var(--magenta);
+            text-shadow: 0 0 5px var(--magenta);
+            animation: glitch-anim 2s infinite;
+            white-space: nowrap;
+        }
+        .glitch-code:nth-child(1) { top: 20%; left: -20%; animation-delay: 0.1s; font-size: 1.2rem;}
+        .glitch-code:nth-child(2) { top: 50%; right: -10%; animation-delay: 0.5s; color: #fff;}
+        .glitch-code:nth-child(3) { bottom: 20%; left: 10%; animation-delay: 0.3s; font-size: 0.7rem;}
+        
+        .monster::before {
+            content: '';
+            position: absolute; width: 120px; height: 120px;
+            background: radial-gradient(circle, rgba(255,0,115,0.4) 0%, rgba(0,0,0,0) 70%);
             border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #fff 0%, rgba(0, 240, 255, 0.8) 20%, rgba(10, 15, 40, 0.9) 80%);
-            box-shadow: inset 0 0 15px rgba(255,255,255,0.4), 0 0 15px rgba(0,240,255,0.5);
-            transform-origin: center center;
-            will-change: transform;
-            transition:  box-shadow 0.3s, background 0.3s;
+            animation: pulse-bug 2s infinite alternate;
         }
 
-        .capsule.used {
-            background: radial-gradient(circle at 30% 30%, rgba(200,200,200,0.3) 0%, rgba(50,50,50,0.4) 80%);
-            box-shadow: inset 0 0 5px rgba(255,255,255,0.1);
-            filter: grayscale(100%);
+        @keyframes hover-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        @keyframes pulse-bug { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.2); opacity: 1; } }
+        @keyframes glitch-anim {
+            0%, 100% { transform: translate(0,0) skew(0deg); opacity: 1; }
+            20% { transform: translate(-5px, 2px) skew(-10deg); color: #fff; }
+            40% { transform: translate(3px, -2px) skew(10deg); opacity: 0.7; }
+            60% { transform: translate(-2px, 5px) skew(0deg); color: var(--magenta); }
+            80% { transform: translate(4px, -4px) skew(-5deg); opacity: 0.4; }
         }
 
-        /* Mechanical Claw */
-        #claw-assembly {
-            position: absolute; top: 0; left: 400px;
-            transform: translateX(-50%);
-            width: 60px; pointer-events: none;
-            display: flex; flex-direction: column; align-items: center;
-            z-index: 5;
+        /* --- Text Box --- */
+        .dialog-box {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-left: 4px solid var(--cyan);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            min-height: 100px;
         }
-        #claw-rod {
-            width: 6px; height: 50px; /* height dynamic via JS */
-            background: linear-gradient(to right, #666 0%, #ddd 50%, #666 100%);
-            box-shadow: 0 0 5px rgba(0,0,0,0.8);
+        .typewriter-text {
+            font-size: 1.3rem;
+            line-height: 1.5;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
         }
-        #claw-base {
-            width: 40px; height: 20px;
-            background: linear-gradient(to bottom, #999, #444);
-            border-radius: 5px 5px 2px 2px;
+        .cursor {
+            display: inline-block; width: 10px; height: 1.2rem;
+            background: var(--cyan);
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+        
+        .subtitle {
+            font-size: 1rem;
+            font-style: italic;
+            color: var(--orange);
+            font-family: var(--font-code);
+            animation: text-pulse 2s infinite alternate;
+        }
+        @keyframes text-pulse { 0% { opacity: 0.6; text-shadow: none; } 100% { opacity: 1; text-shadow: 0 0 10px var(--orange); } }
+
+        /* --- Command Menu --- */
+        .command-menu {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            flex-grow: 1;
+            padding-bottom: 4rem;
+        }
+
+        .spell-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
             position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border-top: 2px solid transparent;
         }
-        .claw-prong {
-            position: absolute; top: 18px; width: 15px; height: 40px;
-            border: 4px solid #aaa; border-top: none; 
-            border-radius: 0 0 10px 10px;
-            transition: transform 0.3s;
+        .spell-card::before {
+            content: '';
+            position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: skewX(-20deg);
+            transition: 0.5s;
         }
-        .prong-left { left:-5px; border-right: none; border-radius: 0 0 0 20px; transform-origin: top right; }
-        .prong-right { right:-5px; border-left: none; border-radius: 0 0 20px 0; transform-origin: top left; }
-        .grabbing .prong-left { transform: rotate(-25deg); }
-        .grabbing .prong-right { transform: rotate(25deg); }
+        
+        .spell-card:hover { transform: translateY(-5px); border-color: rgba(255,255,255,0.4); }
+        .spell-card:hover::before { left: 150%; }
 
-        /* Modal / Project View */
-        #modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            z-index: 100; display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.5s;
-        }
-        #modal-overlay.active { opacity: 1; pointer-events: all; }
+        /* Thematic Card Colors */
+        .card-prog { border-top-color: var(--green); }
+        .card-prog:hover { box-shadow: 0 10px 30px rgba(57, 255, 20, 0.2); }
+        .card-fire { border-top-color: var(--orange); }
+        .card-fire:hover { box-shadow: 0 10px 30px rgba(255, 94, 0, 0.2); }
+        .card-geo { border-top-color: var(--cyan); }
+        .card-geo:hover { box-shadow: 0 10px 30px rgba(0, 243, 255, 0.2); }
+        .card-vs { border-top-color: var(--magenta); }
+        .card-vs:hover { box-shadow: 0 10px 30px rgba(255, 0, 115, 0.2); }
+        .card-item { border-top-color: #ffd700; }
+        .card-item:hover { box-shadow: 0 10px 30px rgba(255, 215, 0, 0.2); }
+        .card-illusion { border-top-color: var(--purple); }
+        .card-illusion:hover { box-shadow: 0 10px 30px rgba(176, 38, 255, 0.2); }
+        .card-meta { border-top-color: #fff; }
         
-        #modal-content {
-            background: rgba(15, 20, 35, 0.85); border: 1px solid var(--cyan);
-            border-radius: 20px; padding: 3rem; max-width: 600px; width: 90%;
-            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(0,240,255,0.1);
-            transform: translateY(50px); transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        #modal-overlay.active #modal-content { transform: translateY(0); }
-        
-        .modal-icon svg { width: 80px; height: 80px; margin-bottom: 1rem; filter: drop-shadow(0 0 10px var(--cyan)); }
-        #modal-title { font-family: 'Orbitron', sans-serif; font-size: 2rem; color: var(--cyan); margin-bottom: 1rem; }
-        #modal-desc { font-size: 1.1rem; line-height: 1.6; color: #cbd5e1; margin-bottom: 2rem; }
-        
-        .btn-group { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; margin-bottom: 2.5rem; }
-        
-        .btn-link {
-            text-decoration: none; color: #fff; background: rgba(0, 240, 255, 0.1);
-            border: 1px solid rgba(0, 240, 255, 0.5); padding: 0.8rem 1.5rem; border-radius: 8px;
-            font-weight: 600; font-size: 0.9rem; transition: all 0.2s;
-        }
-        .btn-link:hover {
-            background: var(--cyan); color: #000; box-shadow: 0 0 15px var(--cyan); transform: translateY(-2px);
+        /* Box 7 Infinity Mirror Trick */
+        .card-meta:hover {
+            box-shadow: 
+                0 0 0 2px var(--bg-color), 0 0 0 4px #444,
+                0 0 0 6px var(--bg-color), 0 0 0 8px #666,
+                0 0 0 10px var(--bg-color), 0 0 0 12px #888,
+                0 15px 40px rgba(255,255,255,0.3);
         }
 
-        .btn-close {
-            background: none; border: none; color: var(--magenta); font-family: 'Inter', sans-serif;
-            font-size: 1rem; cursor: pointer; border-bottom: 1px dashed var(--magenta); padding-bottom: 2px;
-            transition: color 0.2s;
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1rem;
+            font-family: var(--font-ui);
+            font-size: 1.1rem;
+            letter-spacing: 1px;
         }
-        .btn-close:hover { color: #ff4d79; text-shadow: 0 0 8px rgba(255,0,60,0.5); }
-
-        /* Footer */
-        footer {
-            padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center;
-            font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #64748b;
-            background: rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.05); z-index: 10;
+        .card-icon { width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; }
+        
+        .card-desc {
+            font-size: 0.95rem;
+            color: #a0aec0;
+            margin-bottom: 1.5rem;
+            flex-grow: 1;
         }
-        .timer-glow { color: var(--magenta); text-shadow: 0 0 5px rgba(255,0,60,0.4); font-size: 0.9rem;}
 
-        @media (max-width: 768px) {
-            footer { flex-direction: column; gap: 0.5rem; text-align: center; }
+        .btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: auto; }
+        .action-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-family: var(--font-code);
+            font-size: 0.75rem;
+            color: var(--cyan);
+            cursor: pointer;
+            transition: 0.3s;
+            text-align: center;
+            flex-grow: 1;
+        }
+        .action-btn:hover { background: var(--cyan); color: #000; box-shadow: 0 0 15px var(--cyan); }
+        
+        /* Thematic Buttons */
+        .btn-fire { color: var(--orange); } .btn-fire:hover { background: var(--orange); box-shadow: 0 0 15px var(--orange); }
+        .btn-geo { color: var(--green); } .btn-geo:hover { background: var(--green); box-shadow: 0 0 15px var(--green); }
+        .btn-vs { color: var(--magenta); } .btn-vs:hover { background: var(--magenta); box-shadow: 0 0 15px var(--magenta); }
+        .btn-item { color: #ffd700; } .btn-item:hover { background: #ffd700; box-shadow: 0 0 15px #ffd700; }
+
+        /* Social Icons (Box 8) */
+        .social-grid {
+            display: flex; justify-content: space-around; align-items: center; height: 100%; margin-top: 1rem;
+        }
+        .social-icon {
+            width: 45px; height: 45px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            transition: 0.3s;
+        }
+        .social-icon svg { width: 24px; height: 24px; fill: var(--text-main); transition: 0.3s; }
+        .social-icon:hover { transform: translateY(-5px) scale(1.1); background: var(--cyan); box-shadow: 0 0 20px var(--cyan); }
+        .social-icon:hover svg { fill: #000; }
+
+        /* --- Footer --- */
+        .footer {
+            margin-top: auto;
+            border-top: 1px solid var(--glass-border);
+            background: rgba(10, 10, 15, 0.9);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .term-credits { color: var(--green); }
+        .term-credits::before { content: '> '; color: #fff; }
+
+        .stopwatch { color: var(--cyan); display: flex; align-items: center; gap: 10px; }
+        .stopwatch-label { color: #8892b0; text-transform: uppercase; font-size: 0.7rem; }
+        .stopwatch-time {
+            font-size: 1.1rem; font-weight: bold; background: rgba(0,243,255,0.1); padding: 4px 8px; border-radius: 4px; box-shadow: inset 0 0 5px rgba(0,243,255,0.3);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .battle-stage { padding: 0 1rem; }
+            .avatar, .monster { width: 100px; height: 100px; }
+            .hud-bar { width: 150px; }
+            .dialog-box { padding: 1rem; }
+            .typewriter-text { font-size: 1.1rem; }
+            .footer { flex-direction: column; gap: 1rem; text-align: center; }
         }
     </style>
 </head>
 <body>
 
-    <div class="background"></div>
+    <!-- CSS Particles -->
+    <div class="particles" id="particles"></div>
 
-    <header>
-        <h1 class="metallic">Geva Kipper</h1>
-        <p class="subtitle">Currently a Software Engineer building impactful solutions at Google.</p>
-        <p class="holo-text">This website is re-designed every single day by AI, producing an ever-changing, unique digital experience.</p>
-    </header>
-
-    <main>
-        <div id="machine-wrapper">
-            <div id="machine-container">
-                <!-- Machine Accents -->
-                <div class="machine-accent accent-top"></div>
-                <div class="machine-accent accent-left"></div>
-                <div class="machine-accent accent-right"></div>
-                
-                <div id="chute"></div>
-
-                <!-- DOM Representation of Physics Objects -->
-                <div id="physics-layer"></div>
-
-                <!-- Claw -->
-                <div id="claw-assembly">
-                    <div id="claw-rod"></div>
-                    <div id="claw-base" class="open">
-                        <div class="claw-prong prong-left"></div>
-                        <div class="claw-prong prong-right"></div>
-                    </div>
-                </div>
+    <div class="container">
+        
+        <!-- Top HUD -->
+        <div class="hud">
+            <div class="hud-bar hero-hp">
+                <div class="hud-labels"><span>Geva Kipper</span><span>HP: 9999/9999</span></div>
+                <div class="hud-fill"></div>
+            </div>
+            <div class="hud-bar enemy-hp">
+                <div class="hud-labels"><span>Software Bug</span><span>HP: ERR</span></div>
+                <div class="hud-fill"></div>
             </div>
         </div>
-    </main>
 
-    <footer>
-        <div>Concept and design generated by an AI Language Model.</div>
-        <div>Temporal distance from 2026-05-13 02:35:32: <span id="timer" class="timer-glow">00:00:00</span></div>
-    </footer>
+        <!-- Battle Stage -->
+        <div class="battle-stage">
+            <!-- Hero Avatar (Abstract Vector) -->
+            <div class="avatar" id="avatar">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Glowing Aura -->
+                    <circle cx="50" cy="50" r="45" fill="rgba(0,243,255,0.1)" />
+                    <!-- Geometric Cyber Hood/Face -->
+                    <path d="M50 15 L80 35 L80 75 L50 95 L20 75 L20 35 Z" stroke="var(--cyan)" stroke-width="2" fill="rgba(20,25,45,0.8)" />
+                    <path d="M50 35 L70 50 L50 65 L30 50 Z" fill="var(--cyan)" />
+                    <line x1="20" y1="35" x2="50" y2="50" stroke="var(--cyan)" stroke-width="2" />
+                    <line x1="80" y1="35" x2="50" y2="50" stroke="var(--cyan)" stroke-width="2" />
+                    <line x1="50" y1="95" x2="50" y2="65" stroke="var(--cyan)" stroke-width="2" />
+                </svg>
+            </div>
 
-    <!-- Project Reveal Modal -->
-    <div id="modal-overlay">
-        <div id="modal-content">
-            <div id="modal-icon" class="modal-icon"></div>
-            <h2 id="modal-title"></h2>
-            <p id="modal-desc"></p>
-            <div id="modal-buttons" class="btn-group"></div>
-            <button class="btn-close" id="btn-close">Drop back into the pile</button>
+            <!-- Enemy Monster -->
+            <div class="monster">
+                <span class="glitch-code">NullReferenceException</span>
+                <span class="glitch-code">SegFault (core dumped)</span>
+                <span class="glitch-code">[FATAL] memory leak detected</span>
+            </div>
+        </div>
+
+        <!-- Dialog Box -->
+        <div class="dialog-box">
+            <div class="typewriter-text"><span id="type-text"></span><span class="cursor"></span></div>
+            <div class="subtitle">Battlefield conditions: Unstable. This domain is re-designed each day by AI and is eternally, seamlessly changing.</div>
+        </div>
+
+        <!-- Command Menu (Grid) -->
+        <div class="command-menu">
+            
+            <!-- Box 1: glglstats -->
+            <div class="spell-card card-prog" data-attack="true">
+                <div class="card-header"><div class="card-icon">🐍</div> Compression Arts</div>
+                <div class="card-desc">
+                    <strong>glglstats.geekip.dev</strong><br><br>
+                    Casts an LZ77 algorithm to analyze and visualize the repetitive structure of Israeli pop songs over time. High continuous magical damage.
+                </div>
+                <div class="btn-group">
+                    <a href="https://glglstats.geekip.dev" target="_blank" class="action-btn">Cast Spell [Site]</a>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="action-btn">View Log [PyData DLV]</a>
+                </div>
+            </div>
+
+            <!-- Box 2: Ahuzat Dibuk -->
+            <div class="spell-card card-fire" data-attack="true">
+                <div class="card-header"><div class="card-icon">🔥</div> Heatmap Summon</div>
+                <div class="card-desc">
+                    <strong>'Ahuzat Dibuk'</strong><br><br>
+                    Summons a mass-scraping entity over Tel-Aviv parking data to expose occupancy rates via searing thermal visualization.
+                </div>
+                <div class="btn-group">
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="action-btn btn-fire">Lore: 13tv</a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="action-btn btn-fire">Lore: Mako</a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="action-btn btn-fire">Lore: Secret TLV</a>
+                </div>
+            </div>
+
+            <!-- Box 3: 2D Part Orienting -->
+            <div class="spell-card card-geo" data-attack="true">
+                <div class="card-header"><div class="card-icon">📐</div> Geometry Strike</div>
+                <div class="card-desc">
+                    <strong>Open-Source C++ Library</strong><br><br>
+                    Executes sharp, angular push-plans on polygonal targets. Developed alongside TAU Computational Geometry Lab to orient parts automatically.
+                </div>
+                <div class="btn-group">
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="action-btn btn-geo">Access Grimoire [TAU CGL]</a>
+                </div>
+            </div>
+
+            <!-- Box 4: The Turing Jest -->
+            <div class="spell-card card-vs" data-attack="true">
+                <div class="card-header"><div class="card-icon">⚔️</div> Versus Arena</div>
+                <div class="card-desc">
+                    <strong>The Turing Jest (jest.geekip.dev)</strong><br><br>
+                    Opens a pocket dimension (LMSYS-like arena) pitting rival LLMs against one another to forge and dissect puns.
+                </div>
+                <div class="btn-group">
+                    <a href="https://jest.geekip.dev" target="_blank" class="action-btn btn-vs">Enter Arena</a>
+                </div>
+            </div>
+
+            <!-- Box 5: Rhymes of Israel -->
+            <div class="spell-card card-item" data-attack="true">
+                <div class="card-header"><div class="card-icon">🎭</div> Comedic Equipment</div>
+                <div class="card-desc">
+                    <strong>Rhymes of Israel</strong><br><br>
+                    A cursed equipable Chrome Extension. Forces an embedded LLM to rewrite all local grim news headlines into upbeat high-school yearbook rhymes.
+                </div>
+                <div class="btn-group">
+                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="action-btn btn-item">Equip from Store</a>
+                </div>
+            </div>
+
+            <!-- Box 6: Hatul Basak -->
+            <div class="spell-card card-illusion" data-attack="true">
+                <div class="card-header"><div class="card-icon">🐈‍⬛</div> Trivia Illusion</div>
+                <div class="card-desc">
+                    <strong>Hatul Basak (hatulbasak.geekip.dev)</strong><br><br>
+                    A cybernetic cat port of catfishing.net. Daily traps laid using AI-generated Wikipedia connections, fueled by community puzzles.
+                </div>
+                <div class="btn-group">
+                    <a href="https://hatulbasak.geekip.dev" target="_blank" class="action-btn" style="color:var(--purple); border-color:var(--purple)">Dispel Illusion</a>
+                </div>
+            </div>
+
+            <!-- Box 7: Recursive Magic -->
+            <div class="spell-card card-meta" data-attack="true">
+                <div class="card-header"><div class="card-icon">♾️</div> Recursive Magic</div>
+                <div class="card-desc">
+                    <strong>Domain: geekip.dev</strong><br><br>
+                    You gaze into the infinity mirror. This UI, the code, the very spell being cast is a manifestation of the current encounter itself.
+                </div>
+                <div class="btn-group">
+                    <a href="https://geekip.dev" target="_self" class="action-btn" style="color:#fff; border-color:#fff">Self-Reference</a>
+                </div>
+            </div>
+
+            <!-- Box 8: Guild Card -->
+            <div class="spell-card card-meta">
+                <div class="card-header"><div class="card-icon">🛡️</div> Guild Card</div>
+                <div class="card-desc">
+                    <strong>Party Affiliations & Social Links</strong><br>
+                    Check hero stats, inspect source pacts, or initiate comm link.
+                </div>
+                <div class="social-grid">
+                    <a href="https://github.com/gevak" target="_blank" class="social-icon" title="GitHub">
+                        <svg viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    </a>
+                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-icon" title="LinkedIn">
+                        <svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                    </a>
+                    <a href="https://facebook.com/geva.kipper" target="_blank" class="social-icon" title="Facebook">
+                        <svg viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Diagnostics Footer -->
+    <div class="footer">
+        <div class="term-credits">SYSTEM_ARCHITECT: AI_MODEL_v2024.11_DESIGN_ROUTINE</div>
+        <div class="stopwatch">
+            <span class="stopwatch-label">Encounter Duration:</span>
+            <span class="stopwatch-time" id="encounter-timer">00:00:00</span>
         </div>
     </div>
 
     <script>
-        /* --- Data Definitions --- */
-        const svgColors = { cyan: '#00f0ff', magenta: '#ff003c', white: '#fff' };
+        // --- 1. CSS Particle Generation ---
+        const particleContainer = document.getElementById('particles');
+        const particleCount = 40;
+        for (let i = 0; i < particleCount; i++) {
+            let p = document.createElement('div');
+            p.classList.add('particle');
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.width = Math.random() * 4 + 1 + 'px';
+            p.style.height = p.style.width;
+            p.style.animationDuration = Math.random() * 10 + 5 + 's';
+            p.style.animationDelay = Math.random() * 5 + 's';
+            particleContainer.appendChild(p);
+        }
+
+        // --- 2. Typewriter Effect ---
+        const textTarget = document.getElementById('type-text');
+        const message = "Geva Kipper has entered the encounter! Currently wielding infrastructure spells as a Software Engineer at Google.";
+        let charIndex = 0;
         
-        const projects = [
-            {
-                id: 0,
-                title: "GlglStats",
-                icon: `<svg viewBox="0 0 100 100"><path d="M20 50 L35 20 L50 80 L65 30 L80 50" stroke="${svgColors.magenta}" stroke-width="6" fill="none" stroke-linejoin="round" /></svg>`,
-                desc: "A Python project measuring the repetitiveness of Israeli pop-chart songs using LZ77 compression, complete with visual patterns of famous tracks.",
-                buttons: [
-                    { text: "Live Project", url: "https://glglstats.geekip.dev" },
-                    { text: "PyData TLV Presentation", url: "https://www.youtube.com/watch?v=jrKAtOsj1Lo" }
-                ]
-            },
-            {
-                id: 1,
-                title: "Ahuzat Dibuk",
-                icon: `<svg viewBox="0 0 100 100"><rect x="20" y="20" width="20" height="20" fill="${svgColors.cyan}" opacity="0.4"/><rect x="40" y="20" width="20" height="20" fill="${svgColors.magenta}" opacity="0.9"/><rect x="60" y="20" width="20" height="20" fill="${svgColors.cyan}" opacity="0.2"/><rect x="20" y="40" width="20" height="20" fill="${svgColors.magenta}" opacity="0.6"/><rect x="40" y="40" width="20" height="20" fill="${svgColors.cyan}" opacity="0.8"/><rect x="60" y="40" width="20" height="20" fill="${svgColors.magenta}" opacity="0.3"/></svg>`,
-                desc: "A Python scraping and data visualization tool that tracks Tel-Aviv parking lot occupancy for residents.",
-                buttons: [
-                    { text: "Channel 13 News", url: "https://13tv.co.il/item/news/domestic/internal/parking-902956407/" },
-                    { text: "Mako Feature", url: "https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" },
-                    { text: "Secret Tel-Aviv Launch", url: "https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" }
-                ]
-            },
-            {
-                id: 2,
-                title: "2D Part Orienting",
-                icon: `<svg viewBox="0 0 100 100"><polygon points="50,15 85,40 70,85 30,85 15,40" stroke="${svgColors.cyan}" stroke-width="4" fill="none"/><circle cx="50" cy="50" r="3" fill="${svgColors.white}"/></svg>`,
-                desc: "A C++ implementation within an open-source computational geometry library, detailing an efficient algorithm for constructing a push plan to orient polygons.",
-                buttons: [
-                    { text: "View Code & Documentation", url: "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" }
-                ]
-            },
-            {
-                id: 3,
-                title: "The Turing Jest",
-                icon: `<svg viewBox="0 0 100 100"><path d="M25 40 Q25 20 50 20 Q75 20 75 40 L75 60 Q75 80 50 80 Q25 80 25 60 Z" stroke="${svgColors.magenta}" stroke-width="4" fill="none"/><rect x="35" y="45" width="8" height="8" fill="${svgColors.cyan}"/><rect x="57" y="45" width="8" height="8" fill="${svgColors.cyan}"/><path d="M40 65 L60 65" stroke="${svgColors.white}" stroke-width="3"/></svg>`,
-                desc: "An LMSYS-like arena where LLMs compete in crafting and explaining puns, subject to user ratings.",
-                buttons: [
-                    { text: "Enter the Arena", url: "https://jest.geekip.dev" }
-                ]
-            },
-            {
-                id: 4,
-                title: "Rhymes of Israel",
-                icon: `<svg viewBox="0 0 100 100"><rect x="25" y="15" width="50" height="70" rx="5" stroke="${svgColors.cyan}" stroke-width="4" fill="none"/><line x1="40" y1="30" x2="60" y2="30" stroke="${svgColors.magenta}" stroke-width="3"/><line x1="40" y1="45" x2="60" y2="45" stroke="${svgColors.magenta}" stroke-width="3"/><circle cx="50" cy="70" r="8" stroke="${svgColors.white}" stroke-width="2" fill="none"/></svg>`,
-                desc: "A Chrome extension utilizing an LLM to rewrite Israeli news headlines into comedic, highschool-yearbook-style rhymes.",
-                buttons: [
-                    { text: "Install Extension", url: "https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" }
-                ]
-            },
-            {
-                id: 5,
-                title: "Hatul Basak",
-                icon: `<svg viewBox="0 0 100 100"><path d="M30 30 h15 v-10 a10 10 0 1 1 20 0 v10 h15 v20 h10 a10 10 0 1 1 0 20 h-10 v15 h-50 v-55" stroke="${svgColors.magenta}" stroke-width="4" fill="none" stroke-linejoin="round"/></svg>`,
-                desc: "A Hebrew port of catfishing.net, featuring AI-generated daily Wikipedia trivia challenges and user-created themed puzzles.",
-                buttons: [
-                    { text: "Play & Create", url: "https://hatulbasak.geekip.dev" }
-                ]
-            },
-            {
-                id: 6,
-                title: "The Meta Portfolio",
-                icon: `<svg viewBox="0 0 100 100"><rect x="20" y="20" width="60" height="60" rx="3" stroke="${svgColors.cyan}" stroke-width="4" fill="none"/><rect x="35" y="35" width="30" height="30" rx="2" stroke="${svgColors.magenta}" stroke-width="3" fill="none"/><circle cx="50" cy="50" r="5" fill="${svgColors.white}"/></svg>`,
-                desc: "The hyper-aware, self-referential nature of the site you are experiencing right now. Re-designed daily.",
-                buttons: [
-                    { text: "Geekip.dev", url: "https://geekip.dev" }
-                ]
-            },
-            {
-                id: 7,
-                title: "Connections",
-                icon: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="8" fill="${svgColors.cyan}"/><circle cx="20" cy="30" r="6" fill="${svgColors.magenta}"/><circle cx="80" cy="30" r="6" fill="${svgColors.magenta}"/><circle cx="50" cy="85" r="6" fill="${svgColors.magenta}"/><line x1="26" y1="34" x2="44" y2="46" stroke="${svgColors.white}" stroke-width="2"/><line x1="74" y1="34" x2="56" y2="46" stroke="${svgColors.white}" stroke-width="2"/><line x1="50" y1="58" x2="50" y2="79" stroke="${svgColors.white}" stroke-width="2"/></svg>`,
-                desc: "Connect, verify source code, or just say hello.",
-                buttons: [
-                    { text: "GitHub", url: "https://github.com/gevak" },
-                    { text: "LinkedIn", url: "https://linkedin.com/in/gevakip" },
-                    { text: "Facebook", url: "https://facebook.com/geva.kipper" }
-                ]
+        function typeWriter() {
+            if (charIndex < message.length) {
+                textTarget.innerHTML += message.charAt(charIndex);
+                charIndex++;
+                setTimeout(typeWriter, 35); // Typing speed
             }
-        ];
-
-        /* --- Global Setup --- */
-        const MACHINE_W = 800;
-        const MACHINE_H = 600;
-        const CAPSULE_RADIUS = 30;
-        let scaleFactor = 1;
-
-        // Scale handler to keep physics bounds pure but responsive visually
-        function handleResize() {
-            const wrapper = document.getElementById('machine-wrapper');
-            const container = document.getElementById('machine-container');
-            scaleFactor = Math.min(1, wrapper.clientWidth / MACHINE_W);
-            container.style.transform = `scale(${scaleFactor})`;
         }
-        window.addEventListener('resize', handleResize);
-        handleResize();
+        // Start typing shortly after load
+        setTimeout(typeWriter, 800);
 
-        /* --- Matter.js Setup --- */
-        const Engine = Matter.Engine,
-              Bodies = Matter.Bodies,
-              Composite = Matter.Composite,
-              Body = Matter.Body;
-
-        const engine = Engine.create();
-        // Lower gravity for floaty effect
-        engine.gravity.y = 0.5;
-
-        // Boundaries
-        const ground = Bodies.rectangle(MACHINE_W/2, MACHINE_H + 25, MACHINE_W, 50, { isStatic: true });
-        const wallLeft = Bodies.rectangle(-25, MACHINE_H/2, 50, MACHINE_H, { isStatic: true });
-        const wallRight = Bodies.rectangle(MACHINE_W + 25, MACHINE_H/2, 50, MACHINE_H, { isStatic: true });
-        // Angled corners at the bottom to funnel balls inward slightly to avoid sticking
-        const cornerLeft = Bodies.rectangle(20, MACHINE_H, 200, 20, { isStatic: true, angle: -Math.PI/6 });
+        // --- 3. Avatar Attack Animation via Hover ---
+        const avatar = document.getElementById('avatar');
+        const spellCards = document.querySelectorAll('.spell-card[data-attack="true"]');
         
-        Composite.add(engine.world, [ground, wallLeft, wallRight, cornerLeft]);
-
-        // Creating Capsules
-        const physicsLayer = document.getElementById('physics-layer');
-        let unvisitedProjects = [...projects];
-        let currentCapsuleIdx = -1;
-
-        const capsulesData = [];
-
-        for (let i = 0; i < 8; i++) {
-            // Physics Body
-            const body = Bodies.circle(
-                100 + (i * 80), // X init
-                100 + (Math.random() * 200), // Y init
-                CAPSULE_RADIUS, 
-                { 
-                    restitution: 0.8, // Bouncy
-                    friction: 0.005,
-                    frictionAir: 0.01
-                }
-            );
-            Composite.add(engine.world, body);
-
-            // DOM Element
-            const el = document.createElement('div');
-            el.className = 'capsule';
-            physicsLayer.appendChild(el);
-
-            capsulesData.push({
-                body: body,
-                element: el,
-                projectId: null, // assigned when initialized or reset
-                isUsed: false
+        spellCards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                avatar.classList.add('attacking');
             });
-        }
-
-        /* --- Physics Sync Render Loop --- */
-        let mouseX = MACHINE_W / 2;
-        let clawRealTarget = { x: MACHINE_W / 2, y: 50 };
-        let clawPos = { x: MACHINE_W / 2, y: 50 };
-        
-        function loop() {
-            Engine.update(engine, 1000 / 60);
-
-            // Sync Capsules to DOM
-            capsulesData.forEach(cap => {
-                const { x, y } = cap.body.position;
-                const angle = cap.body.angle;
-                // Boundaries protection fallback
-                if (y > MACHINE_H + 100) {
-                     Body.setPosition(cap.body, {x: MACHINE_W/2, y: 50});
-                     Body.setVelocity(cap.body, {x:0, y:0});
-                }
-                cap.element.style.transform = `translate(${x - CAPSULE_RADIUS}px, ${y - CAPSULE_RADIUS}px) rotate(${angle}rad)`;
-            });
-
-            // Smooth Claw follow kinematics
-            clawPos.x += (clawRealTarget.x - clawPos.x) * 0.1;
-            clawPos.y += (clawRealTarget.y - clawPos.y) * 0.08;
-
-            const assembly = document.getElementById('claw-assembly');
-            const rod = document.getElementById('claw-rod');
-            
-            assembly.style.left = `${clawPos.x}px`;
-            // The top of the assembly is at 0, rod extends down to clawPos.y
-            rod.style.height = `${clawPos.y}px`;
-
-            if(attachedCapsule) {
-                // If a capsule is grabbed, force its physics body to the claw position
-                Body.setPosition(attachedCapsule.body, {
-                    x: clawPos.x,
-                    y: clawPos.y + 45 // offset below the claw base
-                });
-                Body.setVelocity(attachedCapsule.body, {x:0, y:0});
-            }
-
-            requestAnimationFrame(loop);
-        }
-        requestAnimationFrame(loop);
-
-
-        /* --- Interaction Logic --- */
-        const machineContainer = document.getElementById('machine-container');
-        let gameState = 'IDLE'; // IDLE, GRABBING, MODAL
-        let attachedCapsule = null;
-        let selectedProject = null;
-
-        // Hover bump effect
-        machineContainer.addEventListener('mousemove', (e) => {
-            if (gameState !== 'IDLE') return;
-
-            const rect = machineContainer.getBoundingClientRect();
-            // Scale mouse coordinates to internal resolution
-            const scaledMouseX = (e.clientX - rect.left) / scaleFactor;
-            const scaledMouseY = (e.clientY - rect.top) / scaleFactor;
-            
-            // Allow claw to follow mouse X
-            clawRealTarget.x = Math.max(50, Math.min(scaledMouseX, MACHINE_W - 50));
-            clawRealTarget.y = 50;
-
-            // Bump capsules lightly
-            capsulesData.forEach(cap => {
-                const dx = cap.body.position.x - scaledMouseX;
-                const dy = cap.body.position.y - scaledMouseY;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist < 80) {
-                    const force = 0.0005 * (80 - dist);
-                    Body.applyForce(cap.body, cap.body.position, {
-                        x: (dx / dist) * force,
-                        y: (dy / dist) * force
-                    });
-                }
+            card.addEventListener('mouseleave', () => {
+                avatar.classList.remove('attacking');
             });
         });
 
-        // The Grab Sequence
-        const clawBase = document.getElementById('claw-base');
+        // --- 4. Encounter Stopwatch (from 2026-05-14 02:34:31) ---
+        const timerUI = document.getElementById('encounter-timer');
+        // Setting absolute target date as requested in specs.
+        const originDate = new Date('2026-05-14T02:34:31').getTime();
 
-        machineContainer.addEventListener('click', async () => {
-            if (gameState !== 'IDLE') return;
-            
-            // Ensure we have available capsules/projects
-            if (unvisitedProjects.length === 0) {
-                // Reset all
-                unvisitedProjects = [...projects];
-                capsulesData.forEach(c => { c.isUsed = false; c.element.classList.remove('used'); });
-            }
-
-            gameState = 'GRABBING';
-
-            // 1. Pick a random unused capsule and project
-            const availableCapsules = capsulesData.filter(c => !c.isUsed);
-            const targetCap = availableCapsules[Math.floor(Math.random() * availableCapsules.length)];
-            
-            // Get random project for it
-            const projectIdx = Math.floor(Math.random() * unvisitedProjects.length);
-            selectedProject = unvisitedProjects.splice(projectIdx, 1)[0];
-
-            // 2. Move claw X to target
-            clawRealTarget.x = targetCap.body.position.x;
-            await wait(600); // Wait for transition
-
-            // 3. Drop claw Y to target
-            clawBase.classList.remove('grabbing');
-            clawRealTarget.y = targetCap.body.position.y - 45; 
-            await wait(800);
-
-            // 4. Attach
-            clawBase.classList.add('grabbing');
-            attachedCapsule = targetCap;
-            Body.setStatic(attachedCapsule.body, true); // disable gravity for it
-            await wait(300);
-
-            // 5. Retract Y
-            clawRealTarget.y = 50;
-            await wait(800);
-
-            // 6. Move X to Chute
-            clawRealTarget.x = MACHINE_W - 80;
-            await wait(800);
-
-            // 7. Drop
-            clawBase.classList.remove('grabbing');
-            Body.setStatic(attachedCapsule.body, false);
-            attachedCapsule = null;
-            
-            // Wait for it to fall into chute
-            setTimeout(() => {
-                openModal();
-            }, 800);
-        });
-
-        function wait(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
+        function padZero(num) {
+            return num < 10 ? '0' + num : num;
         }
 
+        function updateTimer() {
+            const now = Date.now();
+            // Using absolute difference. If current date is before 2026, it counts down to it, 
+            // if after, it counts elapsed time physically. Mathematically reflects time distance.
+            let diffSeconds = Math.floor(Math.abs(now - originDate) / 1000); 
 
-        /* --- Modal Logic --- */
-        const modalOverlay = document.getElementById('modal-overlay');
-        const btnClose = document.getElementById('btn-close');
+            let hours = Math.floor(diffSeconds / 3600);
+            diffSeconds %= 3600;
+            let minutes = Math.floor(diffSeconds / 60);
+            let seconds = diffSeconds % 60;
 
-        function openModal() {
-            gameState = 'MODAL';
-            
-            // Populate Modal
-            document.getElementById('modal-icon').innerHTML = selectedProject.icon;
-            document.getElementById('modal-title').innerText = selectedProject.title;
-            
-            if(selectedProject.id === 7) {
-                 document.getElementById('modal-desc').style.display = 'none';
-            } else {
-                 document.getElementById('modal-desc').style.display = 'block';
-                 document.getElementById('modal-desc').innerText = selectedProject.desc;
-            }
-
-            const btnContainer = document.getElementById('modal-buttons');
-            btnContainer.innerHTML = '';
-            selectedProject.buttons.forEach(btn => {
-                const a = document.createElement('a');
-                a.href = btn.url;
-                a.target = '_blank';
-                a.className = 'btn-link';
-                a.innerText = btn.text;
-                btnContainer.appendChild(a);
-            });
-
-            modalOverlay.classList.add('active');
+            timerUI.textContent = `${padZero(hours)}:${padZero(minutes)}:${padZero(seconds)}`;
         }
-
-        btnClose.addEventListener('click', () => {
-            modalOverlay.classList.remove('active');
-            
-            // Re-spawn requested capsule at the top to fall back into the pile
-            // Find the capsule that just fell into the chute
-            const droppedCap = capsulesData.find(c => c.body.position.x > MACHINE_W - 150 && c.body.position.y > MACHINE_H - 120);
-            
-            if (droppedCap) {
-                droppedCap.isUsed = true;
-                droppedCap.element.classList.add('used');
-                // Teleport to top left to let it fall back in
-                Body.setPosition(droppedCap.body, { x: 100, y: 50 });
-                Body.setVelocity(droppedCap.body, { x: 5, y: -2 }); // Little toss
-            }
-
-            gameState = 'IDLE';
-            clawRealTarget.x = MACHINE_W / 2; // return to center
-        });
-
-
-        /* --- Footer Clock --- */
-        const targetDate = new Date("2026-05-13T02:35:32");
-        const timerEl = document.getElementById('timer');
         
-        setInterval(() => {
-            const now = new Date();
-            const diffSeconds = Math.abs(Math.floor((targetDate - now) / 1000));
-            
-            const h = Math.floor(diffSeconds / 3600);
-            const m = Math.floor((diffSeconds % 3600) / 60);
-            const s = Math.floor(diffSeconds % 60);
-            
-            timerEl.innerText = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        }, 1000);
-
+        setInterval(updateTimer, 1000);
+        updateTimer(); // Initial call
+        
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260513",
+          pageId: "20260514",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
