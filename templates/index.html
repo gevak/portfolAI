@@ -1,750 +1,630 @@
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Geva Kipper - Digital Canvas</title>
-<style>
-    /* VARIABLES & GLOBAL */
-    :root {
-        --denim-indigo: #152238;
-        --denim-dark: #0f182b;
-        --stitch-orange: #f69314;
-        --copper-base: #b87333;
-        --copper-light: #f9a976;
-        --copper-dark: #563311;
-        --leather-base: #5A3A22;
-        --leather-dark: #311c11;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper | Terminal</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;0,700;1,400&display=swap');
 
-    * { box-sizing: border-box; }
+        :root {
+            --bg-gray: #202024;
+            --paper: #f4f4f0;
+            --ink: #1a1b26;
+            --ink-fade: rgba(26, 27, 38, 0.7);
+            --led-red: #ff3333;
+            --receipt-width: 440px;
+        }
 
-    body {
-        margin: 0;
-        font-family: system-ui, -apple-system, sans-serif;
-        background-color: #020205; /* Deep underlayer color */
-        color: #fff;
-        overflow-x: hidden;
-        min-height: 100vh;
-        position: relative;
-    }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            cursor: default;
+        }
 
-    ::selection { background: var(--stitch-orange); color: #000; }
+        body {
+            background-color: var(--bg-gray);
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--ink);
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
 
-    a { text-decoration: none; color: inherit; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-gray); }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
 
-    /* LAYER 1: GLOWING CODE UNDERLAYER */
-    #code-underlayer {
-        position: fixed;
-        inset: 0;
-        z-index: 0;
-        overflow: hidden;
-        font-family: "Courier Prime", monospace, Consolas;
-        pointer-events: none;
-        background: radial-gradient(circle at center, #050a10 0%, #000 100%);
-    }
-    .floating-code {
-        position: absolute;
-        white-space: nowrap;
-        opacity: 0.6;
-        animation: float-code 20s linear infinite;
-        text-shadow: 0 0 5px currentColor;
-    }
-    @keyframes float-code {
-        0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-        10% { opacity: 0.8; }
-        90% { opacity: 0.8; }
-        100% { transform: translateY(-50vh) rotate(5deg); opacity: 0; }
-    }
+        /* Hardware Top Plate */
+        .hardware-housing {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background: linear-gradient(to bottom, #4a4a4f, #222225 50%, #151518);
+            z-index: 100;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8), inset 0 2px 3px rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 5px;
+        }
 
-    /* LAYER 2: DENIM BACKGROUND & MASK */
-    #denim-layer {
-        position: absolute;
-        inset: 0;
-        z-index: 1;
-        background-color: var(--denim-indigo);
-        background-image: 
-            repeating-linear-gradient(45deg, transparent, transparent 1px, rgba(255,255,255,0.06) 1px, rgba(255,255,255,0.06) 2px),
-            repeating-linear-gradient(-45deg, transparent, transparent 1px, rgba(0,0,0,0.2) 1px, rgba(0,0,0,0.2) 2px),
-            radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 100%);
-        mask-image: url(#denim-mask); /* Links to the inline SVG */
-        -webkit-mask-image: url(#denim-mask);
-        pointer-events: none;
-    }
+        .printer-slit {
+            width: calc(var(--receipt-width) + 6px);
+            height: 12px;
+            background: #000;
+            border-radius: 3px 3px 0 0;
+            box-shadow: inset 0 6px 12px rgba(0,0,0,1), 0 1px 1px rgba(255, 255, 255, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
 
-    #svg-mask-container {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 0; 
-    }
+        /* 3D Metal highlight inside the slit */
+        .printer-slit::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+        }
 
-    /* LAYER 3: CONTENT GRID */
-    #content-container {
-        position: relative;
-        z-index: 2;
-        width: 100%;
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 40px 20px 80px 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 60px;
-    }
+        /* Receipt Canvas */
+        .canvas-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding-top: 65px; /* Sit behind hardware */
+            margin-bottom: 80px;
+        }
 
-    /* UTILITIES */
-    .stitch-box {
-        border: 2px dashed var(--stitch-orange);
-        box-shadow: 0 0 3px rgba(0,0,0,0.8), inset 0 0 3px rgba(0,0,0,0.8);
-    }
-    .copper-rivet {
-        background: radial-gradient(circle, var(--copper-light) 10%, var(--copper-base) 60%, var(--copper-dark));
-        border-radius: 50%;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.6), inset 0 -1px 2px rgba(255,255,255,0.3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-weight: bold;
-        transition: transform 0.2s;
-    }
-    .copper-rivet:hover { transform: scale(1.1); }
+        .receipt {
+            width: var(--receipt-width);
+            background-color: var(--paper);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6), inset 0 0 40px rgba(0,0,0,0.04);
+            position: relative;
+            /* Filter attached to a hidden SVG to generate complex noise texture natively */
+            filter: url(#paper-texture);
+        }
 
-    /* HERO: LEATHER PATCH */
-    .hero-patch {
-        background: var(--leather-base);
-        border-radius: 12px;
-        box-shadow: inset 0 0 40px var(--leather-dark), 0 10px 20px rgba(0,0,0,0.5);
-        position: relative;
-        text-align: center;
-        padding: 30px;
-        max-width: 800px;
-        margin: 20px auto;
-        color: var(--leather-dark);
-        font-family: 'Times New Roman', Times, serif;
-    }
-    .hero-inner {
-        border: 3px dashed var(--stitch-orange);
-        border-radius: 8px;
-        padding: 40px 20px;
-        background: radial-gradient(ellipse at center, rgba(255,255,255,0.05), transparent);
-    }
-    .hero-patch h1 {
-        font-size: 3.5rem;
-        margin: 0;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        /* Debossed text effect */
-        color: transparent;
-        text-shadow: 2px 2px 3px rgba(255,255,255,0.2), -2px -2px 3px rgba(0,0,0,0.8);
-        background-color: #4a2a18;
-        -webkit-background-clip: text; 
-    }
-    .hero-patch p {
-        font-family: sans-serif;
-        text-transform: uppercase;
-        letter-spacing: 3px;
-        font-size: 0.85rem;
-        font-weight: 700;
-        margin-top: 20px;
-        opacity: 0.6;
-        transform: rotate(-1deg);
-        color: #22120b;
-        text-shadow: 0 0 1px rgba(0,0,0,0.3);
-    }
-    .red-tag {
-        position: absolute;
-        bottom: -20px;
-        right: 40px;
-        background: #c1272d;
-        color: white;
-        padding: 15px 10px;
-        writing-mode: vertical-rl;
-        transform-origin: top;
-        transform: rotate(-5deg);
-        text-decoration: none;
-        font-size: 0.8rem;
-        font-family: sans-serif;
-        box-shadow: 2px 4px 10px rgba(0,0,0,0.6);
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        border-bottom: 2px dashed rgba(255,255,255,0.3); /* Frayed edge sim */
-    }
-    .red-tag:hover { transform: rotate(8deg); }
+        .receipt-content {
+            padding: 30px 25px 0 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
 
-    /* MASONRY GRID */
-    .masonry {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 40px;
-        align-items: start;
-    }
-    .box {
-        position: relative;
-        border-radius: 8px;
-        min-height: 250px;
-    }
-    
-    /* BOX 1: GlglStats Back Pocket */
-    .box-1 {
-        background: var(--denim-dark); 
-        border-radius: 8px 8px 40% 40%;
-        overflow: hidden;
-    }
-    .lz77-viz {
-        position: absolute;
-        inset: 0;
-        background: #050a10;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        padding: 20px;
-        gap: 5px;
-    }
-    .viz-bar {
-        height: 10px;
-        background: linear-gradient(90deg, #00f, #0ff);
-        border-radius: 5px;
-    }
-    .pocket-front {
-        position: absolute;
-        inset: 0;
-        background: var(--denim-indigo);
-        border-radius: inherit;
-        transition: transform 0.4s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 -5px 10px rgba(0,0,0,0.5);
-    }
-    .box-1:hover .pocket-front { transform: translateY(40px); }
-    .gold-soundwave {
-        width: 80%;
-        height: 50px;
-        background: repeating-linear-gradient(90deg, var(--stitch-orange) 0px, var(--stitch-orange) 4px, transparent 4px, transparent 8px);
-        mask-image: radial-gradient(ellipse at center, black 40%, transparent 100%);
-        -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 100%);
-    }
-    .rivet-link { position: absolute; width: 30px; height: 30px; top: 15px; }
-    .rivet-left { left: 15px; font-size: 10px; font-family: monospace; }
-    .rivet-right { right: 15px; font-size: 14px; }
+        .jagged-bottom {
+            height: 25px;
+            background-color: var(--paper);
+            width: 100%;
+        }
 
-    /* BOX 2: Ahuzat Dibuk Heat Map */
-    .box-2 {
-        background: linear-gradient(135deg, rgba(230,190,50,0.8), rgba(200,50,50,0.7), rgba(40,40,150,0.6)), var(--denim-indigo);
-        background-blend-mode: overlay;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
-    }
-    .badge-container { display: flex; gap: 15px; margin-top: 20px; }
-    .merit-badge {
-        width: 70px; height: 70px;
-        background: #fff;
-        border-radius: 50%;
-        border: 4px dashed #333;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        font-size: 0.65rem;
-        font-weight: 900;
-        color: #222;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
-        transition: transform 0.2s;
-    }
-    .merit-badge:hover { transform: scale(1.1) rotate(10deg); border-color: var(--stitch-orange); }
+        /* Text Utilities */
+        a {
+            color: var(--ink);
+            text-decoration: underline;
+            text-decoration-style: dashed;
+            text-underline-offset: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        a:hover {
+            background-color: var(--ink);
+            color: var(--paper);
+            text-decoration: none;
+        }
 
-    /* BOX 3: 2D Part Orienting */
-    .box-3 {
-        background: #0a111a;
-        outline: 4px dashed #445;
-        outline-offset: -10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-    }
-    .geom-anim {
-        width: 100%; height: 100%;
-        position: relative;
-    }
-    .dash-pusher {
-        position: absolute;
-        top: 50%; left: 0;
-        width: 100%; height: 2px;
-        background: repeating-linear-gradient(90deg, #6cf, #6cf 10px, transparent 10px, transparent 20px);
-        animation: push-dash 1.5s linear infinite;
-    }
-    @keyframes push-dash { to { background-position: 20px 0; } }
-    .polygon {
-        position: absolute;
-        top: 50%; left: 50%;
-        width: 40px; height: 40px;
-        background: rgba(100,200,255,0.3);
-        border: 2px solid #6cf;
-        transform: translate(-50%, -50%) rotate(45deg);
-        animation: orient 3s ease infinite;
-    }
-    @keyframes orient { 0%, 100% { transform: translate(-50%, -50%) rotate(45deg); } 50% { transform: translate(30%, -50%) rotate(0deg); } }
-    .heavy-snap {
-        position: absolute;
-        top: 15px; right: 15px;
-        width: 40px; height: 40px;
-        background: radial-gradient(circle, #ffe699, #cc9900, #4d3900);
-        border-radius: 50%;
-        border: 3px solid #806000;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.6);
-    }
+        .dashed-line {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            color: var(--ink-fade);
+            margin: 5px 0;
+            user-select: none;
+        }
+        
+        .dashed-line::after { content: "--------------------------------------------------------"; }
 
-    /* BOX 4: The Turing Jest */
-    .box-4 {
-        background: linear-gradient(90deg, #4b6b94 50%, #2f4562 50%);
-    }
-    .zigzag {
-        position: absolute;
-        left: 50%; top: 0; bottom: 0;
-        width: 20px;
-        transform: translateX(-50%);
-        background: repeating-linear-gradient(45deg, transparent, transparent 10px, var(--stitch-orange) 10px, var(--stitch-orange) 15px),
-                    repeating-linear-gradient(-45deg, transparent, transparent 10px, var(--stitch-orange) 10px, var(--stitch-orange) 15px);
-    }
-    .masks {
-        position: absolute; inset: 0;
-        display: flex; align-items: center; justify-content: space-around;
-        font-size: 3rem;
-        text-shadow: 1px 1px 2px #fff, -1px -1px 2px #aaa;
-        pointer-events: none;
-    }
-    .price-tag {
-        position: absolute;
-        top: 30px; right: 10px;
-        background: #d2b48c;
-        padding: 5px 15px;
-        border-radius: 2px;
-        color: #333;
-        font-weight: bold;
-        transform: rotate(15deg);
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-    }
-    .price-tag::before {
-        content: ''; position: absolute;
-        top: -30px; left: 10px; width: 1px; height: 30px;
-        background: #ccc;
-    }
+        .bold { font-weight: 700; }
+        .small { font-size: 0.85em; }
+        .right { text-align: right; }
+        .center { text-align: center; }
+        
+        .tag {
+            display: inline-block;
+            border: 1px solid var(--ink);
+            padding: 0 4px;
+            font-size: 0.7em;
+            text-transform: uppercase;
+            margin-left: 4px;
+        }
 
-    /* BOX 5: Rhymes of Israel Polaroid */
-    .box-5 {
-        background: none;
-        display: flex; justify-content: center;
-    }
-    .polaroid {
-        background: #fcfcfc;
-        padding: 15px 15px 50px 15px;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.6);
-        transform: rotate(-3deg);
-        position: relative;
-        width: 90%;
-    }
-    .photo-area {
-        background: #111;
-        height: 140px;
-        display: flex; align-items: center; justify-content: center;
-        padding: 10px; text-align: center;
-        font-family: 'Times', serif; font-style: italic;
-    }
-    .safety-pin {
-        position: absolute; top: -10px; left: 50%;
-        transform: translateX(-50%);
-        width: 60px; height: 15px;
-        border: 2px solid silver;
-        border-radius: 10px;
-        background: linear-gradient(90deg, #fff, #bbb);
-        box-shadow: 0 5px 5px rgba(0,0,0,0.4);
-    }
-    .dl-sticker {
-        position: absolute; bottom: 5px; right: 5px;
-        background: #ffdb58; border-radius: 50%;
-        width: 70px; height: 70px;
-        display: flex; align-items: center; justify-content: center;
-        color: #000; font-weight: bold; font-size: 0.7rem; text-align: center;
-        transform: rotate(12deg); box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-    }
+        /* Jitter Animation (Intersection Observer Trigger) */
+        .print-line {
+            opacity: 0;
+            transform: translateY(15px);
+        }
 
-    /* BOX 6: Hatul Basak */
-    .box-6 { background: var(--denim-indigo); position: relative; }
-    .paw-bg {
-        position: absolute; inset: 0;
-        background-image: radial-gradient(circle at 20% 30%, var(--stitch-orange) 2px, transparent 3px),
-                          radial-gradient(circle at 40% 70%, var(--stitch-orange) 2px, transparent 3px),
-                          radial-gradient(circle at 80% 40%, var(--stitch-orange) 2px, transparent 3px);
-        opacity: 0.5;
-    }
-    .puzzle-globe {
-        position: absolute;
-        top: 50%; left: 50%; transform: translate(-50%, -50%);
-        width: 100px; height: 100px;
-        background: radial-gradient(circle, #eee, #aaa);
-        border-radius: 50%;
-        display: grid; grid-template-columns: 1fr 1fr;
-        gap: 2px; overflow: hidden;
-    }
-    .puzzle-globe div { background: rgba(0,0,0,0.1); border: 1px solid #666; }
-    .loop-tag {
-        position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
-        background: #333; color: #fff;
-        padding: 10px 15px; border-radius: 4px;
-        font-family: sans-serif; font-size: 0.8rem;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.4);
-    }
+        .print-line.printed {
+            animation: thermalPrint 0.4s steps(6) forwards;
+        }
 
-    /* BOX 7: The Meta Portfolio (Permanent Hole) */
-    .box-7 {
-        background: transparent; /* Allows underlayer to show through where mask is cut */
-        position: relative;
-        display: flex; align-items: center; justify-content: center;
-    }
-    .frayed-edges {
-        position: absolute; inset: -10px;
-        border: 2px dashed rgba(255,255,255,0.6);
-        border-radius: 10px;
-        pointer-events: none;
-        box-shadow: inset 0 0 20px rgba(0,0,0,1);
-    }
-    .terminal {
-        color: #0f0; font-family: monospace; font-size: 0.8rem;
-        text-shadow: 0 0 5px #0f0; background: rgba(0,0,0,0.5);
-        padding: 10px; border-radius: 4px;
-    }
-    .neon-link {
-        color: #0ff; text-shadow: 0 0 8px #0ff;
-        font-size: 1.2rem; font-weight: bold;
-    }
+        @keyframes thermalPrint {
+            0% { opacity: 0; transform: translateY(15px) translateX(-2px); filter: blur(2px); }
+            30% { opacity: 0.5; transform: translateY(8px) translateX(1px); filter: blur(1px); }
+            70% { opacity: 0.8; transform: translateY(2px) translateX(-0.5px); }
+            100% { opacity: 1; transform: translateY(0) translateX(0); filter: blur(0); }
+        }
 
-    /* BOX 8: Socials Utilities Belt */
-    .box-8 {
-        grid-column: 1 / -1; 
-        background: transparent;
-        display: flex; align-items: center; justify-content: center;
-        height: 120px;
-    }
-    .belt {
-        width: 100%; height: 50px;
-        background: repeating-linear-gradient(90deg, #222, #222 5px, #1a1a1a 5px, #1a1a1a 10px);
-        box-shadow: 0 5px 10px rgba(0,0,0,0.8);
-        position: relative;
-        display: flex; justify-content: space-around; align-items: center;
-    }
-    .belt-loop {
-        position: absolute; width: 25px; height: 90px; top: -20px;
-        background: var(--denim-indigo);
-        border-left: 2px solid var(--stitch-orange);
-        border-right: 2px solid var(--stitch-orange);
-        box-shadow: 2px 0 5px rgba(0,0,0,0.5);
-        z-index: 1;
-    }
-    .belt-loop:nth-child(1) { left: 20%; }
-    .belt-loop:nth-child(2) { left: 50%; transform: translateX(-50%); }
-    .belt-loop:nth-child(3) { right: 20%; }
-    .buckle {
-        width: 60px; height: 60px; z-index: 2;
-        background: linear-gradient(135deg, #ccc, #777);
-        border: 2px solid #555; border-radius: 8px;
-        display: flex; align-items: center; justify-content: center;
-        box-shadow: inset 0 0 10px #fff, 0 4px 8px rgba(0,0,0,0.8);
-        color: #222; font-weight: bold; text-decoration: none;
-        transition: transform 0.2s; font-size: 1.5rem;
-    }
-    .buckle:hover { transform: translateY(-5px); }
-    .belt-wrapper { width: 100%; position: relative; }
+        /* Header Specifics */
+        .logo-block {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .ascii-logo {
+            font-size: 11px;
+            line-height: 12px;
+            white-space: pre;
+            transform: scaleY(1.7);
+            display: block;
+            margin: 15px 0 25px 0;
+            font-weight: 700;
+        }
 
-    /* FOOTER */
-    footer {
-        height: 100px;
-        background: var(--denim-indigo);
-        position: relative;
-        border-top: 15px solid #eaeaea; /* Selvedge white */
-        z-index: 2;
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 0 40px;
-        overflow: hidden;
-    }
-    /* Red selvedge line */
-    footer::before {
-        content: ''; position: absolute;
-        top: -10px; left: 0; right: 0; height: 4px;
-        background: repeating-linear-gradient(90deg, #c1272d 0, #c1272d 10px, transparent 10px, transparent 20px);
-    }
-    .stencil-text {
-        font-family: Impact, sans-serif;
-        color: #fff; font-size: 1.2rem; opacity: 0.8;
-        letter-spacing: 2px;
-    }
-    .coin-pocket {
-        width: 150px; height: 60px;
-        background: var(--denim-dark);
-        border: 2px dashed var(--stitch-orange);
-        border-top: none; border-radius: 0 0 10px 10px;
-        padding: 5px; box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
-    }
-    .lcd {
-        background: #0a110a; height: 100%;
-        border-radius: 4px;
-        display: flex; align-items: center; justify-content: center;
-        color: #0f0; font-family: 'Courier New', Courier, monospace;
-        text-shadow: 0 0 5px #0f0; font-weight: bold; font-size: 1.1rem;
-    }
-</style>
+        .system-notice {
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+
+        .blink { animation: blinker 1s step-end infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        /* Log Entry Structure */
+        .log-entry { margin-bottom: 10px; }
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 5px;
+        }
+        .log-id { font-weight: bold; text-decoration: underline; }
+        
+        /* Log 1: Bar Chart */
+        .mini-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 20px;
+            margin-top: 5px;
+        }
+        .bar { width: 6px; background-color: var(--ink); }
+
+        .coupon-link {
+            display: block;
+            border: 1px dashed var(--ink);
+            padding: 8px;
+            text-align: center;
+            text-decoration: none;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+        
+        /* Log 2: Heatmap */
+        .heatmap-matrix {
+            font-size: 9px;
+            letter-spacing: 2px;
+            line-height: 10px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .ref-node { display: block; font-size: 0.85em; margin-bottom: 3px; }
+        .ref-node::before { content: "⎣ REF: "; opacity: 0.6; }
+
+        /* Log 3: Wireframe */
+        .tech-box {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-left: 2px solid var(--ink);
+            padding-left: 10px;
+            margin: 10px 0;
+        }
+        .wireframe-poly {
+            width: 30px; height: 30px;
+            border: 1px solid var(--ink);
+            transform: rotateX(60deg) rotateZ(45deg);
+            animation: spinThis 6s linear infinite;
+        }
+        @keyframes spinThis { 100% { transform: rotateX(60deg) rotateZ(405deg); } }
+
+        .access-terminal {
+            display: inline-block;
+            background: var(--ink);
+            color: var(--paper);
+            padding: 2px 8px;
+            text-decoration: none;
+            font-size: 0.8em;
+        }
+
+        /* Log 4: Betting Slip */
+        .betting-slip {
+            border: 2px dashed var(--ink);
+            padding: 10px;
+            text-align: center;
+            background: rgba(0,0,0,0.02);
+        }
+
+        /* Log 5: Rhymes */
+        .stanza {
+            text-align: center;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+        .barcode-cta {
+            display: block;
+            width: 100%; height: 35px;
+            background: repeating-linear-gradient(90deg, var(--ink), var(--ink) 2px, transparent 2px, transparent 4px, var(--ink) 4px, var(--ink) 5px, transparent 5px, transparent 9px);
+            text-align: center;
+            line-height: 35px;
+            font-weight: bold;
+            color: var(--paper);
+            text-decoration: none;
+            position: relative;
+        }
+        .barcode-cta span {
+            background: var(--ink);
+            padding: 0 10px;
+        }
+
+        /* Log 6: Hatul */
+        .pixel-cat-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 10px;}
+        .pixel-cat {
+            width: 20px;
+            height: 20px;
+            background-color: transparent;
+            box-shadow: 
+                4px 0 0 var(--ink), 16px 0 0 var(--ink),
+                4px 4px 0 var(--ink), 16px 4px 0 var(--ink),
+                6px 8px 0 var(--ink), 14px 8px 0 var(--ink),
+                8px 12px 0 var(--ink), 10px 12px 0 var(--ink), 12px 12px 0 var(--ink),
+                6px 16px 0 var(--ink), 14px 16px 0 var(--ink),
+                8px 18px 0 var(--ink), 10px 18px 0 var(--ink), 12px 18px 0 var(--ink);
+        }
+
+        /* Log 7: Recursive */
+        .mini-meta {
+            border: 1px solid var(--ink);
+            padding: 15px;
+            transform: scale(0.95);
+            transform-origin: center right;
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.03) 5px, rgba(0,0,0,0.03) 10px);
+        }
+
+        /* Log 8: Customer */
+        .dynamic-barcode {
+            width: 100%;
+            height: 50px;
+            margin: 15px 0;
+            background: var(--ink);
+            /* Generated via JS */
+        }
+        .tracking-row {
+            display: flex; justify-content: space-between;
+            font-size: 0.9em;
+            margin-bottom: 2px;
+        }
+
+        /* Footer */
+        .footer-block {
+            margin-top: 10px;
+            padding-bottom: 20px;
+        }
+        .led-clock {
+            font-size: 1.5em;
+            color: var(--led-red);
+            text-shadow: 0 0 5px rgba(255,51,51,0.5), 0 0 10px rgba(255,51,51,0.3);
+            font-weight: bold;
+            display: block;
+            letter-spacing: 2px;
+            text-align: center;
+            margin: 15px 0;
+        }
+        .thank-you {
+            font-size: 1.2em;
+            letter-spacing: 5px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+    </style>
 </head>
 <body>
 
-    <!-- LAYER 1: Glowing Scaffold -->
-    <div id="code-underlayer"></div>
-
-    <!-- MASK DEFINITION FOR Denim Overlay -->
-    <div id="svg-mask-container">
-        <svg  width="100%" height="100%" style="position: absolute; pointer-events:none;">
-            <filter id="ragged">
-                <feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="3" result="noise" />
-                <feDisplacementMap in="SourceGraphic" in2="noise" scale="15" xChannelSelector="R" yChannelSelector="G" />
+    <!-- Hidden SVG for paper texture payload -->
+    <svg style="display:none;">
+        <defs>
+            <filter id="paper-texture">
+                <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch" />
+                <feColorMatrix type="matrix" values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -0.06 0" />
+                <feComposite operator="in" in2="SourceGraphic" result="monoNoise"/>
+                <feBlend mode="multiply" in="monoNoise" in2="SourceGraphic" result="blend" />
             </filter>
-            <mask id="denim-mask" maskUnits="userSpaceOnUse" x="0" y="0">
-                <rect width="100%" height="10000px" fill="white" />
-                <!-- Permanent Hole for Box 7 -->
-                <rect id="meta-hole" x="0" y="0" width="0" height="0" fill="black" filter="url(#ragged)" />
-                <!-- User Rip Group -->
-                <g id="tear-group" filter="url(#ragged)"></g>
-            </mask>
-        </svg>
+        </defs>
+    </svg>
+
+    <div class="hardware-housing">
+        <div class="printer-slit"></div>
     </div>
 
-    <!-- LAYER 2: Denim Fabric -->
-    <div id="denim-layer"></div>
+    <div class="canvas-wrapper">
+        <main class="receipt" id="pos-receipt">
+            <div class="receipt-content">
+                
+                <header class="logo-block print-line">
+<pre class="ascii-logo">
+  ___ _____ _   _  __  
+ / __| __\ \ / / /  \ 
+| (_ | _| \ V / / /\ \
+ \___|___| \_/ /_/  \_\
+ _  _ ___ ___ ___ ___ ___ 
+| |/ /_ _| _ \ _ \ __| _ \
+|   < | ||  _/  _/ _||   /
+|_|\_\___|_| |_| |___|_|_\</pre>
+                    <div class="bold">SOFTWARE ENGINEER @ GOOGLE</div>
+                    <div class="system-notice">
+                        <span class="blink">█</span> SYSTEM NOTICE: This UI is entirely re-designed each day by AI and is thus ever-changing.
+                    </div>
+                </header>
 
-    <!-- LAYER 3: Content -->
-    <div id="content-container">
-        
-        <!-- HERO -->
-        <div class="hero-patch">
-            <div class="hero-inner">
-                <h1>Geva Kipper</h1>
-                <p class="stamped-text">Currently engineering innovative software solutions at Google.</p>
-            </div>
-            <a href="https://geekip.dev" class="red-tag">Re-designed daily by AI.<br>An ever-changing digital canvas.</a>
-        </div>
+                <div class="dashed-line print-line"></div>
 
-        <!-- MASONRY GRID -->
-        <div class="masonry">
-            
-            <!-- Box 1 -->
-            <div class="box box-1 stitch-box">
-                <div class="lz77-viz">
-                    <div class="viz-bar" style="width: 80%"></div>
-                    <div class="viz-bar" style="width: 50%"></div>
-                    <div class="viz-bar" style="width: 90%"></div>
-                    <div class="viz-bar" style="width: 30%"></div>
-                    <div style="font-family: monospace; font-size:10px; color:#aaa; margin-top:10px;">LZ77 Compression</div>
+                <div class="log-entry print-line">
+                    <div class="log-header">
+                        <span class="log-id">LOG/01: GlglStats</span>
+                        <span>
+                            <span class="tag">python</span><span class="tag">LZ77</span>
+                        </span>
+                    </div>
+                    <p class="small">Pop-chart repetition analysis & computational musicology.</p>
+                    <div class="mini-chart">
+                        <div class="bar" style="height: 15px;"></div>
+                        <div class="bar" style="height: 8px;"></div>
+                        <div class="bar" style="height: 20px;"></div>
+                        <div class="bar" style="height: 12px;"></div>
+                        <div class="bar" style="height: 5px;"></div>
+                        <div class="bar" style="height: 18px;"></div>
+                    </div>
+                    <a href="https://glglstats.geekip.dev" target="_blank" class="coupon-link"> [✂] PRINT COUPON: APP</a>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="coupon-link"> [✂] PRINT COUPON: PyData</a>
                 </div>
-                <div class="pocket-front stitch-box">
-                    <div class="gold-soundwave"></div>
-                    <a href="https://glglstats.geekip.dev" class="copper-rivet rivet-link rivet-left" target="_blank" title="Live Project">glgl</a>
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" class="copper-rivet rivet-link rivet-right" target="_blank" title="PyData TLV">▶</a>
+
+                <div class="dashed-line print-line"></div>
+
+                <div class="log-entry print-line">
+                    <div class="log-header">
+                        <span class="log-id">LOG/02: Ahuzat Dibuk</span>
+                        <span class="small right">SYS_DATA DUMP</span>
+                    </div>
+                    <p class="small">Tel-Aviv parking web-scraping investigation.</p>
+<pre class="heatmap-matrix">
+░░▒▒▓▓████▓▓▒▒░░
+░▒▓███▓▓▓▓███▓▒░
+▒▓██░░░░░░░░██▓▒
+▓██░░[ZONE]░░██▓
+▒▓██░░[04]░░██▓▒
+░▒▓███▓▓▓▓███▓▒░
+</pre>
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="ref-node">13TV.CO.IL</a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="ref-node">MAKO.CO.IL</a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="ref-node">SEC.TEL-AVIV ARCHIVE</a>
                 </div>
-            </div>
 
-            <!-- Box 2 -->
-            <div class="box box-2 stitch-box">
-                <h3 style="margin:0; text-shadow: 1px 1px 2px #000;">Ahuzat Dibuk</h3>
-                <div style="font-size: 10px; background: rgba(0,0,0,0.5); padding: 2px 5px; margin-bottom:10px;">Tel Aviv Parking Heatmap</div>
-                <div class="badge-container">
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" class="merit-badge" target="_blank">Ch 13</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" class="merit-badge" target="_blank">Mako</a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" class="merit-badge" target="_blank" style="font-size:0.5rem">Secret<br>TLV</a>
-                </div>
-            </div>
+                <div class="dashed-line print-line"></div>
 
-            <!-- Box 3 -->
-            <div class="box box-3 stitch-box">
-                <div class="geom-anim">
-                    <div class="dash-pusher"></div>
-                    <div class="polygon"></div>
-                </div>
-                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" class="heavy-snap" target="_blank" title="2D Part Orienting CGL"></a>
-            </div>
-
-            <!-- Box 4 -->
-            <div class="box box-4 stitch-box">
-                <div class="zigzag"></div>
-                <div class="masks"><span>🎭</span></div>
-                <a href="https://jest.geekip.dev" class="price-tag" target="_blank">The Turing Jest</a>
-            </div>
-
-            <!-- Box 5 -->
-            <div class="box box-5">
-                <div class="polaroid">
-                    <div class="safety-pin"></div>
-                    <div class="photo-area">"A politician in a bind,<br>Left his common sense behind!"</div>
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" class="dl-sticker" target="_blank">Install<br>Ext</a>
-                </div>
-            </div>
-
-            <!-- Box 6 -->
-            <div class="box box-6 stitch-box">
-                <a href="https://hatulbasak.geekip.dev" class="loop-tag" target="_blank">Hatul Basak 🐾</a>
-                <div class="paw-bg"></div>
-                <div class="puzzle-globe">
-                    <div></div><div></div><div></div><div></div>
-                </div>
-            </div>
-
-            <!-- Box 7: Meta Rip Hole -->
-            <div class="box box-7" id="meta-box">
-                <div class="frayed-edges"></div>
-                <div class="terminal">
-                    user@host:~$ cat geva.port<br>
-                    > INITIALIZING...<br>
-                    > <a href="https://geekip.dev" class="neon-link">geekip.dev</a><br>
-                    > STATUS: ONLINE
-                </div>
-            </div>
-
-            <!-- Box 8: Socials -->
-            <div class="box box-8">
-                <div class="belt-wrapper">
-                    <div class="belt-loop"></div>
-                    <div class="belt-loop"></div>
-                    <div class="belt-loop"></div>
-                    <div class="belt">
-                        <a href="https://github.com/gevak" class="buckle" target="_blank" style="margin-left:5%">GH</a>
-                        <a href="https://linkedin.com/in/gevakip" class="buckle" target="_blank">IN</a>
-                        <a href="https://facebook.com/geva.kipper" class="buckle" target="_blank" style="margin-right:5%">FB</a>
+                <div class="log-entry print-line">
+                    <div class="log-header">
+                        <span class="log-id">LOG/03: 2D Part Orienting</span>
+                        <span class="tag">C++</span>
+                    </div>
+                    <div class="tech-box">
+                        <div class="wireframe-poly"></div>
+                        <div>
+                            <p class="small">Computational geometry bounding logic.</p>
+                            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="access-terminal">> ACCESS CGL TERMINAL </a>
+                        </div>
                     </div>
                 </div>
+
+                <div class="dashed-line print-line"></div>
+
+                <div class="log-entry print-line">
+                    <div class="log-header">
+                        <span class="log-id">LOG/04: The Turing Jest</span>
+                    </div>
+                    <div class="betting-slip">
+                        <div class="bold">LLM VS. LLM</div>
+                        <div class="small">Algorithmic Pun Arena</div>
+                        <div style="margin: 5px 0;">[X] WIN  [ ] LOSE  [ ] DRAW</div>
+                        <a href="https://jest.geekip.dev" target="_blank" class="bold">> ENTER ARENA <</a>
+                    </div>
+                </div>
+
+                <div class="dashed-line print-line"></div>
+
+                <div class="log-entry print-line">
+                    <div class="log-header">
+                        <span class="log-id">LOG/05: Rhymes of Israel</span>
+                    </div>
+                    <div class="stanza small">
+                        "Highschool yearbook Israeli news,<br>
+                        Comedic LLM point of views."
+                    </div>
+                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="barcode-cta">
+                        <span>INSTALL_PLUGIN</span>
+                    </a>
+                </div>
+
+                <div class="dashed-line print-line"></div>
+
+                <div class="log-entry print-line">
+                    <div class="log-header">
+                        <span class="log-id">LOG/06: Hatul Basak</span>
+                    </div>
+                    <div class="pixel-cat-wrap">
+                        <div class="pixel-cat"></div>
+                        <p class="small">Hebrew Wikipedia structural trivia logic puzzles.</p>
+                    </div>
+                    <div class="right">
+                        <a href="https://hatulbasak.geekip.dev" target="_blank">> Invitation Key</a>
+                    </div>
+                </div>
+
+                <div class="dashed-line print-line"></div>
+
+                <div class="log-entry print-line">
+                    <div class="log-header">
+                        <span class="log-id">LOG/07: Recursive</span>
+                    </div>
+                    <div class="mini-meta">
+                        <div class="small bold">META PROJ: geekip.dev</div>
+                        <div class="dashed-line"></div>
+                        <p class="small">This portfolio UI is a dynamically resolving receipt. Rendered: Today.</p>
+                        <a href="https://geekip.dev" target="_blank" class="small">> Loop</a>
+                    </div>
+                </div>
+
+                <div class="dashed-line print-line"></div>
+
+                <div class="log-entry print-line">
+                    <div class="log-header">
+                        <span class="log-id">LOG/08: Cust_Details</span>
+                    </div>
+                    <div class="dynamic-barcode" id="barcode-elem"></div>
+                    <div class="tracking-row">
+                        <span>TRK-GH:</span> <a href="https://github.com/gevak" target="_blank">github.com/gevak</a>
+                    </div>
+                    <div class="tracking-row">
+                        <span>TRK-LI:</span> <a href="https://linkedin.com/in/gevakip" target="_blank">linkedin.com/in/gevakip</a>
+                    </div>
+                    <div class="tracking-row">
+                        <span>TRK-FB:</span> <a href="https://facebook.com/geva.kipper" target="_blank">facebook.com/geva.kipper</a>
+                    </div>
+                </div>
+
+                <div class="dashed-line print-line"></div>
+
+                <footer class="footer-block print-line">
+                    <div class="small right">CASHIER / OPERATOR:<br><span class="bold">Artificial Intelligence Model</span></div>
+                    
+                    <div style="margin-top:20px;" class="small center">TRANSACTION DURATION</div>
+                    <div class="led-clock" id="ticker">00:00:00</div>
+
+                    <div class="dashed-line"></div>
+                    <div class="bold thank-you">THANK YOU</div>
+                </footer>
+
             </div>
+            
+            <!-- SVG Clip path handles the jagged tear at the bottom of the background -->
+            <div class="jagged-bottom" id="tear-element"></div>
 
-        </div> <!-- End Masonry -->
-    </div> <!-- End Content -->
+        </main>
+    </div>
 
-    <!-- FOOTER -->
-    <footer>
-        <div class="stencil-text">WOVEN EXCLUSIVELY BY ARTIFICIAL INTELLIGENCE</div>
-        <div class="coin-pocket">
-            <div class="lcd" id="lcd-display">0000:00:00</div>
-        </div>
-    </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // 1. Intersection Observer for Thermal Print Effect
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry, index) => {
+                    if (entry.isIntersecting) {
+                        // Stagger the printing slightly if multiple enter at once
+                        setTimeout(() => {
+                            entry.target.classList.add('printed');
+                        }, index * 100);
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { rootMargin: "0px", threshold: 0.1 });
 
-<!-- SCRIPTS -->
-<script>
-    // 1. Generate Underlayer Code Fragments
-    const codeBg = document.getElementById('code-underlayer');
-    const snippets = [
-        "function unzipper() {", "console.log('hi');", "</div>", "SELECT * FROM db",
-        "await initPattern();", "display: grid;", "const g = new Geva();", 
-        "{ color: #ff9900; }", "<canvas id='map'>", "return true;"
-    ];
-    const colors = ['#ff0055', '#00ffaa', '#ffaa00', '#00aaff', '#cc00ff'];
-    
-    for(let i=0; i<80; i++) {
-        const span = document.createElement('span');
-        span.className = 'floating-code';
-        span.innerText = snippets[Math.floor(Math.random() * snippets.length)];
-        span.style.left = (Math.random() * 100) + 'vw';
-        span.style.top = (Math.random() * 100) + 'vh';
-        span.style.color = colors[Math.floor(Math.random() * colors.length)];
-        span.style.fontSize = Math.floor(Math.random() * 14 + 10) + 'px';
-        span.style.animationDelay = '-' + (Math.random() * 20) + 's';
-        codeBg.appendChild(span);
-    }
+            document.querySelectorAll('.print-line').forEach(el => observer.observe(el));
 
-    // 2. Stopwatch Logic
-    const anchorDate = new Date("2026-05-20T02:39:57Z").getTime();
-    const lcd = document.getElementById('lcd-display');
-    
-    function updateTimer() {
-        const now = new Date().getTime();
-        const diffMs = Math.abs(now - anchorDate); // Absolute difference as per requirement
-        const h = Math.floor(diffMs / (1000 * 60 * 60));
-        const m = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-        const s = Math.floor((diffMs % (1000 * 60)) / 1000);
-        
-        lcd.innerText = 
-            String(h).padStart(4, '0') + ':' + 
-            String(m).padStart(2, '0') + ':' + 
-            String(s).padStart(2, '0');
-    }
-    setInterval(updateTimer, 1000);
-    updateTimer();
+            // 2. Barcode Generator
+            function generateBarcode() {
+                const el = document.getElementById('barcode-elem');
+                let gradientString = 'repeating-linear-gradient(90deg';
+                let currentPos = 0;
+                
+                // Construct a randomized sequence looking like a barcode
+                for(let i=0; i<30; i++) {
+                    const blackWidth = Math.floor(Math.random() * 6) + 1; // 1 to 6px
+                    const whiteWidth = Math.floor(Math.random() * 4) + 1; // 1 to 4px
+                    
+                    gradientString += `, var(--ink) ${currentPos}px, var(--ink) ${currentPos + blackWidth}px`;
+                    currentPos += blackWidth;
+                    
+                    gradientString += `, transparent ${currentPos}px, transparent ${currentPos + whiteWidth}px`;
+                    currentPos += whiteWidth;
+                }
+                gradientString += ')';
+                el.style.background = gradientString;
+            }
+            generateBarcode();
 
-    // 3. Unzipper / Seam-Ripper Logic
-    const tearGroup = document.getElementById('tear-group');
-    const svgNS = "http://www.w3.org/2000/svg";
-    let lastTime = 0;
+            // 3. LED Chronograph Duration Timer
+            const targetDateStr = "2026-05-21T02:42:41Z"; // Normalized to ISO format to parse easily
+            const targetTime = new Date(targetDateStr).getTime();
+            const tickerEl = document.getElementById('ticker');
 
-    document.addEventListener('mousemove', (e) => {
-        // Throttle slightly
-        const now = Date.now();
-        if(now - lastTime < 16) return;
-        lastTime = now;
+            function updateTicker() {
+                const now = Date.now();
+                // We show absolute elapsed/remaining time difference ticking up
+                const diff = Math.abs(now - targetTime); 
 
-        const x = e.pageX;
-        const y = e.pageY;
-        
-        const circle = document.createElementNS(svgNS, 'circle');
-        circle.setAttribute('cx', x);
-        circle.setAttribute('cy', y);
-        // Randomize radius for jagged feel
-        circle.setAttribute('r', 15 + Math.random() * 15);
-        circle.setAttribute('fill', 'black');
-        
-        tearGroup.appendChild(circle);
-        
-        // Use Web Animations API to heal the rip over time
-        const anim = circle.animate([
-            { opacity: 1, transform: `scale(1)`, transformOrigin: `${x}px ${y}px` },
-            { opacity: 0.8, transform: `scale(1.2)`, transformOrigin: `${x}px ${y}px` },
-            { opacity: 0, transform: `scale(0.2)`, transformOrigin: `${x}px ${y}px` }
-        ], {
-            duration: 2500,
-            easing: 'ease-out',
-            fill: 'forwards'
+                const s = Math.floor(diff / 1000);
+                const hrs = Math.floor(s / 3600);
+                const mins = Math.floor((s % 3600) / 60);
+                const secs = s % 60;
+
+                const pad = (num) => num.toString().padStart(2, '0');
+                tickerEl.innerText = `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+            }
+            updateTicker();
+            setInterval(updateTicker, 1000);
+
+            // 4. Generate Jagged Tear SVG Clip Path Dynamically
+            function buildTearPath() {
+                const tearEl = document.getElementById('tear-element');
+                const pathArr = [];
+                
+                // Form a polygon bounding the bottom slice
+                pathArr.push('100% 0%'); // Top Right
+                pathArr.push('0% 0%');   // Top Left
+                pathArr.push('0% 100%'); // Bottom Left
+
+                // Zig Zag across the bottom
+                const zigZags = 35; // Number of teeth
+                const step = 100 / zigZags;
+                
+                for (let i = 0; i <= zigZags; i++) {
+                    const x = i * step;
+                    // alternate depth nicely to look like a rip
+                    const y = (i % 2 === 0) ? 100 : (70 + Math.random() * 20); 
+                    pathArr.push(`${x}% ${y}%`);
+                }
+                
+                tearEl.style.clipPath = `polygon(${pathArr.join(', ')})`;
+            }
+            buildTearPath();
+            
         });
-        
-        anim.onfinish = () => circle.remove();
-    });
-
-    // 4. Permanent Hole Alignment for Box 7 (Meta Portfolio)
-    function alignMetaHole() {
-        const metaBox = document.getElementById('meta-box');
-        const hole = document.getElementById('meta-hole');
-        if(metaBox && hole) {
-            const rect = metaBox.getBoundingClientRect();
-            // Inset the hole slightly so Frayed Edges overlay the denim
-            hole.setAttribute('x', rect.left + window.scrollX + 15);
-            hole.setAttribute('y', rect.top + window.scrollY + 15);
-            hole.setAttribute('width', Math.max(0, rect.width - 30));
-            hole.setAttribute('height', Math.max(0, rect.height - 30));
-        }
-        
-        // Ensure mask rect covers entire scroll document
-        const maskRect = document.querySelector('#denim-mask > rect:first-child');
-        maskRect.setAttribute('height', document.body.scrollHeight + 1000);
-    }
-    
-    window.addEventListener('resize', alignMetaHole);
-    // Observe DOM loading fully before taking bounds
-    window.addEventListener('load', alignMetaHole);
-    // Fallback invocation
-    setTimeout(alignMetaHole, 500);
-
-</script>
+    </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260520",
+          pageId: "20260521",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
