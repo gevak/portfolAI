@@ -2,629 +2,756 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | Terminal</title>
+    <title>Geva Kipper | Mad Scientist Laboratory</title>
+    <!-- Import Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Inter:wght@300;400;700;900&family=VT323&display=swap" rel="stylesheet">
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;0,700;1,400&display=swap');
-
+        /* CSS VARIABLES & PALETTE */
         :root {
-            --bg-gray: #202024;
-            --paper: #f4f4f0;
-            --ink: #1a1b26;
-            --ink-fade: rgba(26, 27, 38, 0.7);
-            --led-red: #ff3333;
-            --receipt-width: 440px;
+            --obsidian: #050508;
+            --obsidian-light: #0d0d16;
+            --neon-green: #39FF14;
+            --toxic-purple: #B200ED;
+            --electric-blue: #00FFFF;
+            --thermal-orange: #FF4500;
+            --uv-purple: #8A2BE2;
+            --radioactive-yellow: #FFFF00;
+            --cyan: #00FFFF;
+            --meta-silver: #C0C0C0;
+            --alert-red: #FF0000;
+            
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+            --font-led: 'VT323', monospace;
         }
 
+        /* RESET & GLOBAL SETUP */
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            cursor: default;
+            box-sizing: border-box;
+            cursor: none; /* Hide default cursor */
         }
 
         body {
-            background-color: var(--bg-gray);
-            font-family: 'IBM Plex Mono', monospace;
-            color: var(--ink);
+            background-color: var(--obsidian);
+            color: #ffffff;
+            font-family: var(--font-sans);
             overflow-x: hidden;
             scroll-behavior: smooth;
         }
 
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-gray); }
-        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        a { text-decoration: none; color: inherit; }
 
-        /* Hardware Top Plate */
-        .hardware-housing {
+        /* CUSTOM LASER POINTER CURSOR */
+        #cursor-glow {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 70px;
-            background: linear-gradient(to bottom, #4a4a4f, #222225 50%, #151518);
-            z-index: 100;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8), inset 0 2px 3px rgba(255,255,255,0.1);
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            padding-bottom: 5px;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(57,255,20,0.15) 0%, rgba(0,0,0,0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 9998;
+            transition: background 0.2s ease;
+            mix-blend-mode: screen;
+        }
+        
+        #cursor-dot {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            background-color: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            transition: width 0.1s, height 0.1s, background-color 0.2s;
         }
 
-        .printer-slit {
-            width: calc(var(--receipt-width) + 6px);
-            height: 12px;
-            background: #000;
-            border-radius: 3px 3px 0 0;
-            box-shadow: inset 0 6px 12px rgba(0,0,0,1), 0 1px 1px rgba(255, 255, 255, 0.15);
-            position: relative;
-            overflow: hidden;
+        /* CSS PARALLAX BACKGROUND */
+        .parallax-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -2;
+            background: 
+                linear-gradient(90deg, transparent 49%, rgba(50,50,60,0.1) 50%, transparent 51%),
+                linear-gradient(0deg, transparent 49%, rgba(50,50,60,0.05) 50%, transparent 51%);
+            background-size: 100px 100px;
         }
 
-        /* 3D Metal highlight inside the slit */
-        .printer-slit::after {
-            content: '';
-            position: absolute;
-            bottom: 0; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+        .pipe-system {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1;
+            opacity: 0.3;
+            background-image: 
+                repeating-linear-gradient(90deg, transparent, transparent 150px, #1a1a24 150px, #2a2a3a 160px, #1a1a24 170px, transparent 170px),
+                repeating-linear-gradient(0deg, transparent, transparent 300px, #1a1a24 300px, #2a2a3a 310px, #1a1a24 320px, transparent 320px);
         }
 
-        /* Receipt Canvas */
-        .canvas-wrapper {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            padding-top: 65px; /* Sit behind hardware */
-            margin-bottom: 80px;
-        }
-
-        .receipt {
-            width: var(--receipt-width);
-            background-color: var(--paper);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6), inset 0 0 40px rgba(0,0,0,0.04);
-            position: relative;
-            /* Filter attached to a hidden SVG to generate complex noise texture natively */
-            filter: url(#paper-texture);
-        }
-
-        .receipt-content {
-            padding: 30px 25px 0 25px;
+        /* HEADER - MAIN CONTROL CONSOLE */
+        header {
+            text-align: center;
+            padding: 100px 20px 40px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
-        }
-
-        .jagged-bottom {
-            height: 25px;
-            background-color: var(--paper);
-            width: 100%;
-        }
-
-        /* Text Utilities */
-        a {
-            color: var(--ink);
-            text-decoration: underline;
-            text-decoration-style: dashed;
-            text-underline-offset: 3px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        a:hover {
-            background-color: var(--ink);
-            color: var(--paper);
-            text-decoration: none;
-        }
-
-        .dashed-line {
-            width: 100%;
-            overflow: hidden;
-            white-space: nowrap;
-            color: var(--ink-fade);
-            margin: 5px 0;
-            user-select: none;
-        }
-        
-        .dashed-line::after { content: "--------------------------------------------------------"; }
-
-        .bold { font-weight: 700; }
-        .small { font-size: 0.85em; }
-        .right { text-align: right; }
-        .center { text-align: center; }
-        
-        .tag {
-            display: inline-block;
-            border: 1px solid var(--ink);
-            padding: 0 4px;
-            font-size: 0.7em;
-            text-transform: uppercase;
-            margin-left: 4px;
-        }
-
-        /* Jitter Animation (Intersection Observer Trigger) */
-        .print-line {
-            opacity: 0;
-            transform: translateY(15px);
-        }
-
-        .print-line.printed {
-            animation: thermalPrint 0.4s steps(6) forwards;
-        }
-
-        @keyframes thermalPrint {
-            0% { opacity: 0; transform: translateY(15px) translateX(-2px); filter: blur(2px); }
-            30% { opacity: 0.5; transform: translateY(8px) translateX(1px); filter: blur(1px); }
-            70% { opacity: 0.8; transform: translateY(2px) translateX(-0.5px); }
-            100% { opacity: 1; transform: translateY(0) translateX(0); filter: blur(0); }
-        }
-
-        /* Header Specifics */
-        .logo-block {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .ascii-logo {
-            font-size: 11px;
-            line-height: 12px;
-            white-space: pre;
-            transform: scaleY(1.7);
-            display: block;
-            margin: 15px 0 25px 0;
-            font-weight: 700;
-        }
-
-        .system-notice {
-            font-size: 0.85em;
-            margin-top: 10px;
-        }
-
-        .blink { animation: blinker 1s step-end infinite; }
-        @keyframes blinker { 50% { opacity: 0; } }
-
-        /* Log Entry Structure */
-        .log-entry { margin-bottom: 10px; }
-        .log-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 5px;
-        }
-        .log-id { font-weight: bold; text-decoration: underline; }
-        
-        /* Log 1: Bar Chart */
-        .mini-chart {
-            display: flex;
-            align-items: flex-end;
-            gap: 2px;
-            height: 20px;
-            margin-top: 5px;
-        }
-        .bar { width: 6px; background-color: var(--ink); }
-
-        .coupon-link {
-            display: block;
-            border: 1px dashed var(--ink);
-            padding: 8px;
-            text-align: center;
-            text-decoration: none;
-            margin-top: 5px;
-            font-size: 0.9em;
-        }
-        
-        /* Log 2: Heatmap */
-        .heatmap-matrix {
-            font-size: 9px;
-            letter-spacing: 2px;
-            line-height: 10px;
-            margin: 10px 0;
-            text-align: center;
-        }
-        .ref-node { display: block; font-size: 0.85em; margin-bottom: 3px; }
-        .ref-node::before { content: "⎣ REF: "; opacity: 0.6; }
-
-        /* Log 3: Wireframe */
-        .tech-box {
-            display: flex;
             align-items: center;
-            gap: 15px;
-            border-left: 2px solid var(--ink);
-            padding-left: 10px;
-            margin: 10px 0;
-        }
-        .wireframe-poly {
-            width: 30px; height: 30px;
-            border: 1px solid var(--ink);
-            transform: rotateX(60deg) rotateZ(45deg);
-            animation: spinThis 6s linear infinite;
-        }
-        @keyframes spinThis { 100% { transform: rotateX(60deg) rotateZ(405deg); } }
-
-        .access-terminal {
-            display: inline-block;
-            background: var(--ink);
-            color: var(--paper);
-            padding: 2px 8px;
-            text-decoration: none;
-            font-size: 0.8em;
-        }
-
-        /* Log 4: Betting Slip */
-        .betting-slip {
-            border: 2px dashed var(--ink);
-            padding: 10px;
-            text-align: center;
-            background: rgba(0,0,0,0.02);
-        }
-
-        /* Log 5: Rhymes */
-        .stanza {
-            text-align: center;
-            font-style: italic;
-            margin-bottom: 10px;
-        }
-        .barcode-cta {
-            display: block;
-            width: 100%; height: 35px;
-            background: repeating-linear-gradient(90deg, var(--ink), var(--ink) 2px, transparent 2px, transparent 4px, var(--ink) 4px, var(--ink) 5px, transparent 5px, transparent 9px);
-            text-align: center;
-            line-height: 35px;
-            font-weight: bold;
-            color: var(--paper);
-            text-decoration: none;
+            border-bottom: 2px solid #222;
             position: relative;
         }
-        .barcode-cta span {
-            background: var(--ink);
-            padding: 0 10px;
-        }
 
-        /* Log 6: Hatul */
-        .pixel-cat-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 10px;}
-        .pixel-cat {
-            width: 20px;
-            height: 20px;
-            background-color: transparent;
-            box-shadow: 
-                4px 0 0 var(--ink), 16px 0 0 var(--ink),
-                4px 4px 0 var(--ink), 16px 4px 0 var(--ink),
-                6px 8px 0 var(--ink), 14px 8px 0 var(--ink),
-                8px 12px 0 var(--ink), 10px 12px 0 var(--ink), 12px 12px 0 var(--ink),
-                6px 16px 0 var(--ink), 14px 16px 0 var(--ink),
-                8px 18px 0 var(--ink), 10px 18px 0 var(--ink), 12px 18px 0 var(--ink);
-        }
-
-        /* Log 7: Recursive */
-        .mini-meta {
-            border: 1px solid var(--ink);
-            padding: 15px;
-            transform: scale(0.95);
-            transform-origin: center right;
-            background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.03) 5px, rgba(0,0,0,0.03) 10px);
-        }
-
-        /* Log 8: Customer */
-        .dynamic-barcode {
-            width: 100%;
-            height: 50px;
-            margin: 15px 0;
-            background: var(--ink);
-            /* Generated via JS */
-        }
-        .tracking-row {
-            display: flex; justify-content: space-between;
-            font-size: 0.9em;
-            margin-bottom: 2px;
-        }
-
-        /* Footer */
-        .footer-block {
-            margin-top: 10px;
-            padding-bottom: 20px;
-        }
-        .led-clock {
-            font-size: 1.5em;
-            color: var(--led-red);
-            text-shadow: 0 0 5px rgba(255,51,51,0.5), 0 0 10px rgba(255,51,51,0.3);
-            font-weight: bold;
-            display: block;
-            letter-spacing: 2px;
-            text-align: center;
-            margin: 15px 0;
-        }
-        .thank-you {
-            font-size: 1.2em;
+        .neon-title {
+            font-size: 5rem;
+            font-weight: 900;
+            color: #fff;
+            text-transform: uppercase;
             letter-spacing: 5px;
-            text-align: center;
+            text-shadow: 
+                0 0 5px #fff, 0 0 10px #fff,
+                0 0 20px var(--neon-green), 0 0 40px var(--neon-green), 
+                0 0 80px var(--neon-green);
+            animation: flicker 4s infinite alternate;
+        }
+
+        @keyframes flicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% { text-shadow: 0 0 5px #fff, 0 0 20px var(--neon-green), 0 0 40px var(--neon-green); opacity: 1; }
+            20%, 24%, 55% { text-shadow: none; opacity: 0.4; }
+        }
+
+        .subtitle {
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
             margin-top: 20px;
+            color: #aaa;
+            max-width: 800px;
+            line-height: 1.6;
+        }
+
+        .hazard-banner {
+            margin-top: 30px;
+            width: 100%;
+            max-width: 900px;
+            padding: 10px;
+            background: repeating-linear-gradient(45deg, #000, #000 10px, var(--radioactive-yellow) 10px, var(--radioactive-yellow) 20px);
+            color: #000;
+            font-family: var(--font-mono);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 2px solid #000;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.3);
+        }
+        
+        .hazard-inner {
+            background: rgba(0,0,0,0.85);
+            color: var(--radioactive-yellow);
+            padding: 5px 15px;
+        }
+
+        /* MASONRY GRID & VAT STYLES */
+        main {
+            padding: 60px 5%;
+            columns: 1;
+            column-gap: 3rem;
+        }
+
+        @media (min-width: 850px) { main { columns: 2; } }
+        @media (min-width: 1400px) { main { columns: 3; } }
+
+        .vat {
+            position: relative;
+            break-inside: avoid;
+            margin-bottom: 3rem;
+            border-radius: 50px;
+            overflow: hidden;
+            min-height: 450px;
+            background: rgba(20, 20, 30, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 
+                inset 15px 0 30px rgba(0,0,0,0.8), 
+                inset -15px 0 30px rgba(255,255,255,0.05),
+                inset 0 0 20px var(--theme-color, transparent),
+                0 15px 35px rgba(0,0,0,0.6);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform: perspective(1000px) translateZ(0);
+        }
+
+        .vat:hover {
+            transform: perspective(1000px) translateZ(20px);
+            border-color: var(--theme-color);
+            box-shadow: 
+                inset 15px 0 30px rgba(0,0,0,0.8), 
+                inset -15px 0 30px rgba(255,255,255,0.1),
+                inset 0 0 50px var(--theme-color),
+                0 0 40px var(--theme-color);
+        }
+
+        /* VAT FLUID CANVAS */
+        .vat-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+            mix-blend-mode: lighten;
+        }
+
+        /* HOLOGRAPHIC CONTENT OVERLAY */
+        .hologram {
+            position: relative;
+            z-index: 2;
+            padding: 40px 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .hologram > * { pointer-events: auto; }
+
+        .holo-title {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px var(--theme-color);
+        }
+
+        .holo-desc {
+            font-size: 1rem;
+            line-height: 1.5;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 30px;
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 3px solid var(--theme-color);
+        }
+
+        /* BUTTONS & LINKS */
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .vault-btn {
+            background: transparent;
+            color: var(--theme-color);
+            border: 1px solid var(--theme-color);
+            padding: 10px 20px;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .vault-btn::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: var(--theme-color); opacity: 0.2; transition: left 0.3s;
+        }
+
+        .vault-btn:hover {
+            box-shadow: 0 0 15px var(--theme-color); background: rgba(0,0,0,0.8);
+        }
+        .vault-btn:hover::before { left: 0; }
+
+        /* SPECIFIC VAT IDENTIFIERS & MOTIFS */
+        #vat-glglstats { --theme-color: var(--neon-green); }
+        #vat-ahuzat { --theme-color: var(--thermal-orange); }
+        #vat-2dpart { --theme-color: var(--electric-blue); }
+        #vat-jest { --theme-color: var(--uv-purple); }
+        #vat-rhymes { --theme-color: var(--radioactive-yellow); }
+        #vat-hatul { --theme-color: var(--cyan); }
+        #vat-meta { --theme-color: var(--meta-silver); }
+        #vat-social { --theme-color: var(--alert-red); }
+
+        /* MOTIF: Ahuzat Heatmap */
+        .heatmap-grid { position: absolute; width: 100%; height: 100%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; opacity: 0.15; z-index: 0;}
+        .heatmap-cell { background: var(--thermal-orange); animation: pulseMap ease-in-out infinite alternate; }
+        @keyframes pulseMap { 0% { opacity: 0; } 100% { opacity: 1; } }
+
+        /* MOTIF: 2D Part Polygons */
+        .wireframe-cube {
+            width: 80px; height: 80px; position: absolute; top: 20px; right: 20px;
+            transform-style: preserve-3d; animation: rotateCube 10s linear infinite; opacity: 0.4; pointer-events: none;
+        }
+        .wireframe-cube div { position: absolute; width: 100%; height: 100%; border: 1px solid var(--electric-blue); }
+        .wf-front { transform: translateZ(40px); } .wf-back { transform: translateZ(-40px); }
+        .wf-left { transform: rotateY(-90deg) translateZ(40px); } .wf-right { transform: rotateY(90deg) translateZ(40px); }
+        .wf-top { transform: rotateX(90deg) translateZ(40px); } .wf-bottom { transform: rotateX(-90deg) translateZ(40px); }
+        @keyframes rotateCube { from { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); } to { transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg); } }
+
+        /* MOTIF: Burning Yearbook */
+        .clipping-container { position: absolute; width: 100%; height: 100%; z-index: 0; top: 0; left: 0;}
+        .yearbook-bg { background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><text x="10" y="40" font-family="sans-serif" fill="%23ffff00" opacity="0.3">YEARBOOK LOL</text></svg>') repeat; width:100%; height: 100%; position: absolute;}
+        .news-paper { background: #333; width: 100%; height: 100%; position: absolute; transition: clip-path 1s ease-in; clip-path: circle(150% at 50% 50%); display:flex; justify-content:center; align-items:center; opacity: 0.8;}
+        .news-paper::before { content: "SERIOUS NEWS"; color: #000; font-size: 3rem; font-weight:900; opacity: 0.2; transform: rotate(-45deg);}
+        #vat-rhymes:hover .news-paper { clip-path: circle(0% at 50% 50%); }
+
+        /* MOTIF: Meta Mirror */
+        .mirror-container { position: absolute; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; perspective: 500px; opacity: 0.3;}
+        .mirror-layer { width: 80%; height: 80%; border: 2px solid var(--meta-silver); border-radius: 40px; position: absolute; transform: translateZ(-50px) scale(0.8); }
+        .mirror-l2 { transform: translateZ(-100px) scale(0.6); }
+        .mirror-l3 { transform: translateZ(-150px) scale(0.4); }
+
+        /* MOTIF: Shattered Social Vat */
+        #vat-social {
+            background: linear-gradient(135deg, rgba(20, 20, 30, 0.4) 60%, rgba(255, 0, 0, 0.2) 100%);
+            clip-path: polygon(0 0, 100% 0, 100% 85%, 90% 90%, 93% 100%, 75% 95%, 70% 100%, 50% 90%, 0 100%);
+            border-bottom: 4px dashed var(--alert-red);
+        }
+        .cable { position: absolute; bottom: 0; width: 6px; background: #222; border-left: 2px solid var(--alert-red); }
+        .c1 { height: 120px; left: 20px; transform: rotate(-15deg); }
+        .c2 { height: 80px; left: 80px; transform: rotate(25deg); }
+        
+        .social-node {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: rgba(255,0,0,0.1);
+            border: 2px solid var(--alert-red);
+            color: #fff;
+            margin: 0 10px;
+            font-size: 1.5rem;
+            transition: all 0.2s;
+            animation: pulseNode 2s infinite alternate;
+        }
+        .social-node:hover {
+            background: var(--alert-red); box-shadow: 0 0 20px var(--alert-red); transform: scale(1.1);
+        }
+        @keyframes pulseNode { from { box-shadow: 0 0 5px var(--alert-red); } to { box-shadow: 0 0 15px var(--alert-red); } }
+
+        /* FOOTER / AI CORE */
+        footer {
+            margin-top: 100px;
+            padding: 60px 20px;
+            background: #0a0a0f;
+            border-top: 5px solid #222;
+            position: relative;
+            text-align: center;
+            box-shadow: inset 0 20px 50px rgba(0,0,0,0.8);
+        }
+
+        .server-rack-lines {
+            position: absolute; top:0; left:0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, transparent, transparent 18px, #111 18px, #111 20px);
+            z-index: 0; opacity: 0.5; pointer-events: none;
+        }
+
+        .ai-term-text {
+            font-family: var(--font-mono);
+            color: #555;
+            font-size: 0.9rem;
+            position: relative; z-index: 1;
+            margin-bottom: 20px;
+            text-shadow: 0 0 1px #555;
+        }
+
+        .stopwatch-container {
+            position: relative;
+            display: inline-block;
+            background: #050505;
+            border: 3px inset #333;
+            padding: 20px 40px;
+            border-radius: 10px;
+            z-index: 1;
+        }
+
+        .stopwatch-label {
+            font-family: var(--font-sans);
+            color: #666; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 10px;
+        }
+
+        .stopwatch-display {
+            font-family: var(--font-led);
+            font-size: 4rem;
+            color: var(--alert-red);
+            text-shadow: 0 0 10px var(--alert-red), 0 0 20px var(--alert-red);
+            letter-spacing: 5px;
         }
 
     </style>
 </head>
 <body>
 
-    <!-- Hidden SVG for paper texture payload -->
-    <svg style="display:none;">
-        <defs>
-            <filter id="paper-texture">
-                <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch" />
-                <feColorMatrix type="matrix" values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -0.06 0" />
-                <feComposite operator="in" in2="SourceGraphic" result="monoNoise"/>
-                <feBlend mode="multiply" in="monoNoise" in2="SourceGraphic" result="blend" />
-            </filter>
-        </defs>
-    </svg>
+    <!-- Environment Infrastructure -->
+    <div class="parallax-bg"></div>
+    <div class="pipe-system"></div>
 
-    <div class="hardware-housing">
-        <div class="printer-slit"></div>
-    </div>
+    <!-- Custom Laser Pointer -->
+    <div id="cursor-glow"></div>
+    <div id="cursor-dot"></div>
 
-    <div class="canvas-wrapper">
-        <main class="receipt" id="pos-receipt">
-            <div class="receipt-content">
-                
-                <header class="logo-block print-line">
-<pre class="ascii-logo">
-  ___ _____ _   _  __  
- / __| __\ \ / / /  \ 
-| (_ | _| \ V / / /\ \
- \___|___| \_/ /_/  \_\
- _  _ ___ ___ ___ ___ ___ 
-| |/ /_ _| _ \ _ \ __| _ \
-|   < | ||  _/  _/ _||   /
-|_|\_\___|_| |_| |___|_|_\</pre>
-                    <div class="bold">SOFTWARE ENGINEER @ GOOGLE</div>
-                    <div class="system-notice">
-                        <span class="blink">█</span> SYSTEM NOTICE: This UI is entirely re-designed each day by AI and is thus ever-changing.
-                    </div>
-                </header>
-
-                <div class="dashed-line print-line"></div>
-
-                <div class="log-entry print-line">
-                    <div class="log-header">
-                        <span class="log-id">LOG/01: GlglStats</span>
-                        <span>
-                            <span class="tag">python</span><span class="tag">LZ77</span>
-                        </span>
-                    </div>
-                    <p class="small">Pop-chart repetition analysis & computational musicology.</p>
-                    <div class="mini-chart">
-                        <div class="bar" style="height: 15px;"></div>
-                        <div class="bar" style="height: 8px;"></div>
-                        <div class="bar" style="height: 20px;"></div>
-                        <div class="bar" style="height: 12px;"></div>
-                        <div class="bar" style="height: 5px;"></div>
-                        <div class="bar" style="height: 18px;"></div>
-                    </div>
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="coupon-link"> [✂] PRINT COUPON: APP</a>
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="coupon-link"> [✂] PRINT COUPON: PyData</a>
-                </div>
-
-                <div class="dashed-line print-line"></div>
-
-                <div class="log-entry print-line">
-                    <div class="log-header">
-                        <span class="log-id">LOG/02: Ahuzat Dibuk</span>
-                        <span class="small right">SYS_DATA DUMP</span>
-                    </div>
-                    <p class="small">Tel-Aviv parking web-scraping investigation.</p>
-<pre class="heatmap-matrix">
-░░▒▒▓▓████▓▓▒▒░░
-░▒▓███▓▓▓▓███▓▒░
-▒▓██░░░░░░░░██▓▒
-▓██░░[ZONE]░░██▓
-▒▓██░░[04]░░██▓▒
-░▒▓███▓▓▓▓███▓▒░
-</pre>
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="ref-node">13TV.CO.IL</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="ref-node">MAKO.CO.IL</a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="ref-node">SEC.TEL-AVIV ARCHIVE</a>
-                </div>
-
-                <div class="dashed-line print-line"></div>
-
-                <div class="log-entry print-line">
-                    <div class="log-header">
-                        <span class="log-id">LOG/03: 2D Part Orienting</span>
-                        <span class="tag">C++</span>
-                    </div>
-                    <div class="tech-box">
-                        <div class="wireframe-poly"></div>
-                        <div>
-                            <p class="small">Computational geometry bounding logic.</p>
-                            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="access-terminal">> ACCESS CGL TERMINAL </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="dashed-line print-line"></div>
-
-                <div class="log-entry print-line">
-                    <div class="log-header">
-                        <span class="log-id">LOG/04: The Turing Jest</span>
-                    </div>
-                    <div class="betting-slip">
-                        <div class="bold">LLM VS. LLM</div>
-                        <div class="small">Algorithmic Pun Arena</div>
-                        <div style="margin: 5px 0;">[X] WIN  [ ] LOSE  [ ] DRAW</div>
-                        <a href="https://jest.geekip.dev" target="_blank" class="bold">> ENTER ARENA <</a>
-                    </div>
-                </div>
-
-                <div class="dashed-line print-line"></div>
-
-                <div class="log-entry print-line">
-                    <div class="log-header">
-                        <span class="log-id">LOG/05: Rhymes of Israel</span>
-                    </div>
-                    <div class="stanza small">
-                        "Highschool yearbook Israeli news,<br>
-                        Comedic LLM point of views."
-                    </div>
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="barcode-cta">
-                        <span>INSTALL_PLUGIN</span>
-                    </a>
-                </div>
-
-                <div class="dashed-line print-line"></div>
-
-                <div class="log-entry print-line">
-                    <div class="log-header">
-                        <span class="log-id">LOG/06: Hatul Basak</span>
-                    </div>
-                    <div class="pixel-cat-wrap">
-                        <div class="pixel-cat"></div>
-                        <p class="small">Hebrew Wikipedia structural trivia logic puzzles.</p>
-                    </div>
-                    <div class="right">
-                        <a href="https://hatulbasak.geekip.dev" target="_blank">> Invitation Key</a>
-                    </div>
-                </div>
-
-                <div class="dashed-line print-line"></div>
-
-                <div class="log-entry print-line">
-                    <div class="log-header">
-                        <span class="log-id">LOG/07: Recursive</span>
-                    </div>
-                    <div class="mini-meta">
-                        <div class="small bold">META PROJ: geekip.dev</div>
-                        <div class="dashed-line"></div>
-                        <p class="small">This portfolio UI is a dynamically resolving receipt. Rendered: Today.</p>
-                        <a href="https://geekip.dev" target="_blank" class="small">> Loop</a>
-                    </div>
-                </div>
-
-                <div class="dashed-line print-line"></div>
-
-                <div class="log-entry print-line">
-                    <div class="log-header">
-                        <span class="log-id">LOG/08: Cust_Details</span>
-                    </div>
-                    <div class="dynamic-barcode" id="barcode-elem"></div>
-                    <div class="tracking-row">
-                        <span>TRK-GH:</span> <a href="https://github.com/gevak" target="_blank">github.com/gevak</a>
-                    </div>
-                    <div class="tracking-row">
-                        <span>TRK-LI:</span> <a href="https://linkedin.com/in/gevakip" target="_blank">linkedin.com/in/gevakip</a>
-                    </div>
-                    <div class="tracking-row">
-                        <span>TRK-FB:</span> <a href="https://facebook.com/geva.kipper" target="_blank">facebook.com/geva.kipper</a>
-                    </div>
-                </div>
-
-                <div class="dashed-line print-line"></div>
-
-                <footer class="footer-block print-line">
-                    <div class="small right">CASHIER / OPERATOR:<br><span class="bold">Artificial Intelligence Model</span></div>
-                    
-                    <div style="margin-top:20px;" class="small center">TRANSACTION DURATION</div>
-                    <div class="led-clock" id="ticker">00:00:00</div>
-
-                    <div class="dashed-line"></div>
-                    <div class="bold thank-you">THANK YOU</div>
-                </footer>
-
+    <!-- Header / Main Console -->
+    <header>
+        <h1 class="neon-title">Geva Kipper</h1>
+        <p class="subtitle">Currently synthesizing data and engineering scalable algorithms<br>as a Software Engineer at Google.</p>
+        <div class="hazard-banner">
+            <div class="hazard-inner">
+                WARNING: This environment is re-engineered daily by Artificial Intelligence. Expect volatile anomalies and mutating layouts.
             </div>
-            
-            <!-- SVG Clip path handles the jagged tear at the bottom of the background -->
-            <div class="jagged-bottom" id="tear-element"></div>
+        </div>
+    </header>
 
-        </main>
-    </div>
+    <!-- Laboratory Constraints Grid -->
+    <main class="masonry">
 
+        <!-- VAT 1: GlglStats -->
+        <article class="vat" id="vat-glglstats">
+            <canvas class="vat-canvas"></canvas>
+            <div class="hologram">
+                <h2 class="holo-title">Project GlglStats</h2>
+                <div class="holo-desc">
+                    Comprehensive LZ77 algorithmic compression analysis dissecting the acoustic properties of Israeli pop charts. Soundwave decryption complete.
+                </div>
+                <div class="controls">
+                    <a href="https://glglstats.geekip.dev" target="_blank" class="vault-btn">Enter Live Experiment</a>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="vault-btn">PyData TLV Log</a>
+                </div>
+            </div>
+        </article>
+
+        <!-- VAT 2: Ahuzat Dibuk -->
+        <article class="vat" id="vat-ahuzat">
+            <div class="heatmap-grid" id="heatmap"></div>
+            <canvas class="vat-canvas"></canvas>
+            <div class="hologram">
+                <h2 class="holo-title">Ahuzat Dibuk</h2>
+                <div class="holo-desc">
+                    Automated thermal scraping of Tel-Aviv parking matrices. Exposed architectural deficits broadcasted via secondary human channels.
+                </div>
+                <div class="controls">
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="vault-btn">Ch13 Dataport</a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="vault-btn">Mako Dataport</a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" class="vault-btn">Secret TVL Source</a>
+                </div>
+            </div>
+        </article>
+
+        <!-- VAT 3: 2D Part Orienting -->
+        <article class="vat" id="vat-2dpart">
+            <div class="wireframe-cube">
+                <div class="wf-front"></div><div class="wf-back"></div>
+                <div class="wf-left"></div><div class="wf-right"></div>
+                <div class="wf-top"></div><div class="wf-bottom"></div>
+            </div>
+            <canvas class="vat-canvas"></canvas>
+            <div class="hologram">
+                <h2 class="holo-title">2D Part Orienting</h2>
+                <div class="holo-desc">
+                    C++ algorithmic push-plans injected directly into the Computational Geometry Algorithms Library (CGAL). Geometric singularity achieved.
+                </div>
+                <div class="controls">
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="vault-btn">Access Blueprint (TAU CGL)</a>
+                </div>
+            </div>
+        </article>
+
+        <!-- VAT 4: The Turing Jest -->
+        <article class="vat" id="vat-jest">
+            <canvas class="vat-canvas"></canvas>
+            <div class="hologram">
+                <div style="font-size:3rem; margin-bottom: 10px;">🤖 ⚔️ 🎭</div>
+                <h2 class="holo-title">The Turing Jest</h2>
+                <div class="holo-desc">
+                    A brutal LMSYS-style colosseum where Large Language Models are forced into cognitive combat for comedic supremacy.
+                </div>
+                <div class="controls">
+                    <a href="https://jest.geekip.dev" target="_blank" class="vault-btn">Release Monsters</a>
+                </div>
+            </div>
+        </article>
+
+        <!-- VAT 5: Rhymes of Israel -->
+        <article class="vat" id="vat-rhymes">
+            <div class="clipping-container">
+                <div class="yearbook-bg"></div>
+                <div class="news-paper"></div>
+            </div>
+            <canvas class="vat-canvas"></canvas>
+            <div class="hologram">
+                <h2 class="holo-title">Rhymes of Israel</h2>
+                <div class="holo-desc">
+                    Browser modification executing real-time LLM parsing to forcibly restructure severe headlines into comedic high school yearbook metrics.
+                </div>
+                <div class="controls">
+                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="vault-btn">Install Modification</a>
+                </div>
+            </div>
+        </article>
+
+        <!-- VAT 6: Hatul Basak -->
+        <article class="vat" id="vat-hatul">
+            <canvas class="vat-canvas"></canvas>
+            <div class="hologram">
+                <h2 class="holo-title">Hatul Basak</h2>
+                <div class="holo-desc">
+                    A digital feline port designed to catfish Hebrew Wikipedia trivia. Features AI-generated cognitive puzzles and user-synthesized challenges.
+                </div>
+                <div class="controls">
+                    <a href="https://hatulbasak.geekip.dev" target="_blank" class="vault-btn" style="border-radius: 0; border-width: 3px;">Initiate Game Sequence</a>
+                </div>
+            </div>
+        </article>
+
+        <!-- VAT 7: Meta Portfolio Site (Infinite Mirror) -->
+        <article class="vat" id="vat-meta">
+            <div class="mirror-container">
+                <div class="mirror-layer"></div>
+                <div class="mirror-layer mirror-l2"></div>
+                <div class="mirror-layer mirror-l3"></div>
+            </div>
+            <canvas class="vat-canvas"></canvas>
+            <div class="hologram">
+                <h2 class="holo-title">Data Container 7</h2>
+                <div class="holo-desc">
+                    Self-referential meta-structure mirroring the architect's syntax. Generates recursive semantic feedback loops.
+                </div>
+                <div class="controls">
+                    <a href="https://geekip.dev" class="vault-btn">Enter Feedback Loop</a>
+                </div>
+            </div>
+        </article>
+
+        <!-- VAT 8: Social Connectivity Terminal -->
+        <article class="vat" id="vat-social">
+            <div class="cable c1"></div>
+            <div class="cable c2"></div>
+            <canvas class="vat-canvas"></canvas>
+            <div class="hologram">
+                <h2 class="holo-title">Connectivity Terminal</h2>
+                <div class="holo-desc">
+                    WARNING: Physical breach detected. Optical cables exposed. Establish external handshake protocols directly through active nodes.
+                </div>
+                <div class="controls" style="margin-top: 20px;">
+                    <a href="https://github.com/gevak" target="_blank" class="social-node" title="GitHub">GH</a>
+                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-node" title="LinkedIn">IN</a>
+                    <a href="https://facebook.com/geva.kipper" target="_blank" class="social-node" title="Facebook">FB</a>
+                </div>
+            </div>
+        </article>
+
+    </main>
+
+    <!-- AI CORE / FOOTER -->
+    <footer>
+        <div class="server-rack-lines"></div>
+        <div class="ai-term-text" id="typewriter">
+            > Architecture and genetic sequencing of this laboratory synthesized by your AI overseer. <span class="blink">_</span>
+        </div>
+        
+        <div class="stopwatch-container">
+            <div class="stopwatch-label">Temporal distance since containment breach (2026-05-23 02:28:56)</div>
+            <div class="stopwatch-display" id="timer">00:00:00</div>
+        </div>
+    </footer>
+
+    <!-- LOGICAL ENGINE (JS) -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        // --- CUSTOM POINTER DYNAMICS ---
+        const cursorGlow = document.getElementById('cursor-glow');
+        const cursorDot = document.getElementById('cursor-dot');
+        let mouseX = 0, mouseY = 0;
+        let glowX = 0, glowY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
             
-            // 1. Intersection Observer for Thermal Print Effect
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach((entry, index) => {
-                    if (entry.isIntersecting) {
-                        // Stagger the printing slightly if multiple enter at once
-                        setTimeout(() => {
-                            entry.target.classList.add('printed');
-                        }, index * 100);
-                        observer.unobserve(entry.target);
+            // Dot follows instantly
+            cursorDot.style.left = mouseX + 'px';
+            cursorDot.style.top = mouseY + 'px';
+        });
+
+        // Loop for smooth glow trailing
+        function renderCursor() {
+            glowX += (mouseX - glowX) * 0.15;
+            glowY += (mouseY - glowY) * 0.15;
+            cursorGlow.style.left = glowX + 'px';
+            cursorGlow.style.top = glowY + 'px';
+            requestAnimationFrame(renderCursor);
+        }
+        renderCursor();
+
+        // Cursor Interactions
+        const root = document.documentElement;
+        document.querySelectorAll('a, .vat').forEach(el => {
+            el.addEventListener('mouseenter', (e) => {
+                const color = getComputedStyle(e.target.closest('.vat') || document.body).getPropertyValue('--theme-color').trim() || 'var(--neon-green)';
+                cursorDot.style.transform = 'translate(-50%, -50%) scale(2)';
+                cursorGlow.style.background = `radial-gradient(circle, ${color}40 0%, rgba(0,0,0,0) 70%)`;
+                cursorDot.style.backgroundColor = color;
+                cursorDot.style.boxShadow = `0 0 10px ${color}`;
+            });
+            el.addEventListener('mouseleave', () => {
+                cursorDot.style.transform = 'translate(-50%, -50%) scale(1)';
+                cursorGlow.style.background = `radial-gradient(circle, rgba(57,255,20,0.15) 0%, rgba(0,0,0,0) 70%)`;
+                cursorDot.style.backgroundColor = 'var(--neon-green)';
+                cursorDot.style.boxShadow = `0 0 10px var(--neon-green)`;
+            });
+        });
+
+        // --- VAT FLUID (CANVAS) PHYSICS ENGINE ---
+        class VatFluid {
+            constructor(canvasContainer) {
+                this.canvas = canvasContainer.querySelector('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.container = canvasContainer;
+                this.color = getComputedStyle(canvasContainer).getPropertyValue('--theme-color').trim();
+                
+                // Set sizes
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+
+                this.isBoiling = false;
+                this.particles = []; // bubbles moving up
+                this.codeStreams = []; // matrix text moving down
+                
+                // Init elements
+                for(let i=0; i<30; i++) this.addParticle();
+                for(let i=0; i< (this.canvas.width/20); i++) this.initCodeStream(i * 20);
+
+                // Interactions
+                this.container.addEventListener('mouseenter', () => this.isBoiling = true);
+                this.container.addEventListener('mouseleave', () => this.isBoiling = false);
+
+                this.animate();
+            }
+
+            resize() {
+                this.canvas.width = this.container.offsetWidth;
+                this.canvas.height = this.container.offsetHeight;
+            }
+
+            addParticle() {
+                this.particles.push({
+                    x: Math.random() * this.canvas.width,
+                    y: this.canvas.height + Math.random() * 200,
+                    radius: Math.random() * 3 + 1,
+                    speed: Math.random() * 1 + 0.5,
+                    opacity: Math.random() * 0.5 + 0.1
+                });
+            }
+
+            initCodeStream(x) {
+                this.codeStreams.push({
+                    x: x,
+                    y: Math.random() * this.canvas.height - 300,
+                    speed: Math.random() * 2 + 1,
+                    chars: [],
+                    length: Math.floor(Math.random() * 10) + 5
+                });
+            }
+
+            animate() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Speed modifier for hover text
+                const boilMult = this.isBoiling ? 3 : 1;
+
+                // Draw Bubbles
+                this.particles.forEach((p, i) => {
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.radius * (this.isBoiling ? 1.5 : 1), 0, Math.PI * 2);
+                    this.ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity * (this.isBoiling ? 2 : 1)})`;
+                    this.ctx.fill();
+                    
+                    p.y -= p.speed * boilMult;
+                    p.x += Math.sin(p.y * 0.05) * 0.5; // wiggle
+
+                    if(p.y < -10) {
+                        p.y = this.canvas.height + 10;
+                        p.x = Math.random() * this.canvas.width;
                     }
                 });
-            }, { rootMargin: "0px", threshold: 0.1 });
 
-            document.querySelectorAll('.print-line').forEach(el => observer.observe(el));
+                // Draw Matrix Code
+                this.ctx.font = '12px "Fira Code", monospace';
+                this.ctx.fillStyle = this.color;
+                this.codeStreams.forEach(stream => {
+                    stream.y += stream.speed * boilMult;
+                    if(stream.y > this.canvas.height + (stream.length * 15)) {
+                        stream.y = -200;
+                    }
 
-            // 2. Barcode Generator
-            function generateBarcode() {
-                const el = document.getElementById('barcode-elem');
-                let gradientString = 'repeating-linear-gradient(90deg';
-                let currentPos = 0;
-                
-                // Construct a randomized sequence looking like a barcode
-                for(let i=0; i<30; i++) {
-                    const blackWidth = Math.floor(Math.random() * 6) + 1; // 1 to 6px
-                    const whiteWidth = Math.floor(Math.random() * 4) + 1; // 1 to 4px
-                    
-                    gradientString += `, var(--ink) ${currentPos}px, var(--ink) ${currentPos + blackWidth}px`;
-                    currentPos += blackWidth;
-                    
-                    gradientString += `, transparent ${currentPos}px, transparent ${currentPos + whiteWidth}px`;
-                    currentPos += whiteWidth;
-                }
-                gradientString += ')';
-                el.style.background = gradientString;
+                    for(let i=0; i<stream.length; i++) {
+                        const charY = stream.y - (i * 15);
+                        if(charY > 0 && charY < this.canvas.height) {
+                            // Generate random tech character
+                            const char = String.fromCharCode(0x30A0 + Math.random() * 96);
+                            // Fade out tail
+                            this.ctx.globalAlpha = 1 - (i / stream.length);
+                            this.ctx.fillText(char, stream.x, charY);
+                        }
+                    }
+                    this.ctx.globalAlpha = 1.0;
+                });
+
+                requestAnimationFrame(() => this.animate());
             }
-            generateBarcode();
+        }
 
-            // 3. LED Chronograph Duration Timer
-            const targetDateStr = "2026-05-21T02:42:41Z"; // Normalized to ISO format to parse easily
-            const targetTime = new Date(targetDateStr).getTime();
-            const tickerEl = document.getElementById('ticker');
+        // Initialize all vats
+        document.querySelectorAll('.vat').forEach(vat => new VatFluid(vat));
 
-            function updateTicker() {
-                const now = Date.now();
-                // We show absolute elapsed/remaining time difference ticking up
-                const diff = Math.abs(now - targetTime); 
+        // --- MOTIF SPECIFICS ---
+        // Setup Ahuzat Heatmap
+        const heatmap = document.getElementById('heatmap');
+        for(let i=0; i<25; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'heatmap-cell';
+            cell.style.animationDelay = `${Math.random() * 2}s`;
+            heatmap.appendChild(cell);
+        }
 
-                const s = Math.floor(diff / 1000);
-                const hrs = Math.floor(s / 3600);
-                const mins = Math.floor((s % 3600) / 60);
-                const secs = s % 60;
+        // --- FOOTER TEMPORAL DISTANCE CALCULATOR ---
+        const targetDate = new Date("2026-05-23T02:28:56Z").getTime();
+        const timerDisplay = document.getElementById('timer');
 
-                const pad = (num) => num.toString().padStart(2, '0');
-                tickerEl.innerText = `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
-            }
-            updateTicker();
-            setInterval(updateTicker, 1000);
-
-            // 4. Generate Jagged Tear SVG Clip Path Dynamically
-            function buildTearPath() {
-                const tearEl = document.getElementById('tear-element');
-                const pathArr = [];
-                
-                // Form a polygon bounding the bottom slice
-                pathArr.push('100% 0%'); // Top Right
-                pathArr.push('0% 0%');   // Top Left
-                pathArr.push('0% 100%'); // Bottom Left
-
-                // Zig Zag across the bottom
-                const zigZags = 35; // Number of teeth
-                const step = 100 / zigZags;
-                
-                for (let i = 0; i <= zigZags; i++) {
-                    const x = i * step;
-                    // alternate depth nicely to look like a rip
-                    const y = (i % 2 === 0) ? 100 : (70 + Math.random() * 20); 
-                    pathArr.push(`${x}% ${y}%`);
-                }
-                
-                tearEl.style.clipPath = `polygon(${pathArr.join(', ')})`;
-            }
-            buildTearPath();
+        function updateStopwatch() {
+            const now = new Date().getTime();
+            const diff = Math.abs(now - targetDate); // Distance in MS
             
-        });
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)) + Math.floor(diff / (1000 * 60 * 60 * 24)) * 24;
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            timerDisplay.innerText = 
+                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+        
+        setInterval(updateStopwatch, 1000);
+        updateStopwatch(); // initial call
+        
+        // Add typing effect blinker to terminal text
+        const blinker = document.querySelector('.blink');
+        setInterval(() => {
+            blinker.style.opacity = blinker.style.opacity == 0 ? 1 : 0;
+        }, 500);
+
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260521",
+          pageId: "20260523",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
