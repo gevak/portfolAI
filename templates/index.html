@@ -2,567 +2,682 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper // Workspace</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=VT323&family=EB+Garamond:wght@400;700&display=swap" rel="stylesheet">
-    
+    <title>Geva Kipper - IDE</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;800&display=swap');
+
         :root {
-            /* Base Palette */
-            --os-bg: #c0c0c0;
-            --os-dark: #808080;
-            --os-black: #000000;
-            --os-white: #ffffff;
+            /* IDE Colors */
+            --bg-base: #121212;
+            --bg-panel: #1e1e1e;
+            --bg-card: rgba(30, 30, 30, 0.6);
+            --border: rgba(255, 255, 255, 0.08);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
             
-            /* Neon Accents */
-            --neon-cyan: #00ffff;
-            --neon-amber: #ffbf00;
-            --neon-magenta: #ff00ff;
-            --crt-green: #39ff14;
+            /* Syntax Colors */
+            --text-main: #cccccc;
+            --keyword: #ff79c6; /* Pink */
+            --variable: #f8f8f2; /* Whiteish */
+            --string: #f1fa8c; /* Yellow */
+            --number: #bd93f9; /* Purple */
+            --comment: #6272a4; /* Grey */
+            --function: #50fa7b; /* Green */
+            --property: #8be9fd; /* Cyan */
+            --error: #ff5555; /* Red */
 
-            /* Window styling */
-            --win-border-light: #ffffff;
-            --win-border-dark: #404040;
-            --win-border-mid: #dfdfdf;
-            
-            /* Typography */
-            --font-pixel: 'VT323', monospace;
-            --font-mono: 'Courier Prime', monospace;
-            --font-serif: 'EB Garamond', serif;
-
-            --z-index-base: 10;
+            --font-mono: 'Fira Code', Consolas, Monaco, monospace;
+            --font-sans: 'Inter', -apple-system, sans-serif;
         }
 
-        /* Resets & Global */
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-        body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--os-bg); }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--comment) var(--bg-base);
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-base); }
+        ::-webkit-scrollbar-thumb { background: var(--comment); border-radius: 4px; }
+
         body {
-            /* Classic 8-bit Dither Pattern */
-            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVQIW2NkYGD4z8DAwMgAI0AMCKcCBEDxE1MAAAAASUVORK5CYII=');
-            background-repeat: repeat;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            cursor: default;
-        }
-
-        a, button, .clickable { user-select: auto; cursor: pointer; }
-        p, span, div { user-select: text; }
-
-        /* --- Top System Menu Bar --- */
-        #top-bar {
-            height: 28px;
-            background: var(--os-white);
-            border-bottom: 2px solid var(--os-black);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 15px;
-            font-family: var(--font-pixel);
-            font-size: 1.2rem;
-            z-index: 9999;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        .top-left { display: flex; align-items: center; gap: 15px; }
-        .menu-icon { font-size: 1.4rem; font-weight: bold; }
-        .system-name { font-weight: bold; text-decoration: underline; text-decoration-color: var(--neon-magenta); text-underline-offset: 3px; }
-        .system-desc { color: var(--os-dark); font-family: var(--font-mono); font-size: 0.9rem; margin-top: 3px;}
-        .top-right { color: var(--os-black); font-style: italic; }
-
-        /* --- Bottom System Docker --- */
-        #taskbar {
-            height: 45px;
-            background: var(--os-bg);
-            border-top: 2px solid var(--win-border-light);
-            box-shadow: inset 0 2px 0 var(--win-border-mid), 0 -2px 5px rgba(0,0,0,0.3);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-            z-index: 9999;
-            font-family: var(--font-pixel);
-        }
-        .vfd-clock {
-            background: #051405;
-            color: var(--crt-green);
-            padding: 4px 12px;
-            border: 2px solid var(--os-black);
-            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.8);
-            border-radius: 3px;
-            font-size: 1.3rem;
-            letter-spacing: 2px;
-            text-shadow: 0 0 5px var(--crt-green);
-        }
-        .ai-credit { font-size: 1.2rem; color: var(--os-black); }
-        .ai-credit span { color: var(--neon-magenta); font-weight: 700; }
-
-        /* --- Desktop Container --- */
-        #desktop {
-            flex-grow: 1;
-            position: relative;
             overflow: hidden;
         }
 
-        /* --- Classic OS Window Styles --- */
-        .window {
-            position: absolute;
-            background: var(--os-bg);
-            border: 2px solid var(--os-black);
-            box-shadow: inset 1px 1px 0 var(--win-border-light), 
-                        inset -1px -1px 0 var(--win-border-dark),
-                        4px 4px 0 rgba(0,0,0,0.2);
+        /* --- Top Bar & Tabs --- */
+        .ide-topbar {
+            background-color: #181818;
+            border-bottom: 1px solid var(--border);
             display: flex;
-            flex-direction: column;
-            width: 380px;
-            max-height: 450px;
+            align-items: flex-end;
+            padding-left: 10px;
+            user-select: none;
         }
-        .title-bar {
-            background: repeating-linear-gradient(0deg, var(--os-black), var(--os-black) 2px, transparent 2px, transparent 4px);
-            background-color: var(--os-white);
-            height: 24px;
+
+        .tab {
+            background-color: var(--bg-panel);
+            color: var(--variable);
+            padding: 10px 20px;
+            font-size: 0.85rem;
+            border-top: 2px solid var(--keyword);
+            border-right: 1px solid var(--border);
+            border-left: 1px solid var(--border);
             display: flex;
             align-items: center;
-            padding: 0 5px;
-            border-bottom: 2px solid var(--os-black);
-            cursor: grab;
-            justify-content: space-between;
+            gap: 8px;
+            position: relative;
+            transform: translateY(1px);
         }
-        .title-bar:active { cursor: grabbing; }
-        .title-text {
-            background: var(--os-white);
-            padding: 0 8px;
-            font-family: var(--font-pixel);
-            font-size: 1.2rem;
+
+        .tab::before {
+            content: 'ts';
+            color: #3178c6;
             font-weight: bold;
-            color: var(--os-black);
         }
-        .win-btn-group { display: flex; gap: 4px; background: var(--os-white); padding: 0 4px;}
-        .win-btn {
-            width: 14px; height: 14px;
-            border: 2px solid var(--os-black);
-            background: var(--os-bg);
-            box-shadow: inset 1px 1px 0 var(--win-border-light), inset -1px -1px 0 var(--win-border-dark);
-            cursor: pointer;
+
+        .tab-unsaved {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: var(--variable);
+            border-radius: 50%;
+            margin-left: 5px;
         }
-        .win-content {
-            padding: 15px;
-            flex-grow: 1;
-            overflow-y: auto;
-            font-family: var(--font-mono);
-            font-size: 0.9rem;
-            line-height: 1.4;
+
+        /* --- Main Workspace --- */
+        .workspace {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            background-color: var(--bg-panel);
+            overflow-y: auto;
+            padding: 2rem 4rem;
         }
 
-        /* Standard Buttons inside content */
-        .action-btn {
-            display: inline-block;
-            border: 2px solid var(--os-black);
-            background: var(--os-bg);
-            padding: 6px 12px;
-            font-family: var(--font-pixel);
+        /* Header Code */
+        .header-code {
             font-size: 1.1rem;
-            text-decoration: none;
-            color: var(--os-black);
-            box-shadow: inset 1px 1px 0 var(--win-border-light), inset -1px -1px 0 var(--win-border-dark);
-            text-align: center;
-            transition: all 0.1s;
-        }
-        .action-btn:active {
-            box-shadow: inset 2px 2px 0 var(--win-border-dark), inset -1px -1px 0 var(--win-border-light);
-            background: var(--os-dark);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px dashed var(--border);
         }
 
-        /* --- Section Specifics --- */
+        .kw { color: var(--keyword); }
+        .var { color: var(--property); }
+        .str { color: var(--string); }
+        .com { color: var(--comment); font-style: italic; }
+        .fn { color: var(--function); }
+        .num { color: var(--number); }
 
-        /* 1: GlglStats (Media Player) */
-        #win-glgl .win-content { background: #0a110a; color: var(--crt-green); }
-        .crt-wave {
-            font-family: monospace; font-size: 0.6rem; line-height: 1; white-space: pre;
-            color: var(--crt-green); text-shadow: 0 0 4px var(--crt-green); padding: 10px 0; overflow: hidden;
+        .banner-warning {
+            display: inline-block;
+            background-color: rgba(255, 184, 108, 0.1);
+            border-left: 4px solid #ffb86c;
+            padding: 10px 15px;
+            margin-top: 10px;
+            color: #ffb86c;
+            border-radius: 0 4px 4px 0;
+            text-shadow: 0 0 10px rgba(255, 184, 108, 0.2);
         }
-        .btn-neon-glow { background: var(--os-black); color: var(--neon-cyan); border-color: var(--neon-cyan); text-shadow: 0 0 5px var(--neon-cyan); }
-        .btn-neon-glow:active { background: var(--neon-cyan); color: var(--os-black); }
 
-        /* 2: Ahuzat Dibuk (Radar) */
-        #win-radar .win-content { background: var(--os-black); color: var(--os-white); }
-        .radar-grid {
-            display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; padding: 10px; background: #111; border: 1px solid var(--os-dark);
+        /* --- Bento Grid --- */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            padding-bottom: 40px;
+            grid-auto-rows: 250px;
         }
-        .radar-grid div { height: 15px; background: var(--neon-magenta); opacity: 0.3; }
-        .radar-grid div:nth-child(3n) { opacity: 0.8; background: var(--neon-amber); }
-        .radar-grid div:nth-child(7n) { opacity: 1; background: var(--neon-cyan); }
-        .data-link { color: var(--neon-amber); text-decoration: none; border-bottom: 1px dashed var(--neon-amber); display: block; margin-top: 5px; }
 
-        /* 3: 2D Part (CAD) */
-        #win-cad .win-content {
-            background-color: #1a2a40;
-            background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
-            background-size: 20px 20px;
-            color: #e0e0e0;
-        }
-        .cad-frame { width: 100%; height: 100px; border: 1px solid var(--neon-cyan); position: relative; margin-bottom: 10px;}
-        .btn-cad { background: #e0e0e0; border-radius: 0; border: 2px solid var(--neon-cyan); font-family: var(--font-mono); font-size: 0.9rem;}
-
-        /* 4: The Turing Jest (Terminal) */
-        #win-jest .win-content { background: var(--os-black); color: var(--os-white); }
-        #jest-typing { min-height: 80px; }
-        .blinking-cursor { animation: blink 1s step-end infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
-        .cmd-prompt { color: var(--neon-cyan); font-weight: bold; }
-        .btn-cmd { background: var(--os-black); color: var(--os-white); border-color: var(--os-white); text-transform: uppercase;}
-
-        /* 5: Rhymes (Newspaper / HyperCard) */
-        #win-rhyme .win-content { background: #fdfaf6; color: #222; font-family: var(--font-serif); font-size: 1.1rem; border: 4px double #222; margin: 5px; padding: 10px;}
-        .newspaper-title { font-size: 1.6rem; font-weight: bold; text-align: center; border-bottom: 2px solid #222; padding-bottom: 5px; margin-bottom: 10px; font-family: var(--font-serif);}
-        .btn-installer { background: #ddd; border: 2px outset #eee; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: var(--font-sans); padding: 10px;}
-        .btn-installer::before { content: "📦"; font-size: 1.2rem; }
-
-        /* 6: Hatul Basak (8-bit Game) */
-        #win-cat .win-content { background: #111; color: var(--os-white); text-align: center; }
-        .pixel-art-cat {
-            width: 80px; height: 80px; margin: 0 auto 10px;
-            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="%23fff" d="M1 2v4h1v1h1v1h10V7h1V3h-1V2h-1v1H4V2H2Z"/><path fill="%23ff00ff" d="M3 5h2v2H3zm8 0h2v2h-2z"/><path fill="%23fff" d="M4 9h8v4H3v-2H2v-1h1V9z"/></svg>') no-repeat center;
-            background-size: contain;
-            image-rendering: pixelated;
-        }
-        .btn-arcade {
-            background: var(--os-black); color: var(--neon-magenta); border: 2px solid var(--neon-magenta);
-            text-transform: uppercase; letter-spacing: 2px; font-weight: bold; animation: pulse 2s infinite;
-        }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 var(--neon-magenta); } 50% { box-shadow: 0 0 15px var(--neon-magenta); } 100% { box-shadow: 0 0 0 var(--neon-magenta); } }
-
-        /* 7: Portfolio (VM / Droste) */
-        #win-vm .win-content { background: var(--os-bg); }
-        .vm-monitor {
-            background: #fff; border: 3px solid var(--os-dark); border-radius: 5px; border-bottom-width: 15px; 
-            padding: 5px; height: 120px; position: relative;
-        }
-        .vm-screen { background: var(--os-bg); width: 100%; height: 100%; border: 1px solid var(--os-black); position: relative;}
-        .vm-win { position: absolute; border: 1px solid #000; background: #fff; width: 30px; height: 20px;}
-        
-        /* 8: Social Connections */
-        #win-socials .win-content { background: var(--os-white); }
-        .rolodex-card {
-            border: 1px solid var(--win-border-dark); border-top: 10px solid var(--win-border-mid);
-            padding: 10px; margin-bottom: 10px; background: #fdfdfd; box-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-            display: flex; align-items: center; gap: 15px; text-decoration: none; color: var(--os-black);
-        }
-        .rolodex-card:hover { transform: translateY(-2px); box-shadow: 3px 3px 6px rgba(0,0,0,0.2); }
-        .logo-pixel { font-family: var(--font-pixel); font-size: 1.5rem; font-weight: bold; background: var(--os-black); color: var(--os-white); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;}
-
-        /* Mobile Layout Adjustment */
+        /* Makes some boxes span differently for the bento look */
+        #box-1, #box-2, #box-4 { grid-column: span 2; }
         @media (max-width: 900px) {
-            #desktop {
-                display: flex;
-                flex-direction: column;
-                overflow-y: auto;
-                padding: 15px;
-                gap: 20px;
-                align-items: center;
-            }
-            .window {
-                position: relative !important; /* Override inline styles */
-                top: auto !important; left: auto !important; transform: none !important;
-                width: 100%; max-width: 450px;
-                z-index: 1 !important;
-            }
-            .title-bar { cursor: default; }
-            #top-bar { height: auto; flex-direction: column; padding: 10px; gap: 10px; align-items: flex-start;}
-            #top-bar .system-desc { display:none;} /* save space on mobile */
-            #taskbar { flex-direction: column; height: auto; padding: 10px; gap: 10px;}
+            #box-1, #box-2, #box-4 { grid-column: span 1; }
         }
+
+        /* 3D Flip Card Container */
+        .bento-box {
+            position: relative;
+            perspective: 1000px;
+            width: 100%;
+            height: 100%;
+        }
+
+        .card-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+
+        .bento-box.compiled .card-inner {
+            transform: rotateX(180deg);
+        }
+
+        /* Card Faces */
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        /* Raw Code Face */
+        .card-raw {
+            background-color: var(--bg-base);
+            border: 1px solid var(--border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Squiggly line trigger */
+        .syntax-error {
+            text-decoration: underline wavy var(--error) 2px;
+            cursor: pointer;
+            position: relative;
+            display: inline-block;
+        }
+
+        .syntax-error::after {
+            content: "Quick Fix: Compile UI";
+            position: absolute;
+            bottom: -35px;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: var(--property);
+            color: #000;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            z-index: 10;
+            box-shadow: 0 4px 15px rgba(139, 233, 253, 0.4);
+            pointer-events: none;
+        }
+
+        .syntax-error::before {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: transparent transparent var(--property) transparent;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .syntax-error:hover::after, .syntax-error:hover::before {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Compiled UI Face */
+        .card-ui {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            transform: rotateX(180deg);
+            display: flex;
+            flex-direction: column;
+            font-family: var(--font-sans);
+            color: #fff;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-decoration: none;
+        }
+
+        .card-ui h3 {
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .card-ui p {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.7);
+            line-height: 1.5;
+            margin-bottom: auto;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .ui-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            backdrop-filter: blur(5px);
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .ui-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
+
+        /* --- Specific Box Designs --- */
+        
+        /* 1. GlglStats */
+        #box-1 .card-ui {
+            background: linear-gradient(135deg, #1a0b2e 0%, #000000 100%);
+        }
+        .waveform { display: flex; gap: 4px; height: 40px; margin-bottom: 15px; align-items: flex-end; }
+        .bar { width: 8px; background: var(--keyword); border-radius: 4px 4px 0 0; animation: bounce 1s infinite alternate; box-shadow: 0 0 10px var(--keyword); }
+        .bar:nth-child(2) { animation-delay: -0.2s; background: var(--property); box-shadow: 0 0 10px var(--property); }
+        .bar:nth-child(3) { animation-delay: -0.4s; background: var(--function); box-shadow: 0 0 10px var(--function); }
+        .bar:nth-child(4) { animation-delay: -0.6s; }
+        .bar:nth-child(5) { animation-delay: -0.8s; background: var(--property); box-shadow: 0 0 10px var(--property); }
+        @keyframes bounce { 0% { height: 10px; } 100% { height: 40px; } }
+
+        /* 2. Ahuzat Dibuk */
+        #box-2 .card-ui { background: #111; overflow: hidden; position: relative; }
+        #box-2 .ambient-map {
+            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: 
+                radial-gradient(circle at 50% 50%, rgba(255, 85, 85, 0.15), transparent 40%),
+                radial-gradient(circle at 30% 70%, rgba(241, 250, 140, 0.1), transparent 30%);
+            background-size: 20px 20px;
+            background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+            z-index: 0; animation: scan 10s linear infinite;
+        }
+        #box-2 h3, #box-2 p, #box-2 .btn-group { position: relative; z-index: 1; }
+        @keyframes scan { 0% { transform: translateY(0); } 100% { transform: translateY(-20px); } }
+
+        /* 3. 2D Part Orienting */
+        #box-3 .card-ui { background: linear-gradient(45deg, #0f2027, #203a43, #2c5364); }
+        .poly-wireframe {
+            position: absolute; right: -20px; top: 20px; width: 150px; height: 150px; opacity: 0.2;
+            background: conic-gradient(from 0deg, transparent, #8be9fd); clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+        }
+
+        /* 4. The Turing Jest */
+        #box-4 .card-ui {
+            background: linear-gradient(to right, #4a1525 50%, #172a45 50%);
+            display: flex; flex-direction: row; align-items: center; justify-content: space-between;
+        }
+        .jest-content { flex: 1; padding-right: 20px; }
+        .vs-badge { background: #fff; color: #000; font-weight: 900; padding: 15px; border-radius: 50%; font-size: 1.5rem; position: absolute; left: 50%; transform: translateX(-50%); box-shadow: 0 0 20px rgba(255,255,255,0.3); }
+        
+        /* 5. Rhymes of Israel */
+        #box-5 .card-ui {
+            background: linear-gradient(to bottom, #dedede 40%, #ffeb3b 40%);
+            color: #111;
+        }
+        #box-5 .serious { font-family: 'Times New Roman', serif; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 10px; }
+        #box-5 .funny { font-family: 'Comic Sans MS', cursive, sans-serif; color: #e91e63; font-weight: bold; transform: rotate(-2deg); }
+        #box-5 p { color: #333; font-weight: 500; }
+        #box-5 .ui-btn { background: #2196f3; color: white; border: none; box-shadow: 2px 2px 0px #000; border-radius: 4px; }
+        #box-5 .ui-btn:hover { background: #1976d2; transform: translate(1px, 1px); box-shadow: 1px 1px 0px #000; }
+
+        /* 6. Hatul Basak */
+        #box-6 .card-ui { background: #000; border: 2px solid var(--function); color: var(--function); }
+        #box-6 h3 { font-family: var(--font-mono); text-transform: uppercase; text-shadow: 0 0 5px var(--function); }
+        #box-6 p { font-family: var(--font-mono); color: var(--function); opacity: 0.8; }
+        #box-6 .ui-btn { border-color: var(--function); color: var(--function); background: transparent; }
+        #box-6 .ui-btn:hover { background: var(--function); color: #000; }
+
+        /* 7. Meta Portfolio */
+        #box-7 .card-ui { background: #1a1a1a; overflow: hidden; display: flex; align-items: center; justify-content: center;}
+        .meta-mirror {
+            width: 80%; height: 60%; background: var(--bg-panel); border: 1px solid var(--border);
+            border-radius: 4px; padding: 10px; transform: rotate(-5deg) scale(0.9);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 10px 20px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; gap: 5px; opacity: 0.8;
+            transition: all 0.3s;
+        }
+        .meta-mirror:hover { transform: rotate(0deg) scale(1.05); opacity: 1;}
+        .meta-line { height: 4px; background: var(--comment); border-radius: 2px; width: 80%; }
+        .meta-line:nth-child(2) { width: 60%; background: var(--keyword); }
+        .meta-grid { display: flex; gap: 4px; margin-top: 10px;}
+        .meta-box { width: 30px; height: 30px; background: var(--text-main); border-radius: 2px; opacity: 0.2;}
+
+        /* 8. System Executables */
+        #box-8 .card-ui { background: #1f2428; justify-content: space-around; }
+        .social-link { align-items: center; justify-content: flex-start; gap: 10px; font-family: var(--font-mono); background: rgba(0,0,0,0.4); padding: 12px; border-radius: 6px; color: var(--property); text-decoration: none; border: 1px solid var(--border); transition: 0.2s;}
+        .social-link:hover { border-color: var(--property); background: rgba(139, 233, 253, 0.1); }
+        .social-run { color: var(--keyword); }
+
+        /* --- Bottom Terminal --- */
+        .ide-terminal {
+            height: 140px;
+            background-color: #0d0d0d;
+            border-top: 1px solid var(--border);
+            padding: 10px 15px;
+            font-size: 0.85rem;
+            color: var(--function);
+            display: flex;
+            flex-direction: column;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .terminal-header {
+            color: var(--text-main);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .terminal-content { line-height: 1.6; }
+        .prompt::before { content: '>'; display: inline-block; margin-right: 8px; color: var(--keyword); }
+        
+        .cursor {
+            display: inline-block; width: 8px; height: 14px; background-color: var(--function);
+            vertical-align: middle; margin-left: 5px; animation: blink 1s step-end infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
     </style>
 </head>
 <body>
 
-    <!-- Top Menu -->
-    <nav id="top-bar">
-        <div class="top-left">
-            <span class="menu-icon"></span>
-            <div style="display: flex; gap: 10px; align-items: baseline;">
-                <span class="system-name">Geva Kipper</span>
-                <span class="system-desc">Currently engineering modern solutions at Google.</span>
-            </div>
+    <!-- IDE Top Tab -->
+    <div class="ide-topbar">
+        <div class="tab">
+            portfolio.ts 
+            <span class="tab-unsaved"></span>
         </div>
-        <div class="top-right">
-            Status: Architecture is re-designed each day by AI and is thus ever-changing.
-        </div>
-    </nav>
+    </div>
 
-    <!-- Desktop -->
-    <main id="desktop">
-
-        <!-- Win 1: GlglStats -->
-        <div class="window" id="win-glgl" style="top: 20px; left: 30px;">
-            <div class="title-bar">
-                <div class="win-btn-group"><div class="win-btn"></div></div>
-                <div class="title-text">GlglStats_Player.exe</div>
-                <div class="win-btn-group"><div class="win-btn"></div><div class="win-btn"></div></div>
+    <!-- Main Workspace -->
+    <div class="workspace">
+        
+        <!-- Header -->
+        <div class="header-code">
+            <div class="line">
+                <span class="kw">const</span> <span class="var">developer</span> = <span class="str">"Geva Kipper"</span>;
             </div>
-            <div class="win-content">
-                <p>Analyzing Israeli pop chart repetition patterns (LZ77). Data extraction via bespoke Python pipeline.</p>
-                <div class="crt-wave">
-  ▂ ▃ ▄ ▅ ▆ ▇ █ ▉ ▊ ▋ ▌ ▍ ▎ ▏
- ▔ ▕ ▏ ▎ ▍ ▌ ▋ ▊ ▉ █ ▇ ▆ ▅ ▄ ▃
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="action-btn btn-neon-glow" style="flex: 1;">LAUNCH SOFTWARE</a>
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="action-btn" title="PyData TLV">▶ VHS PLAY</a>
-                </div>
+            <div class="line com" style="margin-left: 2rem;">
+                // Software Engineer at Google currently building scalable AI infrastructure.
+            </div>
+            <div class="line banner-warning com">
+                /* WARNING: This website is re-designed each day by AI and is thus ever-changing. */
             </div>
         </div>
 
-        <!-- Win 2: Radar -->
-        <div class="window" id="win-radar" style="top: 80px; left: 450px;">
-            <div class="title-bar">
-                <div class="win-btn-group"><div class="win-btn"></div></div>
-                <div class="title-text">Ahuzat_Dibuk_Radar.sys</div>
-                <div class="win-btn-group"><div class="win-btn"></div><div class="win-btn"></div></div>
-            </div>
-            <div class="win-content">
-                <p>System Diagnostics: Tel-Aviv parking occupancy. Visualizing scraping data to expose urban heatmaps.</p>
-                <div class="radar-grid">
-                    <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-                    <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-                    <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-                </div>
-                <div>
-                    <span style="color:var(--os-dark)">Press Dispatches:</span>
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="data-link">[Log] 13tv Broadcast</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="data-link">[Log] Mako Article</a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="data-link"># Community.Forum.Post</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Win 3: CAD -->
-        <div class="window" id="win-cad" style="top: 360px; left: 60px;">
-            <div class="title-bar">
-                <div class="win-btn-group"><div class="win-btn"></div></div>
-                <div class="title-text">2D_Part_Orienting.cad</div>
-                <div class="win-btn-group"><div class="win-btn"></div><div class="win-btn"></div></div>
-            </div>
-            <div class="win-content">
-                <div class="cad-frame">
-                    <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                        <polygon points="20,80 50,20 80,60 60,90" fill="transparent" stroke="var(--neon-cyan)" stroke-width="2" vector-effect="non-scaling-stroke"></polygon>
-                    </svg>
-                </div>
-                <p>C++ computational geometry implementation (CGAL) for polygon push-planning algorithms.</p>
-                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="action-btn btn-cad">💾 Inspect Source / Docs</a>
-            </div>
-        </div>
-
-        <!-- Win 4: Terminal -->
-        <div class="window" id="win-jest" style="top: 250px; left: 880px;">
-            <div class="title-bar">
-                <div class="win-btn-group"><div class="win-btn"></div></div>
-                <div class="title-text">Turing_Jest_Term.bat</div>
-                <div class="win-btn-group"><div class="win-btn"></div><div class="win-btn"></div></div>
-            </div>
-            <div class="win-content" style="font-family: var(--font-mono);">
-                <div style="border-bottom: 2px solid var(--win-border-dark); padding-bottom: 10px; margin-bottom: 10px;">
-                    <span class="cmd-prompt">C:\></span> DIR LLM_ARENA<br>
-                    LMSYS-like arena detected. Subject: Pun battles.
-                </div>
-                <div>
-                    <span class="cmd-prompt">C:\SYSTEM></span> <span id="jest-typing"></span><span class="blinking-cursor">_</span>
-                </div>
-                <a href="https://jest.geekip.dev" target="_blank" class="action-btn btn-cmd">C:\> ENTER THE ARENA</a>
-            </div>
-        </div>
-
-        <!-- Win 5: Newspaper/Hypercard -->
-        <div class="window" id="win-rhyme" style="top: 50px; left: 900px;">
-            <div class="title-bar">
-                <div class="win-btn-group"><div class="win-btn"></div></div>
-                <div class="title-text">Rhymes_of_Israel.stk</div>
-                <div class="win-btn-group"><div class="win-btn"></div><div class="win-btn"></div></div>
-            </div>
-            <div class="win-content">
-                <div class="newspaper-title">The Rhyming Times</div>
-                <p>Chrome extension utilizing LLMs to rewrite mundane, heavy news headlines into comedic, high-school yearbook-style rhymes.</p>
-                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="action-btn btn-installer" style="text-decoration: none; color: black; font-family: var(--font-pixel);">Install Package</a>
-            </div>
-        </div>
-
-        <!-- Win 6: Game Menu -->
-        <div class="window" id="win-cat" style="top: 480px; left: 420px;">
-            <div class="title-bar">
-                <div class="win-btn-group"><div class="win-btn"></div></div>
-                <div class="title-text">Hatul_Basak.rom</div>
-                <div class="win-btn-group"><div class="win-btn"></div><div class="win-btn"></div></div>
-            </div>
-            <div class="win-content">
-                <div class="pixel-art-cat"></div>
-                <h2>HATUL BASAK</h2>
-                <p style="font-size: 0.8rem; margin: 10px 0;">Hebrew port of catfishing.net.<br>AI-generated daily challenges & user themed puzzles.</p>
-                <a href="https://hatulbasak.geekip.dev" target="_blank" class="action-btn btn-arcade">INSERT COIN</a>
-            </div>
-        </div>
-
-        <!-- Win 7: Portfolio Meta -->
-        <div class="window" id="win-vm" style="top: 550px; left: 850px;">
-            <div class="title-bar">
-                <div class="win-btn-group"><div class="win-btn"></div></div>
-                <div class="title-text">Sys_Properties.vdi</div>
-                <div class="win-btn-group"><div class="win-btn"></div><div class="win-btn"></div></div>
-            </div>
-            <div class="win-content">
-                <div class="vm-monitor">
-                    <div class="vm-screen">
-                        <div class="vm-win" style="top:5px; left:5px;"></div>
-                        <div class="vm-win" style="top:25px; left:80px;"></div>
-                        <div class="vm-win" style="top:55px; left:15px;"></div>
+        <!-- Bento Grid -->
+        <div class="bento-grid">
+            
+            <!-- Box 1: GlglStats -->
+            <div class="bento-box" id="box-1">
+                <div class="card-inner">
+                    <div class="card-face card-raw">
+                        <div class="line"><span class="kw">import</span> { LZ77 } <span class="kw">from</span> <span class="str">'compression'</span>;</div>
+                        <div class="line"><span class="kw">const</span> stats = <span class="syntax-error" onclick="compileUI(this)">analyze_repetitiveness</span>('israeli_pop');</div>
+                    </div>
+                    <div class="card-face card-ui">
+                        <div class="waveform"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+                        <h3>GlglStats</h3>
+                        <p>Measuring and visualizing repetitiveness in Israeli pop-chart songs utilizing Python and the LZ77 compression algorithm.</p>
+                        <div class="btn-group">
+                            <a href="https://glglstats.geekip.dev" target="_blank" class="ui-btn">Init App</a>
+                            <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="ui-btn">PyData TLV Presentation</a>
+                        </div>
                     </div>
                 </div>
-                <p>Droste Alert: The interface you are currently interacting with is a portfolio project itself.</p>
-                <a href="https://geekip.dev" target="_blank" class="action-btn">Refresh Virtual Env</a>
             </div>
-        </div>
 
-        <!-- Win 8: Socials -->
-        <div class="window" id="win-socials" style="top: 600px; left: 90px; width: 300px;">
-            <div class="title-bar">
-                <div class="win-btn-group"><div class="win-btn"></div></div>
-                <div class="title-text">Network_Contacts.abk</div>
-                <div class="win-btn-group"><div class="win-btn"></div><div class="win-btn"></div></div>
+            <!-- Box 2: Ahuzat Dibuk -->
+            <div class="bento-box" id="box-2">
+                <div class="card-inner">
+                    <div class="card-face card-raw">
+                        <div class="line"><span class="kw">def</span> <span class="fn">heatmap</span>(tel_aviv):</div>
+                        <div class="line" style="margin-left: 20px;">return <span class="syntax-error" onclick="compileUI(this)">scrape_parking_occupancy</span>()</div>
+                    </div>
+                    <div class="card-face card-ui">
+                        <div class="ambient-map"></div>
+                        <h3>Ahuzat Dibuk</h3>
+                        <p>A data visualization project mapping Tel Aviv parking lot occupancies via Python web scraping, featured in national media.</p>
+                        <div class="btn-group" style="margin-top: auto;">
+                            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="ui-btn">Channel 13 News</a>
+                            <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="ui-btn">Mako</a>
+                            <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" class="ui-btn">Secret Tel Aviv</a>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="win-content">
-                <a href="https://github.com/gevak" target="_blank" class="rolodex-card">
-                    <div class="logo-pixel">GH</div>
-                    <div style="font-family: var(--font-pixel); font-size:1.2rem;">/gevak</div>
-                </a>
-                <a href="https://linkedin.com/in/gevakip" target="_blank" class="rolodex-card">
-                    <div class="logo-pixel" style="background:var(--neon-cyan); color:black;">IN</div>
-                    <div style="font-family: var(--font-pixel); font-size:1.2rem;">/gevakip</div>
-                </a>
-                <a href="https://facebook.com/geva.kipper" target="_blank" class="rolodex-card">
-                    <div class="logo-pixel" style="background:#3b5998; color:white;">FB</div>
-                    <div style="font-family: var(--font-pixel); font-size:1.2rem;">/geva.kipper</div>
-                </a>
+
+            <!-- Box 3: 2D Part Orienting -->
+            <div class="bento-box" id="box-3">
+                <div class="card-inner">
+                    <div class="card-face card-raw">
+                        <div class="line"><span class="var">Polygon</span> target;</div>
+                        <div class="line"><span class="var">PushPlan</span> p = <span class="syntax-error" onclick="compileUI(this)">compute_plan</span>(target);</div>
+                    </div>
+                    <div class="card-face card-ui">
+                        <div class="poly-wireframe"></div>
+                        <h3>2D Part Orienting</h3>
+                        <p>C++ computational geometry implementation for constructing "push plans" to precisely orient 2D polygons.</p>
+                        <div class="btn-group">
+                            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="ui-btn">TAU CGL Docs</a>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
 
-    </main>
+            <!-- Box 4: The Turing Jest -->
+            <div class="bento-box" id="box-4">
+                <div class="card-inner">
+                    <div class="card-face card-raw">
+                        <div class="line"><span class="var">LLM</span> model_A, model_B;</div>
+                        <div class="line"><span class="var">Arena</span>.<span class="syntax-error" onclick="compileUI(this)">compete</span>(model_A, model_B, <span class="str">"tell a pun"</span>);</div>
+                    </div>
+                    <div class="card-face card-ui">
+                        <div class="jest-content">
+                            <h3>The Turing Jest</h3>
+                            <p>An LMSYS-style competitive arena where large language models battle by creating and explaining puns, rated blindly by users.</p>
+                            <div class="btn-group">
+                                <a href="https://jest.geekip.dev" target="_blank" class="ui-btn" style="background:#fff; color:#000;">Enter the Arena</a>
+                            </div>
+                        </div>
+                        <div class="vs-badge">VS</div>
+                        <div style="flex: 0.5;"></div>
+                    </div>
+                </div>
+            </div>
 
-    <!-- Bottom Taskbar -->
-    <footer id="taskbar">
-        <div class="vfd-clock" id="vfd-display">000000:00:00</div>
-        <div class="ai-credit">
-            System core programmed and continuously redesigned by <span>Claude</span>.
+            <!-- Box 5: Rhymes of Israel -->
+            <div class="bento-box" id="box-5">
+                <div class="card-inner">
+                    <div class="card-face card-raw">
+                        <div class="line">chrome.tabs.executeScript({</div>
+                        <div class="line" style="margin-left: 20px;">code: LLM.<span class="syntax-error" onclick="compileUI(this)">rewrite_news</span>(dom)</div>
+                        <div class="line">});</div>
+                    </div>
+                    <div class="card-face card-ui">
+                        <h3 class="serious">Daily Tribune</h3>
+                        <h3 class="funny">Rhymes of Israel 🤪</h3>
+                        <p>A Chrome extension leveraging an LLM to rewrite and inject humor into serious Israeli news articles on the fly.</p>
+                        <div class="btn-group">
+                            <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="ui-btn">Add to Chrome</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 6: Hatul Basak -->
+            <div class="bento-box" id="box-6">
+                <div class="card-inner">
+                    <div class="card-face card-raw">
+                        <div class="line"><span class="kw">while</span> (game_playing) {</div>
+                        <div class="line" style="margin-left: 20px;"><span class="syntax-error" onclick="compileUI(this)">generate_wiki_puzzle</span>();</div>
+                        <div class="line">}</div>
+                    </div>
+                    <div class="card-face card-ui">
+                        <h3>Hatul_Basak.exe</h3>
+                        <p>Hebrew port of catfishing.net featuring AI-generated daily challenges & user-created themed Wikipedia trivia puzzles.</p>
+                        <div class="btn-group">
+                            <a href="https://hatulbasak.geekip.dev" target="_blank" class="ui-btn">[ PLAY_&_CREATE ]</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 7: Meta Portfolio Project -->
+            <div class="bento-box" id="box-7">
+                <div class="card-inner">
+                    <div class="card-face card-raw">
+                        <div class="line"><span class="kw">import</span> { Portfolio } <span class="kw">from</span> <span class="str">'./portfolio'</span>;</div>
+                        <div class="line"><span class="kw">return</span> &lt;<span class="syntax-error" onclick="compileUI(this)">Portfolio</span> /&gt;;</div>
+                    </div>
+                    <div class="card-face card-ui">
+                        <a href="https://geekip.dev" target="_blank" style="text-decoration: none; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <div class="meta-mirror">
+                                <div class="meta-line"></div>
+                                <div class="meta-line"></div>
+                                <div class="meta-grid">
+                                    <div class="meta-box"></div><div class="meta-box"></div>
+                                </div>
+                            </div>
+                            <p style="margin-top: 10px; text-align: center;">You are here.</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 8: System Executables (Socials) -->
+            <div class="bento-box" id="box-8">
+                <div class="card-inner">
+                    <div class="card-face card-raw">
+                        <div class="line"><span class="kw">import</span> { socials } <span class="kw">from</span> <span class="str">'network'</span>;</div>
+                        <div class="line">sys.<span class="syntax-error" onclick="compileUI(this)">execute_links</span>();</div>
+                    </div>
+                    <div class="card-face card-ui">
+                        <a href="https://github.com/gevak" target="_blank" class="social-link">
+                            <span class="social-run">run</span>("github.com/gevak")
+                        </a>
+                        <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-link">
+                            <span class="social-run">run</span>("linkedin.com/in/gevakip")
+                        </a>
+                        <a href="https://facebook.com/geva.kipper" target="_blank" class="social-link">
+                            <span class="social-run">run</span>("facebook.com/geva.kipper")
+                        </a>
+                    </div>
+                </div>
+            </div>
+
         </div>
-    </footer>
+    </div>
+
+    <!-- Bottom Pane Terminal -->
+    <div class="ide-terminal">
+        <div class="terminal-header">
+            <span>Debug Console</span>
+            <span>zsh - 80x24</span>
+        </div>
+        <div class="terminal-content">
+            <div class="prompt">Compilation incomplete. Resolving UI dependencies...</div>
+            <div class="prompt" id="ai-log" style="display:none; color: var(--keyword);">Site generated and patched by AI Model [Claude 3.5 Sonnet].</div>
+            <div class="prompt">System Uptime since 2026-05-26 02:36:22: <span id="uptime">00:00:00</span><span class="cursor"></span></div>
+        </div>
+    </div>
 
     <script>
-        // ---- Z-Index Management & Window Dragging ---- //
-        let currentZIndex = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--z-index-base')) || 10;
-        const windows = document.querySelectorAll('.window');
-        const desktop = document.getElementById('desktop');
+        // Web Audio API for minimal terminal beep
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
 
-        windows.forEach(win => {
-            // Bring to front on mousedown
-            win.addEventListener('mousedown', () => { 
-                win.style.zIndex = ++currentZIndex; 
-            });
-
-            // Dragging Logic
-            const titleBar = win.querySelector('.title-bar');
-            let isDragging = false;
-            let offsetX = 0, offsetY = 0;
-
-            titleBar.addEventListener('mousedown', (e) => {
-                // Disable drag on mobile layout
-                if (window.innerWidth <= 900) return; 
-
-                isDragging = true;
-                const rect = win.getBoundingClientRect();
-                const deskRect = desktop.getBoundingClientRect();
-                
-                // Calculate offset relative to window top-left
-                offsetX = e.clientX - rect.left;
-                offsetY = e.clientY - rect.top;
-            });
-
-            document.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-                
-                const deskRect = desktop.getBoundingClientRect();
-                
-                // New positions relative to the desktop container bounds
-                let newX = e.clientX - offsetX - deskRect.left;
-                let newY = e.clientY - offsetY - deskRect.top;
-
-                // Simple boundary restrictions (optional, keeping it loose for classic OS feel)
-                win.style.left = `${newX}px`;
-                win.style.top = `${newY}px`;
-            });
-
-            document.addEventListener('mouseup', () => {
-                isDragging = false;
-            });
-        });
-
-
-        // ---- VFD Stopwatch Logic ---- //
-        const targetDate = new Date('2026-05-25T02:47:58Z').getTime();
-        const display = document.getElementById('vfd-display');
-
-        function updateClock() {
-            const now = Date.now();
-            // Get absolute difference in milliseconds
-            const diff = Math.abs(now - targetDate);
-
-            // Calculate hours, minutes, seconds 
-            // Note: Hours will exceed 24 if diff is large, which matches requirement
-            const totalSeconds = Math.floor(diff / 1000);
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-
-            // Format strings padding with zeros
-            const hStr = String(hours).padStart(6, '0');
-            const mStr = String(minutes).padStart(2, '0');
-            const sStr = String(seconds).padStart(2, '0');
-
-            display.textContent = `${hStr}:${mStr}:${sStr}`;
+        function playTerminalSound() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            // Retro synth parameters
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.05);
+            
+            gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
         }
-        setInterval(updateClock, 1000);
-        updateClock(); // Initial call
 
+        let debuggedCount = 0;
 
-        // ---- Typing Effect for The Turing Jest ---- //
-        const typingElement = document.getElementById('jest-typing');
-        const textToType = "EXECUTE run_arena.py --mode=pun_battle";
-        let typeIndex = 0;
-
-        function typeWriter() {
-            if (typeIndex < textToType.length) {
-                typingElement.textContent += textToType.charAt(typeIndex);
-                typeIndex++;
-                setTimeout(typeWriter, 50 + Math.random() * 50); // random delay for realism
-            } else {
-                // Reset after a while loop
-                setTimeout(() => {
-                    typingElement.textContent = '';
-                    typeIndex = 0;
-                    typeWriter();
-                }, 4000);
+        // Interaction Logic
+        function compileUI(element) {
+            const bentoBox = element.closest('.bento-box');
+            if (!bentoBox.classList.contains('compiled')) {
+                playTerminalSound();
+                bentoBox.classList.add('compiled');
+                debuggedCount++;
+                
+                // Update terminal when all are debugged
+                if(debuggedCount === 8) {
+                    document.querySelector('.terminal-content .prompt:first-child').innerText = 'Compilation complete. All modules executed successfully.';
+                    document.getElementById('ai-log').style.display = 'block';
+                    document.querySelector('.tab-unsaved').style.display = 'none';
+                    document.querySelector('.tab').innerHTML = "portfolio.ts";
+                }
             }
         }
-        // Start typing effect after short delay
-        setTimeout(typeWriter, 1000);
 
+        // Live Uptime Clock Logic
+        const targetDate = new Date("2026-05-26T02:36:22").getTime();
+        const uptimeElement = document.getElementById('uptime');
+
+        setInterval(() => {
+            const now = new Date().getTime();
+            // Calculate absolute difference to ensure it acts as a forward ticking clock
+            const diff = Math.abs(now - targetDate);
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            const pOpts = { minimumIntegerDigits: 2, useGrouping: false };
+            uptimeElement.innerText = 
+                `${hours.toLocaleString('en-US', pOpts)}:${minutes.toLocaleString('en-US', pOpts)}:${seconds.toLocaleString('en-US', pOpts)}`;
+        }, 1000);
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260525",
+          pageId: "20260526",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
