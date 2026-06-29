@@ -1,660 +1,682 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | Digital Universe</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600&family=JetBrains+Mono:wght@100;400&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GEVA KIPPER | Optic Portfolio</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
         :root {
-            --obsidian: #05050A;
-            --indigo: rgba(26, 26, 58, 0.6);
-            --stardust: #E0E0FF;
-            --glass-border: rgba(224, 224, 255, 0.15);
-            --glass-bg: rgba(10, 10, 20, 0.5);
-            --neon-blue: #00f3ff;
-            --neon-green: #00ff88;
+            --hud-color: rgba(230, 255, 255, 0.85);
+            --hud-glow: text-shadow: 0 0 4px rgba(200, 255, 255, 0.6);
+            --bg-color: #030304;
+            --accent-red: #ff3333;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body, html {
-            width: 100%; height: 100%;
-            background-color: var(--obsidian);
-            color: var(--stardust);
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
             user-select: none;
         }
 
-        canvas {
-            display: block;
-            width: 100vw; height: 100vh;
-            cursor: grab;
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            color: var(--hud-color);
+            font-family: 'Share Tech Mono', monospace;
+            overflow: hidden; /* Hide scrollbars, drive via JS */
+            perspective: 1000px;
         }
-        canvas:active { cursor: grabbing; }
 
-        /* HUD Shared Styles */
-        .hud {
+        /* --- BACKGROUND & LENS FLARES --- */
+        .void-background {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 50%, #0a0a0f 0%, #000 100%);
+            z-index: -10;
+        }
+        
+        .lens-flare {
             position: absolute;
-            z-index: 10;
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 24px;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            pointer-events: none;
+            filter: blur(20px);
+        }
+
+        .flare-1 {
+            width: 80vmin; height: 80vmin;
+            top: 10%; left: 20%;
+            background: radial-gradient(circle, rgba(40,100,200,0.1) 0%, transparent 60%);
+        }
+
+        .flare-2 {
+            width: 120vmin; height: 120vmin;
+            bottom: -20%; right: -10%;
+            background: radial-gradient(circle, rgba(200,50,100,0.05) 0%, transparent 70%);
+            border: 2px solid rgba(255,255,255,0.02);
+        }
+
+        /* --- HUD OVERLAY --- */
+        .hud-layer {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px 40px;
+        }
+
+        /* Rule of Thirds Grid & Reticle */
+        .grid-line {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .grid-v1 { top: 0; bottom: 0; left: 33.33%; width: 1px; }
+        .grid-v2 { top: 0; bottom: 0; left: 66.66%; width: 1px; }
+        .grid-h1 { left: 0; right: 0; top: 33.33%; height: 1px; }
+        .grid-h2 { left: 0; right: 0; top: 66.66%; height: 1px; }
+
+        .crosshair-center {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px; height: 40px;
+        }
+        .crosshair-center::before { content:''; position:absolute; top:19px; left:0; width:40px; height:1px; background:rgba(255,255,255,0.5); }
+        .crosshair-center::after { content:''; position:absolute; top:0; left:19px; width:1px; height:40px; background:rgba(255,255,255,0.5); }
+
+        .corner {
+            position: absolute;
+            width: 30px; height: 30px;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        .c-tl { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+        .c-tr { top: 20px; right: 20px; border-left: none; border-bottom: none; }
+        .c-bl { bottom: 20px; left: 20px; border-right: none; border-top: none; }
+        .c-br { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+
+        /* Typography */
+        header {
+            text-align: center;
+            var(--hud-glow);
+            letter-spacing: 2px;
+            margin-top: 2vh;
+        }
+        header h1 { font-size: 1.5rem; font-weight: normal; margin-bottom: 5px; }
+        header p { font-size: 0.9rem; opacity: 0.8; margin-bottom: 15px;}
+        
+        .auto-iso {
+            display: inline-block;
+            font-size: 0.75rem;
+            color: #55ff55;
+            border: 1px solid #55ff55;
+            padding: 2px 8px;
+            border-radius: 2px;
+            animation: blink 2s infinite step-end;
+            margin-bottom: 5px;
+        }
+
+        .subtitle { font-size: 0.75rem; opacity: 0.6; }
+
+        footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            font-size: 0.85rem;
+            var(--hud-glow);
+            margin-bottom: 2vh;
+            text-transform: uppercase;
+            padding-right: 120px; /* Space for mode dial */
+        }
+
+        .rec-timer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .red-dot {
+            width: 10px; height: 10px;
+            background-color: var(--accent-red);
+            border-radius: 50%;
+            animation: blink 1s infinite alternate;
+        }
+
+        @keyframes blink { 0%, 100% {opacity: 1;} 50% {opacity: 0;} }
+
+        /* --- APERTURE ANIMATION --- */
+        #aperture-overlay {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100vmin; height: 100vmin;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.15;
+            transition: transform 0.1s linear;
+        }
+
+        /* --- FOCUS TRACK (PROJECT CONTAINER) --- */
+        #focus-track {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            transform-style: preserve-3d;
+        }
+
+        .project-item {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            max-width: 85vw;
+            pointer-events: none; /* Enables click-through for blurred items */
+            will-change: transform, filter, opacity;
+            transform-origin: center center;
+        }
+        
+        .project-item.focused {
+            pointer-events: auto; /* Clickable only when in focus */
+        }
+
+        .project-content {
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 30px;
+            border-radius: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        h2.title {
+            font-size: 1.8rem;
+            color: #fff;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+
+        .desc { font-size: 0.9rem; line-height: 1.4; color: #ccc; }
+
+        a.link-btn {
+            display: inline-block;
+            align-self: flex-start;
+            margin-top: 10px;
+            padding: 8px 16px;
+            border: 1px solid var(--hud-color);
+            color: var(--hud-color);
+            text-decoration: none;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        a.link-btn:hover {
+            background: var(--hud-color);
+            color: #000;
+            box-shadow: 0 0 15px rgba(200, 255, 255, 0.5);
+        }
+
+        /* --- PROJECT SPECIFIC STYLES --- */
+        
+        /* 1. GlglStats */
+        .glgl .project-content {
+            background: repeating-linear-gradient(90deg, transparent, transparent 4px, rgba(50, 255, 150, 0.1) 4px, rgba(50, 255, 150, 0.1) 5px), rgba(10,10,15,0.8);
+        }
+        .glgl iframe {
+            width: 100%; border: none; border-radius: 4px;
+            box-shadow: 0 0 15px rgba(50,255,150,0.2);
+        }
+
+        /* 2. Ahuzat Dibuk */
+        .ahuzat .project-content {
+            background: linear-gradient(135deg, rgba(0,0,100,0.8) 0%, rgba(150,0,0,0.8) 50%, rgba(255,200,0,0.8) 100%);
+            mix-blend-mode: hard-light;
+        }
+        .radar-grid {
+            display: flex; gap: 10px; margin-top: 15px;
+        }
+        .radar-target {
+            flex: 1; text-align: center; padding: 15px 5px;
+            border: 1px dashed rgba(255,255,255,0.5);
+            border-radius: 50%;
+            text-decoration: none; color: #fff;
+            position: relative;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%);
+        }
+        .radar-target:hover { border-color: #fff; background: rgba(255,255,255,0.1); }
+        .radar-target::before { content:'+'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:1.5em; opacity:0.3; }
+
+        /* 3. 2D Part Orienting */
+        .part-orienting .project-content {
+            border: 1px solid #4da6ff;
+            background: radial-gradient(circle, rgba(10,20,40,0.9) 0%, rgba(5,10,20,0.9) 100%);
+        }
+        .wireframe-geo {
+            width: 100%; height: 100px;
+            background-image: 
+                linear-gradient(rgba(77, 166, 255, 0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(77, 166, 255, 0.2) 1px, transparent 1px);
+            background-size: 20px 20px;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid rgba(77,166,255,0.3);
+            font-style: italic; color: #4da6ff;
+        }
+        .part-orienting a.link-btn { border-color: #4da6ff; color: #4da6ff; }
+        .part-orienting a.link-btn:hover { background: #4da6ff; color: #000; }
+
+        /* 4. The Turing Jest */
+        .jest .dual-pixel {
+            display: flex; gap: 10px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .jest-node {
+            flex: 1; padding: 20px; text-align: center;
+            background: rgba(255,255,255,0.05);
+            position: relative;
+        }
+        .jest-node.a { border-right: 1px solid rgba(255,255,255,0.1); border-left: 3px solid #ff5555; }
+        .jest-node.b { border-right: 3px solid #5555ff; }
+        .jest-vote { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#000; padding:5px 10px; border:1px solid #fff; z-index:2;}
+
+        /* 5. Rhymes of Israel */
+        .rhymes .project-content {
+            background: #fdfdfd; color: #222;
+            transform: rotate(-2deg);
+            padding: 15px 15px 50px 15px; border-radius: 2px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.9);
+        }
+        .rhymes h2.title { color: #111; text-shadow: none; font-family: 'Courier New', Courier, monospace; font-weight: bold;}
+        .rhymes .desc { color: #444; }
+        .marquee { width: 100%; overflow: hidden; background: #222; color: #0f0; padding: 5px; margin: 10px 0; border-radius: 2px; font-size: 0.8rem;}
+        .marquee span { display: inline-block; animation: scroll-left 10s linear infinite; white-space: nowrap; }
+        @keyframes scroll-left { 0% {transform: translateX(100%);} 100% {transform: translateX(-100%);} }
+        .rhymes a.link-btn { border-color: #222; color: #222; }
+        .rhymes a.link-btn:hover { background: #222; color: #fff; }
+
+        /* 6. Hatul Basak */
+        .hatul .project-content { border-radius: 50%; width: 400px; height: 400px; justify-content: center; align-items: center; text-align: center; border: 1px dotted rgba(255,255,255,0.5); }
+        .node-network { position:absolute; top:0;left:0;width:100%;height:100%; background: radial-gradient(circle, transparent 60%, rgba(255,255,255,0.1) 100%); pointer-events:none;}
+
+        /* 7. Meta Portfolio */
+        .meta .project-content {
+            background: rgba(255,255,255,0.02);
+            border-radius: 20px;
+            border: 2px solid rgba(255,255,255,0.1);
+            box-shadow: inset 0 0 50px rgba(255,255,255,0.1), 0 0 30px rgba(0,0,0,1);
+        }
+        .droste-effect { display:flex; justify-content:center; align-items:center; height: 100px; border:1px solid rgba(255,255,255,0.3); border-radius:10px; margin-top:20px; font-size: 0.7em;}
+
+        /* --- MODE DIAL (SOCIALS) --- */
+        .social-dial-container {
+            position: fixed;
+            bottom: 30px; right: 30px;
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #1a1a1f, #0d0d12);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.8), inset 0px 2px 2px #333;
+            border: 2px dashed #444;
+            z-index: 200;
+            cursor: pointer;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; justify-content: center; align-items: center;
             pointer-events: auto;
-            transition: opacity 0.4s ease;
         }
 
-        /* Top-Left Header */
-        #header-hud {
-            top: 30px; left: 30px;
-            max-width: 400px;
-        }
-        h1 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 600; font-size: 2.2rem;
-            text-transform: uppercase; letter-spacing: 2px;
-            text-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
-            margin-bottom: 8px; color: #fff;
-        }
-        .subtitle { font-size: 1rem; color: #b0b0d0; margin-bottom: 16px; font-weight: 400; }
-        
-        .glitch-text {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem; color: #8080a0;
-            position: relative;
-        }
-        .glitch-text::before, .glitch-text::after {
-            content: attr(data-text); position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%; opacity: 0.8;
-        }
-        .glitch-text::before {
-            left: 2px; text-shadow: -1px 0 #ff00c1;
-            animation: glitch-anim-1 2s infinite linear alternate-reverse;
-        }
-        .glitch-text::after {
-            left: -2px; text-shadow: -1px 0 #00fff9;
-            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        .social-dial-container:hover { transform: rotate(90deg); border-color: var(--hud-color); }
+        .social-dial-container:hover .dial-center { background: var(--hud-color); color: #000; box-shadow: 0 0 10px var(--hud-color);}
+
+        .dial-center {
+            width: 30px; height: 30px; background: #111; border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            color: #fff; font-size: 10px; font-weight: bold; transition: all 0.2s;
         }
 
-        @keyframes glitch-anim-1 {
-            0% { clip: rect(20px, 9999px, 85px, 0); }
-            20% { clip: rect(60px, 9999px, 15px, 0); }
-            40% { clip: rect(10px, 9999px, 50px, 0); }
-            60% { clip: rect(80px, 9999px, 20px, 0); }
-            80% { clip: rect(30px, 9999px, 90px, 0); }
-            100% { clip: rect(50px, 9999px, 10px, 0); }
-        }
-        @keyframes glitch-anim-2 {
-            0% { clip: rect(10px, 9999px, 50px, 0); }
-            20% { clip: rect(40px, 9999px, 90px, 0); }
-            40% { clip: rect(80px, 9999px, 20px, 0); }
-            60% { clip: rect(20px, 9999px, 70px, 0); }
-            80% { clip: rect(90px, 9999px, 30px, 0); }
-            100% { clip: rect(5px, 9999px, 80px, 0); }
-        }
+        .social-icon { position: absolute; font-size: 14px; text-decoration: none; color: #aaa; transition:color 0.2s; display: flex; justify-content:center; align-items:center; width: 24px; height: 24px;}
+        .social-icon:hover { color: #fff; }
+        .si-gh { top: 5px; left: 50%; transform: translateX(-50%) rotate(0deg); }
+        .si-li { right: 5px; top: 50%; transform: translateY(-50%) rotate(-90deg); }
+        .si-fb { bottom: 5px; left: 50%; transform: translateX(-50%) rotate(-180deg); }
+        /* Compensate icon rotation so they are upright to user when dial rotates natively */
+        .social-dial-container:hover .si-gh { transform: translateX(-50%) rotate(-90deg); }
+        .social-dial-container:hover .si-li { transform: translateY(-50%) rotate(-180deg); }
+        .social-dial-container:hover .si-fb { transform: translateX(-50%) rotate(-270deg); }
 
-        /* Top-Right Comms Array */
-        #comms-hud {
-            top: 30px; right: 30px;
-            display: flex; gap: 20px; align-items: center;
-            position: relative;
-        }
-        .social-link {
-            width: 24px; height: 24px; fill: var(--stardust);
-            transition: fill 0.3s, transform 0.3s; z-index: 2;
-        }
-        .social-link:hover { fill: var(--neon-blue); transform: scale(1.1); }
-        
-        .constellation-lines {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 1;
-        }
-        .constellation-lines path {
-            stroke: var(--neon-blue); stroke-width: 1.5;
-            stroke-opacity: 0; stroke-dasharray: 100; stroke-dashoffset: 100;
-            transition: all 0.5s ease;
-        }
-        #comms-hud:hover .constellation-lines path {
-            stroke-opacity: 0.6; stroke-dashoffset: 0;
-        }
+        .si-icon-svg { width: 100%; height: 100%; fill: currentColor; }
 
-        /* Bottom Footer */
-        #footer-hud {
-            bottom: 30px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 40px; font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem; padding: 12px 24px;
+        /* Instruction Overlay */
+        #scroll-instruction {
+            position: fixed;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 1.2rem;
+            color: rgba(255,255,255,0.5);
+            pointer-events: none;
+            animation: pulse-op 2s infinite alternate;
+            z-index: 10;
         }
-        .telemetry-label { color: #606080; }
-        .telemetry-value { color: var(--stardust); }
-        .glow-text { color: var(--neon-green); text-shadow: 0 0 8px rgba(0,255,136,0.6); }
+        @keyframes pulse-op { 0% {opacity: 0.1;} 100% {opacity: 0.8;} }
 
-        /* Project Modals */
-        #modal-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; display: flex; align-items: center; justify-content: flex-end;
-            padding: 50px; z-index: 20;
-        }
-        .project-modal {
-            background: linear-gradient(135deg, rgba(20,20,35,0.85) 0%, rgba(10,10,20,0.95) 100%);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            width: 450px; border-radius: 16px; padding: 40px;
-            opacity: 0; transform: translateX(50px); pointer-events: none;
-            transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-            position: absolute; right: 50px; display: none;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
-        }
-        .project-modal.active {
-            opacity: 1; transform: translateX(0); pointer-events: auto; display: block;
-        }
-        .modal-title { font-family: 'Space Grotesk', sans-serif; font-size: 2rem; margin-bottom: 12px; color: #fff; }
-        .modal-desc { line-height: 1.6; color: #a0a0c0; margin-bottom: 24px; font-size: 0.95rem; }
-        
-        .btn-group { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
-        .btn {
-            display: inline-flex; align-items: center; justify-content: center;
-            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 0.85rem;
-            text-decoration: none; transition: all 0.3s; font-family: 'JetBrains Mono', monospace; cursor: pointer;
-        }
-        .btn:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--neon-blue); box-shadow: 0 0 15px rgba(0, 243, 255, 0.2); }
-        .btn.primary { background: rgba(0, 243, 255, 0.1); border-color: var(--neon-blue); color: var(--neon-blue); }
-        .btn.primary:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 20px var(--neon-blue); }
-        
-        .close-modal {
-            position: absolute; top: 20px; right: 20px;
-            background: none; border: none; color: #888; font-size: 1.5rem; cursor: pointer; transition: color 0.3s;
-        }
-        .close-modal:hover { color: #fff; }
-
-        .hidden-ui { opacity: 0 !important; pointer-events: none !important; }
-
-        /* Badge Links (Ahuzat Dibuk specific) */
-        .press-badges { display: flex; gap: 10px; margin-top: 15px; }
-        .badge { padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; text-decoration: none; font-weight: bold; }
-        .badge-13 { background: #E60000; color: #fff; }
-        .badge-mako { background: #0066FF; color: #fff; }
-        .badge-fb { background: #1877F2; color: #fff; }
     </style>
 </head>
 <body>
 
-    <!-- HUD Overlay Layers -->
-    <div id="header-hud" class="hud">
-        <h1>Geva Kipper</h1>
-        <div class="subtitle">Software Engineer currently building the future at Google.</div>
-        <div class="glitch-text" data-text="This universe is reborn daily: re-designed by AI, ever-changing, never static.">
-            This universe is reborn daily: re-designed by AI, ever-changing, never static.
-        </div>
-    </div>
+    <div class="void-background"></div>
+    <div class="lens-flare flare-1"></div>
+    <div class="lens-flare flare-2"></div>
 
-    <!-- Comms Array (Box 8) -->
-    <div id="comms-hud" class="hud">
-        <svg class="constellation-lines" viewBox="0 0 100 40">
-            <path d="M 12 20 L 50 20 L 88 20" fill="none" />
-        </svg>
-        <a href="https://github.com/gevak" target="_blank" aria-label="GitHub">
-            <svg class="social-link" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-        </a>
-        <a href="https://linkedin.com/in/gevakip" target="_blank" aria-label="LinkedIn">
-            <svg class="social-link" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-        </a>
-        <a href="https://facebook.com/geva.kipper" target="_blank" aria-label="Facebook">
-            <svg class="social-link" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
-        </a>
-    </div>
+    <!-- Aperture SVG Animation -->
+    <svg id="aperture-overlay" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <style>
+                .blade { fill: transparent; stroke: rgba(255,255,255,0.3); stroke-width: 0.5; transition: transform 0.1s linear; }
+            </style>
+        </defs>
+        <g id="aperture-group" transform="translate(50, 50)">
+            <!-- Blades defined in JS -->
+        </g>
+    </svg>
 
-    <!-- Telemetry Footer -->
-    <div id="footer-hud" class="hud">
-        <div>
-            <span class="telemetry-label">Architect: </span>
-            <span class="telemetry-value">Claude (AI Generated & Curated)</span>
-        </div>
-        <div>
-            <span class="telemetry-label">Epoch Runtime: </span>
-            <span id="epoch-timer" class="glow-text">00:00:00</span>
-        </div>
-    </div>
-
-    <!-- Modals Container -->
-    <div id="modal-container">
+    <div class="hud-layer">
+        <!-- Lines -->
+        <div class="grid-line grid-v1"></div>
+        <div class="grid-line grid-v2"></div>
+        <div class="grid-line grid-h1"></div>
+        <div class="grid-line grid-h2"></div>
         
-        <!-- P1: GlglStats -->
-        <div id="modal-p1" class="project-modal">
-            <button class="close-modal">×</button>
-            <h2 class="modal-title">GlglStats</h2>
-            <div class="modal-desc">An extensive analytical dive into the pop-chart patterns of Israeli radio. Powered by Python and harnessing LZ77 compression algorithms to visualize song repetition and algorithmic curated aesthetics.</div>
-            <div class="btn-group">
-                <a href="https://glglstats.geekip.dev" target="_blank" class="btn primary">Launch App</a>
-                <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn">► PyData TLV Talk</a>
-            </div>
-        </div>
+        <!-- Reticle -->
+        <div class="crosshair-center"></div>
+        <div class="corner c-tl"></div><div class="corner c-tr"></div>
+        <div class="corner c-bl"></div><div class="corner c-br"></div>
 
-        <!-- P2: Ahuzat Dibuk -->
-        <div id="modal-p2" class="project-modal">
-            <button class="close-modal">×</button>
-            <h2 class="modal-title">Ahuzat Dibuk</h2>
-            <div class="modal-desc">A deep-dive data visualization scraping project mapping Tel Aviv's parking density and chaos. The resulting heat-maps sparked widespread domestic media coverage.</div>
-            <div class="telemetry-label" style="margin-bottom: 8px;">Press Coverage:</div>
-            <div class="press-badges">
-                <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="badge badge-13">Channel 13</a>
-                <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="badge badge-mako">Mako News</a>
-                <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" class="badge badge-fb">Secret Tel-Aviv</a>
-            </div>
-        </div>
+        <header>
+            <div class="auto-iso">AUTO-AF / AI-SERVO</div>
+            <h1>GEVA KIPPER</h1>
+            <p>Currently building the future of software at Google.</p>
+            <div class="subtitle">ENVIRONMENT STATUS: Re-designed each day by AI. Lighting, focus, and structure are ever-changing.</div>
+        </header>
 
-        <!-- P3: 2D Part Orienting -->
-        <div id="modal-p3" class="project-modal">
-            <button class="close-modal">×</button>
-            <h2 class="modal-title">2D Part Orienting</h2>
-            <div class="modal-desc">Low-level computational geometry engineering. Implements advanced C++ algorithms for push-plan manipulation of wireframe polygons. Developed at Tel-Aviv University.</div>
-            <div class="btn-group">
-                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn primary">View Docs & Code</a>
+        <footer>
+            <div>OPTICS & DESIGN RENDERED BY AI</div>
+            <div class="rec-timer">
+                <div class="red-dot"></div>
+                T+ <span id="stopwatch">00:00:00:000</span>
             </div>
-        </div>
-
-        <!-- P4: The Turing Jest -->
-        <div id="modal-p4" class="project-modal">
-            <button class="close-modal">×</button>
-            <h2 class="modal-title">The Turing Jest</h2>
-            <div class="modal-desc">An LMSYS-style battleground. Large Language Models are pitted against each other in a duel of humor. Who writes the best puns? You be the judge.</div>
-            <div class="btn-group">
-                <a href="https://jest.geekip.dev" target="_blank" class="btn primary" style="box-shadow: 0 0 10px rgba(255,100,100,0.5); border-color: #ff6464; color: #ff6464; background: rgba(255,100,100,0.1)">Enter the Arena</a>
-            </div>
-        </div>
-
-        <!-- P5: Rhymes of Israel -->
-        <div id="modal-p5" class="project-modal">
-            <button class="close-modal">×</button>
-            <h2 class="modal-title">Rhymes of Israel</h2>
-            <div class="modal-desc">A highschool yearbook aesthetic meets modern LLMs. A Chrome Extension that translates daily news headlines into eloquent, rhyming verses directly in your browser.</div>
-            <div class="btn-group">
-                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn primary">
-                    <svg style="width:16px; margin-right:8px; fill:currentColor" viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 18c-3.314 0-6-2.686-6-6s2.686-6 6-6 6 2.686 6 6-2.686 6-6 6zM9 12c0-1.657 1.343-3 3-3s3 1.343 3 3-1.343 3-3 3-3-1.343-3-3z"/></svg>
-                    Install Extension
-                </a>
-            </div>
-        </div>
-
-        <!-- P6: Hatul Basak -->
-        <div id="modal-p6" class="project-modal">
-            <button class="close-modal">×</button>
-            <h2 class="modal-title">Hatul Basak</h2>
-            <div class="modal-desc">The Hebrew trivia port tracing intricate web-paths through Wikipedia. Jump between interconnected subject nodes with AI-curated daily challenges and user-generated theme puzzles.</div>
-            <div class="btn-group">
-                <a href="https://hatulbasak.geekip.dev" target="_blank" class="btn primary">Play Daily Challenge</a>
-                <a href="https://hatulbasak.geekip.dev" target="_blank" class="btn">Create Puzzle</a>
-            </div>
-        </div>
-
-        <!-- P7: Portfolio -->
-        <div id="modal-p7" class="project-modal">
-            <button class="close-modal">×</button>
-            <h2 class="modal-title">GeekIP.dev (Meta)</h2>
-            <div class="modal-desc">A self-referential paradox. You are currently interacting with this digital planetarium, gazing into a supermassive reflection of your own navigation. It's single-file, AI-curated, and infinite.</div>
-            <div class="btn-group">
-                <a href="https://geekip.dev" class="btn primary">Initiate Infinite Loop</a>
-            </div>
-        </div>
-
+        </footer>
     </div>
 
-    <!-- WebGL-Style Canvas Layer -->
-    <canvas id="universe"></canvas>
+    <div id="scroll-instruction">[ SCROLL TO FOCUS ]</div>
 
+    <!-- Projects Track -->
+    <div id="focus-track">
+        
+        <div class="project-item glgl" data-depth="0">
+            <div class="project-content">
+                <h2 class="title">GlglStats</h2>
+                <p class="desc">Algorithmic analysis of LZ77 repetitiveness in Israeli pop-charts over the years. A graphical audio-waveform deep dive.</p>
+                <iframe src="https://www.youtube.com/embed/jrKAtOsj1Lo?controls=0" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+                <a href="https://glglstats.geekip.dev" target="_blank" class="link-btn">Access Analysis</a>
+            </div>
+        </div>
+
+        <div class="project-item ahuzat" data-depth="1500">
+            <div class="project-content">
+                <h2 class="title">Ahuzat Dibuk</h2>
+                <p class="desc">Thermal imaging styled visualization exposing TLV parking heat-maps. Tracking real-time congestion algorithms.</p>
+                <div class="radar-grid">
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="radar-target">Channel 13</a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="radar-target">Mako</a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" class="radar-target">Secret TLV</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="project-item part-orienting" data-depth="3000">
+            <div class="project-content">
+                <h2 class="title">2D Part Orienting</h2>
+                <p class="desc">Computational geometry in sharp C++ wireframes. Resolving n-sided solid polygons through predictive physical modeling.</p>
+                <div class="wireframe-geo">&lt; CGAL / C++ Blueprint Engine &gt;</div>
+                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="link-btn">TAU Project Repository</a>
+            </div>
+        </div>
+
+        <div class="project-item jest" data-depth="4500">
+            <div class="project-content">
+                <h2 class="title">The Turing Jest</h2>
+                <p class="desc">Dual-pixel autofocus interface computing LMSYS-style LLM pun warfare. Blind A/B combat evaluation.</p>
+                <div class="dual-pixel">
+                    <div class="jest-node a">Model_Alpha<br/><br/>[Node Active]</div>
+                    <a href="https://jest.geekip.dev" target="_blank" class="link-btn jest-vote">VOTE</a>
+                    <div class="jest-node b">Model_Beta<br/><br/>[Node Active]</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="project-item rhymes" data-depth="6000">
+            <div class="project-content">
+                <h2 class="title">Rhymes of Israel</h2>
+                <p class="desc">An anomalous retro-Polaroid suspended in the lens tube. Generates Israeli highschool yearbook styles over news tickers.</p>
+                <div class="marquee"><span>NEWS TICKER: Local developers build humorous extensions to intercept browsing... Data feeds injected...</span></div>
+                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="link-btn">Download from Webstore</a>
+            </div>
+        </div>
+
+        <div class="project-item hatul" data-depth="7500">
+            <div class="project-content">
+                <div class="node-network"></div>
+                <h2 class="title">Hatul Basak</h2>
+                <p class="desc">Interconnected logic nodes. An AI-generated trivia port exploring obscure data structures and catfishing patterns.</p>
+                <a href="https://hatulbasak.geekip.dev" target="_blank" class="link-btn" style="position:relative; z-index:2; margin: 20px auto 0 auto; display:block; text-align:center;">Initiate Node Connection</a>
+            </div>
+        </div>
+
+        <div class="project-item meta" data-depth="9000">
+            <div class="project-content">
+                <h2 class="title">The Meta Portfolio</h2>
+                <p class="desc">Droste reflection active. Self-referential lens reflecting the UI structure back upon the observer.</p>
+                <div class="droste-effect">
+                    [ // RECURSIVE DOM RENDERING // ]
+                </div>
+                <a href="https://geekip.dev" target="_blank" class="link-btn">geekip.dev</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mode Dial -->
+    <div class="social-dial-container" title="Social Mode Dial">
+        <a href="https://github.com/gevak" target="_blank" class="social-icon si-gh">
+            <svg class="si-icon-svg" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.332-5.467-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        </a>
+        <a href="https://linkedin.com/in/gevakip" target="_blank" class="social-icon si-li">
+            <svg class="si-icon-svg" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+        </a>
+        <a href="https://facebook.com/geva.kipper" target="_blank" class="social-icon si-fb">
+            <svg class="si-icon-svg" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+        </a>
+        <div class="dial-center">DIAL</div>
+    </div>
+
+    <!-- Scripts -->
     <script>
-        /**
-         * ENGINE SETUP
-         */
-        const canvas = document.getElementById('universe');
-        const ctx = canvas.getContext('2d', { alpha: false });
-        let w, h;
-        
-        // Time & Loop
-        let time = 0;
-        
-        // Camera/View state
-        const cam = { x: 0, y: 0, zoom: 0.6, tX: 0, tY: 0, tZoom: 0.6 };
-        
-        // Interaction state
-        let isDragging = false;
-        let pMouse = { x: 0, y: 0 };
-        let selectedProject = null;
-
-        /**
-         * STOPWATCH LOGIC
-         * Anchor: 2026-06-28 02:48:10 UTC
-         */
-        const anchorDate = new Date('2026-06-28T02:48:10Z').getTime();
-        const timerEl = document.getElementById('epoch-timer');
-        
-        function updateTelemetry() {
-            const now = Date.now();
-            let diff = Math.floor(Math.abs(now - anchorDate) / 1000);
-            
-            const h = String(Math.floor(diff / 3600)).padStart(2, '0');
-            const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-            const s = String(diff % 60).padStart(2, '0');
-            
-            timerEl.innerText = `${h}:${m}:${s}`;
-        }
-        setInterval(updateTelemetry, 1000);
-        updateTelemetry();
-
-        /**
-         * DOM & MODAL LOGIC
-         */
-        const huds = document.querySelectorAll('.hud');
-        function openModal(id) {
-            huds.forEach(hud => hud.classList.add('hidden-ui'));
-            document.getElementById(`modal-${id}`).classList.add('active');
-            selectedProject = id;
+        /** AUDIO CONTEXT FOR FOCUS CLICK RING **/
+        let audioCtx;
+        function playClickSound() {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(600, audioCtx.currentTime); // High pitch click
+                oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.02);
+                
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime); // Low volume
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.02);
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.02);
+            } catch (e) { /* Ignore audio context errors before user interaction */ }
         }
 
-        function closeModal() {
-            if(!selectedProject) return;
-            document.getElementById(`modal-${selectedProject}`).classList.remove('active');
-            huds.forEach(hud => hud.classList.remove('hidden-ui'));
-            cam.tZoom = 0.6; // reset zoom
-            selectedProject = null;
+        /** APERTURE SVG GENERATOR **/
+        const apertureGroup = document.getElementById('aperture-group');
+        const numBlades = 8;
+        const blades = [];
+        
+        for(let i=0; i<numBlades; i++) {
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            // Draw a polygon for a blade
+            path.setAttribute("d", "M 10,-30 L 40,-40 L 40,40 Z");
+            path.setAttribute("class", "blade");
+            const angle = (i * 360) / numBlades;
+            path.style.transformOrigin = "0 0";
+            path.style.transform = `rotate(${angle}deg) translate(20px, 0)`;
+            apertureGroup.appendChild(path);
+            blades.push({ el: path, baseAngle: angle });
         }
 
-        document.querySelectorAll('.close-modal').forEach(btn => {
-            btn.addEventListener('click', closeModal);
-        });
-
-        /**
-         * UNIVERSE GENERATION (STARS & PROJECTS)
-         */
-        const bgStars = [];
-        for(let i=0; i<1500; i++) {
-            bgStars.push({
-                x: (Math.random() - 0.5) * 6000,
-                y: (Math.random() - 0.5) * 6000,
-                z: Math.random() * 2 + 0.1, // Parallax depth
-                size: Math.random() * 1.5,
-                alpha: Math.random()
+        function updateApertureAnimation(speed) {
+            // Adjust aperture blades based on scroll speed
+            const contraction = Math.min(15, Math.abs(speed));
+            blades.forEach(b => {
+                b.el.style.transform = `rotate(${b.baseAngle}deg) translate(${20 - contraction}px, 0)`;
             });
         }
 
-        // The 7 Project "Stars" Layout
-        const projects = [
-            { id: 'p1', x: -600,  y: -200, r: 40, type: 'sonic' },       // GlglStats
-            { id: 'p2', x: 200,   y: -500, r: 50, type: 'thermal' },     // Ahuzat Dibuk
-            { id: 'p3', x: 700,   y: 100,  r: 45, type: 'poly' },        // 2D Part Orienting
-            { id: 'p4', x: 300,   y: 600,  r: 35, type: 'twin' },        // Turing Jest
-            { id: 'p5', x: -700,  y: 500,  r: 30, type: 'comet' },       // Rhymes of Israel
-            { id: 'p6', x: -100,  y: 200,  r: 40, type: 'nodes' },       // Hatul Basak
-            { id: 'p7', x: 0,     y: -100, r: 60, type: 'blackhole' }    // Portfolio
-        ];
 
-        // Store comet trail globally so it persists frames
-        const cometTrail = [];
+        /** SCROLL OVERLAY LOGIC (DOF / BLUR) **/
+        const items = document.querySelectorAll('.project-item');
+        const instruction = document.getElementById('scroll-instruction');
+        const projectsData = Array.from(items).map(el => {
+            return { el: el, depth: parseFloat(el.getAttribute('data-depth')) };
+        });
 
-        /**
-         * RENDER FUNCTIONS FOR SPECIFIC STARS
-         */
-        function drawSonic(ctx, x, y, r, t) {
-            ctx.strokeStyle = `rgba(0, 243, 255, 0.6)`;
-            ctx.fillStyle = `#00f3ff`;
-            ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI*2); ctx.fill();
-            for(let i=1; i<=3; i++) {
-                let radius = (this.time/20 + i*15) % 60;
-                let alpha = 1 - (radius/60);
-                ctx.strokeStyle = `rgba(0, 243, 255, ${alpha})`;
-                ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI*2); ctx.stroke();
-            }
-        }
+        let targetFocusDist = 0;
+        let currentFocusDist = 0;
+        const maxDepth = 9500;
+        const depthOfField = 1000; // How "thick" the area of sharp focus is
+        let lastSpeed = 0;
 
-        function drawThermal(ctx, x, y, r, t) {
-            let pulse = Math.sin(t/30) * 10;
-            let grad = ctx.createRadialGradient(x, y, 5, x, y, r + pulse);
-            grad.addColorStop(0, '#fff');
-            grad.addColorStop(0.2, '#ff3300');
-            grad.addColorStop(0.6, '#ffaa00');
-            grad.addColorStop(1, 'transparent');
-            ctx.fillStyle = grad;
-            ctx.beginPath(); ctx.arc(x, y, r+pulse, 0, Math.PI*2); ctx.fill();
-        }
+        // Interaction (Scroll / Touch)
+        window.addEventListener('wheel', (e) => {
+            targetFocusDist += e.deltaY * 3; // Scroll sensitivity
+            targetFocusDist = Math.max(-500, Math.min(targetFocusDist, maxDepth));
+            playClickSound();
+            if(instruction) instruction.style.display = 'none';
+        }, {passive: true});
 
-        function drawPoly(ctx, x, y, r, t) {
-            ctx.strokeStyle = '#00ff88';
-            ctx.lineWidth = 1.5;
-            let rot = t/50;
-            for(let i=0; i<3; i++) {
-                ctx.beginPath();
-                for(let j=0; j<5; j++) {
-                    let angle = rot + (j * Math.PI*2 / 5) + (i*0.5);
-                    let px = x + Math.cos(angle) * (r - i*10);
-                    let py = y + Math.sin(angle) * (r - i*10);
-                    if(j===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        // Touch support for mobiles
+        let touchStart = 0;
+        window.addEventListener('touchstart', e => touchStart = e.touches[0].clientY, {passive: true});
+        window.addEventListener('touchmove', e => {
+            const touchY = e.touches[0].clientY;
+            const delta = touchStart - touchY;
+            targetFocusDist += delta * 15; // Touch multiplier
+            targetFocusDist = Math.max(-500, Math.min(targetFocusDist, maxDepth));
+            touchStart = touchY;
+            if(instruction) instruction.style.display = 'none';
+        }, {passive: true});
+
+
+        // Animation Loop
+        function animateFrame() {
+            // Ease towards target
+            const ease = 0.1;
+            const distDiff = targetFocusDist - currentFocusDist;
+            currentFocusDist += distDiff * ease;
+            
+            // Calculate scroll speed for aperture animation
+            lastSpeed += (distDiff - lastSpeed) * 0.1;
+            updateApertureAnimation(lastSpeed);
+
+            // Update DOM Elements
+            projectsData.forEach(p => {
+                const distanceToFocus = Math.abs(p.depth - currentFocusDist);
+                
+                // Opacity & Pointer Events
+                const fadeDistance = depthOfField * 1.5;
+                if (distanceToFocus > fadeDistance) {
+                    p.el.style.opacity = 0;
+                    p.el.style.pointerEvents = 'none';
+                    p.el.classList.remove('focused');
+                    return; // Skip calculating filter if invisible
                 }
-                ctx.closePath();
-                ctx.stroke();
-            }
-        }
 
-        function drawTwin(ctx, x, y, r, t) {
-            let angle = t/30;
-            let dist = 25;
-            ctx.fillStyle = '#ff6464';
-            ctx.shadowColor = '#ff6464'; ctx.shadowBlur = 20;
-            
-            // Star 1
-            let x1 = x + Math.cos(angle)*dist; let y1 = y + Math.sin(angle)*dist;
-            ctx.beginPath(); ctx.arc(x1, y1, 12, 0, Math.PI*2); ctx.fill();
-            
-            // Star 2
-            let x2 = x + Math.cos(angle + Math.PI)*dist; let y2 = y + Math.sin(angle + Math.PI)*dist;
-            ctx.fillStyle = '#6464ff'; ctx.shadowColor = '#6464ff';
-            ctx.beginPath(); ctx.arc(x2, y2, 12, 0, Math.PI*2); ctx.fill();
-            
-            ctx.shadowBlur = 0; // reset
-        }
-
-        function drawComet(ctx, x, y, r, t) {
-            // Comet movement in local relative space
-            let cx = x + Math.sin(t/40) * 80;
-            let cy = y + Math.cos(t/60) * 50;
-            
-            cometTrail.push({x:cx, y:cy, a:1});
-            if(cometTrail.length > 40) cometTrail.shift();
-            
-            ctx.lineCap = 'round';
-            for(let i=1; i<cometTrail.length; i++) {
-                ctx.beginPath();
-                ctx.moveTo(cometTrail[i-1].x, cometTrail[i-1].y);
-                ctx.lineTo(cometTrail[i].x, cometTrail[i].y);
-                ctx.lineWidth = (i/40) * 15;
-                ctx.strokeStyle = `rgba(255, 200, 255, ${i/40})`;
-                ctx.stroke();
-            }
-            ctx.fillStyle = '#fff';
-            ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI*2); ctx.fill();
-        }
-
-        function drawNodes(ctx, x, y, r, t) {
-            ctx.fillStyle = '#aa00ff'; ctx.strokeStyle = 'rgba(170, 0, 255, 0.5)';
-            ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI*2); ctx.fill();
-            
-            for(let i=0; i<6; i++) {
-                let angle = (t/100) + (i * Math.PI*2 / 6);
-                let p = Math.sin((t+i*20)/30) * 10;
-                let nx = x + Math.cos(angle) * (r + p);
-                let ny = y + Math.sin(angle) * (r + p);
+                // Blur logic: The further from focus plane, the blurrier.
+                // Subtract a grace area so it stays sharp near the exact center.
+                const blurAmount = Math.max(0, (distanceToFocus - 150) * 0.015);
                 
-                ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(nx, ny); ctx.stroke();
-                ctx.beginPath(); ctx.arc(nx, ny, 4, 0, Math.PI*2); ctx.fill();
-            }
-        }
-
-        function drawBlackhole(ctx, x, y, r, t) {
-            // Accretion disk
-            ctx.save();
-            ctx.translate(x,y);
-            ctx.scale(1, 0.4);
-            let rot = t/20;
-            ctx.rotate(rot);
-            let grad = ctx.createRadialGradient(0,0, r*0.8, 0,0, r*2);
-            grad.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
-            grad.addColorStop(0.2, 'rgba(100, 150, 255, 0.4)');
-            grad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = grad;
-            ctx.beginPath(); ctx.arc(0,0, r*2, 0, Math.PI*2); ctx.fill();
-            ctx.restore();
-            
-            // Event horizon
-            ctx.fillStyle = '#000';
-            ctx.shadowColor = '#fff'; ctx.shadowBlur = 10;
-            ctx.beginPath(); ctx.arc(x, y, r*0.8, 0, Math.PI*2); ctx.fill();
-            ctx.shadowBlur = 0;
-            
-            // Light warp ring
-            ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth=2;
-            ctx.beginPath(); ctx.arc(x, y, r*1.1 + Math.sin(t/10)*2, 0, Math.PI*2); ctx.stroke();
-        }
-
-        /**
-         * MAIN RENDER LOOP
-         */
-        function resize() {
-            w = canvas.width = window.innerWidth;
-            h = canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
-        function loop() {
-            time++;
-            
-            // Lerp Camera Smoothing
-            cam.x += (cam.tX - cam.x) * 0.05;
-            cam.y += (cam.tY - cam.y) * 0.05;
-            cam.zoom += (cam.tZoom - cam.zoom) * 0.05;
-
-            // Clear black
-            ctx.fillStyle = '#05050A';
-            ctx.fillRect(0, 0, w, h);
-
-            ctx.save();
-            // Center camera to screen, apply scaling and position
-            ctx.translate(w/2, h/2);
-            ctx.scale(cam.zoom, cam.zoom);
-            ctx.translate(-cam.x, -cam.y);
-
-            // 1. Draw Background Stars
-            for(let s of bgStars) {
-                // simple parallax based on camera pos
-                let px = s.x - (cam.x * (1/s.z - 1));
-                let py = s.y - (cam.y * (1/s.z - 1));
+                // Scale logic: Things further away are smaller, closer are larger.
+                const zDistance = p.depth - currentFocusDist;
+                // Base scale 1 when at focus. Farther = smaller, closer (behind camera) = massively large
+                let scale = 1 - (zDistance * 0.0003); 
                 
-                // Culling (optimization)
-                let margin = 200 / cam.zoom;
-                if(px < cam.x - w/2/cam.zoom - margin || px > cam.x + w/2/cam.zoom + margin || 
-                   py < cam.y - h/2/cam.zoom - margin || py > cam.y + h/2/cam.zoom + margin) continue;
+                // Bound the scale
+                if (scale < 0.2) scale = 0.2;
+                if (scale > 3) scale = 3;
 
-                let twinkle = Math.sin(time/20 + s.x) * 0.5 + 0.5;
-                ctx.fillStyle = `rgba(224, 224, 255, ${s.alpha * twinkle})`;
-                ctx.beginPath();
-                ctx.arc(px, py, s.size, 0, Math.PI*2);
-                ctx.fill();
-            }
+                // Opacity curve
+                let opacity = 1 - Math.max(0, (distanceToFocus - depthOfField * 0.5) / (depthOfField));
+                
+                p.el.style.display = 'block';
+                p.el.style.opacity = opacity;
+                p.el.style.transform = `translate(-50%, -50%) scale(${scale})`;
+                p.el.style.filter = `blur(${blurAmount}px)`;
+                p.el.style.zIndex = Math.round(100 - (distanceToFocus * 0.1));
 
-            // 2. Draw Project Objects
-            projects.forEach(p => {
-                window.time = time; // simple trick to pass time for sonic
-                switch(p.type) {
-                    case 'sonic': drawSonic(ctx, p.x, p.y, p.r, time); break;
-                    case 'thermal': drawThermal(ctx, p.x, p.y, p.r, time); break;
-                    case 'poly': drawPoly(ctx, p.x, p.y, p.r, time); break;
-                    case 'twin': drawTwin(ctx, p.x, p.y, p.r, time); break;
-                    case 'comet': drawComet(ctx, p.x, p.y, p.r, time); break;
-                    case 'nodes': drawNodes(ctx, p.x, p.y, p.r, time); break;
-                    case 'blackhole': drawBlackhole(ctx, p.x, p.y, p.r, time); break;
+                // Manage interaction layering
+                if (distanceToFocus < 200) {
+                    p.el.classList.add('focused');
+                } else {
+                    p.el.classList.remove('focused');
                 }
-                
-                // Interaction Hover hit-box debugging / invisible catch
-                // ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r*1.5, 0, Math.PI*2); ctx.stroke();
             });
 
-            ctx.restore();
-            requestAnimationFrame(loop);
+            requestAnimationFrame(animateFrame);
         }
 
-        /**
-         * INPUT HANDLING
-         */
-        canvas.addEventListener('mousedown', e => {
-            if(selectedProject) return; // Prevent drag if modal open
-            isDragging = true;
-            pMouse.x = e.clientX;
-            pMouse.y = e.clientY;
-        });
+        // Initialize frame loop
+        animateFrame();
 
-        window.addEventListener('mouseup', e => {
-            isDragging = false;
-        });
+        /** STOPWATCH TIMER **/
+        const stopwatchEl = document.getElementById('stopwatch');
+        // Goal: absolute difference elapsed since "2026-06-29 02:48:34"
+        const targetStamp = new Date("2026-06-29T02:48:34").getTime();
 
-        window.addEventListener('mousemove', e => {
-            if(isDragging && !selectedProject) {
-                let dx = e.clientX - pMouse.x;
-                let dy = e.clientY - pMouse.y;
-                cam.tX -= dx / cam.zoom;
-                cam.tY -= dy / cam.zoom;
-                pMouse.x = e.clientX;
-                pMouse.y = e.clientY;
-            }
-        });
+        function pad(num, size) {
+            let s = num + "";
+            while (s.length < size) s = "0" + s;
+            return s;
+        }
 
-        // Click detection
-        canvas.addEventListener('click', e => {
-            if(isDragging && (Math.abs(e.clientX - pMouse.x) > 5 || Math.abs(e.clientY - pMouse.y) > 5)) return; // Ignore drag end
+        setInterval(() => {
+            const now = new Date().getTime();
+            let duration = Math.abs(now - targetStamp); // Always positive
 
-            if(selectedProject) {
-                // If a modal is open, clicking canvas background closes it
-                closeModal();
-                return;
-            }
+            let ms = parseInt((duration % 1000));
+            let s = parseInt((duration / 1000) % 60);
+            let m = parseInt((duration / (1000 * 60)) % 60);
+            let h = parseInt((duration / (1000 * 60 * 60)));
 
-            // Convert screen click to world coordinates
-            let wx = (e.clientX - w/2) / cam.zoom + cam.x;
-            let wy = (e.clientY - h/2) / cam.zoom + cam.y;
-
-            // Check intersection with projects
-            for(let p of projects) {
-                let dist = Math.hypot(wx - p.x, wy - p.y);
-                if(dist < p.r * 2) {
-                    // Hit!
-                    cam.tX = p.x + 150; // Offset slightly left so modal doesn't cover it
-                    cam.tY = p.y;
-                    cam.tZoom = 1.3;
-                    openModal(p.id);
-                    break;
-                }
-            }
-        });
-        
-        // Wheel Zoom
-        canvas.addEventListener('wheel', e => {
-            if(selectedProject) return;
-            let zoomChange = e.deltaY * -0.001;
-            cam.tZoom = Math.max(0.2, Math.min(2.5, cam.tZoom + zoomChange));
-        });
-
-        // Start Matrix
-        requestAnimationFrame(loop);
+            stopwatchEl.innerText = `${pad(h,2)}:${pad(m,2)}:${pad(s,2)}:${pad(ms,3)}`;
+        }, 47); // ~21fps update for millisecond appearance
 
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260628",
+          pageId: "20260629",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
