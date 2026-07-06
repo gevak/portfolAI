@@ -1,678 +1,699 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Geva Kipper - AI Generated Portfolio</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Geva Kipper | Autonomous Portfolio ZUI</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Inter:wght@300;400;600&family=Fira+Code:wght@400;600&display=swap');
+
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.15);
-            --neon-cyan: #00ffff;
-            --space-bg-1: #2a2a40;
-            --space-bg-2: #05050a;
+            --obsidian: #050508;
+            --glass-bg: rgba(15, 15, 20, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --font-heading: 'Space Grotesk', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+            /* Neon colors are dynamically set by JS */
+            --neon-rgb: 0, 255, 150; 
+            --neon: rgb(var(--neon-rgb));
         }
 
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background: radial-gradient(circle at center, var(--space-bg-1) 0%, var(--space-bg-2) 100%);
-            font-family: 'Space Grotesk', sans-serif;
-            color: white;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
             user-select: none;
         }
 
-        #canvas-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--obsidian);
+            color: #ffffff;
+            font-family: var(--font-body);
+            touch-action: none;
         }
 
-        /* Glassmorphic UI Layer */
-        .hud {
-            position: absolute; z-index: 10; pointer-events: none;
-            display: flex; flex-direction: column;
+        /* WebGL Background */
+        #webgl-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
         }
 
-        .glass-panel {
+        /* ZUI Transformation Layer */
+        #zui-viewport {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            overflow: hidden;
+        }
+
+        #zui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: 0 0;
+            will-change: transform;
+            /* Initial state to be overridden by JS */
+            transform: matrix(0.1, 0, 0, 0.1, 500, 300);
+        }
+
+        /* Glassmorphism Cards (Spatial Nodes) */
+        .node {
+            position: absolute;
             background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--glass-border);
-            border-radius: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(var(--neon-rgb), 0.3);
+            border-radius: 20px;
+            padding: 2.5rem;
+            width: 450px;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            /* Allow internal interactions like clicking */
             pointer-events: auto;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            user-select: auto;
         }
 
-        #top-left {
-            top: 2rem; left: 2rem; padding: 1.5rem; max-width: 450px;
+        /* Generic element styling inside nodes */
+        h3 {
+            font-family: var(--font-heading);
+            font-size: 1.8rem;
+            color: var(--neon);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
         }
 
-        #top-left h1 {
-            margin: 0 0 0.5rem 0; font-size: 2.2rem; font-weight: 700;
-            text-shadow: 0 0 15px rgba(255, 255, 255, 0.8); letter-spacing: -1px;
+        p {
+            line-height: 1.6;
+            font-weight: 300;
         }
 
-        #top-left h2 {
-            margin: 0 0 1rem 0; font-size: 1rem; font-weight: 400; opacity: 0.9;
+        a.btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(var(--neon-rgb), 0.15);
+            color: #fff;
+            border: 1px solid var(--neon);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-family: var(--font-heading);
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+            cursor: pointer;
         }
 
-        #top-left p {
-            margin: 0; font-family: 'Roboto Mono', monospace; font-size: 0.75rem;
-            color: #aaa; line-height: 1.4;
+        a.btn:hover {
+            background: var(--neon);
+            color: var(--obsidian);
+            box-shadow: 0 0 20px rgba(var(--neon-rgb), 0.6);
         }
 
-        #bottom-center {
-            bottom: 2rem; left: 50%; transform: translateX(-50%);
-            padding: 0.8rem 1.5rem; border-radius: 50px;
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;
+        /* Specific Nodes Styling */
+        .node-1 .soundwave {
+            height: 40px;
+            width: 100%;
+            background: repeating-linear-gradient(90deg, 
+                var(--neon) 0%, var(--neon) 2px, 
+                transparent 2px, transparent 8px);
+            opacity: 0.7;
+            mask-image: linear-gradient(to bottom, black, transparent);
+            -webkit-mask-image: linear-gradient(to bottom, black, transparent);
         }
 
-        .footer-text { font-size: 0.85rem; color: #ccc; }
-        
-        .stopwatch {
-            font-family: 'Roboto Mono', monospace; font-weight: 700;
-            color: var(--neon-cyan); letter-spacing: 1px;
-            text-shadow: 0 0 8px var(--neon-cyan), 0 0 15px var(--neon-cyan);
+        .node-1 iframe {
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            width: 100%;
+            height: 200px;
+            margin-top: 1rem;
+            pointer-events: auto;
         }
 
-        /* Modal / Expanded Content */
-        #modal-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
-            z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
-            display: flex; align-items: center; justify-content: center;
-        }
-        #modal-overlay.active { opacity: 1; pointer-events: auto; }
-
-        .modal-content {
-            background: rgba(20, 20, 30, 0.85); border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 3rem; border-radius: 20px; max-width: 600px; width: 90%;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            transform: scale(0.9) translateY(20px); transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-            opacity: 0; display: none;
-        }
-        
-        #modal-overlay.active .modal-content {
-            transform: scale(1) translateY(0); opacity: 1; display: block;
+        .node-2 .badges {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
 
-        .close-btn {
-            position: absolute; top: 20px; right: 25px; cursor: pointer;
-            font-size: 2rem; color: white; opacity: 0.5; transition: 0.3s;
-            font-family: 'Space Grotesk', sans-serif;
-            background: none; border: none; padding: 0;
+        .node-2 .badge {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #ccc;
+            text-decoration: none;
+            transition: 0.2s;
         }
-        .close-btn:hover { opacity: 1; transform: scale(1.1); }
-
-        .modal-title { font-size: 2.5rem; margin-top: 0; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.4); }
-        .modal-desc { font-size: 1.1rem; line-height: 1.6; color: #ddd; margin-bottom: 2rem; }
-
-        .btn-group { display: flex; gap: 15px; flex-wrap: wrap; }
-        .btn {
-            display: inline-flex; align-items: center; justify-content: center;
-            padding: 12px 24px; border-radius: 30px; font-weight: bold; text-decoration: none;
-            color: white; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            transition: 0.3s; cursor: pointer; gap: 8px;
+        .node-2 .badge:hover {
+            border-color: var(--neon);
+            color: #fff;
         }
-        .btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        .btn-primary { background: #fff; color: #000; }
-        .btn-primary:hover { background: #eee; }
 
-        @media (max-width: 768px) {
-            #top-left { top: 1rem; left: 1rem; right: 1rem; width: auto; max-width: none; }
-            #bottom-center { bottom: 1rem; width: 90%; text-align: center; }
-            .modal-content { padding: 2rem; }
-            .modal-title { font-size: 1.8rem; }
+        .node-3 {
+            font-family: var(--font-mono);
+            background: rgba(5,5,10,0.8);
+        }
+        .node-3 h3 { font-family: var(--font-mono); text-transform: lowercase; }
+        .node-3 h3::before { content: '~/projects/'; color: #666; }
+        .terminal-link {
+            display: block;
+            color: var(--neon);
+            text-decoration: none;
+            margin-top: 1rem;
+            border-top: 1px dashed #333;
+            padding-top: 1rem;
+        }
+        .terminal-link::before { content: '$ ./run_link '; color: #fff; }
+
+        .node-5 {
+            background: linear-gradient(135deg, rgba(200, 200, 200, 0.1), rgba(50, 50, 50, 0.4)); 
+            border-right: 5px solid var(--neon);
+        }
+
+        /* Droste Node */
+        .node-7 {
+            align-items: center;
+            text-align: center;
+        }
+        .droste-frame {
+            width: 100%;
+            height: 150px;
+            border: 1px solid var(--neon);
+            position: relative;
+            background: var(--obsidian);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .droste-frame::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 20px; height: 30px;
+            background: var(--glass-bg);
+            border: 1px solid var(--neon);
+            transform: translate(-50%, -50%);
+        }
+
+        /* Outer Ring */
+        .node-8 {
+            flex-direction: row;
+            width: auto;
+            border-radius: 50px;
+            padding: 1.5rem 3rem;
+            gap: 3rem;
+        }
+        .node-8 a {
+            color: white;
+            text-decoration: none;
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            transition: color 0.3s;
+        }
+        .node-8 a:hover { color: var(--neon); }
+
+        /* Easter Eggs */
+        .easter-egg {
+            position: absolute;
+            font-family: var(--font-mono);
+            color: rgba(255,255,255,0.7);
+            font-size: 24px;
+            white-space: nowrap;
+            pointer-events: none;
+            text-shadow: 0 0 10px var(--neon);
+        }
+
+        /* HUD & Fixed Interfaces */
+        .hud {
+            position: fixed;
+            top: 30px;
+            left: 40px;
+            z-index: 100;
+            pointer-events: none;
+            max-width: 500px;
+        }
+
+        .hud h1 {
+            font-family: var(--font-heading);
+            font-size: 3.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+        }
+
+        .hud h2 {
+            font-family: var(--font-body);
+            font-size: 1.1rem;
+            font-weight: 400;
+            color: #b0b0b0;
+            line-height: 1.4;
+            margin-bottom: 1.5rem;
+        }
+
+        .glitch-text {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--neon);
+            opacity: 0.8;
+            line-height: 1.5;
+            position: relative;
+            animation: glitch-anim 4s infinite alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip-path: inset(10% 0 80% 0); transform: translate(-2px, 2px); }
+            10% { clip-path: inset(50% 0 10% 0); transform: translate(2px, -2px); }
+            20% { clip-path: inset(80% 0 5% 0); transform: translate(-2px, 0); }
+            30% { clip-path: inset(20% 0 60% 0); transform: translate(2px, 2px); }
+            100% { clip-path: inset(0 0 0 0); transform: translate(0); }
+        }
+
+        .footer-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(5, 5, 8, 0.7);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(var(--neon-rgb), 0.2);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        #timer {
+            color: var(--neon);
+            font-size: 1rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        /* Overlay indicator for zoom */
+        #zoom-hint {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: 1px solid #333;
+            font-size: 0.8rem;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity 1s;
         }
     </style>
-    <!-- Import Maps for ThreeJS and CannonES -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.150.1/build/three.module.js",
-                "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
-            }
-        }
-    </script>
 </head>
 <body>
 
-    <!-- Static UI Layer -->
-    <div id="top-left" class="hud glass-panel">
-        <h1>Geva Kipper</h1>
-        <h2>Currently engineering software solutions at Google.</h2>
-        <p>This portfolio is re-designed daily by AI; its layout, physics, and chaos are ever-changing.</p>
-    </div>
+    <!-- WebGL Canvas for hardware-accelerated math fractal backgrounds -->
+    <canvas id="webgl-canvas"></canvas>
 
-    <div id="bottom-center" class="hud glass-panel">
-        <span class="footer-text">Concept conceptualized and hallucinated by AI | Time elapsed since 2026-07-05 02:28:06:</span>
-        <span id="stopwatch" class="stopwatch">00:00:00</span>
-    </div>
+    <!-- ZUI Transform Viewport -->
+    <div id="zui-viewport">
+        <!-- Master Layer receiving dynamic Matrix transforms -->
+        <div id="zui-layer">
+            
+            <!-- Node 8: The Outer Ring (Macro View) -->
+            <div class="node node-8" style="left: 0px; top: -6000px; transform: translate(-50%, -50%) scale(15);">
+                <a href="https://github.com/gevak" target="_blank">github.com/gevak</a>
+                <a href="https://linkedin.com/in/gevakip" target="_blank">linkedin.com/in/gevakip</a>
+                <a href="https://facebook.com/geva.kipper" target="_blank">facebook.com/geva.kipper</a>
+            </div>
 
-    <div id="modal-overlay">
-        <div class="modal-content glass-panel" id="modal-content-box">
-            <button class="close-btn" id="close-modal">×</button>
-            <h2 class="modal-title" id="m-title">Title</h2>
-            <p class="modal-desc" id="m-desc">Description goes here.</p>
-            <div class="btn-group" id="m-buttons"></div>
+            <!-- Node 1: The Data Spiral -->
+            <div class="node node-1" style="left: 2500px; top: -1500px; transform: translate(-50%, -50%) scale(1.5);">
+                <h3>GlglStats</h3>
+                <div class="soundwave"></div>
+                <p>An intricate Python architecture designed to measure the repetitiveness of Israeli pop-chart songs utilizing advanced LZ77 data compression algorithms, visualizing underlying musical patterns.</p>
+                <div style="display:flex; gap: 1rem; margin-top:0.5rem;">
+                    <a href="https://glglstats.geekip.dev" target="_blank" class="btn">Launch Live App</a>
+                </div>
+                <iframe src="https://www.youtube.com/embed/jrKAtOsj1Lo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+
+            <!-- Node 2: The Urban Grid -->
+            <div class="node node-2" style="left: -2800px; top: 1200px; transform: translate(-50%, -50%) scale(1.2);">
+                <h3>Ahuzat Dibuk</h3>
+                <p>A comprehensive Python scraping and geospatial data visualization platform. It continuously aggregates Tel-Aviv parking lot occupancy statistics to mathematically project and generate predictive heat-maps for metropolitan residents.</p>
+                <div class="badges">
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="badge">Channel 13 News</a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="badge">Mako Tech</a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" class="badge">Secret Tel Aviv (Viral)</a>
+                </div>
+            </div>
+
+            <!-- Node 3: The Algorithmic Vertex -->
+            <div class="node node-3" style="left: 2000px; top: 3000px; transform: translate(-50%, -50%) scale(1);">
+                <h3>2d-part-orienting</h3>
+                <p>An open-source C++ computational geometry implementation engineered to construct a highly efficient 'push plan' for optimally orienting arbitrary polygons in 2D space.</p>
+                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="terminal-link">SSH -> TAU Research Lab</a>
+            </div>
+
+            <!-- Node 4: The AI Nebula (Primary) -->
+            <div class="node node-4" style="left: -3000px; top: -2000px; transform: translate(-50%, -50%) scale(1.3);">
+                <h3>The Turing Jest</h3>
+                <p>An experimental, high-stakes LMSYS-like arena. Large Language Models engage in adversarial competition, generating and explaining complex puns, while a crowdsourced userbase evaluates their nuanced comedic reasoning.</p>
+                <a href="https://jest.geekip.dev" target="_blank" class="btn">Enter the Arena</a>
+            </div>
+
+            <!-- Node 5: The AI Nebula (Adjacent) -->
+            <div class="node node-5" style="left: -2450px; top: -1900px; transform: translate(-50%, -50%) scale(1.1);">
+                <h3>Rhymes of Israel</h3>
+                <p>A satirical Chrome extension injecting logic-driven levity into the news cycle. It securely pipes live Israeli media headlines through LLMs to contextually rewrite them into meticulously metered, comedic high-school yearbook rhymes.</p>
+                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn">Install Extension</a>
+            </div>
+
+            <!-- Node 6: The Trivia Nexus -->
+            <div class="node node-6" style="left: 600px; top: 800px; transform: translate(-50%, -50%) scale(0.3);">
+                <h3>Hatul Basak</h3>
+                <p>A sophisticated Hebrew localized port of the catfishing.net mechanics built on Wikipedia graph data. It features autonomously AI-generated daily logic challenges alongside a user-creation engine for themed trivia puzzles.</p>
+                <a href="https://hatulbasak.geekip.dev" target="_blank" class="btn">Play Daily Challenge</a>
+            </div>
+
+            <!-- Deep Easter Eggs embedded in fractal spirals -->
+            <div class="easter-egg" style="left: -150px; top: 120px; transform: scale(0.015) rotate(15deg);">
+                 > Core_Stack::init([Python, C++, Node.js, WebGL]);
+            </div>
+            <div class="easter-egg" style="left: 300px; top: -250px; transform: scale(0.008) rotate(-20deg);">
+                [Experience Record]: Software Engineer @ Google (202x - Subnet Present)
+            </div>
+
+            <!-- Node 7: The Droste Effect (Extreme Deep Zoom directly at Origin) -->
+            <div class="node node-7" style="left: 0px; top: 0px; transform: translate(-50%, -50%) scale(0.001);">
+                <h3>Recursion Anchor Unlocked</h3>
+                <p>You have reached the geometric origin of the current instance.</p>
+                <div class="droste-frame"></div>
+                <a href="https://geekip.dev" class="btn">Initiate Self-Reference Loop (geekip.dev)</a>
+            </div>
+
         </div>
     </div>
 
-    <!-- 3D Physics Canvas Container -->
-    <div id="canvas-container"></div>
+    <!-- Fixed Foreground Headers -->
+    <header class="hud">
+        <h1>Geva Kipper</h1>
+        <h2>Software Engineer at Google architecting massively scalable backend systems and infrastructure.</h2>
+        <p class="glitch-text">Note: The geometry and layout of this portfolio are autonomously re-designed each day by AI and is thus ever-changing. You are viewing today's unique iteration.</p>
+    </header>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import * as CANNON from 'cannon-es';
+    <div id="zoom-hint">Scroll wheel / trackpad to zoom. Drag to pan. dive deep.</div>
 
-        // ==========================================
-        // 1. UI STOPWATCH LOGIC
-        // ==========================================
-        const targetDate = new Date('2026-07-05T02:28:06Z').getTime();
-        const stopwatchEl = document.getElementById('stopwatch');
-        
+    <footer class="footer-bar">
+        <span>Architected by an AI Language Model.</span>
+        <span id="timer">0D 00:00:00</span>
+    </footer>
+
+    <!-- Core Engine Scripts -->
+    <script>
+        // --- 1. Dynamic Daily Color System ---
+        function generateDailyPalette() {
+            const today = new Date().toISOString().split('T')[0];
+            let hash = 0;
+            for (let i = 0; i < today.length; i++) hash = today.charCodeAt(i) + ((hash << 5) - hash);
+            
+            // Generate a vibrant hue
+            const hue = Math.abs(hash) % 360;
+            
+            // HSL to RGB utility
+            let s = 1.0;
+            let l = 0.55;
+            let c = (1 - Math.abs(2 * l - 1)) * s;
+            let x = c * (1 - Math.abs((hue / 60) % 2 - 1));
+            let m = l - c/2;
+            let r=0, g=0, b=0;
+            
+            if(0 <= hue && hue < 60) {r=c; g=x; b=0;}
+            else if(60 <= hue && hue < 120) {r=x; g=c; b=0;}
+            else if(120 <= hue && hue < 180) {r=0; g=c; b=x;}
+            else if(180 <= hue && hue < 240) {r=0; g=x; b=c;}
+            else if(240 <= hue && hue < 300) {r=x; g=0; b=c;}
+            else if(300 <= hue && hue < 360) {r=c; g=0; b=x;}
+            
+            r = Math.round((r + m) * 255);
+            g = Math.round((g + m) * 255);
+            b = Math.round((b + m) * 255);
+            
+            // Apply to CSS root
+            document.documentElement.style.setProperty('--neon-rgb', `${r}, ${g}, ${b}`);
+            
+            return [r/255.0, g/255.0, b/255.0];
+        }
+
+        const neonRgbArr = generateDailyPalette();
+
+        // --- 2. Temporal Anchor Stopwatch ---
+        const temporalAnchor = new Date("2026-07-06T02:33:00Z").getTime();
+        const timerEl = document.getElementById('timer');
         setInterval(() => {
-            const now = Date.now();
-            const diff = Math.abs(now - targetDate); // Absolute to always count up/down elegantly
-            const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
-            const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
-            const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
-            stopwatchEl.innerText = `${h}:${m}:${s}`;
+            const now = new Date().getTime();
+            // Using Math.abs ensures it runs even if anchor is in the future relative to reality
+            const diff = Math.abs(now - temporalAnchor);
+            const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            timerEl.innerText = `${d}D ${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }, 1000);
 
-        // ==========================================
-        // 2. PROJECT DATA & GENERATIVE TEXTURES
-        // ==========================================
+        // --- 3. Hardware Accelerated ZUI Engine ---
+        const zuiLayer = document.getElementById('zui-layer');
+        const viewport = document.getElementById('zui-viewport');
+        const hint = document.getElementById('zoom-hint');
         
-        // Helper to draw generative textures via canvas
-        function createGenerativeTexture(type, width = 512, height = 512) {
-            const canvas = document.createElement('canvas');
-            canvas.width = width; canvas.height = height;
-            const ctx = canvas.getContext('2d');
+        let state = {
+            tX: window.innerWidth / 2, // Centered initially
+            tY: window.innerHeight / 2,
+            scale: 0.1 // Initially zoomed out to see structure
+        };
+
+        let targetState = { ...state };
+        let isDragging = false;
+        let lastPointer = { x: 0, y: 0 };
+
+        // Hide hint on interaction
+        const hideHint = () => { if(hint.style.opacity !== '0') hint.style.opacity = '0'; };
+
+        // Panning handler unified (mouse & touch)
+        viewport.addEventListener('pointerdown', (e) => {
+            if(e.target.closest('a') || e.target.closest('iframe')) return; // ignore clicks on interactive html
+            isDragging = true;
+            lastPointer = { x: e.clientX, y: e.clientY };
+            viewport.style.cursor = 'grabbing';
+            hideHint();
+        });
+
+        window.addEventListener('pointerup', () => { isDragging = false; viewport.style.cursor = 'auto'; });
+        window.addEventListener('pointerleave', () => isDragging = false);
+
+        window.addEventListener('pointermove', (e) => {
+            if (!isDragging) return;
+            const dx = e.clientX - lastPointer.x;
+            const dy = e.clientY - lastPointer.y;
+            targetState.tX += dx;
+            targetState.tY += dy;
+            lastPointer = { x: e.clientX, y: e.clientY };
+        });
+
+        // Exponential Zooming handler (Wheel / Trackpad pinch)
+        viewport.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            hideHint();
             
-            if(type === 'glgl') {
-                ctx.fillStyle = '#4a0072'; ctx.fillRect(0,0,width,height);
-                for(let i=0; i<30; i++) {
-                    ctx.fillStyle = `rgba(200, 50, 255, ${Math.random()})`;
-                    ctx.fillRect(Math.random()*width, Math.random()*height, Math.random()*20+5, Math.random()*100+20);
-                    ctx.font = `${Math.random()*40+20}px Arial`; ctx.fillStyle = '#0ff';
-                    ctx.fillText('♫', Math.random()*width, Math.random()*height);
-                }
-            } else if(type === 'ahuzat') {
-                const grad = ctx.createRadialGradient(width/2, height/2, 10, width/2, height/2, width/2);
-                grad.addColorStop(0, '#ff4500'); grad.addColorStop(1, '#220000');
-                ctx.fillStyle = grad; ctx.fillRect(0,0,width,height);
-                for(let i=0; i<100; i++){
-                    ctx.fillStyle = `rgba(255, ${Math.random()*150}, 0, ${Math.random()*0.5})`;
-                    ctx.beginPath(); ctx.arc(Math.random()*width, Math.random()*height, Math.random()*30, 0, Math.PI*2); ctx.fill();
-                }
-            } else if (type === 'rhymes_side') {
-                ctx.fillStyle = '#eaeaea'; ctx.fillRect(0,0,width,height);
-                ctx.fillStyle = '#111'; ctx.font = '24px monospace';
-                for(let i=0; i<20; i++) ctx.fillText(Math.random().toString(36).substring(2).toUpperCase() + " HEADLINE NEWS BREAKING", 10, i*30+20);
-            } else if (type === 'rhymes_top') {
-                ctx.fillStyle = '#fafafa'; ctx.fillRect(0,0,width,height);
-                ctx.strokeStyle = '#ccc'; ctx.lineWidth = 2;
-                for(let i=0; i<4; i++) {
-                    for(let j=0; j<4; j++) { ctx.strokeRect(i*(width/4)+10, j*(height/4)+10, (width/4)-20, (height/4)-20); }
-                }
-            } else if(type === 'hatul') {
-                ctx.fillStyle = '#e5e5e5'; ctx.fillRect(0,0,width,height);
-                ctx.strokeStyle = '#aaa'; ctx.lineWidth = 1;
-                for(let i=0; i<width; i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,height); ctx.stroke(); }
-                for(let i=0; i<height; i+=40) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(width,i); ctx.stroke(); }
-                ctx.lineWidth = 15; ctx.strokeStyle = '#ffd700'; ctx.strokeRect(0,0,width,height);
-            } else if(type === 'social') {
-                ctx.fillStyle = '#111'; ctx.fillRect(0,0,width,height);
-                ctx.fillStyle = '#fff'; ctx.font = 'bold 80px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline='middle';
-                ctx.fillText("{ LINKEDIN }", width/2, height/2 - 80);
-                ctx.fillText("< GITHUB >", width/2, height/2);
-                ctx.fillText("[ FACEBOOK ]", width/2, height/2 + 80);
-            }
-            return new THREE.CanvasTexture(canvas);
+            // Adjust sensitivity based on ctrlKey (true during trackpad pinch)
+            const zoomSensitivity = e.ctrlKey ? 0.005 : 0.001; 
+            const zoomFactor = Math.exp(-e.deltaY * zoomSensitivity);
+            
+            let newScale = targetState.scale * zoomFactor;
+            // Clamp scale: Allows zooming out past outer ring, and incredibly deep into Droste
+            newScale = Math.max(0.0001, Math.min(newScale, 20000));
+            
+            const scaleChange = newScale / targetState.scale;
+
+            // Zoom math keeping mouse pointer anchored
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
+            
+            targetState.tX = mouseX - (mouseX - targetState.tX) * scaleChange;
+            targetState.tY = mouseY - (mouseY - targetState.tY) * scaleChange;
+            targetState.scale = newScale;
+        }, { passive: false });
+
+        // Smooth interpolation render loop
+        function applyTransform() {
+            // Lerp physical state towards target state for buttery smoothness
+            const lerpSpeed = 0.2;
+            state.tX += (targetState.tX - state.tX) * lerpSpeed;
+            state.tY += (targetState.tY - state.tY) * lerpSpeed;
+            state.scale += (targetState.scale - state.scale) * lerpSpeed;
+
+            // Apply matrix to HTML layer
+            zuiLayer.style.transform = `matrix(${state.scale}, 0, 0, ${state.scale}, ${state.tX}, ${state.tY})`;
+            
+            requestAnimationFrame(applyTransform);
         }
+        applyTransform();
 
-        const projectData = [
-            {
-                id: 'glgl', mass: 1.5, shape: 'box', size: [1.2, 2, 1.2],
-                title: "GlglStats",
-                desc: "Algorithmic measurement of Israeli pop-chart repetitiveness utilizing Python and LZ77 pattern visualization.",
-                buttons: [
-                    { label: "Website", url: "https://glglstats.geekip.dev", icon: "🌐", primary: true },
-                    { label: "PyData TLV Presentation", url: "https://www.youtube.com/watch?v=jrKAtOsj1Lo", icon: "▶" }
-                ],
-                setupMesh: (geo) => new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({
-                    map: createGenerativeTexture('glgl'), transmission: 0.8, transparent: true, opacity: 0.9, color: 0xa020f0, roughness: 0.2
-                }))
-            },
-            {
-                id: 'ahuzat', mass: 2, shape: 'box', size: [1.5, 1.5, 1.5],
-                title: "Ahuzat Dibuk",
-                desc: "Python scraping and aggressive data visualization exposing Tel-Aviv parking lot occupancy trends mapped as urban heat.",
-                buttons: [
-                    { label: "Channel 13 Press", url: "https://13tv.co.il/item/news/domestic/internal/parking-902956407/" },
-                    { label: "Mako Coverage", url: "https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" },
-                    { label: "Secret Tel Aviv", url: "https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/", primary: true }
-                ],
-                setupMesh: (geo) => new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-                    map: createGenerativeTexture('ahuzat'), emissive: 0xff4500, emissiveIntensity: 0.3, roughness: 0.6
-                }))
-            },
-            {
-                id: '2dpart', mass: 1.2, shape: 'poly', size: [1.3],
-                title: "2D Part Orienting",
-                desc: "C++ computational geometry library implementation of the efficient push-plan algorithm. A complex, asymmetrical structural approach.",
-                buttons: [ { label: "</> View Repository natively at TAU", url: "https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/", primary: true } ],
-                setupMesh: (geo) => {
-                    const mat = new THREE.MeshStandardMaterial({ color: 0x0055ff, flatShading: true, roughness: 0.4 });
-                    const mesh = new THREE.Mesh(geo, mat);
-                    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0x00ffff }));
-                    mesh.add(edges); return mesh;
+        // --- 4. WebGL Fractal Shader Pipeline Sync ---
+        const canvas = document.getElementById('webgl-canvas');
+        const gl = canvas.getContext('webgl');
+
+        if (gl) {
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            const vertexShaderSource = `
+                attribute vec2 position;
+                void main() {
+                    gl_Position = vec4(position, 0.0, 1.0);
                 }
-            },
-            {
-                id: 'turing', mass: 1, shape: 'box', size: [1.4, 1.4, 1.4],
-                title: "The Turing Jest",
-                desc: "An LMSYS-style arena for LLM pun battles. Two models enter, one joke wins based on pure human rating.",
-                buttons: [ { label: "Enter the Arena", url: "https://jest.geekip.dev", primary: true, icon: "⚔️" } ],
-                setupMesh: (geo) => {
-                    const materials = [
-                        new THREE.MeshStandardMaterial({ color: 0x008080 }), // Teal
-                        new THREE.MeshStandardMaterial({ color: 0xff8c00 }), // Orange
-                        new THREE.MeshStandardMaterial({ color: 0x008080 }),
-                        new THREE.MeshStandardMaterial({ color: 0xff8c00 }),
-                        new THREE.MeshStandardMaterial({ color: 0x111111 }),
-                        new THREE.MeshStandardMaterial({ color: 0x111111 })
-                    ];
-                    return new THREE.Mesh(geo, materials);
-                }
-            },
-            {
-                id: 'rhymes', mass: 1.8, shape: 'box', size: [1.6, 1.6, 1.6],
-                title: "Rhymes of Israel",
-                desc: "A Chrome Extension twisting standard Israeli news headlines into comedic, LLM-generated rhymes in real-time.",
-                buttons: [ { label: "Install Extension", url: "https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb", primary: true } ],
-                setupMesh: (geo) => {
-                    const side = new THREE.MeshStandardMaterial({ map: createGenerativeTexture('rhymes_side') });
-                    const top = new THREE.MeshStandardMaterial({ map: createGenerativeTexture('rhymes_top') });
-                    return new THREE.Mesh(geo, [side, side, top, top, side, side]);
-                }
-            },
-            {
-                id: 'hatul', mass: 2.2, shape: 'box', size: [1.5, 1.5, 1.5],
-                title: "Hatul Basak",
-                desc: "Hebrew catfishing.net trivia port featuring daily AI-generated puzzles intertwined within a Wikipedia-esque grid architecture.",
-                buttons: [ { label: "Play & Create", url: "https://hatulbasak.geekip.dev", primary: true, icon: "🧩" } ],
-                setupMesh: (geo) => new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: createGenerativeTexture('hatul'), roughness: 0.1, metalness: 0.5 }))
-            },
-            {
-                id: 'meta', mass: 3, shape: 'box', size: [1.2, 1.2, 1.2],
-                title: "Meta-Portfolio Box",
-                desc: "A self-referential holographic mirror reflecting the surrounding void, representing the very site housing it.",
-                buttons: [ { label: "Loop Back (geekip.dev)", url: "https://geekip.dev", primary: true, icon: "∞" } ],
-                // Mesh setup deferred to scene creation to enable CubeCamera
-                setupMesh: null 
-            },
-            {
-                id: 'social', mass: 5, shape: 'box', size: [1.5, 1.5, 1.5],
-                title: "The Social Hub",
-                desc: "An ultra-matte obsidian gravity well anchoring external connections securely.",
-                buttons: [
-                    { label: "GitHub", url: "https://github.com/gevak", primary: true },
-                    { label: "LinkedIn", url: "https://linkedin.com/in/gevakip" },
-                    { label: "Facebook", url: "https://facebook.com/geva.kipper" }
-                ],
-                setupMesh: (geo) => new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-                    map: createGenerativeTexture('social'), emissiveMap: createGenerativeTexture('social'), emissive: 0xffffff, emissiveIntensity: 0.2, color: 0x111111, roughness: 0.9, metalness: 0.1
-                }))
-            }
-        ];
+            `;
 
-        // ==========================================
-        // 3. ENGINE SETUP (Three.js + Cannon-es)
-        // ==========================================
-        const container = document.getElementById('canvas-container');
-        
-        // Scene & Camera
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2('#0d0d1a', 0.02);
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 15);
-
-        // Renderer
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
-
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0x202040, 1.5);
-        scene.add(ambientLight);
-        
-        const coreLight = new THREE.PointLight(0xffffff, 2, 50);
-        coreLight.position.set(0, 0, 2);
-        scene.add(coreLight);
-
-        const dirLight = new THREE.DirectionalLight(0xaabbff, 1);
-        dirLight.position.set(10, 20, 10);
-        scene.add(dirLight);
-
-        // Physics World
-        const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) });
-        world.broadphase = new CANNON.SAPBroadphase(world);
-        world.solver.iterations = 10;
-        
-        // Physics Bounds (Invisible walls)
-        const wallMaterial = new CANNON.Material('wall');
-        const blockMaterial = new CANNON.Material('block');
-        const physicsContact = new CANNON.ContactMaterial(wallMaterial, blockMaterial, { friction: 0.1, restitution: 0.6 });
-        world.addContactMaterial(physicsContact);
-        const blockToBlock = new CANNON.ContactMaterial(blockMaterial, blockMaterial, { friction: 0.3, restitution: 0.5 });
-        world.addContactMaterial(blockToBlock);
-
-        function createWall(x, y, z, rx, ry, rz) {
-            const body = new CANNON.Body({ mass: 0, material: wallMaterial, shape: new CANNON.Plane() });
-            body.position.set(x, y, z); body.quaternion.setFromEuler(rx, ry, rz);
-            world.addBody(body);
-        }
-        
-        // Calculate frustum bounds at z=0 to create walls just outside view
-        const frustumHeight = 2 * Math.tan((camera.fov * Math.PI) / 180 / 2) * camera.position.z;
-        const frustumWidth = frustumHeight * camera.aspect;
-        
-        createWall(0, -frustumHeight/2 - 1, 0, -Math.PI/2, 0, 0); // Bottom
-        createWall(0, frustumHeight/2 + 1, 0, Math.PI/2, 0, 0);  // Top
-        createWall(-frustumWidth/2 - 1, 0, 0, 0, Math.PI/2, 0);   // Left
-        createWall(frustumWidth/2 + 1, 0, 0, 0, -Math.PI/2, 0);    // Right
-        createWall(0, 0, -5, 0, 0, 0);                           // Back
-        createWall(0, 0, 5, 0, Math.PI, 0);                      // Front (keep them from flying to cam)
-
-        // ==========================================
-        // 4. OBJECT CREATION
-        // ==========================================
-        const blocks = [];
-        
-        // Setup CubeCamera for Meta box
-        const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256, { format: THREE.RGBAFormat, generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter });
-        const cubeCamera = new THREE.CubeCamera(1, 1000, cubeRenderTarget);
-        scene.add(cubeCamera);
-
-        projectData.forEach((data, index) => {
-            // 1. Physics Body
-            let shape, geometry;
-            if(data.shape === 'box') {
-                const [w, h, d] = data.size;
-                shape = new CANNON.Box(new CANNON.Vec3(w/2, h/2, d/2));
-                geometry = new THREE.BoxGeometry(w, h, d);
-            } else {
-                 geometry = new THREE.DodecahedronGeometry(data.size[0]);
-                 const vertices = geometry.attributes.position.array;
-                 const points = [];
-                 for(let i=0; i<vertices.length; i+=3) points.push(new CANNON.Vec3(vertices[i], vertices[i+1], vertices[i+2]));
-                 const faces = [];
-                 for(let i=0; i<geometry.index.array.length; i+=3) faces.push([geometry.index.array[i], geometry.index.array[i+1], geometry.index.array[i+2]]);
-                 shape = new CANNON.ConvexPolyhedron({ vertices: points, faces: faces });
-            }
-
-            const body = new CANNON.Body({ mass: data.mass, material: blockMaterial, shape: shape, linearDamping: 0.1, angularDamping: 0.1 });
-            
-            // Random start position within bounds
-            body.position.set((Math.random()-0.5)*(frustumWidth-4), (Math.random()-0.5)*(frustumHeight-4), (Math.random()-0.5)*2);
-            body.velocity.set((Math.random()-0.5)*5, (Math.random()-0.5)*5, (Math.random()-0.5)*5);
-            body.angularVelocity.set(Math.random(), Math.random(), Math.random());
-            world.addBody(body);
-
-            // 2. Visual Mesh
-            let mesh;
-            if(data.id === 'meta') {
-                const mat = new THREE.MeshStandardMaterial({ envMap: cubeRenderTarget.texture, roughness: 0, metalness: 1 });
-                mesh = new THREE.Mesh(geometry, mat);
-            } else {
-                mesh = data.setupMesh(geometry);
-            }
-            
-            mesh.userData = { id: data.id, dRef: data, body: body, isDragging: false };
-            scene.add(mesh);
-            blocks.push({ mesh, body, data });
-        });
-
-        // ==========================================
-        // 5. INTERACTION LOGIC
-        // ==========================================
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-        
-        let dragPlane = new THREE.Plane();
-        let dragIntersection = new THREE.Vector3();
-        let selectedBlock = null;
-        let isActiveModal = false;
-        
-        // Gravity Control
-        let targetGravity = new CANNON.Vec3(0, 0, 0);
-        
-        window.addEventListener('mousemove', (e) => {
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-            if(!isActiveModal && !selectedBlock) {
-                // Interactive Gravity: Pulls towards mouse
-                targetGravity.set(mouse.x * 10, mouse.y * 10, 0);
-            }
-
-            if(selectedBlock && selectedBlock.mesh.userData.isDragging) {
-                raycaster.setFromCamera(mouse, camera);
-                raycaster.ray.intersectPlane(dragPlane, dragIntersection);
+            // Slowly morphing Julia Set mapped perfectly to HTML coordinate space
+            const fragmentShaderSource = `
+                precision highp float;
                 
-                // Spring physics to follow cursor
-                const force = 10;
-                const dist = dragIntersection.sub(selectedBlock.mesh.position);
-                selectedBlock.body.velocity.set(dist.x*force, dist.y*force, dist.z*force);
-            }
-        });
+                uniform vec2 u_resolution;
+                uniform vec2 u_translate;
+                uniform float u_scale;
+                uniform float u_time;
+                uniform vec3 u_neon;
 
-        // Device Gyroscope (Mobile Gravity)
-        window.addEventListener('deviceorientation', (e) => {
-            if(!isActiveModal && !selectedBlock && e.beta && e.gamma) {
-                // Clamp and normalize
-                const x = e.gamma / 45; // Left/Right
-                const y = -e.beta / 45; // Up/Down
-                targetGravity.set(x * 15, y * 15, 0);
-            }
-        });
-
-        let clickTime = 0;
-
-        window.addEventListener('mousedown', (e) => {
-            if(isActiveModal) return;
-            clickTime = Date.now();
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(blocks.map(b => b.mesh), false);
-            
-            if (intersects.length > 0) {
-                const mesh = intersects[0].object;
-                const blockInfo = blocks.find(b => b.mesh === mesh);
-                selectedBlock = blockInfo;
-                selectedBlock.mesh.userData.isDragging = true;
-                
-                // Define plane for dragging parallel to camera view
-                dragPlane.setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()), mesh.position);
-            }
-        });
-
-        window.addEventListener('mouseup', () => {
-            if(isActiveModal) return;
-            if (selectedBlock) {
-                selectedBlock.mesh.userData.isDragging = false;
-                
-                // Distinguish click vs drag
-                if(Date.now() - clickTime < 200) {
-                    openModal(selectedBlock);
+                // Color palette function
+                vec3 palette(float t) {
+                    vec3 a = vec3(0.05, 0.05, 0.08); // Obsidian deep dark base
+                    vec3 b = u_neon; // Dynamic neon
+                    // Create sharp glowing bands
+                    return mix(a, b, pow(sin(t * 15.0) * 0.5 + 0.5, 4.0)); 
                 }
-                selectedBlock = null;
-            }
-        });
 
-        // Touch support mapping to mouse events natively (simple translation)
-        window.addEventListener('touchstart', (e) => { if(e.touches.length > 0) { e.clientX = e.touches[0].clientX; e.clientY = e.touches[0].clientY; window.dispatchEvent(new MouseEvent('mousedown', {clientX: e.clientX, clientY: e.clientY})); window.dispatchEvent(new MouseEvent('mousemove', {clientX: e.clientX, clientY: e.clientY})); } }, {passive:false});
-        window.addEventListener('touchmove', (e) => { if(e.touches.length > 0) { e.clientX = e.touches[0].clientX; e.clientY = e.touches[0].clientY; window.dispatchEvent(new MouseEvent('mousemove', {clientX: e.clientX, clientY: e.clientY})); } }, {passive:false});
-        window.addEventListener('touchend', (e) => { window.dispatchEvent(new Event('mouseup')); }, {passive:false});
-
-
-        // ==========================================
-        // 6. MODAL & PRESENTATION LOGIC
-        // ==========================================
-        const modalOverlay = document.getElementById('modal-overlay');
-        const modalTitle = document.getElementById('m-title');
-        const modalDesc = document.getElementById('m-desc');
-        const modalButtons = document.getElementById('m-buttons');
-        const btnClose = document.getElementById('close-modal');
-
-        let originalState = {};
-
-        function openModal(blockInfo) {
-            isActiveModal = true;
-            world.gravity.set(0,0,0); // Pause universal gravity
-            
-            // Save state
-            originalState.pos = blockInfo.body.position.clone();
-            originalState.quat = blockInfo.body.quaternion.clone();
-            originalState.type = blockInfo.body.type;
-            
-            // Freeze selected block and move to center
-            blockInfo.body.type = CANNON.Body.KINEMATIC;
-            blockInfo.body.velocity.set(0,0,0);
-            blockInfo.body.angularVelocity.set(0,0,0);
-            
-            // Push other blocks away slightly via temporary explosion force
-            blocks.forEach(b => {
-                if(b !== blockInfo) {
-                    const push = new CANNON.Vec3().copy(b.body.position).vsub(blockInfo.body.position);
-                    push.normalize();
-                    b.body.applyImpulse(push.scale(5), b.body.position);
-                    // Add high damping to freeze them in background
-                    b.body.linearDamping = 0.99;
-                    b.body.angularDamping = 0.99;
-                }
-            });
-
-            // "Tween" block to front view
-            let t = 0;
-            const animateToFront = () => {
-                if(!isActiveModal) return;
-                t += 0.05;
-                if(t <= 1) {
-                    const easeOut = 1 - Math.pow(1 - t, 3);
-                    // Move to center, pull forward
-                    blockInfo.body.position.set(
-                        THREE.MathUtils.lerp(originalState.pos.x, 0, easeOut),
-                        THREE.MathUtils.lerp(originalState.pos.y, 0, easeOut),
-                        THREE.MathUtils.lerp(originalState.pos.z, 5, easeOut) // Close to cam
-                    );
+                void main() {
+                    // Match HTML coordinate system
+                    vec2 screenPos = gl_FragCoord.xy;
+                    screenPos.y = u_resolution.y - screenPos.y; // Flip Y for WebGL vs DOM difference
                     
-                    // Rotate to face front perfectly
-                    const targetQuat = new CANNON.Quaternion();
-                    targetQuat.setFromEuler(0, 0, 0); // Front facing
-                    blockInfo.body.quaternion.slerp(targetQuat, easeOut, blockInfo.body.quaternion);
+                    // Inverse transform to find underlying universal coordinate
+                    vec2 canvasPos = (screenPos - u_translate) / u_scale;
                     
-                    requestAnimationFrame(animateToFront);
-                } else {
-                    // Animation complete, show content
-                    populateModalContent(blockInfo.data);
-                    modalOverlay.classList.add('active');
+                    // Map unit coordinates down to fractal math bounds (arbitrary scaling to fit visual design)
+                    vec2 uv = canvasPos * 0.001;
+                    
+                    vec2 z = uv;
+                    
+                    // Slowly animating morph parameter for Julia set
+                    vec2 c = vec2(sin(u_time * 0.05) * 0.5 - 0.2, cos(u_time * 0.07) * 0.5 + 0.1);
+
+                    const float MAX_ITER = 150.0;
+                    float iter = 0.0;
+                    float smooth_iter = 0.0;
+                    
+                    // Math Iteration Loop
+                    for(float i = 0.0; i < 150.0; i++) {
+                        if(dot(z,z) > 10.0) break;
+                        z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c;
+                        iter = i;
+                    }
+                    
+                    // Smooth coloring trick
+                    if (iter < MAX_ITER - 1.0) {
+                        smooth_iter = iter - log2(log2(dot(z,z))) + 4.0;
+                    }
+
+                    vec3 color = vec3(0.02, 0.02, 0.04); // pure base
+                    if(iter < MAX_ITER - 1.0) {
+                        color = palette(smooth_iter / 50.0 - u_time * 0.2);
+                    }
+                    
+                    // Add slight chromatic distortion towards borders / deep fractals
+                    gl_FragColor = vec4(color, 1.0);
                 }
-            };
-            animateToFront();
-        }
+            `;
 
-        function populateModalContent(data) {
-            modalTitle.innerText = data.title;
-            modalDesc.innerText = data.desc;
-            modalButtons.innerHTML = '';
-            data.buttons.forEach(btn => {
-                const a = document.createElement('a');
-                a.href = btn.url;
-                a.target = "_blank";
-                a.className = `btn ${btn.primary ? 'btn-primary' : ''}`;
-                a.innerHTML = `${btn.icon ? btn.icon + ' ' : ''}${btn.label}`;
-                modalButtons.appendChild(a);
-            });
-        }
-
-        btnClose.addEventListener('click', () => {
-            modalOverlay.classList.remove('active');
-            
-            // Restore block state
-            const targetBlock = blocks.find(b => b.body.type === CANNON.Body.KINEMATIC);
-            if(targetBlock) {
-                 // Throw it back dynamically for fun physics reaction
-                 targetBlock.body.type = CANNON.Body.DYNAMIC;
-                 targetBlock.body.applyImpulse(new CANNON.Vec3(0, 0, -20), targetBlock.body.position);
-                 targetBlock.body.angularVelocity.set((Math.random()-0.5)*5, (Math.random()-0.5)*5, 0);
-            }
-            
-            // Un-dampen others
-            blocks.forEach(b => {
-                b.body.linearDamping = 0.1;
-                b.body.angularDamping = 0.1;
-            });
-
-            isActiveModal = false;
-        });
-
-        // ==========================================
-        // 7. RENDER & PHYSICS LOOP
-        // ==========================================
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        const timeStep = 1 / 60;
-        
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Update Physics
-            world.step(timeStep);
-            
-            // Smoothly lerp gravity towards target (if not paused by modal)
-            if(!isActiveModal) {
-                world.gravity.x = THREE.MathUtils.lerp(world.gravity.x, targetGravity.x, 0.05);
-                world.gravity.y = THREE.MathUtils.lerp(world.gravity.y, targetGravity.y, 0.05);
-                world.gravity.z = THREE.MathUtils.lerp(world.gravity.z, targetGravity.z, 0.05);
+            function createShader(type, source) {
+                const shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+                if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(shader));
+                return shader;
             }
 
-            // Sync visual meshes with physics bodies
-            let metaMeshRef = null;
-            blocks.forEach(b => {
-                if(!isActiveModal || b.body.type === CANNON.Body.KINEMATIC) {
-                     b.mesh.position.copy(b.body.position);
-                     b.mesh.quaternion.copy(b.body.quaternion);
-                }
-                if(b.data.id === 'meta') metaMeshRef = b.mesh;
-            });
+            const program = gl.createProgram();
+            gl.attachShader(program, createShader(gl.VERTEX_SHADER, vertexShaderSource));
+            gl.attachShader(program, createShader(gl.FRAGMENT_SHADER, fragmentShaderSource));
+            gl.linkProgram(program);
+            gl.useProgram(program);
 
-            // Update Meta Cube Reflections
-            if (metaMeshRef && !isActiveModal) {
-                 metaMeshRef.visible = false;
-                 cubeCamera.position.copy(metaMeshRef.position);
-                 cubeCamera.update(renderer, scene);
-                 metaMeshRef.visible = true;
+            const positionBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+
+            const positionLocation = gl.getAttribLocation(program, "position");
+            gl.enableVertexAttribArray(positionLocation);
+            gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+            const locRes = gl.getUniformLocation(program, "u_resolution");
+            const locTrans = gl.getUniformLocation(program, "u_translate");
+            const locScale = gl.getUniformLocation(program, "u_scale");
+            const locTime = gl.getUniformLocation(program, "u_time");
+            const locNeon = gl.getUniformLocation(program, "u_neon");
+
+            gl.uniform3f(locNeon, neonRgbArr[0], neonRgbArr[1], neonRgbArr[2]);
+
+            let startTime = Date.now();
+
+            function renderWebGL() {
+                // Pass synchronized HTML DOM states directly into the hardware Shader pipeline
+                gl.uniform2f(locRes, canvas.width, canvas.height);
+                gl.uniform2f(locTrans, state.tX, state.tY);
+                gl.uniform1f(locScale, state.scale);
+                gl.uniform1f(locTime, (Date.now() - startTime) * 0.001);
+
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+                requestAnimationFrame(renderWebGL);
             }
-
-            // Central lighting dynamic follow
-            coreLight.position.x = Math.sin(Date.now() * 0.001) * 2;
-            coreLight.position.y = Math.cos(Date.now() * 0.001) * 2;
-
-            renderer.render(scene, camera);
+            renderWebGL();
         }
-
-        animate();
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260705",
+          pageId: "20260706",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
