@@ -1,699 +1,694 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Geva Kipper | Autonomous Portfolio ZUI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geva Kipper | Terminal Mainframe</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Inter:wght@300;400;600&family=Fira+Code:wght@400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;700&display=swap');
 
         :root {
-            --obsidian: #050508;
-            --glass-bg: rgba(15, 15, 20, 0.4);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --font-heading: 'Space Grotesk', sans-serif;
-            --font-body: 'Inter', sans-serif;
-            --font-mono: 'Fira Code', monospace;
-            /* Neon colors are dynamically set by JS */
-            --neon-rgb: 0, 255, 150; 
-            --neon: rgb(var(--neon-rgb));
+            --bg: #000000;
+            --green: #00FF41;
+            --cyan: #00FFFF;
+            --amber: #FFB000;
+            --red: #FF3333;
+            --font: 'Fira Code', 'Courier New', monospace;
+            --glow-green: rgba(0, 255, 65, 0.4);
+            --glow-cyan: rgba(0, 255, 255, 0.6);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            user-select: none;
+            cursor: crosshair;
         }
 
-        body, html {
-            width: 100%;
-            height: 100%;
+        body {
+            background-color: var(--bg);
+            color: var(--green);
+            font-family: var(--font);
+            height: 100vh;
+            width: 100vw;
             overflow: hidden;
-            background-color: var(--obsidian);
-            color: #ffffff;
-            font-family: var(--font-body);
-            touch-action: none;
-        }
-
-        /* WebGL Background */
-        #webgl-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-        }
-
-        /* ZUI Transformation Layer */
-        #zui-viewport {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            overflow: hidden;
-        }
-
-        #zui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            transform-origin: 0 0;
-            will-change: transform;
-            /* Initial state to be overridden by JS */
-            transform: matrix(0.1, 0, 0, 0.1, 500, 300);
-        }
-
-        /* Glassmorphism Cards (Spatial Nodes) */
-        .node {
-            position: absolute;
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-            border-left: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(var(--neon-rgb), 0.3);
-            border-radius: 20px;
-            padding: 2.5rem;
-            width: 450px;
-            color: #e0e0e0;
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-            /* Allow internal interactions like clicking */
-            pointer-events: auto;
-            user-select: auto;
-        }
-
-        /* Generic element styling inside nodes */
-        h3 {
-            font-family: var(--font-heading);
-            font-size: 1.8rem;
-            color: var(--neon);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
-        }
-
-        p {
-            line-height: 1.6;
-            font-weight: 300;
-        }
-
-        a.btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(var(--neon-rgb), 0.15);
-            color: #fff;
-            border: 1px solid var(--neon);
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            text-decoration: none;
-            font-family: var(--font-heading);
-            font-weight: bold;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-
-        a.btn:hover {
-            background: var(--neon);
-            color: var(--obsidian);
-            box-shadow: 0 0 20px rgba(var(--neon-rgb), 0.6);
-        }
-
-        /* Specific Nodes Styling */
-        .node-1 .soundwave {
-            height: 40px;
-            width: 100%;
-            background: repeating-linear-gradient(90deg, 
-                var(--neon) 0%, var(--neon) 2px, 
-                transparent 2px, transparent 8px);
-            opacity: 0.7;
-            mask-image: linear-gradient(to bottom, black, transparent);
-            -webkit-mask-image: linear-gradient(to bottom, black, transparent);
-        }
-
-        .node-1 iframe {
-            border-radius: 12px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            width: 100%;
-            height: 200px;
-            margin-top: 1rem;
-            pointer-events: auto;
-        }
-
-        .node-2 .badges {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .node-2 .badge {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            color: #ccc;
-            text-decoration: none;
-            transition: 0.2s;
-        }
-        .node-2 .badge:hover {
-            border-color: var(--neon);
-            color: #fff;
-        }
-
-        .node-3 {
-            font-family: var(--font-mono);
-            background: rgba(5,5,10,0.8);
-        }
-        .node-3 h3 { font-family: var(--font-mono); text-transform: lowercase; }
-        .node-3 h3::before { content: '~/projects/'; color: #666; }
-        .terminal-link {
-            display: block;
-            color: var(--neon);
-            text-decoration: none;
-            margin-top: 1rem;
-            border-top: 1px dashed #333;
-            padding-top: 1rem;
-        }
-        .terminal-link::before { content: '$ ./run_link '; color: #fff; }
-
-        .node-5 {
-            background: linear-gradient(135deg, rgba(200, 200, 200, 0.1), rgba(50, 50, 50, 0.4)); 
-            border-right: 5px solid var(--neon);
-        }
-
-        /* Droste Node */
-        .node-7 {
-            align-items: center;
-            text-align: center;
-        }
-        .droste-frame {
-            width: 100%;
-            height: 150px;
-            border: 1px solid var(--neon);
             position: relative;
-            background: var(--obsidian);
-            border-radius: 8px;
+            text-shadow: 0 0 3px var(--glow-green), -1px 0px 1px rgba(255,0,0,0.5), 1px 0px 1px rgba(0,0,255,0.5);
+        }
+
+        /* CRT Effects */
+        body::before {
+            content: " ";
+            display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 100; pointer-events: none;
+            opacity: 0.6;
+        }
+        
+        .ambient-glow {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, rgba(0, 255, 255, 0.05) 0%, rgba(0,0,0,1) 80%);
+            pointer-events: none; z-index: 1;
+            animation: pulse-glow 8s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .vignette {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            box-shadow: inset 0 0 150px rgba(0,0,0,0.9);
+            pointer-events: none; z-index: 101;
+        }
+
+        .screen-curvature {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 20px;
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.1);
+            pointer-events: none; z-index: 102;
+        }
+
+        .glitch-active {
+            animation: glitch-skew 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+        }
+
+        @keyframes glitch-skew {
+            0% { transform: skew(0deg); }
+            20% { transform: skewX(-5deg); filter: hue-rotate(90deg); }
+            40% { transform: skewX(5deg); }
+            60% { transform: skewX(-2deg); filter: hue-rotate(-90deg); }
+            80% { transform: skewX(2deg); }
+            100% { transform: skew(0deg); filter: hue-rotate(0deg); }
+        }
+
+        /* Layout */
+        header {
+            padding: 15px 20px;
+            z-index: 10;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #boot-sequence {
+            color: var(--cyan);
+            font-size: 0.8rem;
+            min-height: 1.2rem;
+            white-space: pre-wrap;
+        }
+
+        pre.ascii-art {
+            font-size: 0.6rem;
+            line-height: 1.1;
+            color: var(--cyan);
+            text-shadow: 0 0 5px var(--glow-cyan);
+            margin: 5px 0;
+            font-weight: bold;
+        }
+
+        .status-line {
+            font-size: 0.9rem;
+            animation: blink 2s infinite;
+        }
+
+        .warning-line {
+            color: var(--amber);
+            font-size: 0.8rem;
+            border: 1px dotted var(--amber);
+            padding: 5px;
+            display: inline-block;
+            text-shadow: 0 0 4px var(--amber);
+            position: relative;
+        }
+        .warning-line::before, .warning-line::after {
+            content: " ⚠ ";
+            animation: flicker 1s infinite alternate;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes flicker {
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
+            20%, 22%, 24%, 55% { opacity: 0; }
+        }
+
+        /* Main Grid */
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 15px;
+            padding: 0 20px 20px 20px;
+            z-index: 10;
+            min-height: 0; /* allows children to overflow */
+        }
+
+        .box {
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            background: rgba(0, 20, 0, 0.4);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: all 0.3s ease;
             overflow: hidden;
         }
-        .droste-frame::after {
-            content: '';
-            position: absolute;
-            top: 50%; left: 50%;
-            width: 20px; height: 30px;
-            background: var(--glass-bg);
-            border: 1px solid var(--neon);
-            transform: translate(-50%, -50%);
-        }
 
-        /* Outer Ring */
-        .node-8 {
-            flex-direction: row;
-            width: auto;
-            border-radius: 50px;
-            padding: 1.5rem 3rem;
-            gap: 3rem;
+        .box.dimmed {
+            opacity: 0.5;
+            filter: grayscale(80%) blur(1px);
         }
-        .node-8 a {
-            color: white;
-            text-decoration: none;
-            font-family: var(--font-heading);
-            font-size: 1.5rem;
-            transition: color 0.3s;
-        }
-        .node-8 a:hover { color: var(--neon); }
-
-        /* Easter Eggs */
-        .easter-egg {
-            position: absolute;
-            font-family: var(--font-mono);
-            color: rgba(255,255,255,0.7);
-            font-size: 24px;
-            white-space: nowrap;
-            pointer-events: none;
-            text-shadow: 0 0 10px var(--neon);
-        }
-
-        /* HUD & Fixed Interfaces */
-        .hud {
-            position: fixed;
-            top: 30px;
-            left: 40px;
-            z-index: 100;
-            pointer-events: none;
-            max-width: 500px;
-        }
-
-        .hud h1 {
-            font-family: var(--font-heading);
-            font-size: 3.5rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: -2px;
-            margin-bottom: 0.5rem;
-            color: #fff;
-            text-shadow: 0 4px 20px rgba(0,0,0,0.8);
-        }
-
-        .hud h2 {
-            font-family: var(--font-body);
-            font-size: 1.1rem;
-            font-weight: 400;
-            color: #b0b0b0;
-            line-height: 1.4;
-            margin-bottom: 1.5rem;
-        }
-
-        .glitch-text {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--neon);
+        
+        .box.dimmed:hover {
             opacity: 0.8;
-            line-height: 1.5;
-            position: relative;
-            animation: glitch-anim 4s infinite alternate-reverse;
+            filter: grayscale(40%) blur(0px);
+            border-color: var(--cyan);
         }
 
-        @keyframes glitch-anim {
-            0% { clip-path: inset(10% 0 80% 0); transform: translate(-2px, 2px); }
-            10% { clip-path: inset(50% 0 10% 0); transform: translate(2px, -2px); }
-            20% { clip-path: inset(80% 0 5% 0); transform: translate(-2px, 0); }
-            30% { clip-path: inset(20% 0 60% 0); transform: translate(2px, 2px); }
-            100% { clip-path: inset(0 0 0 0); transform: translate(0); }
-        }
-
-        .footer-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: rgba(5, 5, 8, 0.7);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(var(--neon-rgb), 0.2);
-            padding: 15px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 100;
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            color: #888;
-        }
-
-        #timer {
-            color: var(--neon);
-            font-size: 1rem;
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-
-        /* Overlay indicator for zoom */
-        #zoom-hint {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.5);
-            padding: 10px 20px;
-            border-radius: 30px;
-            border: 1px solid #333;
-            font-size: 0.8rem;
-            z-index: 50;
-            pointer-events: none;
+        .box.focused {
             opacity: 1;
-            transition: opacity 1s;
+            filter: none;
+            border: 1px solid var(--cyan);
+            box-shadow: 0 0 15px var(--glow-cyan), inset 0 0 10px rgba(0,255,255,0.2);
+            transform: scale(1.02);
+            z-index: 20;
+        }
+
+        .box-title {
+            background: var(--green);
+            color: var(--bg);
+            padding: 2px 5px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            display: inline-block;
+            align-self: flex-start;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            text-shadow: none;
+            transition: opacity 0.5s;
+        }
+
+        .box-title-hidden .box-title {
+            opacity: 0;
+        }
+
+        .box-content {
+            flex: 1;
+            overflow-y: auto;
+            font-size: 0.75rem;
+            line-height: 1.4;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-right: 5px;
+        }
+        
+        .box-content::-webkit-scrollbar { width: 4px; }
+        .box-content::-webkit-scrollbar-thumb { background: var(--green); }
+        .box-content::-webkit-scrollbar-track { background: var(--bg); }
+
+        a {
+            color: var(--cyan);
+            text-decoration: none;
+            cursor: pointer;
+        }
+        a:hover { text-decoration: underline; text-shadow: 0 0 8px var(--cyan); }
+        
+        a.amber-link {
+            color: var(--amber);
+            font-weight: bold;
+            display: block;
+            margin-top: 5px;
+            animation: text-flicker 3s infinite;
+        }
+        @keyframes text-flicker { 0%, 98%, 100% { opacity: 1;} 99% { opacity: 0; } }
+
+        /* Specific Box Styles */
+        #box-glglstats { position: relative; }
+        .soundwave { font-size: 1rem; color: var(--cyan); letter-spacing: 2px; }
+
+        #canvas-dibuk { position: absolute; top:0; left:0; width:100%; height:100%; z-index:-1; opacity:0.3; pointer-events: none;}
+
+        .polygon-container {
+            width: 100%; height: 60px; display: flex; justify-content: center; align-items: center;
+            perspective: 400px; margin-bottom: 10px;
+        }
+        .polygon {
+            width: 40px; height: 40px; transform-style: preserve-3d; animation: rotate-poly 10s linear infinite;
+            position: relative;
+        }
+        .poly-face {
+            position: absolute; width: 40px; height: 40px; border: 1px solid var(--cyan);
+            background: rgba(0, 255, 255, 0.05);
+        }
+        .poly-f1 { transform: translateZ(20px); }
+        .poly-f2 { transform: rotateY(90deg) translateZ(20px); }
+        .poly-f3 { transform: rotateX(90deg) translateZ(20px); }
+        @keyframes rotate-poly { 100% { transform: rotateY(360deg) rotateX(360deg); } }
+
+        .jest-split { display: flex; gap: 8px; height: 80px; font-size: 0.6rem; overflow:hidden;}
+        .jest-col { flex: 1; border: 1px solid rgba(255,255,255,0.2); padding: 4px; overflow:hidden; white-space: nowrap;}
+        .jest-left { color: var(--cyan); }
+        .jest-right { color: var(--red); text-align: right;}
+
+        .json-feed { color: #a6e22e; }
+        .json-key { color: #66d9ef; }
+        .json-string { color: #e6db74; }
+
+        .cat-art { font-size: 0.7rem; white-space: pre; line-height: 1.1; margin-bottom: 10px; }
+
+        .iframe-container { position: relative; width: 100%; flex:1; overflow: hidden; border: 1px solid rgba(0,255,65,0.2); pointer-events: none;}
+        .iframe-container iframe { position: absolute; width: 400%; height: 400%; transform: scale(0.25); transform-origin: 0 0; border: none; opacity: 0.6;}
+
+        .net-log { font-size: 0.6rem; color: #aaa; overflow:hidden; flex:1;}
+        .log-entry { margin-bottom: 2px;}
+        .port-light { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; animation: blink 1s infinite alternate; }
+        .light-green { background: var(--green); box-shadow: 0 0 5px var(--green); }
+        .light-red { background: var(--red); box-shadow: 0 0 5px var(--red); animation-duration: 0.5s; }
+
+        /* CLI Section */
+        #cli-container {
+            padding: 15px 20px 25px 20px;
+            background: rgba(0,0,0,0.8);
+            border-top: 1px solid rgba(0,255,65,0.3);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+        }
+        #suggestions {
+            font-size: 0.8rem; margin-bottom: 5px; display: flex; gap: 15px; opacity: 0.7;
+        }
+        .sugg { cursor: pointer; text-decoration: underline dotted; }
+        .sugg:hover { color: var(--cyan); }
+
+        .cli-line {
+            display: flex;
+            align-items: center;
+        }
+        .prompt { color: var(--green); font-weight: bold; margin-right: 10px; white-space: nowrap; }
+        #cli-input {
+            background: transparent;
+            border: none;
+            color: var(--cyan);
+            font-family: inherit;
+            font-size: 1rem;
+            flex: 1;
+            outline: none;
+            text-shadow: 0 0 3px var(--cyan);
+        }
+
+        /* Footer */
+        footer {
+            position: fixed;
+            bottom: 5px;
+            right: 15px;
+            color: var(--amber);
+            font-size: 0.6rem;
+            opacity: 0.6;
+            z-index: 10;
+            text-align: right;
+            pointer-events: none;
+        }
+        
+        /* Media Query for smaller screens */
+        @media (max-width: 1000px) {
+            main { grid-template-columns: repeat(2, 1fr); grid-template-rows: auto; overflow-y: auto;}
+            body { height: auto; min-height: 100vh; overflow-y: auto;}
+            footer { position: static; padding: 10px; text-align: center; }
+            #cli-container { position: sticky; bottom: 0; }
         }
     </style>
 </head>
-<body>
+<body class="box-title-hidden">
 
-    <!-- WebGL Canvas for hardware-accelerated math fractal backgrounds -->
-    <canvas id="webgl-canvas"></canvas>
+    <div class="ambient-glow"></div>
+    <div class="screen-curvature"></div>
+    <div class="vignette"></div>
 
-    <!-- ZUI Transform Viewport -->
-    <div id="zui-viewport">
-        <!-- Master Layer receiving dynamic Matrix transforms -->
-        <div id="zui-layer">
-            
-            <!-- Node 8: The Outer Ring (Macro View) -->
-            <div class="node node-8" style="left: 0px; top: -6000px; transform: translate(-50%, -50%) scale(15);">
-                <a href="https://github.com/gevak" target="_blank">github.com/gevak</a>
-                <a href="https://linkedin.com/in/gevakip" target="_blank">linkedin.com/in/gevakip</a>
-                <a href="https://facebook.com/geva.kipper" target="_blank">facebook.com/geva.kipper</a>
+    <header>
+        <div id="boot-sequence"></div>
+        <pre class="ascii-art">
+  ____                 _  ___                       
+ / ___| _____   ____ _| |/ (_)_ __  _ __   ___ _ __ 
+| |  _ / _ \ \ / / _` | ' /| | '_ \| '_ \ / _ \ '__|
+| |_| |  __/\ V / (_| | . \| | |_) | |_) |  __/ |   
+ \____|\___| \_/ \__,_|_|\_\_| .__/| .__/ \___|_|   
+                             |_|   |_|              
+        </pre>
+        <div class="status-line">STATUS: Currently engineering the mainframe as a Software Developer at Google.</div>
+        <div><span class="warning-line">WARNING: Interface architecture is redesigned and re-compiled daily by artificial intelligence. Real-time layout mutations are expected.</span></div>
+    </header>
+
+    <main id="terminal-grid">
+        <!-- Box 1 -->
+        <div class="box dimmed" id="box-glglstats" onclick="executeCommand('execute glglstats')">
+            <div class="box-title">tmux:1 [GlglStats]</div>
+            <div class="box-content">
+                <div class="soundwave" id="sw-anim">▂▃▅▇█▆▅▃</div>
+                <span class="decrypt">Algorithm initialized. Python/LZ77 temporal compression mapping Israeli pop-chart repetitiveness. Data parsed and normalized.</span>
+                <a href="https://glglstats.geekip.dev" target="_blank">> EXTERNAL_APP_LINK</a>
+                <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="amber-link">[EXECUTE_VIDEO_LOG] - PyData TLV</a>
             </div>
+        </div>
 
-            <!-- Node 1: The Data Spiral -->
-            <div class="node node-1" style="left: 2500px; top: -1500px; transform: translate(-50%, -50%) scale(1.5);">
-                <h3>GlglStats</h3>
-                <div class="soundwave"></div>
-                <p>An intricate Python architecture designed to measure the repetitiveness of Israeli pop-chart songs utilizing advanced LZ77 data compression algorithms, visualizing underlying musical patterns.</p>
-                <div style="display:flex; gap: 1rem; margin-top:0.5rem;">
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="btn">Launch Live App</a>
+        <!-- Box 2 -->
+        <div class="box dimmed" id="box-ahuzat_dibuk" onclick="executeCommand('execute ahuzat_dibuk')">
+            <canvas id="canvas-dibuk"></canvas>
+            <div class="box-title">tmux:2 [Ahuzat_Dibuk]</div>
+            <div class="box-content">
+                <span class="decrypt">Executing real-time scrape protocols on Tel Aviv territorial parking metrics. Heatmap generating... Data visualization active.</span>
+                <span style="color:var(--cyan); margin-top:5px; display:block;">Intercepted Transmissions:</span>
+                <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">> CH_13_BROADCAST</a>
+                <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">> MAKO_SIGNAL</a>
+                <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" class="amber-link">> DECRYPT_DARKNET_COMMS (Secret TLV)</a>
+            </div>
+        </div>
+
+        <!-- Box 3 -->
+        <div class="box dimmed" id="box-part_orienting" onclick="executeCommand('execute part_orienting')">
+            <div class="box-title">tmux:3 [2D_Part_Orienting]</div>
+            <div class="box-content">
+                <div class="polygon-container">
+                    <div class="polygon">
+                        <div class="poly-face poly-f1"></div>
+                        <div class="poly-face poly-f2"></div>
+                        <div class="poly-face poly-f3"></div>
+                    </div>
                 </div>
-                <iframe src="https://www.youtube.com/embed/jrKAtOsj1Lo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                <span class="decrypt">C++ Computational Geometry Engine. Constructing minimal push plans for 2D polygonal alignment. Optimization parameters satisfied.</span>
+                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="amber-link" style="margin-top:auto;">[ACCESS_SOURCE_LIBRARY] - TAU</a>
             </div>
+        </div>
 
-            <!-- Node 2: The Urban Grid -->
-            <div class="node node-2" style="left: -2800px; top: 1200px; transform: translate(-50%, -50%) scale(1.2);">
-                <h3>Ahuzat Dibuk</h3>
-                <p>A comprehensive Python scraping and geospatial data visualization platform. It continuously aggregates Tel-Aviv parking lot occupancy statistics to mathematically project and generate predictive heat-maps for metropolitan residents.</p>
-                <div class="badges">
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="badge">Channel 13 News</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="badge">Mako Tech</a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" class="badge">Secret Tel Aviv (Viral)</a>
+        <!-- Box 4 -->
+        <div class="box dimmed" id="box-turing_jest" onclick="executeCommand('execute turing_jest')">
+            <div class="box-title">tmux:4 [The_Turing_Jest]</div>
+            <div class="box-content">
+                <span class="decrypt">WARNING: AI adversarial conflict detected. Competitive pun-generating LLM battleground arena online. LMSYS heuristic matching engaged.</span>
+                <div class="jest-split">
+                    <div class="jest-col jest-left" id="jest-l">Loading weights...<br>Seed 0x9A...<br>Generate()...</div>
+                    <div class="jest-col jest-right" id="jest-r">SYS_OP...<br>Adversary active...<br>Compiling joke...</div>
                 </div>
+                <a href="https://jest.geekip.dev" target="_blank" class="amber-link" style="margin-top:auto;">[ENTER_THE_ARENA]</a>
             </div>
+        </div>
 
-            <!-- Node 3: The Algorithmic Vertex -->
-            <div class="node node-3" style="left: 2000px; top: 3000px; transform: translate(-50%, -50%) scale(1);">
-                <h3>2d-part-orienting</h3>
-                <p>An open-source C++ computational geometry implementation engineered to construct a highly efficient 'push plan' for optimally orienting arbitrary polygons in 2D space.</p>
-                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="terminal-link">SSH -> TAU Research Lab</a>
+        <!-- Box 5 -->
+        <div class="box dimmed" id="box-rhymes" onclick="executeCommand('execute rhymes')">
+            <div class="box-title">tmux:5 [Rhymes_of_Israel]</div>
+            <div class="box-content json-feed">
+<pre style="margin:0;"><span class="json-key">"extension"</span>: {
+  <span class="json-key">"context"</span>: <span class="json-string">"DOM Manipulation"</span>,
+  <span class="json-key">"engine"</span>: <span class="json-string">"LLM-Pipeline"</span>,
+  <span class="json-key">"desc"</span>: <span class="decrypt">"Translates news headlines into yearbook-style comedic rhymes."</span>
+}</pre>
+                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="amber-link" style="margin-top:auto;">> sudo apt-get install rhymes-ext</a>
             </div>
+        </div>
 
-            <!-- Node 4: The AI Nebula (Primary) -->
-            <div class="node node-4" style="left: -3000px; top: -2000px; transform: translate(-50%, -50%) scale(1.3);">
-                <h3>The Turing Jest</h3>
-                <p>An experimental, high-stakes LMSYS-like arena. Large Language Models engage in adversarial competition, generating and explaining complex puns, while a crowdsourced userbase evaluates their nuanced comedic reasoning.</p>
-                <a href="https://jest.geekip.dev" target="_blank" class="btn">Enter the Arena</a>
+        <!-- Box 6 -->
+        <div class="box dimmed" id="box-hatul_basak" onclick="executeCommand('execute hatul_basak')">
+            <div class="box-title">tmux:6 [Hatul_Basak]</div>
+            <div class="box-content">
+                <div class="cat-art" id="cat-anim"> /\_/\ <br>( o.o )<br> > ^ < </div>
+                <span class="decrypt">Hebrew 'catfishing.net' Trivia port active. Injecting AI-generated daily challenges and user-created themed puzzles into the datastream. Scraping Wikipedia...</span>
+                <a href="https://hatulbasak.geekip.dev" target="_blank" class="amber-link" style="margin-top:auto;">[INITIATE_TRIVIA_PROTOCOL]</a>
             </div>
+        </div>
 
-            <!-- Node 5: The AI Nebula (Adjacent) -->
-            <div class="node node-5" style="left: -2450px; top: -1900px; transform: translate(-50%, -50%) scale(1.1);">
-                <h3>Rhymes of Israel</h3>
-                <p>A satirical Chrome extension injecting logic-driven levity into the news cycle. It securely pipes live Israeli media headlines through LLMs to contextually rewrite them into meticulously metered, comedic high-school yearbook rhymes.</p>
-                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn">Install Extension</a>
+        <!-- Box 7 -->
+        <div class="box dimmed" id="box-system_mirror" onclick="executeCommand('execute system_mirror')">
+            <div class="box-title">tmux:7 [Paradox_Mirror]</div>
+            <div class="box-content" style="display: flex; flex-direction: column;">
+                <span class="decrypt">Recursive anomaly detected. AI visualizes rendering structure rendering itself. Pointer reference loops to origin.</span>
+                <div class="iframe-container">
+                    <iframe src="https://geekip.dev"></iframe>
+                </div>
+                <a href="https://geekip.dev" target="_blank">> PING_LOCAL_HOST</a>
             </div>
+        </div>
 
-            <!-- Node 6: The Trivia Nexus -->
-            <div class="node node-6" style="left: 600px; top: 800px; transform: translate(-50%, -50%) scale(0.3);">
-                <h3>Hatul Basak</h3>
-                <p>A sophisticated Hebrew localized port of the catfishing.net mechanics built on Wikipedia graph data. It features autonomously AI-generated daily logic challenges alongside a user-creation engine for themed trivia puzzles.</p>
-                <a href="https://hatulbasak.geekip.dev" target="_blank" class="btn">Play Daily Challenge</a>
+        <!-- Box 8 -->
+        <div class="box dimmed" id="box-net_logs" onclick="executeCommand('execute net_logs')">
+            <div class="box-title">tmux:8 [Social_Net_Sniffer]</div>
+            <div class="box-content">
+                <div style="margin-bottom: 10px;">
+                    <div><span class="port-light light-green"></span><a href="https://github.com/gevak" target="_blank">[ESTABLISH_GIT_LINK] -> github.com/gevak</a></div>
+                    <div><span class="port-light light-green"></span><a href="https://linkedin.com/in/gevakip" target="_blank">[ESTABLISH_PRO_LINK] -> linkedin.com/in/gevakip</a></div>
+                    <div><span class="port-light light-red"></span><a href="https://facebook.com/geva.kipper" target="_blank">[ESTABLISH_SOC_LINK] -> facebook.com/geva.kipper</a></div>
+                </div>
+                <span style="color:var(--amber); border-bottom:1px solid #333;">TX/RX ALIGNMENT LOGS:</span>
+                <div class="net-log" id="sniff-log"></div>
             </div>
+        </div>
+    </main>
 
-            <!-- Deep Easter Eggs embedded in fractal spirals -->
-            <div class="easter-egg" style="left: -150px; top: 120px; transform: scale(0.015) rotate(15deg);">
-                 > Core_Stack::init([Python, C++, Node.js, WebGL]);
-            </div>
-            <div class="easter-egg" style="left: 300px; top: -250px; transform: scale(0.008) rotate(-20deg);">
-                [Experience Record]: Software Engineer @ Google (202x - Subnet Present)
-            </div>
-
-            <!-- Node 7: The Droste Effect (Extreme Deep Zoom directly at Origin) -->
-            <div class="node node-7" style="left: 0px; top: 0px; transform: translate(-50%, -50%) scale(0.001);">
-                <h3>Recursion Anchor Unlocked</h3>
-                <p>You have reached the geometric origin of the current instance.</p>
-                <div class="droste-frame"></div>
-                <a href="https://geekip.dev" class="btn">Initiate Self-Reference Loop (geekip.dev)</a>
-            </div>
-
+    <div id="cli-container">
+        <div id="suggestions">
+            Ghosted cmds: 
+            <span class="sugg" onclick="executeCommand('ls')">ls</span>, 
+            <span class="sugg" onclick="executeCommand('execute glglstats')">execute glglstats</span>, 
+            <span class="sugg" onclick="executeCommand('help')">help</span>
+        </div>
+        <div class="cli-line">
+            <span class="prompt">geve-node@root:~/$ </span>
+            <input type="text" id="cli-input" autocomplete="off" spellcheck="false" autofocus>
+            <span style="animation: blink 1s step-end infinite;">█</span>
         </div>
     </div>
 
-    <!-- Fixed Foreground Headers -->
-    <header class="hud">
-        <h1>Geva Kipper</h1>
-        <h2>Software Engineer at Google architecting massively scalable backend systems and infrastructure.</h2>
-        <p class="glitch-text">Note: The geometry and layout of this portfolio are autonomously re-designed each day by AI and is thus ever-changing. You are viewing today's unique iteration.</p>
-    </header>
-
-    <div id="zoom-hint">Scroll wheel / trackpad to zoom. Drag to pan. dive deep.</div>
-
-    <footer class="footer-bar">
-        <span>Architected by an AI Language Model.</span>
-        <span id="timer">0D 00:00:00</span>
+    <footer>
+        SYSTEM GENERATED BY: Gemini 1.5 Pro / TEMPORAL ANOMALY DETECTED.<br>
+        UPTIME SINCE EPOCH 2026-07-07 02:28:34: <span id="stopwatch">00:00:00:000</span>
     </footer>
 
-    <!-- Core Engine Scripts -->
     <script>
-        // --- 1. Dynamic Daily Color System ---
-        function generateDailyPalette() {
-            const today = new Date().toISOString().split('T')[0];
-            let hash = 0;
-            for (let i = 0; i < today.length; i++) hash = today.charCodeAt(i) + ((hash << 5) - hash);
-            
-            // Generate a vibrant hue
-            const hue = Math.abs(hash) % 360;
-            
-            // HSL to RGB utility
-            let s = 1.0;
-            let l = 0.55;
-            let c = (1 - Math.abs(2 * l - 1)) * s;
-            let x = c * (1 - Math.abs((hue / 60) % 2 - 1));
-            let m = l - c/2;
-            let r=0, g=0, b=0;
-            
-            if(0 <= hue && hue < 60) {r=c; g=x; b=0;}
-            else if(60 <= hue && hue < 120) {r=x; g=c; b=0;}
-            else if(120 <= hue && hue < 180) {r=0; g=c; b=x;}
-            else if(180 <= hue && hue < 240) {r=0; g=x; b=c;}
-            else if(240 <= hue && hue < 300) {r=x; g=0; b=c;}
-            else if(300 <= hue && hue < 360) {r=c; g=0; b=x;}
-            
-            r = Math.round((r + m) * 255);
-            g = Math.round((g + m) * 255);
-            b = Math.round((b + m) * 255);
-            
-            // Apply to CSS root
-            document.documentElement.style.setProperty('--neon-rgb', `${r}, ${g}, ${b}`);
-            
-            return [r/255.0, g/255.0, b/255.0];
+        // --- Glitch on Scroll Logic ---
+        window.addEventListener('wheel', () => {
+            document.body.classList.add('glitch-active');
+            setTimeout(() => document.body.classList.remove('glitch-active'), 300);
+        });
+
+        // --- Boot Sequence Header ---
+        const bootText = "Kernel panic disabled... mounting root file system... UI mutating...\nWelcome, SYSADMIN. Connecting...";
+        let bootIdx = 0;
+        const bootElem = document.getElementById('boot-sequence');
+        function typeBoot() {
+            if (bootIdx < bootText.length) {
+                bootElem.innerHTML += bootText.charAt(bootIdx);
+                bootIdx++;
+                setTimeout(typeBoot, Math.random() * 50);
+            } else {
+                setTimeout(() => bootElem.innerHTML = "CONNECTION ESTABLISHED.", 500);
+                setTimeout(() => bootElem.style.display = 'none', 2000);
+            }
         }
+        typeBoot();
 
-        const neonRgbArr = generateDailyPalette();
+        // --- Stopwatch logic ---
+        const epochDate = new Date('2026-07-07T02:28:34Z').getTime();
+        const swElem = document.getElementById('stopwatch');
+        function updateStopwatch() {
+            const now = Date.now();
+            const diff = Math.abs(now - epochDate);
+            const hrs = String(Math.floor(diff / (1000 * 60 * 60))).padStart(2, '0');
+            const mins = String(Math.floor((diff / (1000 * 60)) % 60)).padStart(2, '0');
+            const secs = String(Math.floor((diff / 1000) % 60)).padStart(2, '0');
+            const ms = String(diff % 1000).padStart(3, '0');
+            swElem.innerText = `${hrs}:${mins}:${secs}:${ms}`;
+            requestAnimationFrame(updateStopwatch);
+        }
+        requestAnimationFrame(updateStopwatch);
 
-        // --- 2. Temporal Anchor Stopwatch ---
-        const temporalAnchor = new Date("2026-07-06T02:33:00Z").getTime();
-        const timerEl = document.getElementById('timer');
-        setInterval(() => {
-            const now = new Date().getTime();
-            // Using Math.abs ensures it runs even if anchor is in the future relative to reality
-            const diff = Math.abs(now - temporalAnchor);
-            const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const s = Math.floor((diff % (1000 * 60)) / 1000);
-            timerEl.innerText = `${d}D ${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-        }, 1000);
-
-        // --- 3. Hardware Accelerated ZUI Engine ---
-        const zuiLayer = document.getElementById('zui-layer');
-        const viewport = document.getElementById('zui-viewport');
-        const hint = document.getElementById('zoom-hint');
-        
-        let state = {
-            tX: window.innerWidth / 2, // Centered initially
-            tY: window.innerHeight / 2,
-            scale: 0.1 // Initially zoomed out to see structure
+        // --- Global Variables for Boxes ---
+        const boxes = document.querySelectorAll('.box');
+        const boxMap = {
+            'glglstats': 'box-glglstats',
+            'ahuzat_dibuk': 'box-ahuzat_dibuk',
+            'part_orienting': 'box-part_orienting',
+            'turing_jest': 'box-turing_jest',
+            'rhymes': 'box-rhymes',
+            'hatul_basak': 'box-hatul_basak',
+            'system_mirror': 'box-system_mirror',
+            'net_logs': 'box-net_logs'
         };
 
-        let targetState = { ...state };
-        let isDragging = false;
-        let lastPointer = { x: 0, y: 0 };
-
-        // Hide hint on interaction
-        const hideHint = () => { if(hint.style.opacity !== '0') hint.style.opacity = '0'; };
-
-        // Panning handler unified (mouse & touch)
-        viewport.addEventListener('pointerdown', (e) => {
-            if(e.target.closest('a') || e.target.closest('iframe')) return; // ignore clicks on interactive html
-            isDragging = true;
-            lastPointer = { x: e.clientX, y: e.clientY };
-            viewport.style.cursor = 'grabbing';
-            hideHint();
+        // Pre-store original text for decryption
+        const decryptElements = document.querySelectorAll('.decrypt');
+        decryptElements.forEach(el => {
+            el.dataset.original = el.innerText;
+            el.innerText = scrambleString(el.innerText);
         });
 
-        window.addEventListener('pointerup', () => { isDragging = false; viewport.style.cursor = 'auto'; });
-        window.addEventListener('pointerleave', () => isDragging = false);
+        function scrambleString(str) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+            let res = '';
+            for(let i=0; i<str.length; i++) {
+                res += str[i] === ' ' ? ' ' : chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return res;
+        }
 
-        window.addEventListener('pointermove', (e) => {
-            if (!isDragging) return;
-            const dx = e.clientX - lastPointer.x;
-            const dy = e.clientY - lastPointer.y;
-            targetState.tX += dx;
-            targetState.tY += dy;
-            lastPointer = { x: e.clientX, y: e.clientY };
+        function decryptEffect(element) {
+            const target = element.dataset.original;
+            let current = scrambleString(target);
+            element.innerText = current;
+            
+            let iterations = 0;
+            const maxIt = 20;
+            const interval = setInterval(() => {
+                let next = '';
+                for(let i=0; i<target.length; i++) {
+                    if (target[i] === ' ' || i < (target.length * (iterations/maxIt))) {
+                        next += target[i];
+                    } else {
+                        const chars = 'AB01!@#$';
+                        next += chars.charAt(Math.floor(Math.random() * chars.length));
+                    }
+                }
+                element.innerText = next;
+                iterations++;
+                if(iterations >= maxIt) {
+                    clearInterval(interval);
+                    element.innerText = target;
+                }
+            }, 30);
+        }
+
+        // --- CLI Logic ---
+        const cliInput = document.getElementById('cli-input');
+        
+        // Ensure focus stays
+        document.addEventListener('click', (e) => {
+            if(e.target.tagName !== 'A' && !e.target.classList.contains('sugg')) cliInput.focus();
         });
 
-        // Exponential Zooming handler (Wheel / Trackpad pinch)
-        viewport.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            hideHint();
-            
-            // Adjust sensitivity based on ctrlKey (true during trackpad pinch)
-            const zoomSensitivity = e.ctrlKey ? 0.005 : 0.001; 
-            const zoomFactor = Math.exp(-e.deltaY * zoomSensitivity);
-            
-            let newScale = targetState.scale * zoomFactor;
-            // Clamp scale: Allows zooming out past outer ring, and incredibly deep into Droste
-            newScale = Math.max(0.0001, Math.min(newScale, 20000));
-            
-            const scaleChange = newScale / targetState.scale;
+        cliInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const cmd = cliInput.value.trim().toLowerCase();
+                executeCommand(cmd);
+                cliInput.value = '';
+            }
+        });
 
-            // Zoom math keeping mouse pointer anchored
-            const mouseX = e.clientX;
-            const mouseY = e.clientY;
-            
-            targetState.tX = mouseX - (mouseX - targetState.tX) * scaleChange;
-            targetState.tY = mouseY - (mouseY - targetState.tY) * scaleChange;
-            targetState.scale = newScale;
-        }, { passive: false });
+        window.executeCommand = function(cmdStr) {
+            cliInput.value = cmdStr;
+            setTimeout(() => { cliInput.value = ''; }, 200);
 
-        // Smooth interpolation render loop
-        function applyTransform() {
-            // Lerp physical state towards target state for buttery smoothness
-            const lerpSpeed = 0.2;
-            state.tX += (targetState.tX - state.tX) * lerpSpeed;
-            state.tY += (targetState.tY - state.tY) * lerpSpeed;
-            state.scale += (targetState.scale - state.scale) * lerpSpeed;
+            if (cmdStr === 'ls') {
+                document.body.classList.remove('box-title-hidden');
+            } else if (cmdStr.startsWith('execute ')) {
+                const target = cmdStr.split(' ')[1];
+                if (boxMap[target]) {
+                    document.body.classList.remove('box-title-hidden'); // Reveal titles if not already
+                    
+                    boxes.forEach(b => {
+                        b.classList.remove('focused');
+                        b.classList.add('dimmed');
+                    });
+                    
+                    const el = document.getElementById(boxMap[target]);
+                    el.classList.remove('dimmed');
+                    el.classList.add('focused');
 
-            // Apply matrix to HTML layer
-            zuiLayer.style.transform = `matrix(${state.scale}, 0, 0, ${state.scale}, ${state.tX}, ${state.tY})`;
-            
-            requestAnimationFrame(applyTransform);
+                    // Trigger Decrypt on target elements inside this box
+                    const textNodes = el.querySelectorAll('.decrypt');
+                    textNodes.forEach(node => decryptEffect(node));
+
+                } else {
+                    alert(`bash: execute: ${target}: No such project found.`);
+                }
+            } else if (cmdStr === 'help') {
+                alert("Commands:\n- ls : Reveal project titles\n- execute [project_name] : Focus and decrypt project box\n- execute net_logs : View connections");
+            } else if (cmdStr === 'clear') {
+                boxes.forEach(b => {
+                    b.classList.remove('focused');
+                    b.classList.add('dimmed');
+                });
+                document.body.classList.add('box-title-hidden');
+            } else if (cmdStr !== '') {
+                alert(`bash: ${cmdStr}: command not found`);
+            }
         }
-        applyTransform();
 
-        // --- 4. WebGL Fractal Shader Pipeline Sync ---
-        const canvas = document.getElementById('webgl-canvas');
-        const gl = canvas.getContext('webgl');
+        // --- Box Specific Animations ---
 
-        if (gl) {
-            function resize() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-                gl.viewport(0, 0, canvas.width, canvas.height);
+        // Box 1 Soundwave
+        const swChars = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+        setInterval(() => {
+            let res = '';
+            for(let i=0; i<15; i++) res += swChars[Math.floor(Math.random() * swChars.length)];
+            document.getElementById('sw-anim').innerText = res;
+        }, 100);
+
+        // Box 2 Heatmap Matrix
+        const c = document.getElementById('canvas-dibuk');
+        const ctx = c.getContext('2d');
+        c.width = 300; c.height = 200;
+        const fontSz = 10;
+        const cols = c.width / fontSz;
+        const drops = Array(Math.floor(cols)).fill(1);
+        setInterval(() => {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, c.width, c.height);
+            ctx.font = fontSz + 'px monospace';
+            for (let i = 0; i < drops.length; i++) {
+                const text = String.fromCharCode(0x30A0 + Math.random() * 96);
+                ctx.fillStyle = Math.random() > 0.5 ? '#00FF41' : '#FF3333';
+                ctx.fillText(text, i * fontSz, drops[i] * fontSz);
+                if (drops[i] * fontSz > c.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
             }
-            window.addEventListener('resize', resize);
-            resize();
+        }, 50);
 
-            const vertexShaderSource = `
-                attribute vec2 position;
-                void main() {
-                    gl_Position = vec4(position, 0.0, 1.0);
-                }
-            `;
-
-            // Slowly morphing Julia Set mapped perfectly to HTML coordinate space
-            const fragmentShaderSource = `
-                precision highp float;
-                
-                uniform vec2 u_resolution;
-                uniform vec2 u_translate;
-                uniform float u_scale;
-                uniform float u_time;
-                uniform vec3 u_neon;
-
-                // Color palette function
-                vec3 palette(float t) {
-                    vec3 a = vec3(0.05, 0.05, 0.08); // Obsidian deep dark base
-                    vec3 b = u_neon; // Dynamic neon
-                    // Create sharp glowing bands
-                    return mix(a, b, pow(sin(t * 15.0) * 0.5 + 0.5, 4.0)); 
-                }
-
-                void main() {
-                    // Match HTML coordinate system
-                    vec2 screenPos = gl_FragCoord.xy;
-                    screenPos.y = u_resolution.y - screenPos.y; // Flip Y for WebGL vs DOM difference
-                    
-                    // Inverse transform to find underlying universal coordinate
-                    vec2 canvasPos = (screenPos - u_translate) / u_scale;
-                    
-                    // Map unit coordinates down to fractal math bounds (arbitrary scaling to fit visual design)
-                    vec2 uv = canvasPos * 0.001;
-                    
-                    vec2 z = uv;
-                    
-                    // Slowly animating morph parameter for Julia set
-                    vec2 c = vec2(sin(u_time * 0.05) * 0.5 - 0.2, cos(u_time * 0.07) * 0.5 + 0.1);
-
-                    const float MAX_ITER = 150.0;
-                    float iter = 0.0;
-                    float smooth_iter = 0.0;
-                    
-                    // Math Iteration Loop
-                    for(float i = 0.0; i < 150.0; i++) {
-                        if(dot(z,z) > 10.0) break;
-                        z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c;
-                        iter = i;
-                    }
-                    
-                    // Smooth coloring trick
-                    if (iter < MAX_ITER - 1.0) {
-                        smooth_iter = iter - log2(log2(dot(z,z))) + 4.0;
-                    }
-
-                    vec3 color = vec3(0.02, 0.02, 0.04); // pure base
-                    if(iter < MAX_ITER - 1.0) {
-                        color = palette(smooth_iter / 50.0 - u_time * 0.2);
-                    }
-                    
-                    // Add slight chromatic distortion towards borders / deep fractals
-                    gl_FragColor = vec4(color, 1.0);
-                }
-            `;
-
-            function createShader(type, source) {
-                const shader = gl.createShader(type);
-                gl.shaderSource(shader, source);
-                gl.compileShader(shader);
-                if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(shader));
-                return shader;
+        // Box 4 Jest Split AI
+        const jL = document.getElementById('jest-l');
+        const jR = document.getElementById('jest-r');
+        setInterval(() => {
+            if(Math.random()>0.7 && document.getElementById('box-turing_jest').classList.contains('focused')){
+                jL.innerHTML += `<br>[LLM_A]: 0x${Math.floor(Math.random()*16777215).toString(16)}`;
+                jR.innerHTML += `<br>[LLM_B]: 0x${Math.floor(Math.random()*16777215).toString(16)}`;
+                jL.scrollTop = jL.scrollHeight;
+                jR.scrollTop = jR.scrollHeight;
             }
+        }, 200);
 
-            const program = gl.createProgram();
-            gl.attachShader(program, createShader(gl.VERTEX_SHADER, vertexShaderSource));
-            gl.attachShader(program, createShader(gl.FRAGMENT_SHADER, fragmentShaderSource));
-            gl.linkProgram(program);
-            gl.useProgram(program);
+        // Box 6 Cat
+        const catFrames = [
+            " /\\_/\\ \n( o.o )\n > ^ < ",
+            " /\\_/\\ \n( -.- )\n > ^ < "
+        ];
+        let catFrame = 0;
+        setInterval(() => {
+            document.getElementById('cat-anim').innerText = catFrames[catFrame];
+            catFrame = 1 - catFrame;
+        }, 2000);
 
-            const positionBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
-
-            const positionLocation = gl.getAttribLocation(program, "position");
-            gl.enableVertexAttribArray(positionLocation);
-            gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-            const locRes = gl.getUniformLocation(program, "u_resolution");
-            const locTrans = gl.getUniformLocation(program, "u_translate");
-            const locScale = gl.getUniformLocation(program, "u_scale");
-            const locTime = gl.getUniformLocation(program, "u_time");
-            const locNeon = gl.getUniformLocation(program, "u_neon");
-
-            gl.uniform3f(locNeon, neonRgbArr[0], neonRgbArr[1], neonRgbArr[2]);
-
-            let startTime = Date.now();
-
-            function renderWebGL() {
-                // Pass synchronized HTML DOM states directly into the hardware Shader pipeline
-                gl.uniform2f(locRes, canvas.width, canvas.height);
-                gl.uniform2f(locTrans, state.tX, state.tY);
-                gl.uniform1f(locScale, state.scale);
-                gl.uniform1f(locTime, (Date.now() - startTime) * 0.001);
-
-                gl.drawArrays(gl.TRIANGLES, 0, 6);
-                requestAnimationFrame(renderWebGL);
+        // Box 8 Net Logs
+        const sniffLog = document.getElementById('sniff-log');
+        setInterval(() => {
+            if(document.getElementById('box-net_logs').style.opacity !== '0') {
+                const ip = `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.1`;
+                const proto = Math.random() > 0.5 ? 'TCP' : 'UDP';
+                const el = document.createElement('div');
+                el.className = 'log-entry';
+                el.innerText = `[${new Date().toISOString().substring(11,23)}] > ${proto} ${ip} : VERIFIED`;
+                sniffLog.prepend(el);
+                if(sniffLog.childNodes.length > 8) sniffLog.removeChild(sniffLog.lastChild);
             }
-            renderWebGL();
-        }
+        }, 800);
+
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260706",
+          pageId: "20260707",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
