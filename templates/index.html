@@ -2,566 +2,483 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | Digital Impact Constellation</title>
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
-    <!-- WebGL library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    
+    <title>GEVA KIPPER | Root Terminal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-void: #0B0C10;
-            --cyan: #00f3ff;
-            --magenta: #ff00ff;
-            --glass-bg: rgba(18, 19, 24, 0.4);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            /* Terminal Color Palette */
+            --void-black: #090909;
+            --phosphor-green: #00FF41;
+            --olive-green: #008F11;
+            --term-cyan: #00FFFF;
+            --alert-amber: #FFB000;
+            --pane-bg: rgba(18, 18, 18, 0.7);
         }
 
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
 
         body {
-            background-color: var(--bg-void);
-            color: #fff;
-            font-family: 'Space Grotesk', sans-serif;
-            overflow-x: hidden;
+            background-color: var(--void-black);
+            color: var(--phosphor-green);
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
             line-height: 1.6;
+            overflow-x: hidden;
+            padding: 2rem;
+            padding-bottom: 80px; /* Space for footer */
         }
 
-        /* WebGL Background */
-        #webgl-canvas {
+        /* CRT Effects Overlay */
+        .scanlines {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 0;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.15));
+            background-size: 100% 4px;
             pointer-events: none;
+            z-index: 9998;
+            opacity: 0.8;
+            animation: pulse-lines 10s linear infinite;
         }
 
-        /* Main Scroll Container */
-        main {
+        .vignette {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at center, rgba(0,0,0,0) 50%, rgba(0,0,0,0.7) 100%);
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        @keyframes pulse-lines {
+            0% { opacity: 0.8; }
+            50% { opacity: 0.6; }
+            100% { opacity: 0.8; }
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Boot Animations */
+        .seq-load {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .seq-load.loaded {
+            visibility: visible;
+            animation: bootUpPrint 0.15s ease-out forwards;
+        }
+
+        @keyframes bootUpPrint {
+            0% { opacity: 0; transform: translateY(-5px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Header Components */
+        header {
+            margin-bottom: 2rem;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cmd-prompt {
+            color: var(--phosphor-green);
+            font-weight: bold;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        
+        .cmd-cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.1rem;
+            background-color: var(--phosphor-green);
+            animation: blink 1s step-end infinite;
+            vertical-align: text-bottom;
+        }
+
+        .ascii-art {
+            color: var(--phosphor-green);
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 1rem;
+            white-space: pre-wrap;
+            font-size: clamp(8px, 1.2vw, 14px);
+            text-shadow: 0 0 5px rgba(0, 255, 65, 0.4);
+        }
+
+        .sys-output {
+            color: var(--olive-green);
+            margin-bottom: 1.5rem;
+            font-weight: 400;
+        }
+
+        .warning-banner {
+            border: 1px solid var(--alert-amber);
+            color: var(--alert-amber);
+            background: rgba(255, 176, 0, 0.05);
+            padding: 0.75rem 1rem;
+            display: inline-block;
+            box-shadow: 0 0 10px rgba(255, 176, 0, 0.1);
+        }
+
+        /* Tmux Multiplexer Layout */
+        .tmux-container {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            grid-auto-rows: dense;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        /* Pane Asymmetry classes */
+        .span-2 { grid-column: span 2; }
+        .span-row-2 { grid-row: span 2; }
+        
+        @media (max-width: 800px) {
+            .span-2 { grid-column: span 1; }
+            .tmux-container { grid-template-columns: 1fr; }
+        }
+
+        /* Content Panes */
+        .pane {
             position: relative;
-            z-index: 1;
-        }
-
-        /* Glassmorphism Base */
-        .glass {
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-        }
-
-        /* Typography */
-        h1, h2, h3 { font-weight: 700; }
-        a { color: var(--cyan); text-decoration: none; transition: 0.3s; }
-        a:hover { filter: drop-shadow(0 0 8px var(--cyan)); }
-        .mono { font-family: 'Fira Code', monospace; }
-
-        /* HERO SECTION */
-        .hero {
-            height: 100vh;
+            background-color: var(--pane-bg);
+            border: 1px solid var(--olive-green);
+            padding: 1.5rem 1.5rem 1.2rem;
+            transition: all 0.1s ease;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 20px;
+            justify-content: space-between;
         }
 
-        .hero h1 {
-            font-size: clamp(3rem, 8vw, 6rem);
-            letter-spacing: -0.05em;
-            text-transform: uppercase;
-            margin-bottom: 20px;
-            color: #fff;
-            text-shadow: 0 0 20px rgba(255,255,255,0.2);
-        }
-
-        .hero .badge {
-            padding: 8px 24px;
-            border-radius: 30px;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 30px;
-            display: inline-block;
-        }
-
-        .hero .subtitle {
-            font-size: 1.2rem;
-            color: #aaa;
-            max-width: 600px;
-            position: relative;
-        }
-
-        /* Glitch/Typewriter Anim */
-        .typewriter-glitch {
-            display: inline-block;
-            overflow: hidden;
-            white-space: nowrap;
-            border-right: 2px solid var(--magenta);
-            animation: typing 4s steps(60, end) infinite, blink 0.75s step-end infinite;
-        }
-        @keyframes typing { 0%, 20% { width: 0; } 80%, 100% { width: 100%; } }
-        @keyframes blink { 0%, 100% { border-color: transparent } 50% { border-color: var(--magenta) } }
-
-        /* TIMELINE LAYOUT */
-        .timeline-container {
-            position: relative;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 100px 20px;
-        }
-
-        #svg-timeline {
+        .pane-header {
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: -1;
-            pointer-events: none;
+            top: -11px;
+            left: 15px;
+            background-color: var(--void-black);
+            padding: 0 5px;
+            color: var(--olive-green);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
         }
 
-        .node {
-            width: 45%;
-            margin-bottom: 200px;
-            padding: 30px;
-            opacity: 0.1;
-            transform: scale(0.9) translateY(40px);
-            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
+        .pane-cursor {
+            color: var(--term-cyan);
+            opacity: 0;
+            margin-right: 5px;
+            transition: opacity 0s;
         }
 
-        .node.visible {
+        .pane:hover {
+            border-color: var(--term-cyan);
+            box-shadow: 0 0 12px rgba(0, 255, 255, 0.15), inset 0 0 10px rgba(0, 255, 255, 0.05);
+            z-index: 10;
+        }
+
+        .pane:hover .pane-header {
+            color: var(--term-cyan);
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+        }
+
+        .pane:hover .pane-cursor {
             opacity: 1;
-            transform: scale(1) translateY(0);
+            animation: blink 1s step-end infinite;
         }
 
-        .node.left { margin-right: auto; text-align: right; }
-        .node.right { margin-left: auto; text-align: left; }
-
-        @media(max-width: 768px) {
-            .node { width: 100%; margin-bottom: 150px; text-align: left !important; }
+        /* Text and Links inside panes */
+        .pane p {
+            margin-bottom: 1.2rem;
+            text-align: justify;
         }
 
-        /* -- NODE 1: GlglStats -- */
-        .node-glgl { overflow: hidden; }
-        .waveform-bg {
-            position: absolute; inset: 0; opacity: 0.1; z-index: -1;
-            background: repeating-linear-gradient(90deg, transparent, transparent 10px, var(--cyan) 10px, var(--cyan) 12px);
-            animation: waveSlide 20s linear infinite;
+        .link-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
         }
-        @keyframes waveSlide { 0% { background-position: 0 0; } 100% { background-position: 1000px 0; } }
-        .action-tray { display: flex; gap: 15px; margin-top: 20px; }
-        .node.left .action-tray { justify-content: flex-end; }
-        .icon-btn { display: flex; align-items: center; justify-content: center; width: 45px; height: 45px; border-radius: 50%; background: var(--glass-border); color: #fff; font-size: 1.2rem; transition: 0.3s; }
-        .icon-btn:hover { background: var(--cyan); box-shadow: 0 0 15px var(--cyan); }
 
-        /* -- NODE 2: Ahuzat Dibuk -- */
-        .node-ahuzat {
-            background: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255,0,0,0.15) 0%, rgba(0,255,0,0.05) 50%, var(--glass-bg) 100%);
+        .cmd-link {
+            text-decoration: none;
+            color: var(--phosphor-green);
+            font-weight: 600;
+            padding: 2px 0;
+            transition: all 0.2s;
+            position: relative;
+            display: inline-block;
         }
-        .pill-tray { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
-        .node.left .pill-tray { justify-content: flex-end; }
-        .pill { padding: 5px 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.3); font-size: 0.8rem; background: rgba(0,0,0,0.5); }
-        .pill:hover { border-color: var(--cyan); background: rgba(0, 243, 255, 0.1); }
-
-        /* -- NODE 3: 2D Part Orienting -- */
-        .node-2d h3 { font-family: 'Fira Code', monospace; font-size: 1.5rem; color: var(--cyan); }
-        .poly-anim {
-            position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; border: 1px dashed rgba(255,255,255,0.3);
-        }
-        .node.left .poly-anim { left: 10px; right: auto; }
-        .poly-shape {
-            width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 20px solid var(--magenta);
-            position: absolute; bottom: 5px; left: 10px;
-            animation: orient 3s ease-in-out infinite alternate;
-        }
-        @keyframes orient { 0% { transform: rotate(0deg) translate(0); } 100% { transform: rotate(90deg) translate(10px, -10px); } }
         
-        /* -- NODE 4: Turing Jest -- */
-        .jest-split { display: flex; gap: 10px; margin-top: 15px; position: relative; }
-        .bubble { padding: 15px; background: rgba(255,255,255,0.05); width: 50%; font-size: 0.9rem;}
-        .bubble.b1 { border-radius: 15px 15px 0 15px; border: 1px solid rgba(0, 243, 255, 0.3); }
-        .bubble.b2 { border-radius: 15px 15px 15px 0; border: 1px solid rgba(255, 0, 255, 0.3); }
-        .jest-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 10px 20px; background: #fff; color: #000; border-radius: 20px; font-weight: bold; box-shadow: 0 0 20px rgba(255,255,255,0.5); }
-        .jest-btn:hover { transform: translate(-50%, -50%) scale(1.1); }
+        .cmd-link::before { content: '['; color: var(--olive-green); margin-right: 2px;}
+        .cmd-link::after { content: ']'; color: var(--olive-green); margin-left: 2px;}
 
-        /* -- NODE 5: Rhymes -- */
-        .node-rhymes { border-top: 10px solid #ddd; position: relative; }
-        .node-rhymes::before { content: ''; position: absolute; top: -10px; left: 0; width: 100%; height: 10px; background: repeating-linear-gradient(45deg, #fff, #fff 5px, #ccc 5px, #ccc 10px); clip-path: polygon(0 0, 100% 5px, 100% 10px, 0 10px); }
-        .chrome-btn { display: inline-block; margin-top: 20px; padding: 10px 25px; background: linear-gradient(90deg, #4285F4, #34A853, #FBBC05, #EA4335); background-size: 200%; color: white; border-radius: 5px; font-weight: bold; animation: chromeHover 3s infinite alternate; }
-        @keyframes chromeHover { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
-
-        /* -- NODE 6: Hatul Basak -- */
-        .redacted {
-            background: #fff; color: #fff; filter: blur(4px); transition: 0.5s; cursor: pointer; border-radius: 2px;
+        .cmd-link:hover {
+            background-color: var(--term-cyan);
+            color: var(--void-black);
+            box-shadow: 3px 3px 0 var(--alert-amber), -2px -2px 0 var(--phosphor-green); /* Tech glitch effect */
+            text-shadow: none;
         }
-        .redacted:hover { background: transparent; color: inherit; filter: blur(0); }
-        .puzzle-cta { font-size: 3rem; text-align: center; display: block; margin-top: 10px; transition: transform 0.3s; }
-        .puzzle-cta:hover { transform: scale(1.2) rotate(15deg); }
         
-        /* -- NODE 7: Meta -- */
-        .droste { padding: 10px; border: 1px solid var(--glass-border); border-radius: 8px; margin-top: 20px; }
-        .droste-inner { padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; animation: drosteLoop 4s linear infinite; }
-        @keyframes drosteLoop { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.6); opacity: 0.2; } }
-
-        /* -- NODE 8: HUB -- */
-        .hub-node { width: 100%; text-align: center; margin-top: 100px; padding: 60px 20px; }
-        .hub-node h2 { margin-bottom: 40px; color: var(--magenta); font-size: 2.5rem; text-shadow: 0 0 15px rgba(255,0,255,0.5); }
-        .social-tray { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; }
-        .soc-icon {
-            width: 80px; height: 80px; display: flex; justify-content: center; align-items: center;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.5));
-            border: 2px solid var(--glass-border); border-radius: 20px;
-            font-size: 2.5rem; color: #fff;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: transform 0.1s linear, border-color 0.3s;
+        .cmd-link:hover::before, .cmd-link:hover::after {
+            color: var(--void-black);
         }
-        .soc-icon:hover { border-color: var(--cyan); }
 
-        /* FOOTER */
+        /* Special styled links for Box 8 */
+        .ping-link {
+            display: block;
+            text-decoration: none;
+            color: var(--term-cyan);
+            margin-bottom: 0.5rem;
+            transition: background 0.1s, color 0.1s;
+        }
+        
+        .ping-link:hover {
+            background-color: var(--term-cyan);
+            color: var(--void-black);
+        }
+
+        /* Footer Diagnostic Monitor */
         footer {
-            background: #050505;
-            padding: 30px 20px;
-            font-family: 'Fira Code', monospace;
-            color: #0c0;
-            text-align: center;
-            border-top: 1px solid #333;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background-color: var(--void-black);
+            border-top: 1px solid var(--olive-green);
+            padding: 8px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--olive-green);
+            z-index: 10000;
         }
-        .scanline { position: relative; display: inline-block; }
-        .scanline::after { content: ''; position: absolute; inset: 0; background: rgba(0,255,0,0.1); animation: scan 2s linear infinite; pointer-events: none;}
-        @keyframes scan { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
 
+        .daemon-thread {
+            flex: 1;
+        }
+
+        .uptime-monitor {
+            flex: 1;
+            text-align: right;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+        
+        .footer-cursor {
+            color: var(--phosphor-green);
+            margin-left: 8px;
+            animation: blink 1s step-end infinite;
+        }
+        
+        /* Selection Color */
+        ::selection {
+            background: var(--term-cyan);
+            color: var(--void-black);
+        }
     </style>
 </head>
 <body>
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
 
-    <!-- Three.js Canvas Container -->
-    <canvas id="webgl-canvas"></canvas>
+    <header>
+        <div class="cmd-prompt">
+            <span id="typewriter-text"></span><span class="cmd-cursor"></span>
+        </div>
+        
+        <div class="seq-load">
+<pre class="ascii-art">
+  ___ _____ _   _  _     _  ___ ___ ___ ___ ___ 
+ / __| __\ \ / / /_\   | |/ /_ _| _ \ _ \ __| _ \
+| (_ | _| \ V / / _ \  | ' < | ||  _/  _/ _||   /
+ \___|___| \_/ /_/ \_\ |_|\_\___|_| |_| |___|_|_\
+</pre>
+        </div>
+        
+        <div class="sys-output seq-load">
+            > CURRENT_PROCESS: Software Engineer creating tools and infrastructure at Google.
+        </div>
+        
+        <div class="warning-banner seq-load">
+            [WARNING: VOLATILE FRONTEND] Initializing daily AI-mutated layout.<br>
+            NOTE: This interface is redesigned and regenerated by AI every 24 hours. The current form is transient.
+        </div>
+    </header>
 
-    <main>
-        <section class="hero">
-            <h1>Geva Kipper</h1>
-            <div class="glass badge">Currently working at Google</div>
-            <div class="subtitle">
-                <span class="typewriter-glitch">This website is re-designed each day by AI and is thus ever-changing.</span>
-            </div>
-        </section>
-
-        <section class="timeline-container">
-            <svg id="svg-timeline">
-                <defs>
-                    <linearGradient id="neonGlow" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#00f3ff" />
-                        <stop offset="100%" stop-color="#ff00ff" />
-                    </linearGradient>
-                    <filter id="glowBlur" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="8" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                    </filter>
-                </defs>
-                <!-- Gray background path -->
-                <path id="path-bg" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"></path>
-                <!-- Colored active path -->
-                <path id="path-active" fill="none" stroke="url(#neonGlow)" stroke-width="4" filter="url(#glowBlur)"></path>
-            </svg>
-
-            <!-- 1. GlglStats -->
-            <div class="node glass left node-glgl">
-                <div class="waveform-bg"></div>
-                <h2>GlglStats</h2>
-                <p>Repetitiveness visualised. A Python pop-chart analysis project identifying LZ77 compression patterns in radio dynamics.</p>
-                <div class="action-tray">
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="icon-btn" aria-label="Visit Site">🔗</a>
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="icon-btn" aria-label="Watch Video">▶</a>
+    <main class="tmux-container">
+        
+        <!-- Box 1: GlglStats -->
+        <article class="pane seq-load span-2">
+            <div class="pane-header"><span class="pane-cursor">> █</span>~/projects/glglstats.py</div>
+            <div class="pane-content">
+                <p>A statistical analysis and data visualization tool built in Python. Designed to programmatically measure the repetitiveness of Israeli pop-chart songs utilizing LZ77 dictionary-based compression algorithms to map lyric redundancy across decades of broadcasts.</p>
+                <div class="link-container">
+                    <a href="https://glglstats.geekip.dev" target="_blank" class="cmd-link">HTTPS_GET: glglstats.geekip.dev</a>
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="cmd-link">SYS_VIDPLAY: PyData_TLV</a>
                 </div>
             </div>
+        </article>
 
-            <!-- 2. Ahuzat Dibuk -->
-            <div class="node glass right node-ahuzat">
-                <h2>Ahuzat Dibuk</h2>
-                <p>Scraping and visualizing Tel-Aviv's parking lot crisis. Identifying hot-zones through real-time heatmap heuristics.</p>
-                <div class="pill-tray">
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="pill">Channel 13</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="pill">Mako</a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" class="pill">Secret Tel-Aviv</a>
+        <!-- Box 2: Ahuzat Dibuk -->
+        <article class="pane seq-load span-2">
+            <div class="pane-header"><span class="pane-cursor">> █</span>~/data/ahuzat_dibuk.sh</div>
+            <div class="pane-content">
+                <p>A data scraping and mapping architecture designed to capture localized municipal parking lot occupancy statistics across Tel-Aviv. Translates raw city JSON endpoints into actionable historical heat-maps to aid locals in navigating the urban grid.</p>
+                <div class="link-container">
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="cmd-link">LOG: CHANNEL_13</a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="cmd-link">LOG: MAKO</a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="cmd-link">LOG: SECRET_TLV</a>
                 </div>
             </div>
+        </article>
 
-            <!-- 3. 2D Part Orienting -->
-            <div class="node glass left node-2d">
-                <div class="poly-anim"><div class="poly-shape"></div></div>
-                <h3 class="mono">2D_Part_Orienting.cpp</h3>
-                <p class="mono mt-2" style="font-size: 0.9em; margin-top: 15px; color: #ccc;">
-                    > Open-source computational geometry.<br>
-                    > Algorithmic polygon manipulation.<br>
-                    > Implemented in C++ via CGAL framework.
-                </p>
-                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" style="display:inline-block; margin-top:15px; font-weight:bold;">↳ View Code</a>
-            </div>
-
-            <!-- 4. The Turing Jest -->
-            <div class="node glass right">
-                <h2>The Turing Jest</h2>
-                <p>An LMSYS-inspired arena, exclusively for AI-generated puns. You be the judge.</p>
-                <div class="jest-split">
-                    <div class="bubble b1">"Why did the AI cross the road? To optimize the chicken."</div>
-                    <div class="bubble b2">"I told a joke to my server, but it didn't get the protocol."</div>
-                    <a href="https://jest.geekip.dev" target="_blank" class="jest-btn">Judge</a>
+        <!-- Box 3: 2D Part Orienting -->
+        <article class="pane seq-load">
+            <div class="pane-header"><span class="pane-cursor">> █</span>~/algos/2d_orient.cpp</div>
+            <div class="pane-content">
+                <p>Implementation of an efficient computational geometry algorithm deployed in a C++ open-source library. Calculates optimal 'push plans' required to robustly orient arbitrary 2D polygons on automated assembly lines.</p>
+                <div class="link-container">
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="cmd-link">REPO//CGL_DOCS</a>
                 </div>
             </div>
+        </article>
 
-            <!-- 5. Rhymes of Israel -->
-            <div class="node glass left node-rhymes">
-                <h2>Rhymes of Israel</h2>
-                <p>A comedic LLM headline rewriter bridging modern chrome APIs with a nostalgic high-school yearbook torn-paper aesthetic.</p>
-                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="chrome-btn">Add to Chrome</a>
-            </div>
-
-            <!-- 6. Hatul Basak -->
-            <div class="node glass right node-hatul">
-                <h2>Hatul Basak</h2>
-                <p>A daily AI-generated <span class="redacted">Hebrew Wikipedia</span> trivia game. Uncover <span class="redacted">cryptic themes</span> and solve user-created mental puzzles.</p>
-                <a href="https://hatulbasak.geekip.dev" target="_blank" class="puzzle-cta">🧩</a>
-            </div>
-
-            <!-- 7. Meta Portfolio -->
-            <div class="node glass left node-meta">
-                <h2>Meta Portfolio Droste</h2>
-                <p>Why build one portfolio when you can build a system that builds them? Highlighting the self-referential nature of this very page.</p>
-                <div class="droste">
-                    <div class="droste-inner">
-                        <div class="droste-inner" style="height: 20px;"></div>
-                    </div>
-                </div>
-                <div style="text-align:center; margin-top:15px;">
-                    <a href="https://geekip.dev" target="_blank" style="font-size:2rem;">♾</a>
+        <!-- Box 4: The Turing Jest -->
+        <article class="pane seq-load">
+            <div class="pane-header"><span class="pane-cursor">> █</span>~/games/turing_jest.exe</div>
+            <div class="pane-content">
+                <p>An LMSYS-style adversarial arena where rival Large Language Models are forced into grueling programmatic pun battles. User ratings dynamically weight model comedic efficacy based on complex humor parameters and punchline generation.</p>
+                <div class="link-container">
+                    <a href="https://jest.geekip.dev" target="_blank" class="cmd-link">ENTER_ARENA</a>
                 </div>
             </div>
+        </article>
 
-            <!-- 8. Social Hub -->
-            <div class="hub-node glass" id="hub-node">
-                <h2>Core Network</h2>
-                <div class="social-tray">
-                    <a href="https://github.com/gevak" target="_blank" class="soc-icon" id="gh">
-                        <svg width="40" height="40" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                    </a>
-                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="soc-icon" id="li">
-                        <svg width="40" height="40" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-                    </a>
-                    <a href="https://facebook.com/geva.kipper" target="_blank" class="soc-icon" id="fb">
-                        <svg width="40" height="40" fill="currentColor" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
-                    </a>
+        <!-- Box 5: Rhymes of Israel -->
+        <article class="pane seq-load">
+            <div class="pane-header"><span class="pane-cursor">> █</span>~/extensions/rhymes_of_israel.crx</div>
+            <div class="pane-content">
+                <p>A web-browser manifest V3 extension hijacking DOM elements on popular Israeli news sites. Leverages LLM pipelines to forcefully inject levity, creatively rewriting grim headlines into comedic rhymes resembling a high-school yearbook structure.</p>
+                <div class="link-container">
+                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="cmd-link">INSTALL: CHROME_WEBSTORE</a>
                 </div>
             </div>
-        </section>
+        </article>
+
+        <!-- Box 6: Hatul Basak -->
+        <article class="pane seq-load">
+            <div class="pane-header"><span class="pane-cursor">> █</span>~/games/hatul_basak.bin</div>
+            <div class="pane-content">
+                <p>A localized Hebrew port of the infamous Wikipedia network trivia game (catfishing.net). Engineered to support both AI-generated daily systemic challenges, alongside a framework for user-generated topical puzzle hubs.</p>
+                <div class="link-container">
+                    <a href="https://hatulbasak.geekip.dev" target="_blank" class="cmd-link">INITIALIZE_GAME</a>
+                </div>
+            </div>
+        </article>
+
+        <!-- Box 7: Meta Portfolio -->
+        <article class="pane seq-load">
+            <div class="pane-header"><span class="pane-cursor">> █</span>~/meta/portfolio.cfg</div>
+            <div class="pane-content">
+                <p>A recursive programmatic artifact detailing the exact interface currently rendering this text. Built on transient architectural constraints dictating a full systematic visual wipe and rebirth every 24 hours. You are here.</p>
+                <div class="link-container">
+                    <a href="https://geekip.dev" class="cmd-link">RECURSION_ROUTINE</a>
+                </div>
+            </div>
+        </article>
+
+        <!-- Box 8: System Socials -->
+        <article class="pane seq-load">
+            <div class="pane-header"><span class="pane-cursor">> █</span>~/network/social_protocols.sys</div>
+            <div class="pane-content" style="display:flex; flex-direction:column; justify-content:center; padding-top: 10px;">
+                <a href="https://github.com/gevak" target="_blank" class="ping-link">> PING github.com/gevak</a>
+                <a href="https://linkedin.com/in/gevakip" target="_blank" class="ping-link">> PING linkedin.com/in/gevakip</a>
+                <a href="https://facebook.com/geva.kipper" target="_blank" class="ping-link">> PING facebook.com/geva.kipper</a>
+            </div>
+        </article>
+
     </main>
 
     <footer>
-        <div class="scanline">
-            <div>> Designed by an AI Assistant</div>
-            <div id="clock-display" style="margin-top:5px; font-weight:bold;">> System Uptime since 2026-07-18 01:51:56: Evaluating...</div>
+        <div class="daemon-thread">
+            DAEMON_THREAD: Interface constructed and maintained by Assistant AI Architecture.
+        </div>
+        <div class="uptime-monitor">
+            SYS_UPTIME: [Tracking passed time since 2026-07-19 02:02:04] - <span id="uptime-clock" style="margin-left: 5px;">T+ 00:00:00</span>
+            <span class="footer-cursor">█</span>
         </div>
     </footer>
 
     <script>
-        // --- 1. WEBGL BACKGROUND (THREE.JS) ---
-        const canvas = document.getElementById('webgl-canvas');
-        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.z = 5;
-
-        // Fluid Mesh Gradient (Planes with shifting Shaders/Lights)
-        // We use lighting to create the fluid mesh gradient effect on a back plane
-        const planeGeo = new THREE.PlaneGeometry(20, 20, 32, 32);
-        const planeMat = new THREE.MeshStandardMaterial({ color: 0x0B0C10, roughness: 0.8, metalness: 0.2 });
-        const backgroundPlane = new THREE.Mesh(planeGeo, planeMat);
-        backgroundPlane.position.z = -10;
-        scene.add(backgroundPlane);
-
-        // Colored Lights to simulate fluid gradient
-        const lightCyan = new THREE.PointLight(0x00f3ff, 2, 20);
-        const lightMagenta = new THREE.PointLight(0xff00ff, 2, 20);
-        scene.add(lightCyan);
-        scene.add(lightMagenta);
-
-        // Wireframe Globe
-        const globeGeo = new THREE.IcosahedronGeometry(1.8, 2);
-        const globeMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.05 });
-        const globe = new THREE.Mesh(globeGeo, globeMat);
-        scene.add(globe);
-
-        function resizeWebGL() {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-        }
-        window.addEventListener('resize', resizeWebGL);
-        resizeWebGL();
-
-        // WebGL Animation loop
-        const clock = new THREE.Clock();
-        function animateWebGL() {
-            requestAnimationFrame(animateWebGL);
-            const time = clock.getElapsedTime();
+        document.addEventListener('DOMContentLoaded', () => {
+            // Boot Up Typing Animation
+            const bootOverlay = document.getElementById("typewriter-text");
+            const bootText = "root@geva-node:~$ whoami";
+            let charIndex = 0;
             
-            // Fluid light movement
-            lightCyan.position.set(Math.sin(time * 0.5) * 5, Math.cos(time * 0.3) * 5, -2);
-            lightMagenta.position.set(Math.cos(time * 0.4) * 5, Math.sin(time * 0.6) * 5, -2);
-            
-            // Globe autonomous rotation
-            globe.rotation.y += 0.001;
-            globe.rotation.x += 0.0005;
-
-            renderer.render(scene, camera);
-        }
-        animateWebGL();
-
-
-        // --- 2. DYNAMIC TIMELINE & SCROLL LOGIC ---
-        const svgTimeline = document.getElementById('svg-timeline');
-        const pathBg = document.getElementById('path-bg');
-        const pathActive = document.getElementById('path-active');
-        const nodes = document.querySelectorAll('.node, .hub-node');
-
-        function drawTimeline() {
-            const containerBox = document.querySelector('.timeline-container').getBoundingClientRect();
-            let d = `M ${containerBox.width / 2} 0 `; // Start top middle
-            
-            nodes.forEach((node, index) => {
-                const rect = node.getBoundingClientRect();
-                // Check if it's the hub (bottom center)
-                if(node.classList.contains('hub-node')) {
-                    d += `C ${containerBox.width / 2} ${rect.top - containerBox.top - 50}, ${containerBox.width / 2} ${rect.top - containerBox.top}, ${containerBox.width / 2} ${rect.top - containerBox.top} `;
+            function typeCmd() {
+                if (charIndex < bootText.length) {
+                    bootOverlay.textContent += bootText.charAt(charIndex);
+                    charIndex++;
+                    setTimeout(typeCmd, Math.random() * 50 + 20); // Variable typing speed
                 } else {
-                    const isLeft = node.classList.contains('left');
-                    const targetX = isLeft ? rect.right - containerBox.left : rect.left - containerBox.left;
-                    const targetY = rect.top + (rect.height / 2) - containerBox.top;
-                    
-                    const prevY = index === 0 ? 0 : nodes[index-1].getBoundingClientRect().top + (nodes[index-1].getBoundingClientRect().height / 2) - containerBox.top;
-                    // Cubic bezier for snake effect
-                    d += `S ${containerBox.width / 2} ${(prevY + targetY)/2}, ${targetX} ${targetY} `;
+                    setTimeout(triggerCascade, 200);
                 }
-            });
-
-            pathBg.setAttribute('d', d);
-            pathActive.setAttribute('d', d);
-            
-            const len = pathBg.getTotalLength();
-            pathActive.style.strokeDasharray = len;
-            pathActive.style.strokeDashoffset = len;
-        }
-
-        // Draw on load and resize
-        window.addEventListener('load', drawTimeline);
-        window.addEventListener('resize', drawTimeline);
-
-        // Scroll events for timeline fill and node fade-in
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if(entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                    // Spin globe to center on project reveal (parallax trick)
-                    gsapAnimateGlobeTarget(entry.target); 
-                }
-            });
-        }, { threshold: 0.1 });
-
-        nodes.forEach(node => observer.observe(node));
-
-        window.addEventListener('scroll', () => {
-            // Path filling logic
-            const scrollTop = window.scrollY;
-            const docHeight = document.body.offsetHeight;
-            const winHeight = window.innerHeight;
-            const scrollPercent = scrollTop / (docHeight - winHeight);
-            
-            const pathLen = pathBg.getTotalLength();
-            const drawLen = pathLen * scrollPercent;
-            
-            // Avoid negative/NaN on bounce overscrolls
-            if(pathLen > 0) {
-                pathActive.style.strokeDashoffset = pathLen - drawLen;
             }
 
-            // Tie globe rotation to scroll exactly
-            globe.rotation.y = scrollPercent * Math.PI * 2;
-        });
+            function triggerCascade() {
+                const elements = document.querySelectorAll('.seq-load');
+                elements.forEach((el, index) => {
+                    setTimeout(() => {
+                        el.classList.add('loaded');
+                    }, index * 120); // Delay each line/block 
+                });
+            }
 
-        function gsapAnimateGlobeTarget(node) {
-            // A simple CSS transition alternative to avoid GSAP dependency for a single file
-            // Let the scroll listener handle the main rotation, but bump the scale slightly
-            globe.scale.set(1.05, 1.05, 1.05);
-            setTimeout(() => globe.scale.set(1, 1, 1), 300);
-        }
+            // Start boot sequence
+            typeCmd();
 
-        // --- 3. SPECIFIC NODE INTERACTIONS ---
-        
-        // Ahuzat Dibuk Heatmap Hover
-        const nodeAhuzat = document.querySelector('.node-ahuzat');
-        nodeAhuzat.addEventListener('mousemove', (e) => {
-            const rect = nodeAhuzat.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            nodeAhuzat.style.setProperty('--mouse-x', `${x}px`);
-            nodeAhuzat.style.setProperty('--mouse-y', `${y}px`);
-        });
+            // Uptime Diagnostic Clock Calculation
+            const clockEl = document.getElementById('uptime-clock');
+            
+            // Note: Per spec, tracking time relative to "2026-07-19 02:02:04". 
+            // Using absolute math to ensure it consistently ticks upwards dynamically.
+            const targetDateStr = "2026-07-19T02:02:04";
+            const targetMs = new Date(targetDateStr).getTime();
 
-        // 3D Tilt for Social Hub Icons
-        const socIcons = document.querySelectorAll('.soc-icon');
-        socIcons.forEach(icon => {
-            icon.addEventListener('mousemove', e => {
-                const rect = icon.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                const rotateX = ((y - centerY) / centerY) * -15;
-                const rotateY = ((x - centerX) / centerX) * 15;
+            function updateUptime() {
+                const nowMs = new Date().getTime();
+                // Ensuring it ticks infinitely upwards regardless of temporal offset
+                let diff = Math.abs(nowMs - targetMs); 
                 
-                icon.style.transform = `perspective(500px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.1)`;
-            });
-            icon.addEventListener('mouseleave', () => {
-                icon.style.transform = 'perspective(500px) rotateX(0) rotateY(0) scale(1)';
-            });
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                const formatTime = (num) => String(num).padStart(2, '0');
+                
+                clockEl.textContent = `T+ ${formatTime(hours)}:${formatTime(minutes)}:${formatTime(seconds)}`;
+            }
+
+            // Initialize and loop Clock
+            updateUptime();
+            setInterval(updateUptime, 1000);
         });
-
-        // --- 4. FOOTER UPTIME CLOCK ---
-        // Target Date: 2026-07-18 01:51:56 Z
-        const systemStart = new Date(Date.UTC(2026, 6, 18, 1, 51, 56)).getTime(); // Month is 0-indexed (6=July)
-        const clockDisplay = document.getElementById('clock-display');
-
-        setInterval(() => {
-            // Absolute difference to handle running the code before the 2026 date without crashing the visual
-            const diffMs = Math.abs(Date.now() - systemStart); 
-            
-            let s = Math.floor(diffMs / 1000);
-            let h = Math.floor(s / 3600);
-            s %= 3600;
-            let m = Math.floor(s / 60);
-            s %= 60;
-            
-            const pH = h.toString().padStart(2, '0');
-            const pM = m.toString().padStart(2, '0');
-            const pS = s.toString().padStart(2, '0');
-
-            clockDisplay.innerText = `> System Uptime since 2026-07-18 01:51:56: [${pH}:${pM}:${pS}]`;
-        }, 1000);
-
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260718",
+          pageId: "20260719",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
