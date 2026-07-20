@@ -2,19 +2,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GEVA KIPPER | Root Terminal</title>
+    <title>Geva Kipper | Software Engineer IDE</title>
+    
+    <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
+        /* Modern IDE Theme (Dracula Inspired) */
         :root {
-            /* Terminal Color Palette */
-            --void-black: #090909;
-            --phosphor-green: #00FF41;
-            --olive-green: #008F11;
-            --term-cyan: #00FFFF;
-            --alert-amber: #FFB000;
-            --pane-bg: rgba(18, 18, 18, 0.7);
+            --bg-main: #282a36;
+            --bg-sidebar: #21222c;
+            --bg-panel: #44475a;
+            --bg-panel-hover: #383a59;
+            --status-bar: #bd93f9;
+            --status-text: #282a36;
+            
+            --text-main: #f8f8f2;
+            --text-muted: #6272a4;
+            
+            --syntax-pink: #ff79c6;
+            --syntax-cyan: #8be9fd;
+            --syntax-green: #50fa7b;
+            --syntax-yellow: #f1fa8c;
+            --syntax-orange: #ffb86c;
+            --syntax-red: #ff5555;
+            
+            --glow-cyan: 0 0 12px rgba(138, 233, 253, 0.6);
+            --glow-pink: 0 0 15px rgba(255, 121, 198, 0.8);
+            --glow-green: 0 0 12px rgba(80, 250, 123, 0.6);
         }
 
         * {
@@ -24,461 +42,549 @@
         }
 
         body {
-            background-color: var(--void-black);
-            color: var(--phosphor-green);
             font-family: 'Fira Code', monospace;
-            font-size: 14px;
-            line-height: 1.6;
-            overflow-x: hidden;
-            padding: 2rem;
-            padding-bottom: 80px; /* Space for footer */
-        }
-
-        /* CRT Effects Overlay */
-        .scanlines {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.15));
-            background-size: 100% 4px;
-            pointer-events: none;
-            z-index: 9998;
-            opacity: 0.8;
-            animation: pulse-lines 10s linear infinite;
-        }
-
-        .vignette {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: radial-gradient(circle at center, rgba(0,0,0,0) 50%, rgba(0,0,0,0.7) 100%);
-            pointer-events: none;
-            z-index: 9999;
-        }
-
-        @keyframes pulse-lines {
-            0% { opacity: 0.8; }
-            50% { opacity: 0.6; }
-            100% { opacity: 0.8; }
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
-        }
-
-        /* Boot Animations */
-        .seq-load {
-            opacity: 0;
-            visibility: hidden;
-        }
-        
-        .seq-load.loaded {
-            visibility: visible;
-            animation: bootUpPrint 0.15s ease-out forwards;
-        }
-
-        @keyframes bootUpPrint {
-            0% { opacity: 0; transform: translateY(-5px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Header Components */
-        header {
-            margin-bottom: 2rem;
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .cmd-prompt {
-            color: var(--phosphor-green);
-            font-weight: bold;
-            margin-bottom: 1rem;
-            font-size: 1.1rem;
-        }
-        
-        .cmd-cursor {
-            display: inline-block;
-            width: 10px;
-            height: 1.1rem;
-            background-color: var(--phosphor-green);
-            animation: blink 1s step-end infinite;
-            vertical-align: text-bottom;
-        }
-
-        .ascii-art {
-            color: var(--phosphor-green);
-            font-weight: 700;
-            line-height: 1.1;
-            margin-bottom: 1rem;
-            white-space: pre-wrap;
-            font-size: clamp(8px, 1.2vw, 14px);
-            text-shadow: 0 0 5px rgba(0, 255, 65, 0.4);
-        }
-
-        .sys-output {
-            color: var(--olive-green);
-            margin-bottom: 1.5rem;
-            font-weight: 400;
-        }
-
-        .warning-banner {
-            border: 1px solid var(--alert-amber);
-            color: var(--alert-amber);
-            background: rgba(255, 176, 0, 0.05);
-            padding: 0.75rem 1rem;
-            display: inline-block;
-            box-shadow: 0 0 10px rgba(255, 176, 0, 0.1);
-        }
-
-        /* Tmux Multiplexer Layout */
-        .tmux-container {
-            display: grid;
-            gap: 1.5rem;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            grid-auto-rows: dense;
-            max-width: 1280px;
-            margin: 0 auto;
-        }
-
-        /* Pane Asymmetry classes */
-        .span-2 { grid-column: span 2; }
-        .span-row-2 { grid-row: span 2; }
-        
-        @media (max-width: 800px) {
-            .span-2 { grid-column: span 1; }
-            .tmux-container { grid-template-columns: 1fr; }
-        }
-
-        /* Content Panes */
-        .pane {
-            position: relative;
-            background-color: var(--pane-bg);
-            border: 1px solid var(--olive-green);
-            padding: 1.5rem 1.5rem 1.2rem;
-            transition: all 0.1s ease;
+            background-color: var(--bg-main);
+            color: var(--text-main);
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            height: 100vh;
+            overflow: hidden;
+            letter-spacing: -0.5px;
         }
 
-        .pane-header {
-            position: absolute;
-            top: -11px;
-            left: 15px;
-            background-color: var(--void-black);
-            padding: 0 5px;
-            color: var(--olive-green);
-            font-size: 0.9rem;
+        /* Aesthetics & Interactions */
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-main);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--text-muted);
+            border: 3px solid var(--bg-main);
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--syntax-cyan);
+        }
+        ::selection {
+            background: var(--bg-panel);
+            color: var(--syntax-pink);
+        }
+        a {
+            color: var(--syntax-cyan);
+            text-decoration: none;
+            transition: color 0.2s, text-shadow 0.2s;
+        }
+        a:hover {
+            color: var(--syntax-pink);
+            text-shadow: var(--glow-pink);
+        }
+
+        /* Layout */
+        .ide-wrapper {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid #191a21;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 10px 15px;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
             display: flex;
             align-items: center;
+            gap: 8px;
+        }
+        .file-tree {
+            list-style: none;
+            padding: 0;
+        }
+        .file-item {
+            padding: 6px 15px 6px 30px;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .file-item:hover, .file-item.active {
+            background-color: var(--bg-panel);
+            color: var(--syntax-cyan);
         }
 
-        .pane-cursor {
-            color: var(--term-cyan);
-            opacity: 0;
-            margin-right: 5px;
-            transition: opacity 0s;
+        /* Main Editor Area */
+        .main-editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            position: relative;
         }
 
-        .pane:hover {
-            border-color: var(--term-cyan);
-            box-shadow: 0 0 12px rgba(0, 255, 255, 0.15), inset 0 0 10px rgba(0, 255, 255, 0.05);
-            z-index: 10;
+        /* Header / Docstring */
+        .docstring-header {
+            padding: 30px 40px;
+            background: linear-gradient(180deg, rgba(33,34,44,0.6) 0%, transparent 100%);
+            border-bottom: 1px dashed var(--bg-panel);
+            font-size: 1.1rem;
+            line-height: 1.6;
         }
-
-        .pane:hover .pane-header {
-            color: var(--term-cyan);
-            text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
-        }
-
-        .pane:hover .pane-cursor {
-            opacity: 1;
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.1em;
+            background-color: var(--syntax-pink);
+            vertical-align: text-bottom;
             animation: blink 1s step-end infinite;
         }
+        @keyframes blink { 50% { opacity: 0; } }
 
-        /* Text and Links inside panes */
-        .pane p {
-            margin-bottom: 1.2rem;
-            text-align: justify;
+        /* Project Grid */
+        .project-grid {
+            padding: 30px 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 25px;
+            padding-bottom: 60px;
         }
 
-        .link-container {
+        /* Project Box / Tab */
+        .box {
+            background-color: var(--bg-main);
+            border: 1px solid var(--bg-panel);
+            border-radius: 8px;
+            overflow: hidden;
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .box:hover {
+            border-color: var(--syntax-cyan);
+            box-shadow: var(--glow-cyan);
+            transform: translateY(-2px);
+        }
+
+        .tab-bar {
+            background-color: var(--bg-sidebar);
+            padding: 8px 15px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #191a21;
+            display: flex;
+            align-items: center;
             gap: 10px;
         }
+        
+        .tab-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--syntax-red);
+            box-shadow: 16px 0 0 var(--syntax-yellow), 32px 0 0 var(--syntax-green);
+            margin-right: 25px;
+        }
 
-        .cmd-link {
-            text-decoration: none;
-            color: var(--phosphor-green);
-            font-weight: 600;
-            padding: 2px 0;
-            transition: all 0.2s;
-            position: relative;
+        .pane-content {
+            padding: 15px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            flex: 1;
+            counter-reset: line;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow-x: auto;
+        }
+
+        .line {
+            display: flex;
+            align-items: flex-start;
+        }
+        .line::before {
+            counter-increment: line;
+            content: counter(line);
             display: inline-block;
-        }
-        
-        .cmd-link::before { content: '['; color: var(--olive-green); margin-right: 2px;}
-        .cmd-link::after { content: ']'; color: var(--olive-green); margin-left: 2px;}
-
-        .cmd-link:hover {
-            background-color: var(--term-cyan);
-            color: var(--void-black);
-            box-shadow: 3px 3px 0 var(--alert-amber), -2px -2px 0 var(--phosphor-green); /* Tech glitch effect */
-            text-shadow: none;
-        }
-        
-        .cmd-link:hover::before, .cmd-link:hover::after {
-            color: var(--void-black);
+            min-width: 25px;
+            text-align: right;
+            margin-right: 15px;
+            color: var(--text-muted);
+            user-select: none;
+            opacity: 0.7;
         }
 
-        /* Special styled links for Box 8 */
-        .ping-link {
-            display: block;
+        /* Syntax Colors */
+        .s-comment { color: var(--text-muted); }
+        .s-pink { color: var(--syntax-pink); }
+        .s-cyan { color: var(--syntax-cyan); }
+        .s-green { color: var(--syntax-green); }
+        .s-yellow { color: var(--syntax-yellow); }
+        .s-orange { color: var(--syntax-orange); }
+        .s-red { color: var(--syntax-red); }
+
+        /* Custom Box Visuals */
+        .ascii-chart {
+            font-family: 'Fira Code', monospace;
+            color: var(--syntax-green);
+            font-size: 0.75rem;
+            line-height: 1.2;
+            margin-bottom: 10px;
+            white-space: pre;
+        }
+
+        .wireframe-bg {
+            background-image: 
+                linear-gradient(rgba(138, 233, 253, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(138, 233, 253, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* Buttons & Actions */
+        .actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .ide-btn {
+            background-color: var(--bg-panel);
+            color: var(--text-main);
+            border: 1px solid var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.8rem;
+            cursor: pointer;
             text-decoration: none;
-            color: var(--term-cyan);
-            margin-bottom: 0.5rem;
-            transition: background 0.1s, color 0.1s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
         }
-        
-        .ping-link:hover {
-            background-color: var(--term-cyan);
-            color: var(--void-black);
+        .ide-btn:hover {
+            border-color: var(--syntax-cyan);
+            color: var(--syntax-cyan);
+            background-color: var(--bg-panel-hover);
+        }
+        .ide-btn.glowing {
+            border-color: var(--syntax-pink);
+            color: var(--syntax-pink);
+            box-shadow: var(--glow-pink);
+            animation: pulse-pink 2s infinite;
+        }
+        @keyframes pulse-pink {
+            0% { box-shadow: 0 0 5px rgba(255, 121, 198, 0.4); }
+            50% { box-shadow: 0 0 15px rgba(255, 121, 198, 0.9); }
+            100% { box-shadow: 0 0 5px rgba(255, 121, 198, 0.4); }
         }
 
-        /* Footer Diagnostic Monitor */
-        footer {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            background-color: var(--void-black);
-            border-top: 1px solid var(--olive-green);
-            padding: 8px 20px;
+        /* Status Bar */
+        .status-bar {
+            height: 32px;
+            background-color: var(--status-bar);
+            color: var(--status-text);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0 20px;
             font-size: 0.85rem;
-            color: var(--olive-green);
-            z-index: 10000;
+            font-weight: 700;
+            z-index: 10;
         }
-
-        .daemon-thread {
-            flex: 1;
-        }
-
-        .uptime-monitor {
-            flex: 1;
-            text-align: right;
+        .status-section {
             display: flex;
-            justify-content: flex-end;
             align-items: center;
+            gap: 8px;
         }
-        
-        .footer-cursor {
-            color: var(--phosphor-green);
-            margin-left: 8px;
-            animation: blink 1s step-end infinite;
+        .blink-status {
+            animation: statusLight 1s infinite alternate;
         }
-        
-        /* Selection Color */
-        ::selection {
-            background: var(--term-cyan);
-            color: var(--void-black);
+        @keyframes statusLight {
+            from { opacity: 0.5; }
+            to { opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .sidebar { display: none; }
+            .project-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="scanlines"></div>
-    <div class="vignette"></div>
 
-    <header>
-        <div class="cmd-prompt">
-            <span id="typewriter-text"></span><span class="cmd-cursor"></span>
+    <div class="ide-wrapper">
+        <!-- Explorer Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-chevron-down"></i> EXPLORER
+            </div>
+            <div class="sidebar-header" style="padding-top:0;">
+                <i class="fas fa-chevron-down"></i> GEEKIP_WORKSPACE
+            </div>
+            <ul class="file-tree">
+                <li class="file-item active"><i class="fab fa-python s-cyan"></i> glglstats.py</li>
+                <li class="file-item"><i class="fab fa-python s-yellow"></i> ahuzat_dibuk.py</li>
+                <li class="file-item"><i class="fab fa-cuttlefish s-cyan"></i> orienting.cpp</li>
+                <li class="file-item"><i class="fab fa-js s-yellow"></i> turing_jest.js</li>
+                <li class="file-item"><i class="fas fa-file-code s-green"></i> rhymes_of_israel.json</li>
+                <li class="file-item"><i class="fas fa-file-code s-cyan"></i> hatul_basak.ts</li>
+                <li class="file-item"><i class="fab fa-html5 s-orange"></i> portfolio.html</li>
+                <li class="file-item"><i class="fas fa-user-secret s-pink"></i> secrets.env</li>
+            </ul>
+        </aside>
+
+        <!-- Main Editor -->
+        <main class="main-editor">
+            
+            <!-- Docstring Header -->
+            <header class="docstring-header">
+                <div class="line s-comment">"""</div>
+                <div class="line"><span class="s-pink">const</span>&nbsp;<span class="s-cyan">developer</span> = <span class="s-yellow">"Geva Kipper"</span>;</div>
+                <div class="line"><span class="s-pink">const</span>&nbsp;<span class="s-cyan">currentRole</span> = <span class="s-yellow">"Software Engineer @ Google"</span>;</div>
+                <div class="line"><br></div>
+                <div class="line"><span class="s-orange">WARNING:</span> This UI is completely re-designed each day by an AI agent.</div>
+                <div class="line">Expect ever-changing layouts and continuous mutations.<span class="cursor"></span></div>
+                <div class="line s-comment">"""</div>
+            </header>
+
+            <!-- 8 Windows Array -->
+            <div class="project-grid">
+
+                <!-- Box 1 -->
+                <div class="box">
+                    <div class="tab-bar">
+                        <div class="tab-indicator"></div>
+                        <i class="fab fa-python s-cyan"></i> glglstats.py
+                    </div>
+                    <div class="pane-content">
+                        <div class="line"><span class="s-pink">import</span> data_viz</div>
+                        <div class="line s-comment"># LZ77 Repetitiveness Score of Israeli Pop</div>
+                        <div class="line">
+                            <pre class="ascii-chart">
+ Score
+  1.0 |       * 
+  0.8 |     *   *   _.*
+  0.6 |   *       *    
+  0.4 |_*               
+       ------------------
+       Time ->
+                            </pre>
+                        </div>
+                        <div class="line">Measuring lyrics repetitiveness in chart-topping</div>
+                        <div class="line">songs using the LZ77 compression algorithm.</div>
+                        <div class="line actions">
+                            <a href="https://glglstats.geekip.dev" target="_blank" class="ide-btn"><i class="fas fa-play"></i> Run App</a>
+                            <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="ide-btn"><i class="fab fa-youtube"></i> PyData TLV Talk</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Box 2 -->
+                <div class="box">
+                    <div class="tab-bar">
+                        <div class="tab-indicator"></div>
+                        <i class="fab fa-python s-yellow"></i> ahuzat_dibuk.py
+                    </div>
+                    <div class="pane-content">
+                        <div class="line s-comment"># Jupyter Cell: Scraping TLV Parking Lots</div>
+                        <div class="line"><span class="s-green">user@sys:~$</span> python generate_heatmap.py</div>
+                        <div class="line">... Fetching endpoints [OK]</div>
+                        <div class="line">... Overlaying distress zones [OK]</div>
+                        <div class="line s-pink">>>> HEATMAP GENERATED SUCCESSFULLY</div>
+                        <div class="line"><br></div>
+                        <div class="line s-comment"># Media & Press Coverage Hooks Executed:</div>
+                        <div class="line">
+                            <span class="s-cyan">-></span> <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">[Channel 13 News]</a>
+                        </div>
+                        <div class="line">
+                            <span class="s-cyan">-></span> <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">[Mako Nexter]</a>
+                        </div>
+                        <div class="line">
+                            <span class="s-cyan">-></span> <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank">[Secret Tel-Aviv FB]</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Box 3 -->
+                <div class="box wireframe-bg">
+                    <div class="tab-bar">
+                        <div class="tab-indicator"></div>
+                        <i class="fab fa-cuttlefish s-cyan"></i> orienting.cpp
+                    </div>
+                    <div class="pane-content">
+                        <div class="line"><span class="s-pink">#include</span> <span class="s-yellow">&lt;comp_geom.h&gt;</span></div>
+                        <div class="line"><span class="s-pink">void</span> <span class="s-green">computePushPlan</span>(Polygon2D p) {</div>
+                        <div class="line">&nbsp;&nbsp;<span class="s-comment">// 2D Part Orienting Algorithm</span></div>
+                        <div class="line">&nbsp;&nbsp;<span class="s-comment">// Constructs a robust "push plan" to </span></div>
+                        <div class="line">&nbsp;&nbsp;<span class="s-comment">// geometrically orient diverse polygons.</span></div>
+                        <div class="line">&nbsp;&nbsp;Library::OpenSource::inject(p);</div>
+                        <div class="line">}</div>
+                        <div class="line actions">
+                            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="ide-btn"><i class="fas fa-code-branch"></i> Git Commit / TAU Research</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Box 4 -->
+                <div class="box">
+                    <div class="tab-bar">
+                        <div class="tab-indicator"></div>
+                        <i class="fab fa-js s-yellow"></i> turing_jest.js
+                    </div>
+                    <div class="pane-content">
+                        <div class="line"><span class="s-pink">class</span> <span class="s-cyan">TheTuringJest</span> {</div>
+                        <div class="line">&nbsp;&nbsp;<span class="s-green">constructor</span>() {</div>
+                        <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="s-pink">this</span>.mode = <span class="s-yellow">'LMSYS_Arena'</span>;</div>
+                        <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="s-pink">this</span>.objective = <span class="s-yellow">'Puns & Humor'</span>;</div>
+                        <div class="line">&nbsp;&nbsp;}</div>
+                        <div class="line">&nbsp;&nbsp;<span class="s-comment">// LLMs blindly compete to craft jokes.</span></div>
+                        <div class="line">&nbsp;&nbsp;<span class="s-comment">// Humans rate the logic behind the pun.</span></div>
+                        <div class="line">}</div>
+                        <div class="line actions" style="margin-top: 25px; justify-content: center;">
+                            <a href="https://jest.geekip.dev" target="_blank" class="ide-btn glowing" style="font-size: 1rem; font-weight: bold;">[Execute: Enter Arena]</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Box 5 -->
+                <div class="box">
+                    <div class="tab-bar">
+                        <div class="tab-indicator"></div>
+                        <i class="fas fa-file-code s-green"></i> rhymes_of_israel.json
+                    </div>
+                    <div class="pane-content">
+                        <div class="line s-orange">{</div>
+                        <div class="line">&nbsp;&nbsp;<span class="s-pink">"name"</span>: <span class="s-yellow">"Rhymes of Israel"</span>,</div>
+                        <div class="line">&nbsp;&nbsp;<span class="s-pink">"type"</span>: <span class="s-yellow">"Chrome Extension"</span>,</div>
+                        <div class="line">&nbsp;&nbsp;<span class="s-pink">"description"</span>: <span class="s-yellow">"Rewrites Israeli news headlines into highschool yearbook-style comedic rhymes via LLM pipelines."</span>,</div>
+                        <div class="line">&nbsp;&nbsp;<span class="s-pink">"permissions"</span>: [<span class="s-yellow">"activeTab"</span>, <span class="s-yellow">"humor"</span>]</div>
+                        <div class="line s-orange">}</div>
+                        <div class="line actions">
+                            <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="ide-btn"><i class="fab fa-chrome"></i> Download Plugin</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Box 6 -->
+                <div class="box">
+                    <div class="tab-bar">
+                        <div class="tab-indicator"></div>
+                        <i class="fas fa-file-code s-cyan"></i> hatul_basak.ts
+                    </div>
+                    <div class="pane-content">
+                        <div class="line"><span class="s-pink">const</span> <span class="s-cyan">hatulBasak</span>: <span class="s-green">App</span> = {</div>
+                        <div class="line">&nbsp;&nbsp;origin: <span class="s-yellow">'Hebrew port of catfishing.net'</span>,</div>
+                        <div class="line">&nbsp;&nbsp;engine: <span class="s-yellow">'Daily AI Trivia Generation'</span>,</div>
+                        <div class="line">&nbsp;&nbsp;mechanics: <span class="s-yellow">'User-generated themes mixed with Wikipedia'</span></div>
+                        <div class="line">};</div>
+                        <div class="line actions" style="margin-top: 20px;">
+                            <a href="https://hatulbasak.geekip.dev" target="_blank" class="ide-btn"><span class="s-cyan">playDaily</span><span class="s-pink">()</span></a>
+                            <a href="https://hatulbasak.geekip.dev" target="_blank" class="ide-btn"><span class="s-cyan">createPuzzle</span><span class="s-pink">()</span></a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Box 7 -->
+                <div class="box">
+                    <div class="tab-bar">
+                        <div class="tab-indicator"></div>
+                        <i class="fab fa-html5 s-orange"></i> portfolio.html
+                    </div>
+                    <div class="pane-content">
+                        <div class="line"><span class="s-pink">&lt;</span><span class="s-cyan">div</span> <span class="s-green">id</span>=<span class="s-yellow">"meta-gag"</span><span class="s-pink">&gt;</span></div>
+                        <div class="line">&nbsp;&nbsp;<span class="s-pink">&lt;</span><span class="s-cyan">p</span><span class="s-pink">&gt;</span></div>
+                        <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;A meta self-referential project </div>
+                        <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;displaying the exact site DOM you </div>
+                        <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;are currently viewing.</div>
+                        <div class="line">&nbsp;&nbsp;<span class="s-pink">&lt;/</span><span class="s-cyan">p</span><span class="s-pink">&gt;</span></div>
+                        <div class="line"><span class="s-pink">&lt;/</span><span class="s-cyan">div</span><span class="s-pink">&gt;</span></div>
+                        <div class="line actions">
+                            <a href="https://geekip.dev" class="ide-btn"><i class="fas fa-undo"></i> Recurse()</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Box 8 -->
+                <div class="box">
+                    <div class="tab-bar">
+                        <div class="tab-indicator"></div>
+                        <i class="fas fa-user-secret s-pink"></i> secrets.env
+                    </div>
+                    <div class="pane-content">
+                        <div class="line s-comment"># Connection Endpoints</div>
+                        <div class="line s-comment"># ====================</div>
+                        <div class="line"><span class="s-cyan">GITHUB</span>=<span class="s-yellow">"<a href="https://github.com/gevak" target="_blank">github.com/gevak</a>"</span></div>
+                        <div class="line"><span class="s-cyan">LINKEDIN</span>=<span class="s-yellow">"<a href="https://linkedin.com/in/gevakip" target="_blank">linkedin.com/in/gevakip</a>"</span></div>
+                        <div class="line"><span class="s-cyan">FACEBOOK</span>=<span class="s-yellow">"<a href="https://facebook.com/geva.kipper" target="_blank">facebook.com/geva.kipper</a>"</span></div>
+                        <div class="line"><br></div>
+                        <div class="line s-comment"># SECRETS LOADED. ENV READY.</div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- IDE Status Bar -->
+    <footer class="status-bar">
+        <div class="status-section">
+            <i class="fas fa-robot"></i> Compiled by: Multi-Node LLM - AI Architect Agent.
         </div>
-        
-        <div class="seq-load">
-<pre class="ascii-art">
-  ___ _____ _   _  _     _  ___ ___ ___ ___ ___ 
- / __| __\ \ / / /_\   | |/ /_ _| _ \ _ \ __| _ \
-| (_ | _| \ V / / _ \  | ' < | ||  _/  _/ _||   /
- \___|___| \_/ /_/ \_\ |_|\_\___|_| |_| |___|_|_\
-</pre>
-        </div>
-        
-        <div class="sys-output seq-load">
-            > CURRENT_PROCESS: Software Engineer creating tools and infrastructure at Google.
-        </div>
-        
-        <div class="warning-banner seq-load">
-            [WARNING: VOLATILE FRONTEND] Initializing daily AI-mutated layout.<br>
-            NOTE: This interface is redesigned and regenerated by AI every 24 hours. The current form is transient.
-        </div>
-    </header>
-
-    <main class="tmux-container">
-        
-        <!-- Box 1: GlglStats -->
-        <article class="pane seq-load span-2">
-            <div class="pane-header"><span class="pane-cursor">> █</span>~/projects/glglstats.py</div>
-            <div class="pane-content">
-                <p>A statistical analysis and data visualization tool built in Python. Designed to programmatically measure the repetitiveness of Israeli pop-chart songs utilizing LZ77 dictionary-based compression algorithms to map lyric redundancy across decades of broadcasts.</p>
-                <div class="link-container">
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="cmd-link">HTTPS_GET: glglstats.geekip.dev</a>
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="cmd-link">SYS_VIDPLAY: PyData_TLV</a>
-                </div>
-            </div>
-        </article>
-
-        <!-- Box 2: Ahuzat Dibuk -->
-        <article class="pane seq-load span-2">
-            <div class="pane-header"><span class="pane-cursor">> █</span>~/data/ahuzat_dibuk.sh</div>
-            <div class="pane-content">
-                <p>A data scraping and mapping architecture designed to capture localized municipal parking lot occupancy statistics across Tel-Aviv. Translates raw city JSON endpoints into actionable historical heat-maps to aid locals in navigating the urban grid.</p>
-                <div class="link-container">
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="cmd-link">LOG: CHANNEL_13</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="cmd-link">LOG: MAKO</a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank" class="cmd-link">LOG: SECRET_TLV</a>
-                </div>
-            </div>
-        </article>
-
-        <!-- Box 3: 2D Part Orienting -->
-        <article class="pane seq-load">
-            <div class="pane-header"><span class="pane-cursor">> █</span>~/algos/2d_orient.cpp</div>
-            <div class="pane-content">
-                <p>Implementation of an efficient computational geometry algorithm deployed in a C++ open-source library. Calculates optimal 'push plans' required to robustly orient arbitrary 2D polygons on automated assembly lines.</p>
-                <div class="link-container">
-                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="cmd-link">REPO//CGL_DOCS</a>
-                </div>
-            </div>
-        </article>
-
-        <!-- Box 4: The Turing Jest -->
-        <article class="pane seq-load">
-            <div class="pane-header"><span class="pane-cursor">> █</span>~/games/turing_jest.exe</div>
-            <div class="pane-content">
-                <p>An LMSYS-style adversarial arena where rival Large Language Models are forced into grueling programmatic pun battles. User ratings dynamically weight model comedic efficacy based on complex humor parameters and punchline generation.</p>
-                <div class="link-container">
-                    <a href="https://jest.geekip.dev" target="_blank" class="cmd-link">ENTER_ARENA</a>
-                </div>
-            </div>
-        </article>
-
-        <!-- Box 5: Rhymes of Israel -->
-        <article class="pane seq-load">
-            <div class="pane-header"><span class="pane-cursor">> █</span>~/extensions/rhymes_of_israel.crx</div>
-            <div class="pane-content">
-                <p>A web-browser manifest V3 extension hijacking DOM elements on popular Israeli news sites. Leverages LLM pipelines to forcefully inject levity, creatively rewriting grim headlines into comedic rhymes resembling a high-school yearbook structure.</p>
-                <div class="link-container">
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="cmd-link">INSTALL: CHROME_WEBSTORE</a>
-                </div>
-            </div>
-        </article>
-
-        <!-- Box 6: Hatul Basak -->
-        <article class="pane seq-load">
-            <div class="pane-header"><span class="pane-cursor">> █</span>~/games/hatul_basak.bin</div>
-            <div class="pane-content">
-                <p>A localized Hebrew port of the infamous Wikipedia network trivia game (catfishing.net). Engineered to support both AI-generated daily systemic challenges, alongside a framework for user-generated topical puzzle hubs.</p>
-                <div class="link-container">
-                    <a href="https://hatulbasak.geekip.dev" target="_blank" class="cmd-link">INITIALIZE_GAME</a>
-                </div>
-            </div>
-        </article>
-
-        <!-- Box 7: Meta Portfolio -->
-        <article class="pane seq-load">
-            <div class="pane-header"><span class="pane-cursor">> █</span>~/meta/portfolio.cfg</div>
-            <div class="pane-content">
-                <p>A recursive programmatic artifact detailing the exact interface currently rendering this text. Built on transient architectural constraints dictating a full systematic visual wipe and rebirth every 24 hours. You are here.</p>
-                <div class="link-container">
-                    <a href="https://geekip.dev" class="cmd-link">RECURSION_ROUTINE</a>
-                </div>
-            </div>
-        </article>
-
-        <!-- Box 8: System Socials -->
-        <article class="pane seq-load">
-            <div class="pane-header"><span class="pane-cursor">> █</span>~/network/social_protocols.sys</div>
-            <div class="pane-content" style="display:flex; flex-direction:column; justify-content:center; padding-top: 10px;">
-                <a href="https://github.com/gevak" target="_blank" class="ping-link">> PING github.com/gevak</a>
-                <a href="https://linkedin.com/in/gevakip" target="_blank" class="ping-link">> PING linkedin.com/in/gevakip</a>
-                <a href="https://facebook.com/geva.kipper" target="_blank" class="ping-link">> PING facebook.com/geva.kipper</a>
-            </div>
-        </article>
-
-    </main>
-
-    <footer>
-        <div class="daemon-thread">
-            DAEMON_THREAD: Interface constructed and maintained by Assistant AI Architecture.
-        </div>
-        <div class="uptime-monitor">
-            SYS_UPTIME: [Tracking passed time since 2026-07-19 02:02:04] - <span id="uptime-clock" style="margin-left: 5px;">T+ 00:00:00</span>
-            <span class="footer-cursor">█</span>
+        <div class="status-section">
+            <i class="far fa-clock blink-status"></i> 
+            <span id="stopwatch">Δ 00d 00:00:00</span>
         </div>
     </footer>
 
+    <!-- Scripts -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Boot Up Typing Animation
-            const bootOverlay = document.getElementById("typewriter-text");
-            const bootText = "root@geva-node:~$ whoami";
-            let charIndex = 0;
+        // Blinking Live Stopwatch Delta
+        function updateStopwatch() {
+            // Anchor date specified in the design doc
+            const anchorDate = new Date("2026-07-20T03:25:39").getTime();
+            const now = new Date().getTime();
             
-            function typeCmd() {
-                if (charIndex < bootText.length) {
-                    bootOverlay.textContent += bootText.charAt(charIndex);
-                    charIndex++;
-                    setTimeout(typeCmd, Math.random() * 50 + 20); // Variable typing speed
-                } else {
-                    setTimeout(triggerCascade, 200);
-                }
-            }
-
-            function triggerCascade() {
-                const elements = document.querySelectorAll('.seq-load');
-                elements.forEach((el, index) => {
-                    setTimeout(() => {
-                        el.classList.add('loaded');
-                    }, index * 120); // Delay each line/block 
-                });
-            }
-
-            // Start boot sequence
-            typeCmd();
-
-            // Uptime Diagnostic Clock Calculation
-            const clockEl = document.getElementById('uptime-clock');
+            // Absolute difference delta
+            const diff = Math.abs(now - anchorDate);
             
-            // Note: Per spec, tracking time relative to "2026-07-19 02:02:04". 
-            // Using absolute math to ensure it consistently ticks upwards dynamically.
-            const targetDateStr = "2026-07-19T02:02:04";
-            const targetMs = new Date(targetDateStr).getTime();
+            // Math magic for time
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            // Format to DDd HH:MM:SS
+            const pad = (num) => num.toString().padStart(2, '0');
+            const formatStr = `Δ ${pad(days)}d ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+            
+            document.getElementById('stopwatch').textContent = formatStr;
+            
+            requestAnimationFrame(updateStopwatch);
+        }
 
-            function updateUptime() {
-                const nowMs = new Date().getTime();
-                // Ensuring it ticks infinitely upwards regardless of temporal offset
-                let diff = Math.abs(nowMs - targetMs); 
-                
-                const hours = Math.floor(diff / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-                
-                const formatTime = (num) => String(num).padStart(2, '0');
-                
-                clockEl.textContent = `T+ ${formatTime(hours)}:${formatTime(minutes)}:${formatTime(seconds)}`;
-            }
-
-            // Initialize and loop Clock
-            updateUptime();
-            setInterval(updateUptime, 1000);
-        });
+        // Initialize clock
+        updateStopwatch();
     </script>
+
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260719",
+          pageId: "20260720",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
