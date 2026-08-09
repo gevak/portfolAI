@@ -2,818 +2,551 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - Bioluminescent Cyber-Ocean</title>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Montserrat:wght@400;700;900&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+    <title>Geva Kipper | Viewfinder</title>
     <style>
+        /* BASE & RESET */
         :root {
-            --bg-deep: #02050f;
-            --bg-black: #000000;
-            --glass-bg: rgba(10, 15, 30, 0.4);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --text-main: #e0e6ed;
-            
-            /* Tentacle Colors */
-            --c1: #ff007f; /* Neon Pink */
-            --c2: #ff8c00; /* Amber Orange */
-            --c3: #0077ff; /* Electric Blue */
-            --c4: #b026ff; /* Neon Purple */
-            --c5: #00ffaa; /* Mint Green */
-            --c6: #00ffff; /* Cyan */
-            --c7: #ff00ff; /* Magenta */
-            --c8: #e0e0e0; /* Silver/White */
+            --bg-dark: #0a0a0c;
+            --hud-white: rgba(255, 255, 255, 0.85);
+            --hud-red: #ff3333;
+            --hud-green: #33ff33;
+            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body, html {
+            width: 100%; height: 100%;
+            background-color: #000;
+            color: var(--hud-white);
+            font-family: var(--font-mono);
+            overflow: hidden; /* Hide body scroll, handle internally */
             user-select: none;
         }
 
-        body, html {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: radial-gradient(circle at center, var(--bg-deep) 0%, var(--bg-black) 100%);
-            font-family: 'Montserrat', sans-serif;
-            color: var(--text-main);
-            perspective: 1000px;
-        }
-
-        /* SVG Background Layer for Tentacles */
-        #ocean-canvas {
+        /* BACKGROUND PARALLAX */
+        #bg-canvas {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: -5%; left: -5%;
+            width: 110%; height: 110%;
+            background: radial-gradient(circle at center, #1a1a24 0%, #050505 80%);
+            filter: blur(20px);
             z-index: 1;
-            pointer-events: none;
+            transition: transform 0.1s ease-out;
         }
-
-        .tentacle-path {
-            fill: none;
-            stroke-width: 4;
-            stroke-linecap: round;
-            filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 20px currentColor);
-            transition: stroke-width 0.3s ease;
-        }
-
-        /* Central Head */
-        #octopus-head {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10;
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 30px;
-            padding: 2.5rem 3rem;
-            text-align: center;
-            box-shadow: 0 0 40px rgba(0, 120, 255, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.05);
-            max-width: 600px;
-            pointer-events: auto;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        #octopus-head::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            border-radius: inherit;
-            background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 255, 255, 0.03) 10px, rgba(0, 255, 255, 0.03) 20px);
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        h1 {
-            font-size: 3.5rem;
-            font-weight: 900;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(180deg, #fff 0%, #a0b0c0 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -1px;
-        }
-
-        .subtitle-1 {
-            font-size: 1.1rem;
-            font-weight: 400;
-            margin-bottom: 1.5rem;
-            color: #a9b5c5;
-            line-height: 1.5;
-        }
-
-        .subtitle-2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 1rem;
-            font-style: italic;
-            color: #00f3ff;
-            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
-            animation: pulseText 3s infinite alternate;
-        }
-
-        @keyframes pulseText {
-            0% { opacity: 0.6; text-shadow: 0 0 5px rgba(0, 243, 255, 0.3); }
-            100% { opacity: 1; text-shadow: 0 0 15px rgba(0, 243, 255, 0.8); }
-        }
-
-        /* Nodes Container */
-        #nodes-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 5;
-            pointer-events: none;
-        }
-
-        .node-wrapper {
-            position: absolute;
-            transform: translate(-50%, -50%);
-            pointer-events: auto;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-
-        /* Orb State */
-        .orb {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: var(--c);
-            box-shadow: 0 0 15px var(--c), 0 0 30px var(--c), inset 0 0 10px rgba(255,255,255,0.8);
-            cursor: pointer;
-            transition: all 0.4s ease;
-            position: absolute;
-        }
-
-        /* Card State */
-        .card {
-            position: absolute;
-            width: 320px;
-            height: auto;
-            min-height: 200px;
-            background: rgba(15, 20, 35, 0.6);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-top: 3px solid var(--c);
-            border-radius: 16px;
-            padding: 20px;
-            opacity: 0;
-            transform: scale(0.1);
-            pointer-events: none;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 20px rgba(var(--c-rgb), 0.2);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            color: #fff;
-        }
-
-        .node-wrapper:hover .orb {
-            transform: scale(0);
-            opacity: 0;
-        }
-
-        .node-wrapper:hover .card {
-            opacity: 1;
-            transform: scale(1);
-            pointer-events: auto;
-        }
-
-        .card-title {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--c);
-            margin-bottom: 10px;
-            text-shadow: 0 0 8px rgba(var(--c-rgb), 0.4);
-            z-index: 2;
-        }
-
-        .card-desc {
-            font-size: 0.9rem;
-            line-height: 1.5;
-            color: #c0c8d0;
-            margin-bottom: 20px;
-            flex-grow: 1;
-            z-index: 2;
-        }
-
-        .card-links {
-            display: flex;
-            gap: 10px;
-            z-index: 2;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--c);
-            color: #fff;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-
-        .btn:hover {
-            background: var(--c);
-            color: #000;
-            box-shadow: 0 0 15px var(--c);
-        }
-
-        .icon-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-        }
-
-        .icon-btn svg { width: 18px; height: 18px; fill: currentColor; }
-
-        /* Card Visual Backgrounds (CSS Art) */
-        .card-bg {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            z-index: 0;
-            opacity: 0.15;
-            pointer-events: none;
-            border-radius: inherit;
-        }
-
-        /* GlglStats */
-        #card-0 .card-bg {
-            background: repeating-linear-gradient(90deg, transparent, transparent 5px, var(--c1) 5px, var(--c1) 8px);
-            mask-image: linear-gradient(to top, transparent, black);
-            -webkit-mask-image: linear-gradient(to top, transparent, black);
-            animation: waveform 2s infinite alternate ease-in-out;
-        }
-        @keyframes waveform { 0% { background-position: 0 50px; } 100% { background-position: 0 -10px; } }
-
-        /* Ahuzat Dibuk */
-        #card-1 .card-bg {
-            background: radial-gradient(circle at 20% 80%, red, transparent 40%),
-                        radial-gradient(circle at 80% 20%, yellow, transparent 40%),
-                        radial-gradient(circle at 50% 50%, orange, transparent 60%);
-            filter: blur(10px);
-        }
-
-        /* 2D Part Orienting */
-        #card-2 .card-bg {
-            background-image: 
-                linear-gradient(var(--c3) 1px, transparent 1px),
-                linear-gradient(90deg, var(--c3) 1px, transparent 1px);
-            background-size: 30px 30px;
-            transform: perspective(500px) rotateX(60deg) translateY(-50px) translateZ(-200px);
-            animation: gridMove 10s linear infinite;
-        }
-        @keyframes gridMove { to { background-position: 0 30px; } }
-
-        /* The Turing Jest */
-        #card-3 .card-bg::after {
-            content: "🎭";
-            font-size: 150px;
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            opacity: 0.2;
-            filter: drop-shadow(0 0 10px var(--c4)) grayscale(1) sepia(1) hue-rotate(240deg);
-        }
-
-        /* Rhymes of Israel */
-        #card-4 .card-bg {
-            background: #fff;
-            opacity: 0.05;
-            background-image: repeating-linear-gradient(transparent, transparent 19px, rgba(0,0,0,0.5) 20px);
-        }
-        #card-4 .card-bg::before {
-            content: "✍️";
-            font-size: 80px; position: absolute; bottom: -10px; right: 10px; transform: rotate(-15deg);
-        }
-
-        /* Hatul Basak */
-        #card-5 .card-bg::after {
-            content: "🧩";
-            font-size: 120px;
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            opacity: 0.2;
-        }
-
-        /* Meta Portfolio */
-        #card-6 .card-bg::after {
-            content: "∞";
-            font-size: 200px;
-            font-family: serif;
-            color: var(--c7);
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            animation: spinInf 10s linear infinite;
-        }
-        @keyframes spinInf { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
-
-        /* Connections */
-        #card-7 .card { background: transparent; border: none; box-shadow: none; align-items: center; justify-content: center; }
-        .social-3d-container { display: flex; gap: 30px; }
-        .social-3d {
-            width: 80px; height: 80px;
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.3);
-            display: flex; justify-content: center; align-items: center;
-            color: #fff;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            text-decoration: none;
-            transform-style: preserve-3d;
-        }
-        .social-3d svg { width: 40px; height: 40px; fill: currentColor; transform: translateZ(20px); }
-        .social-3d:hover {
-            transform: translateY(-10px) rotateX(10deg) rotateY(-10deg);
-            background: rgba(255,255,255,0.2);
-            box-shadow: 0 15px 30px rgba(255,255,255,0.2), inset 0 0 20px rgba(255,255,255,0.5);
-            color: var(--c8);
-        }
-
-        /* Focus Mode Mechanics */
-        body.focused #octopus-head {
-            opacity: 0.1;
-            filter: blur(10px);
-            pointer-events: none;
-        }
-
-        body.focused .node-wrapper:not(.active) {
-            opacity: 0.1;
-            filter: blur(8px);
-            pointer-events: none;
-        }
-
-        body.focused .node-wrapper.active {
-            z-index: 100;
-        }
-
-        body.focused .node-wrapper.active .orb { display: none; }
         
-        body.focused .node-wrapper.active .card {
-            opacity: 1;
-            transform: scale(1.5);
-            pointer-events: auto;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.8), 0 0 50px rgba(var(--c-rgb), 0.4);
+        .bg-noise {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background-image: repeating-radial-gradient(circle at 17% 32%, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 2px);
+            opacity: 0.3;
         }
 
-        #close-btn {
-            position: fixed;
-            top: 40px;
-            right: 40px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: #fff;
-            font-size: 24px;
+        /* SCROLL CONTAINER (FILMSTRIP) */
+        #scroll-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            overflow-x: auto;
+            overflow-y: hidden;
+            display: flex;
+            align-items: center;
+            z-index: 10;
+            padding: 0 50vw; /* Center first and last items */
+            scroll-behavior: smooth;
+            /* Hide scrollbar */
+            scrollbar-width: none; 
+            -ms-overflow-style: none;
+        }
+        #scroll-container::-webkit-scrollbar { display: none; }
+
+        /* HUD OVERLAY (FIXED) */
+        #hud {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; /* Let clicks pass to snapshots */
+            z-index: 100;
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+
+        /* Cinematic Letterboxing */
+        .letterbox { height: 8vh; background: #000; width: 100%; }
+        
+        /* Grid & Crosshair */
+        .rule-of-thirds {
+            position: absolute; top: 8vh; bottom: 8vh; left: 10vw; right: 10vw;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr;
+        }
+        .rule-of-thirds div { border: 1px dashed rgba(255,255,255,0.05); }
+        .crosshair {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 1.5rem; color: rgba(255,255,255,0.3); letter-spacing: 2px;
+        }
+
+        /* Top HUD Elements */
+        .hud-top { position: absolute; top: 2vh; left: 2vw; right: 2vw; display: flex; justify-content: space-between; z-index: 101; }
+        .hud-top-left, .hud-top-right { width: 40%; }
+        
+        .title-block { display: flex; align-items: center; gap: 10px; font-size: 1.2rem; font-weight: bold; letter-spacing: 1px; }
+        .rec-dot { width: 12px; height: 12px; background: var(--hud-red); border-radius: 50%; box-shadow: 0 0 10px var(--hud-red); animation: pulse 1.5s infinite; }
+        .subtitle { font-size: 0.7rem; color: #888; margin-top: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .hud-top-right { text-align: right; font-size: 0.65rem; color: #888; text-transform: uppercase; border-left: 1px solid rgba(255,0,0,0.3); padding-left: 15px; }
+        .hud-warning { color: var(--hud-red); font-weight: bold; margin-bottom: 3px; }
+
+        /* Bottom HUD Elements */
+        .hud-bottom { position: absolute; bottom: 2vh; left: 2vw; right: 2vw; display: flex; justify-content: space-between; align-items: flex-end; z-index: 101; }
+        
+        .hud-meter, .hud-battery { font-size: 0.7rem; text-transform: uppercase; color: #888; width: 150px;}
+        .hud-meter { text-align: left; }
+        .meter-bar { height: 4px; background: rgba(255,255,255,0.2); margin-top: 5px; position: relative; overflow: hidden; }
+        .meter-fill { height: 100%; background: var(--hud-white); width: 0%; transition: width 0.1s; }
+        
+        .hud-battery { text-align: right; }
+        .batt-outline { width: 40px; height: 15px; border: 1px solid #888; display: inline-block; margin-top: 5px; position: relative; padding: 2px; }
+        .batt-outline::after { content: ''; position: absolute; right: -4px; top: 3px; width: 3px; height: 7px; background: #888; }
+        .batt-level { height: 100%; background: var(--hud-white); width: 100%; transition: width 0.3s; }
+
+        .timecode-block { text-align: center; font-size: 0.9rem; letter-spacing: 2px; }
+        .timecode-label { font-size: 0.6rem; color: #666; margin-bottom: 4px; }
+
+        /* SNAPSHOTS (CONTENT) */
+        .snapshot {
+            flex-shrink: 0;
+            width: 60vw; height: 60vh;
+            margin: 0 8vw;
+            position: relative;
+            background: #111;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
             display: flex; justify-content: center; align-items: center;
-            cursor: pointer;
-            z-index: 200;
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.3s;
-            backdrop-filter: blur(5px);
-        }
-        #close-btn:hover { background: rgba(255,255,255,0.3); transform: scale(1.1); }
-        body.focused #close-btn { opacity: 1; pointer-events: auto; }
-
-        /* Ocean Floor / Bottom Bar */
-        #ocean-floor {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            padding: 15px 30px;
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 20;
-            pointer-events: none;
+            
+            /* Initial unfocused state */
+            filter: blur(12px) grayscale(80%);
+            transform: scale(0.95);
+            transition: filter 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+            pointer-events: none; /* Disable interaction when blurred */
         }
 
-        .credit {
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.5);
-            letter-spacing: 1px;
-            text-transform: uppercase;
+        .snapshot.focused {
+            filter: blur(0) grayscale(0%);
+            transform: scale(1);
+            pointer-events: auto; /* Enable interaction */
         }
 
-        #timer-container {
-            font-family: 'Fira Code', monospace;
-            font-size: 1.2rem;
-            color: #00ffcc;
-            text-shadow: 0 0 10px rgba(0, 255, 204, 0.6);
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        /* Autofocus Brackets */
+        .focus-brackets { position: absolute; top: -20px; left: -20px; right: -20px; bottom: -20px; transition: all 0.3s; opacity: 0; }
+        .focus-brackets::before, .focus-brackets::after { content: ''; position: absolute; width: 40px; height: 40px; border: 2px solid var(--hud-white); transition: border-color 0.3s; }
+        .focus-brackets::before { top: 0; left: 0; border-right: none; border-bottom: none; }
+        .focus-brackets::after { bottom: 0; right: 0; border-left: none; border-top: none; }
+        
+        .snapshot.focused .focus-brackets { top: 0; left: 0; right: 0; bottom: 0; opacity: 1; animation: focusSnap 0.5s forwards; }
+        
+        /* Inner Visual Graphics */
+        .visual { width: 100%; height: 100%; position: absolute; top: 0; left: 0; overflow: hidden; z-index: 1; }
+        
+        /* EXIF Overlay UI */
+        .exif-overlay { position: absolute; z-index: 2; top: 0; left: 0; width: 100%; height: 100%; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.7) 100%); }
+        .exif-top { display: flex; justify-content: space-between; font-size: 0.7rem; color: rgba(255,255,255,0.7); text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; }
+        .exif-title { font-size: 1.2rem; font-weight: bold; color: var(--hud-white); text-shadow: 0 2px 4px #000; }
+        .exif-desc { font-size: 0.8rem; line-height: 1.4; max-width: 60%; text-shadow: 0 1px 2px #000; }
+        
+        .exif-bottom { display: flex; justify-content: flex-end; gap: 15px; }
+        
+        /* Action Buttons */
+        .btn {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);
+            color: var(--hud-white); padding: 8px 15px; font-family: var(--font-mono); font-size: 0.7rem;
+            cursor: pointer; text-decoration: none; text-transform: uppercase; backdrop-filter: blur(5px);
+            transition: all 0.2s; display: inline-flex; align-items: center; gap: 5px;
         }
-        #timer-container span { font-size: 0.7rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px; }
+        .btn:hover { background: var(--hud-white); color: #000; box-shadow: 0 0 15px rgba(255,255,255,0.5); }
+        .btn.primary { border-color: var(--hud-green); color: var(--hud-green); }
+        .btn.primary:hover { background: var(--hud-green); color: #000; }
+        
+        /* Dropdown specific */
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content { display: none; position: absolute; bottom: 100%; right: 0; background: rgba(0,0,0,0.9); border: 1px solid #555; min-width: 160px; margin-bottom: 5px; }
+        .dropdown:hover .dropdown-content { display: block; }
+        .dropdown-content a { color: #aaa; padding: 10px; text-decoration: none; display: block; font-size: 0.65rem; border-bottom: 1px solid #333; }
+        .dropdown-content a:hover { background: #222; color: #fff; }
 
-        @media (max-width: 768px) {
-            h1 { font-size: 2.5rem; }
-            #octopus-head { padding: 1.5rem; width: 90%; }
-            body.focused .node-wrapper.active .card { transform: scale(1.1); }
-        }
+        /* --- VISUAL ART GENERATION (CSS) --- */
+        /* 1: GlglStats (Soundwave/Compression) */
+        .vis-glgl { background: repeating-linear-gradient(90deg, #111 0px, #111 10px, #e91e63 10px, #e91e63 12px, #111 12px, #111 20px, #00bcd4 20px, #00bcd4 25px); background-size: 200% 100%; animation: scrollBg 10s linear infinite; }
+        
+        /* 2: Ahuzat Dibuk (Heatmap) */
+        .vis-heatmap { background: #000; }
+        .vis-heatmap::after { content:''; position: absolute; top:-50%; left:-50%; width:200%; height:200%; background: radial-gradient(circle at 40% 40%, rgba(255,0,0,0.8) 0%, transparent 30%), radial-gradient(circle at 60% 60%, rgba(255,255,0,0.6) 0%, transparent 40%), radial-gradient(circle at 50% 30%, rgba(0,0,255,0.4) 0%, transparent 50%); filter: blur(30px); }
+        
+        /* 3: 2D Part Orienting (Rotating Polygon) */
+        .vis-poly { display: flex; justify-content: center; align-items: center; background: radial-gradient(#222, #000); perspective: 800px; }
+        .poly-shape { width: 150px; height: 150px; border: 2px solid #0f0; background: rgba(0,255,0,0.1); animation: spin3d 4s linear infinite; }
+        
+        /* 4: The Turing Jest (Split Battle) */
+        .vis-split { background: linear-gradient(135deg, rgba(255,0,0,0.2) 50%, rgba(0,150,255,0.2) 50%); display: flex; align-items: center; justify-content: center; }
+        .vis-split::before { content: 'LLM_A // LLM_B'; font-size: 2rem; color: rgba(255,255,255,0.1); font-weight: bold; }
+        
+        /* 5: Rhymes of Israel (Collage/Newsprint) */
+        .vis-collage { background: #dcd0c0; background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px); filter: sepia(0.6) contrast(1.2); }
+        .vis-collage::after { content: ''; position: absolute; width: 60%; height: 80%; background: #222; top: 10%; left: 20%; clip-path: polygon(0% 0%, 100% 5%, 95% 90%, 5% 100%); border: 2px solid #000; }
+        
+        /* 6: Hatul Basak (Web/Nodes) */
+        .vis-nodes { background: #0a0a0a; background-image: radial-gradient(rgba(255,255,255,0.2) 1px, transparent 1px); background-size: 40px 40px; }
+        
+        /* 7: Meta Portfolio (Infinity Mirror) */
+        .vis-meta { background: #111; display: flex; justify-content: center; align-items: center; }
+        .vis-meta div { width: 80%; height: 80%; border: 1px solid rgba(255,255,255,0.5); display: flex; justify-content: center; align-items: center; box-shadow: inset 0 0 20px #000; }
+        
+        /* 8: Socials (Export/QR) */
+        .vis-qr { background: #000; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 50px; align-items: center; justify-items: center;}
+        .qr-block { width: 100px; height: 100px; background: repeating-conic-gradient(#fff 0% 25%, #000 0% 50%); background-size: 10px 10px; border: 5px solid #fff; }
+
+        /* Animations */
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        @keyframes focusSnap { 0% { opacity: 1; } 50% { border-color: var(--hud-green); transform: scale(0.98); } 100% { border-color: var(--hud-white); transform: scale(1); opacity: 1; } }
+        @keyframes scrollBg { from { background-position: 0 0; } to { background-position: 100% 0; } }
+        @keyframes spin3d { from { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); } to { transform: rotateX(360deg) rotateY(360deg) rotateZ(180deg); } }
+
     </style>
 </head>
 <body>
 
-    <svg id="ocean-canvas">
-        <!-- SVG filters for intense neon glow -->
-        <defs>
-            <filter id="glow-heavy" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="8" result="blur1" />
-                <feGaussianBlur stdDeviation="15" result="blur2" />
-                <feMerge>
-                    <feMergeNode in="blur2" />
-                    <feMergeNode in="blur1" />
-                    <feMergeNode in="SourceGraphic" />
-                </feMerge>
-            </filter>
-        </defs>
-        <g id="tentacle-group"></g>
-    </svg>
-
-    <div id="octopus-head">
-        <h1>Geva Kipper</h1>
-        <div class="subtitle-1">Software Engineer currently building and solving challenges at Google.</div>
-        <div class="subtitle-2">"This website is re-designed each day by AI and is thus ever-changing."</div>
+    <!-- Parallax Background -->
+    <div id="bg-canvas">
+        <div class="bg-noise"></div>
     </div>
 
-    <div id="nodes-container">
-        <!-- Nodes injected by JS -->
-    </div>
-
-    <div id="close-btn">✕</div>
-
-    <div id="ocean-floor">
-        <div class="credit">Designed Daily by AI</div>
-        <div id="timer-container">
-            <span>Elapsed Time</span>
-            <div id="timer">00:00:00</div>
+    <!-- Fixed Camera HUD -->
+    <div id="hud">
+        <div class="letterbox"></div>
+        
+        <div class="hud-top">
+            <div class="hud-top-left">
+                <div class="title-block">
+                    <span>GEVA KIPPER</span>
+                    <div class="rec-dot"></div>
+                </div>
+                <div class="subtitle">Currently engineering scalable software solutions at Google.</div>
+            </div>
+            <div class="hud-top-right">
+                <div class="hud-warning">AUTO-GEN MODE ACTIVE</div>
+                <div>This interface is hallucinated and re-designed daily by AI,<br>resulting in an ever-changing digital mutation.</div>
+            </div>
         </div>
+
+        <div class="rule-of-thirds">
+            <div></div><div></div><div></div>
+            <div></div><div></div><div></div>
+            <div></div><div></div><div></div>
+        </div>
+        
+        <div class="crosshair">[ &nbsp;+&nbsp; ]</div>
+
+        <div class="hud-bottom">
+            <div class="hud-meter">
+                SCROLL KINETICS
+                <div class="meter-bar"><div class="meter-fill" id="meter-fill"></div></div>
+            </div>
+            <div class="timecode-block">
+                <div class="timecode-label">RENDERED BY GPT-4o</div>
+                <div id="timecode">00:00:00:00</div>
+            </div>
+            <div class="hud-battery">
+                SYS_PWR
+                <br>
+                <div class="batt-outline"><div class="batt-level" id="batt-level"></div></div>
+            </div>
+        </div>
+
+        <div class="letterbox"></div>
+    </div>
+
+    <!-- Horizontal Scrolling Filmstrip -->
+    <div id="scroll-container">
+        
+        <!-- Snapshot 1 -->
+        <div class="snapshot">
+            <div class="focus-brackets"></div>
+            <div class="visual vis-glgl"></div>
+            <div class="exif-overlay">
+                <div class="exif-top"><span>SEQ: 01</span><span>ISO-LZ77</span></div>
+                <div>
+                    <div class="exif-title">GlglStats</div>
+                    <div class="exif-desc">Israeli pop-chart repetition analysis utilizing LZ77 compression heuristics.</div>
+                </div>
+                <div class="exif-bottom">
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn">► PLAY CONF VID</a>
+                    <a href="https://glglstats.geekip.dev" target="_blank" class="btn primary">ACCESS SITE</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Snapshot 2 -->
+        <div class="snapshot">
+            <div class="focus-brackets"></div>
+            <div class="visual vis-heatmap"></div>
+            <div class="exif-overlay">
+                <div class="exif-top"><span>SEQ: 02</span><span>EXP-TLVMAP</span></div>
+                <div>
+                    <div class="exif-title">Ahuzat Dibuk</div>
+                    <div class="exif-desc">Parking lot scraping data mapped across Tel-Aviv. A computational critique of urban infrastructure.</div>
+                </div>
+                <div class="exif-bottom">
+                    <div class="dropdown">
+                        <button class="btn">MEDIA SOURCES ▼</button>
+                        <div class="dropdown-content">
+                            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">13TV NEWS COVERAGE</a>
+                            <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">MAKO ARTICLE</a>
+                            <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">SECRET TEL-AVIV</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Snapshot 3 -->
+        <div class="snapshot">
+            <div class="focus-brackets"></div>
+            <div class="visual vis-poly"><div class="poly-shape"></div></div>
+            <div class="exif-overlay">
+                <div class="exif-top"><span>SEQ: 03</span><span>F/CGL-TAU</span></div>
+                <div>
+                    <div class="exif-title">2D Part Orienting</div>
+                    <div class="exif-desc">C++ computational geometry implementation of push-plan algorithms for algorithmic robotics.</div>
+                </div>
+                <div class="exif-bottom">
+                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn">SOURCE / PAPER</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Snapshot 4 -->
+        <div class="snapshot">
+            <div class="focus-brackets"></div>
+            <div class="visual vis-split"></div>
+            <div class="exif-overlay">
+                <div class="exif-top"><span>SEQ: 04</span><span>MODE-ARENA</span></div>
+                <div>
+                    <div class="exif-title">The Turing Jest</div>
+                    <div class="exif-desc">An LMSYS-style battle arena pitting Large Language Models against one another in pun generation.</div>
+                </div>
+                <div class="exif-bottom">
+                    <a href="https://jest.geekip.dev" target="_blank" class="btn primary">ENTER ARENA</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Snapshot 5 -->
+        <div class="snapshot">
+            <div class="focus-brackets"></div>
+            <div class="visual vis-collage"></div>
+            <div class="exif-overlay">
+                <div class="exif-top"><span>SEQ: 05</span><span>LENS-CHROME</span></div>
+                <div>
+                    <div class="exif-title">Rhymes of Israel</div>
+                    <div class="exif-desc">LLM-powered Chrome extension transforming web text into localized, rhyming cultural artifacts.</div>
+                </div>
+                <div class="exif-bottom">
+                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn">DOWNLOAD EXT</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Snapshot 6 -->
+        <div class="snapshot">
+            <div class="focus-brackets"></div>
+            <div class="visual vis-nodes"></div>
+            <div class="exif-overlay">
+                <div class="exif-top"><span>SEQ: 06</span><span>WIKI-GRAPH</span></div>
+                <div>
+                    <div class="exif-title">Hatul Basak</div>
+                    <div class="exif-desc">Hebrew port of catfishing.net. Interconnected Wikipedia puzzle network, AI & user-generated.</div>
+                </div>
+                <div class="exif-bottom">
+                    <a href="https://hatulbasak.geekip.dev" target="_blank" class="btn primary">PLAY DAILY PUZZLE</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Snapshot 7 -->
+        <div class="snapshot">
+            <div class="focus-brackets"></div>
+            <div class="visual vis-meta"><div><div><div></div></div></div></div>
+            <div class="exif-overlay">
+                <div class="exif-top"><span>SEQ: 07</span><span>RECURSION-1</span></div>
+                <div>
+                    <div class="exif-title">Meta Portfolio</div>
+                    <div class="exif-desc">You are currently observing the digital camera capturing itself. Ephemeral architecture.</div>
+                </div>
+                <div class="exif-bottom">
+                    <a href="https://geekip.dev" class="btn">RE-INITIALIZE (geekip.dev)</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Snapshot 8 -->
+        <div class="snapshot">
+            <div class="focus-brackets"></div>
+            <div class="visual vis-qr">
+                <div class="qr-block"></div><div class="qr-block"></div><div class="qr-block"></div>
+            </div>
+            <div class="exif-overlay">
+                <div class="exif-top"><span>SEQ: 08</span><span>EXPORT-MENU</span></div>
+                <div>
+                    <div class="exif-title">Social Connections</div>
+                    <div class="exif-desc">External transmission vectors established.</div>
+                </div>
+                <div class="exif-bottom">
+                    <a href="https://github.com/gevak" target="_blank" class="btn">GITHUB</a>
+                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="btn">LINKEDIN</a>
+                    <a href="https://facebook.com/geva.kipper" target="_blank" class="btn">FACEBOOK</a>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        // Data Structure for Tentacles
-        const projectData = [
-            {
-                id: 0,
-                color: 'var(--c1)', colorRgb: '255, 0, 127',
-                title: 'GlglStats',
-                desc: 'A Python project measuring the repetitiveness of Israeli pop-chart songs using LZ77 compression algorithms to visualize patterns.',
-                links: [
-                    { text: 'Live Site', url: 'https://glglstats.geekip.dev' },
-                    { text: 'PyData TLV', url: 'https://www.youtube.com/watch?v=jrKAtOsj1Lo', icon: '<path d="M8 5v14l11-7z"/>' }
-                ]
-            },
-            {
-                id: 1,
-                color: 'var(--c2)', colorRgb: '255, 140, 0',
-                title: 'Ahuzat Dibuk',
-                desc: 'Scraping and data visualization project for Tel-Aviv parking lot occupancy. Highlighted across national news outlets.',
-                links: [
-                    { text: 'Channel 13', url: 'https://13tv.co.il/item/news/domestic/internal/parking-902956407/', icon: '<path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/>' },
-                    { text: 'Mako', url: 'https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm', icon: '<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>' },
-                    { text: 'Secret TLV', url: 'https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/', icon: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-5h2v5zm0-7h-2V8h2v2zm3 7h-2v-5h2v5zm0-7h-2V8h2v2z"/>' }
-                ]
-            },
-            {
-                id: 2,
-                color: 'var(--c3)', colorRgb: '0, 119, 255',
-                title: '2D Part Orienting',
-                desc: 'A robust C++ computational geometry library implementing a complex push-plan algorithm for orienting polygonal parts on a conveyor.',
-                links: [
-                    { text: 'Documentation & Code', url: 'https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/' }
-                ]
-            },
-            {
-                id: 3,
-                color: 'var(--c4)', colorRgb: '176, 38, 255',
-                title: 'The Turing Jest',
-                desc: 'An LMSYS-style arena where cutting-edge LLMs compete to generate and explain puns, blindly judged by human users.',
-                links: [
-                    { text: 'Judge Puns', url: 'https://jest.geekip.dev', icon: '<path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>' }
-                ]
-            },
-            {
-                id: 4,
-                color: 'var(--c5)', colorRgb: '0, 255, 170',
-                title: 'Rhymes of Israel',
-                desc: 'A comedic Chrome extension utilizing an LLM backend to automatically rewrite Israeli news headlines into poetic rhymes.',
-                links: [
-                    { text: 'Download Extension', url: 'https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb', icon: '<path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>' }
-                ]
-            },
-            {
-                id: 5,
-                color: 'var(--c6)', colorRgb: '0, 255, 255',
-                title: 'Hatul Basak',
-                desc: 'The official Hebrew port of the Wikipedia-based trivia game. Features daily AI-generated challenge grids and user creations.',
-                links: [
-                    { text: 'Play Game', url: 'https://hatulbasak.geekip.dev', icon: '<path d="M8 5v14l11-7z"/>' }
-                ]
-            },
-            {
-                id: 6,
-                color: 'var(--c7)', colorRgb: '255, 0, 255',
-                title: 'The Meta Portfolio',
-                desc: 'A recursive acknowledgment of this very website—a dynamically generated space re-imagined daily by artificial intelligence.',
-                links: [
-                    { text: 'Return to Source', url: 'https://geekip.dev' }
-                ]
-            },
-            {
-                id: 7,
-                color: 'var(--c8)', colorRgb: '224, 224, 224',
-                title: 'Connections',
-                isSocial: true,
-                links: [
-                    { url: 'https://github.com/gevak', icon: '<path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>' },
-                    { url: 'https://linkedin.com/in/gevakip', icon: '<path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>' },
-                    { url: 'https://facebook.com/geva.kipper', icon: '<path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>' }
-                ]
+        // --- 1. Audio Context for Mechanical Focus Sound ---
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
-        ];
-
-        const container = document.getElementById('nodes-container');
-        const tentacleGroup = document.getElementById('tentacle-group');
-        const octopusHead = document.getElementById('octopus-head');
-        let activeNode = null;
-        let isFocused = false;
-
-        // Physics variables
-        let mouseX = window.innerWidth / 2;
-        let mouseY = window.innerHeight / 2;
-        let cx = window.innerWidth / 2;
-        let cy = window.innerHeight / 2;
+        }
         
-        // Nodes array to store physics data
-        const nodes = [];
-
-        // Initialization
-        function init() {
-            const radius = Math.min(window.innerWidth, window.innerHeight) * 0.38;
+        function playFocusSound() {
+            if (!audioCtx || audioCtx.state === 'suspended') return;
+            // Synthesize a quick "click-whir" mechanical sound
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(2000, audioCtx.currentTime + 0.05);
             
-            projectData.forEach((data, i) => {
-                const angle = (Math.PI * 2 / 8) * i - Math.PI / 2;
-                
-                // Base target positions for radial layout
-                const tx = cx + Math.cos(angle) * radius;
-                const ty = cy + Math.sin(angle) * radius;
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
 
-                // Create HTML Element
-                const el = document.createElement('div');
-                el.className = 'node-wrapper';
-                el.id = `node-${i}`;
-                el.style.setProperty('--c', data.color);
-                el.style.setProperty('--c-rgb', data.colorRgb);
-                
-                let cardContent = '';
-                if(data.isSocial) {
-                    cardContent = `<div class="card" id="card-${i}"><div class="social-3d-container">
-                        ${data.links.map(l => `<a href="${l.url}" target="_blank" class="social-3d">${l.icon}</a>`).join('')}
-                    </div></div>`;
-                } else {
-                    cardContent = `
-                        <div class="card" id="card-${i}">
-                            <div class="card-bg"></div>
-                            <div class="card-title">${data.title}</div>
-                            <div class="card-desc">${data.desc}</div>
-                            <div class="card-links">
-                                ${data.links.map(l => `
-                                    <a href="${l.url}" target="_blank" class="btn ${l.icon ? 'icon-btn' : ''}" title="${l.text}">
-                                        ${l.icon ? l.icon : l.text}
-                                    </a>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `;
-                }
+        // --- 2. Parallax Mouse Movement ---
+        const bgCanvas = document.getElementById('bg-canvas');
+        document.addEventListener('mousemove', (e) => {
+            initAudio(); // Initialize audio on first interaction
+            const x = (e.clientX / window.innerWidth - 0.5) * 20; // -10px to +10px
+            const y = (e.clientY / window.innerHeight - 0.5) * 20;
+            bgCanvas.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+        });
 
-                el.innerHTML = `
-                    <div class="orb"></div>
-                    ${cardContent}
-                `;
-                
-                container.appendChild(el);
+        // --- 3. Autofocus Logic (Intersection Observer) ---
+        const snapshots = document.querySelectorAll('.snapshot');
+        const observerOptions = {
+            root: document.getElementById('scroll-container'),
+            rootMargin: '0px -40% 0px -40%', // Trigger only when element is in the middle 20% of screen
+            threshold: 0
+        };
 
-                // Create SVG Path
-                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                path.setAttribute("class", "tentacle-path");
-                path.setAttribute("stroke", data.color);
-                tentacleGroup.appendChild(path);
-
-                // Store node data
-                nodes.push({
-                    el, path, angle, radius,
-                    tx, ty, // target x,y
-                    x: tx, y: ty, // current x,y (springed)
-                    vx: 0, vy: 0, // velocity
-                    // Control points for bezier curve physics
-                    cp1x: cx, cp1y: cy,
-                    cp2x: tx, cp2y: ty
-                });
-
-                // Interaction Event
-                el.addEventListener('click', (e) => {
-                    // Prevent link clicks from triggering focus logic
-                    if(e.target.closest('a')) return;
-                    
-                    if(!isFocused) {
-                        focusNode(i);
+        const focusObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    if (!entry.target.classList.contains('focused')) {
+                        entry.target.classList.add('focused');
+                        playFocusSound();
                     }
-                });
-            });
-
-            document.getElementById('close-btn').addEventListener('click', closeFocus);
-            
-            // Mouse tracking
-            window.addEventListener('mousemove', (e) => {
-                mouseX = e.clientX;
-                mouseY = e.clientY;
-            });
-
-            window.addEventListener('resize', () => {
-                cx = window.innerWidth / 2;
-                cy = window.innerHeight / 2;
-                const newRadius = Math.min(window.innerWidth, window.innerHeight) * 0.38;
-                nodes.forEach(n => {
-                    n.radius = newRadius;
-                    n.tx = cx + Math.cos(n.angle) * n.radius;
-                    n.ty = cy + Math.sin(n.angle) * n.radius;
-                });
-                if(isFocused && activeNode !== null) {
-                    updateFocusTransform(activeNode);
-                }
-            });
-
-            animate();
-        }
-
-        // Focus Logic
-        function focusNode(index) {
-            isFocused = true;
-            activeNode = index;
-            document.body.classList.add('focused');
-            
-            nodes.forEach((n, i) => {
-                if(i === index) {
-                    n.el.classList.add('active');
-                    updateFocusTransform(i);
-                    n.path.style.strokeWidth = 6;
                 } else {
-                    n.path.style.opacity = 0.2;
+                    entry.target.classList.remove('focused');
                 }
             });
-        }
+        }, observerOptions);
 
-        function updateFocusTransform(index) {
-            const n = nodes[index];
-            // Calculate translation needed to move element from its radial pos (n.tx, n.ty) to center (cx, cy)
-            // Since element is absolute, its left/top is driven by JS. We just set its pos to center.
-            // Wait, we animate its physical position variables.
-            n.tx = cx;
-            n.ty = cy;
-        }
+        snapshots.forEach(snap => focusObserver.observe(snap));
 
-        function closeFocus() {
-            document.body.classList.remove('focused');
-            isFocused = false;
-            activeNode = null;
+        // --- 4. Dynamic HUD (Bottom Corners) ---
+        const scrollContainer = document.getElementById('scroll-container');
+        const meterFill = document.getElementById('meter-fill');
+        const battLevel = document.getElementById('batt-level');
+        
+        let lastScrollPos = 0;
+        let lastScrollTime = Date.now();
+        
+        scrollContainer.addEventListener('scroll', () => {
+            initAudio();
+            const currentPos = scrollContainer.scrollLeft;
+            const currentTime = Date.now();
             
-            nodes.forEach((n, i) => {
-                n.el.classList.remove('active');
-                n.path.style.strokeWidth = 4;
-                n.path.style.opacity = 1;
-                // Reset target positions
-                n.tx = cx + Math.cos(n.angle) * n.radius;
-                n.ty = cy + Math.sin(n.angle) * n.radius;
-            });
-        }
+            // Calculate Speed for Meter
+            const timeDiff = currentTime - lastScrollTime;
+            const dist = Math.abs(currentPos - lastScrollPos);
+            let speed = timeDiff > 0 ? (dist / timeDiff) * 10 : 0;
+            
+            // Map speed to 0-100%
+            let fillPct = Math.min(speed * 20, 100);
+            meterFill.style.width = `${fillPct}%`;
 
-        // Animation Loop (Physics & Rendering)
-        function animate() {
-            const time = Date.now() * 0.001;
+            // Calculate Scroll Depth for Battery (100% at start, drains as you scroll right)
+            const maxScroll = scrollContainer.scrollWidth - scrollContainer.clientWidth;
+            const scrollPct = maxScroll > 0 ? (currentPos / maxScroll) : 0;
+            const battPct = Math.max(10, 100 - (scrollPct * 100)); // Never totally empty
+            battLevel.style.width = `${battPct}%`;
+            
+            // Change battery color if low
+            battLevel.style.background = battPct < 25 ? '#ff3333' : 'rgba(255, 255, 255, 0.85)';
 
-            nodes.forEach((n, i) => {
-                // Node Spring Physics to Target
-                const dxNode = n.tx - n.x;
-                const dyNode = n.ty - n.y;
-                n.vx = (n.vx + dxNode * 0.05) * 0.7; // spring + friction
-                n.vy = (n.vy + dyNode * 0.05) * 0.7;
-                n.x += n.vx;
-                n.y += n.vy;
-
-                // Update HTML Element position
-                n.el.style.left = `${n.x}px`;
-                n.el.style.top = `${n.y}px`;
-
-                // Calculate Bezier Control Points
-                // Base rest positions for control points (1/3 and 2/3 along the line)
-                const distCenterToNodeX = n.x - cx;
-                const distCenterToNodeY = n.y - cy;
-                
-                let targetCp1x = cx + distCenterToNodeX * 0.33;
-                let targetCp1y = cy + distCenterToNodeY * 0.33;
-                let targetCp2x = cx + distCenterToNodeX * 0.66;
-                let targetCp2y = cy + distCenterToNodeY * 0.66;
-
-                // Add Ocean Sway (Sine waves)
-                const swayAmt = isFocused ? 5 : 30; // Less sway when focused
-                targetCp1x += Math.cos(time + i) * swayAmt;
-                targetCp1y += Math.sin(time + i) * swayAmt;
-                targetCp2x += Math.cos(time * 1.5 - i) * swayAmt;
-                targetCp2y += Math.sin(time * 1.2 + i) * swayAmt;
-
-                // Mouse Repulsion on Control Points (Physics based swaying)
-                if(!isFocused) {
-                    const mdx = mouseX - targetCp2x;
-                    const mdy = mouseY - targetCp2y;
-                    const mDist = Math.sqrt(mdx*mdx + mdy*mdy);
-                    if(mDist < 250) {
-                        const force = (250 - mDist) / 250;
-                        targetCp2x -= (mdx / mDist) * force * 100;
-                        targetCp2y -= (mdy / mDist) * force * 100;
-                    }
-                }
-
-                // Smoothly update actual control points towards targets
-                n.cp1x += (targetCp1x - n.cp1x) * 0.1;
-                n.cp1y += (targetCp1y - n.cp1y) * 0.1;
-                n.cp2x += (targetCp2x - n.cp2x) * 0.1;
-                n.cp2y += (targetCp2y - n.cp2y) * 0.1;
-
-                // Update SVG Path
-                n.path.setAttribute("d", `M ${cx} ${cy} C ${n.cp1x} ${n.cp1y}, ${n.cp2x} ${n.cp2y}, ${n.x} ${n.y}`);
-            });
-
-            // Very subtle parallax for the center head based on mouse
-            if(!isFocused) {
-                const headOffX = (mouseX - cx) * 0.02;
-                const headOffY = (mouseY - cy) * 0.02;
-                octopusHead.style.transform = `translate(calc(-50% + ${headOffX}px), calc(-50% + ${headOffY}px))`;
-            } else {
-                octopusHead.style.transform = `translate(-50%, -50%) scale(0.9)`;
+            lastScrollPos = currentPos;
+            lastScrollTime = currentTime;
+        });
+        
+        // Decay the meter if not scrolling
+        setInterval(() => {
+            const currentWidth = parseFloat(meterFill.style.width) || 0;
+            if (currentWidth > 0) {
+                meterFill.style.width = `${Math.max(0, currentWidth - 5)}%`;
             }
+        }, 100);
 
-            requestAnimationFrame(animate);
-        }
+        // --- 5. Timecode Logic ---
+        const timecodeEl = document.getElementById('timecode');
+        const targetDate = new Date('2026-08-09T01:09:47Z').getTime();
 
-        // Timer Logic
-        const targetDate = new Date('2026-08-08T01:04:57').getTime();
-        const timerEl = document.getElementById('timer');
-
-        function updateTimer() {
+        function updateTimecode() {
             const now = Date.now();
-            let diff = Math.floor(Math.abs(now - targetDate) / 1000);
+            // Calculate elapsed time from the anchor date (using absolute diff to always tick up)
+            let diff = Math.abs(now - targetDate);
             
-            const s = diff % 60;
-            const m = Math.floor(diff / 60) % 60;
-            const h = Math.floor(diff / 3600);
-            
-            timerEl.innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            diff -= hours * (1000 * 60 * 60);
+            const mins = Math.floor(diff / (1000 * 60));
+            diff -= mins * (1000 * 60);
+            const secs = Math.floor(diff / 1000);
+            diff -= secs * 1000;
+            const frames = Math.floor(diff / 33.33); // Simulate 30fps frames (1000/30)
+
+            const pad = (num) => num.toString().padStart(2, '0');
+            const padH = (num) => num.toString().padStart(4, '0'); // Allow hours to grow
+
+            timecodeEl.innerText = `${padH(hours)}:${pad(mins)}:${pad(secs)}:${pad(frames)}`;
+            requestAnimationFrame(updateTimecode);
         }
         
-        setInterval(updateTimer, 1000);
-        updateTimer();
+        // Start Timecode
+        requestAnimationFrame(updateTimecode);
 
-        // Boot
-        init();
+        // Allow horizontal scroll with mouse wheel for better UX
+        scrollContainer.addEventListener('wheel', (evt) => {
+            evt.preventDefault();
+            scrollContainer.scrollLeft += evt.deltaY;
+        });
 
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260808",
+          pageId: "20260809",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
