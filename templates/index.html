@@ -2,551 +2,570 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper | Viewfinder</title>
+    <title>Geva Kipper - OS Environment</title>
     <style>
-        /* BASE & RESET */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap');
+
         :root {
-            --bg-dark: #0a0a0c;
-            --hud-white: rgba(255, 255, 255, 0.85);
-            --hud-red: #ff3333;
-            --hud-green: #33ff33;
-            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            /* Glassmorphism variables */
+            --glass-bg: rgba(20, 25, 35, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-highlight: rgba(255, 255, 255, 0.05);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            --glass-blur: blur(16px);
+            
+            /* Theming */
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --accent-glow: 0 0 10px rgba(56, 189, 248, 0.5);
+            
+            /* Window Controls */
+            --mac-close: #ff5f56;
+            --mac-min: #ffbd2e;
+            --mac-max: #27c93f;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body, html {
-            width: 100%; height: 100%;
-            background-color: #000;
-            color: var(--hud-white);
-            font-family: var(--font-mono);
-            overflow: hidden; /* Hide body scroll, handle internally */
-            user-select: none;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none; /* Prevent text selection while dragging */
         }
 
-        /* BACKGROUND PARALLAX */
-        #bg-canvas {
-            position: absolute;
-            top: -5%; left: -5%;
-            width: 110%; height: 110%;
-            background: radial-gradient(circle at center, #1a1a24 0%, #050505 80%);
-            filter: blur(20px);
-            z-index: 1;
-            transition: transform 0.1s ease-out;
-        }
-        
-        .bg-noise {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background-image: repeating-radial-gradient(circle at 17% 32%, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 2px);
-            opacity: 0.3;
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+            overflow: hidden; /* OS desktop shouldn't scroll */
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #064e3b, #312e81);
+            background-size: 400% 400%;
+            animation: gradientBG 30s ease infinite;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* SCROLL CONTAINER (FILMSTRIP) */
-        #scroll-container {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            overflow-x: auto;
-            overflow-y: hidden;
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        a { color: var(--accent); text-decoration: none; cursor: pointer; pointer-events: auto; }
+        a:hover { text-decoration: underline; }
+
+        /* Shared Glass Utility */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* --- System Menu Bar --- */
+        .sys-menu-bar {
+            height: 32px;
+            width: 100%;
             display: flex;
             align-items: center;
-            z-index: 10;
-            padding: 0 50vw; /* Center first and last items */
-            scroll-behavior: smooth;
-            /* Hide scrollbar */
-            scrollbar-width: none; 
-            -ms-overflow-style: none;
-        }
-        #scroll-container::-webkit-scrollbar { display: none; }
-
-        /* HUD OVERLAY (FIXED) */
-        #hud {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            pointer-events: none; /* Let clicks pass to snapshots */
-            z-index: 100;
-            display: flex; flex-direction: column; justify-content: space-between;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-size: 0.85rem;
+            z-index: 9999;
+            border-bottom: 1px solid var(--glass-border);
+            background: rgba(10, 15, 25, 0.6);
+            backdrop-filter: blur(20px);
         }
 
-        /* Cinematic Letterboxing */
-        .letterbox { height: 8vh; background: #000; width: 100%; }
+        .profile-info { display: flex; gap: 15px; align-items: center; }
+        .status-indicator { color: var(--accent); font-weight: 600; text-shadow: var(--accent-glow); }
         
-        /* Grid & Crosshair */
-        .rule-of-thirds {
-            position: absolute; top: 8vh; bottom: 8vh; left: 10vw; right: 10vw;
-            border: 1px solid rgba(255,255,255,0.1);
-            display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr;
-        }
-        .rule-of-thirds div { border: 1px dashed rgba(255,255,255,0.05); }
-        .crosshair {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 1.5rem; color: rgba(255,255,255,0.3); letter-spacing: 2px;
-        }
-
-        /* Top HUD Elements */
-        .hud-top { position: absolute; top: 2vh; left: 2vw; right: 2vw; display: flex; justify-content: space-between; z-index: 101; }
-        .hud-top-left, .hud-top-right { width: 40%; }
-        
-        .title-block { display: flex; align-items: center; gap: 10px; font-size: 1.2rem; font-weight: bold; letter-spacing: 1px; }
-        .rec-dot { width: 12px; height: 12px; background: var(--hud-red); border-radius: 50%; box-shadow: 0 0 10px var(--hud-red); animation: pulse 1.5s infinite; }
-        .subtitle { font-size: 0.7rem; color: #888; margin-top: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        .hud-top-right { text-align: right; font-size: 0.65rem; color: #888; text-transform: uppercase; border-left: 1px solid rgba(255,0,0,0.3); padding-left: 15px; }
-        .hud-warning { color: var(--hud-red); font-weight: bold; margin-bottom: 3px; }
-
-        /* Bottom HUD Elements */
-        .hud-bottom { position: absolute; bottom: 2vh; left: 2vw; right: 2vw; display: flex; justify-content: space-between; align-items: flex-end; z-index: 101; }
-        
-        .hud-meter, .hud-battery { font-size: 0.7rem; text-transform: uppercase; color: #888; width: 150px;}
-        .hud-meter { text-align: left; }
-        .meter-bar { height: 4px; background: rgba(255,255,255,0.2); margin-top: 5px; position: relative; overflow: hidden; }
-        .meter-fill { height: 100%; background: var(--hud-white); width: 0%; transition: width 0.1s; }
-        
-        .hud-battery { text-align: right; }
-        .batt-outline { width: 40px; height: 15px; border: 1px solid #888; display: inline-block; margin-top: 5px; position: relative; padding: 2px; }
-        .batt-outline::after { content: ''; position: absolute; right: -4px; top: 3px; width: 3px; height: 7px; background: #888; }
-        .batt-level { height: 100%; background: var(--hud-white); width: 100%; transition: width 0.3s; }
-
-        .timecode-block { text-align: center; font-size: 0.9rem; letter-spacing: 2px; }
-        .timecode-label { font-size: 0.6rem; color: #666; margin-bottom: 4px; }
-
-        /* SNAPSHOTS (CONTENT) */
-        .snapshot {
-            flex-shrink: 0;
-            width: 60vw; height: 60vh;
-            margin: 0 8vw;
+        .marquee-container {
+            flex-grow: 1;
+            overflow: hidden;
+            white-space: nowrap;
+            margin: 0 40px;
             position: relative;
-            background: #111;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-            display: flex; justify-content: center; align-items: center;
-            
-            /* Initial unfocused state */
-            filter: blur(12px) grayscale(80%);
-            transform: scale(0.95);
-            transition: filter 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-            pointer-events: none; /* Disable interaction when blurred */
+            color: var(--text-muted);
+            mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
         }
 
-        .snapshot.focused {
-            filter: blur(0) grayscale(0%);
-            transform: scale(1);
-            pointer-events: auto; /* Enable interaction */
+        .marquee-text {
+            display: inline-block;
+            animation: marquee 20s linear infinite;
         }
 
-        /* Autofocus Brackets */
-        .focus-brackets { position: absolute; top: -20px; left: -20px; right: -20px; bottom: -20px; transition: all 0.3s; opacity: 0; }
-        .focus-brackets::before, .focus-brackets::after { content: ''; position: absolute; width: 40px; height: 40px; border: 2px solid var(--hud-white); transition: border-color 0.3s; }
-        .focus-brackets::before { top: 0; left: 0; border-right: none; border-bottom: none; }
-        .focus-brackets::after { bottom: 0; right: 0; border-left: none; border-top: none; }
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* --- Desktop Area --- */
+        .desktop {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* --- Window Base Styling --- */
+        .window {
+            position: absolute;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            min-width: 300px;
+            max-width: 500px;
+            resize: both; /* Allow native resizing */
+            overflow: hidden;
+            transition: border 0.3s ease;
+        }
+
+        .window:active { border-color: rgba(255,255,255,0.4); }
+
+        .title-bar {
+            height: 30px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            cursor: grab;
+        }
         
-        .snapshot.focused .focus-brackets { top: 0; left: 0; right: 0; bottom: 0; opacity: 1; animation: focusSnap 0.5s forwards; }
-        
-        /* Inner Visual Graphics */
-        .visual { width: 100%; height: 100%; position: absolute; top: 0; left: 0; overflow: hidden; z-index: 1; }
-        
-        /* EXIF Overlay UI */
-        .exif-overlay { position: absolute; z-index: 2; top: 0; left: 0; width: 100%; height: 100%; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.7) 100%); }
-        .exif-top { display: flex; justify-content: space-between; font-size: 0.7rem; color: rgba(255,255,255,0.7); text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; }
-        .exif-title { font-size: 1.2rem; font-weight: bold; color: var(--hud-white); text-shadow: 0 2px 4px #000; }
-        .exif-desc { font-size: 0.8rem; line-height: 1.4; max-width: 60%; text-shadow: 0 1px 2px #000; }
-        
-        .exif-bottom { display: flex; justify-content: flex-end; gap: 15px; }
-        
-        /* Action Buttons */
+        .title-bar:active { cursor: grabbing; }
+
+        .window-controls { display: flex; gap: 6px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot.close { background: var(--mac-close); }
+        .dot.min { background: var(--mac-min); }
+        .dot.max { background: var(--mac-max); }
+
+        .window-title {
+            flex-grow: 1;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 0.5px;
+            padding-right: 48px; /* Offset to center title */
+        }
+
+        .window-content {
+            padding: 20px;
+            flex-grow: 1;
+            overflow-y: auto;
+            pointer-events: auto; /* Allow clicking inside */
+            user-select: text; /* Allow text selection inside */
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Reusable Buttons */
         .btn {
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);
-            color: var(--hud-white); padding: 8px 15px; font-family: var(--font-mono); font-size: 0.7rem;
-            cursor: pointer; text-decoration: none; text-transform: uppercase; backdrop-filter: blur(5px);
-            transition: all 0.2s; display: inline-flex; align-items: center; gap: 5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
-        .btn:hover { background: var(--hud-white); color: #000; box-shadow: 0 0 15px rgba(255,255,255,0.5); }
-        .btn.primary { border-color: var(--hud-green); color: var(--hud-green); }
-        .btn.primary:hover { background: var(--hud-green); color: #000; }
-        
-        /* Dropdown specific */
-        .dropdown { position: relative; display: inline-block; }
-        .dropdown-content { display: none; position: absolute; bottom: 100%; right: 0; background: rgba(0,0,0,0.9); border: 1px solid #555; min-width: 160px; margin-bottom: 5px; }
-        .dropdown:hover .dropdown-content { display: block; }
-        .dropdown-content a { color: #aaa; padding: 10px; text-decoration: none; display: block; font-size: 0.65rem; border-bottom: 1px solid #333; }
-        .dropdown-content a:hover { background: #222; color: #fff; }
+        .btn:hover {
+            background: rgba(255,255,255,0.2);
+            box-shadow: var(--accent-glow);
+            border-color: var(--accent);
+            text-decoration: none;
+        }
 
-        /* --- VISUAL ART GENERATION (CSS) --- */
-        /* 1: GlglStats (Soundwave/Compression) */
-        .vis-glgl { background: repeating-linear-gradient(90deg, #111 0px, #111 10px, #e91e63 10px, #e91e63 12px, #111 12px, #111 20px, #00bcd4 20px, #00bcd4 25px); background-size: 200% 100%; animation: scrollBg 10s linear infinite; }
-        
-        /* 2: Ahuzat Dibuk (Heatmap) */
-        .vis-heatmap { background: #000; }
-        .vis-heatmap::after { content:''; position: absolute; top:-50%; left:-50%; width:200%; height:200%; background: radial-gradient(circle at 40% 40%, rgba(255,0,0,0.8) 0%, transparent 30%), radial-gradient(circle at 60% 60%, rgba(255,255,0,0.6) 0%, transparent 40%), radial-gradient(circle at 50% 30%, rgba(0,0,255,0.4) 0%, transparent 50%); filter: blur(30px); }
-        
-        /* 3: 2D Part Orienting (Rotating Polygon) */
-        .vis-poly { display: flex; justify-content: center; align-items: center; background: radial-gradient(#222, #000); perspective: 800px; }
-        .poly-shape { width: 150px; height: 150px; border: 2px solid #0f0; background: rgba(0,255,0,0.1); animation: spin3d 4s linear infinite; }
-        
-        /* 4: The Turing Jest (Split Battle) */
-        .vis-split { background: linear-gradient(135deg, rgba(255,0,0,0.2) 50%, rgba(0,150,255,0.2) 50%); display: flex; align-items: center; justify-content: center; }
-        .vis-split::before { content: 'LLM_A // LLM_B'; font-size: 2rem; color: rgba(255,255,255,0.1); font-weight: bold; }
-        
-        /* 5: Rhymes of Israel (Collage/Newsprint) */
-        .vis-collage { background: #dcd0c0; background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px); filter: sepia(0.6) contrast(1.2); }
-        .vis-collage::after { content: ''; position: absolute; width: 60%; height: 80%; background: #222; top: 10%; left: 20%; clip-path: polygon(0% 0%, 100% 5%, 95% 90%, 5% 100%); border: 2px solid #000; }
-        
-        /* 6: Hatul Basak (Web/Nodes) */
-        .vis-nodes { background: #0a0a0a; background-image: radial-gradient(rgba(255,255,255,0.2) 1px, transparent 1px); background-size: 40px 40px; }
-        
-        /* 7: Meta Portfolio (Infinity Mirror) */
-        .vis-meta { background: #111; display: flex; justify-content: center; align-items: center; }
-        .vis-meta div { width: 80%; height: 80%; border: 1px solid rgba(255,255,255,0.5); display: flex; justify-content: center; align-items: center; box-shadow: inset 0 0 20px #000; }
-        
-        /* 8: Socials (Export/QR) */
-        .vis-qr { background: #000; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 50px; align-items: center; justify-items: center;}
-        .qr-block { width: 100px; height: 100px; background: repeating-conic-gradient(#fff 0% 25%, #000 0% 50%); background-size: 10px 10px; border: 5px solid #fff; }
+        /* --- Specific Window Themes --- */
 
-        /* Animations */
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        @keyframes focusSnap { 0% { opacity: 1; } 50% { border-color: var(--hud-green); transform: scale(0.98); } 100% { border-color: var(--hud-white); transform: scale(1); opacity: 1; } }
-        @keyframes scrollBg { from { background-position: 0 0; } to { background-position: 100% 0; } }
-        @keyframes spin3d { from { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); } to { transform: rotateX(360deg) rotateY(360deg) rotateZ(180deg); } }
+        /* 1. GlglStats */
+        #w-glglstats { top: 5%; left: 5%; width: 340px; }
+        .visualizer { display: flex; align-items: flex-end; gap: 4px; height: 50px; justify-content: center; margin: 10px 0; }
+        .bar { width: 12px; background: var(--accent); border-radius: 2px 2px 0 0; animation: bounce 1s infinite alternate ease-in-out; }
+        .bar:nth-child(1) { animation-delay: 0.1s; height: 40%; }
+        .bar:nth-child(2) { animation-delay: 0.3s; height: 80%; background: #a855f7; }
+        .bar:nth-child(3) { animation-delay: 0.0s; height: 100%; }
+        .bar:nth-child(4) { animation-delay: 0.4s; height: 60%; background: #a855f7; }
+        .bar:nth-child(5) { animation-delay: 0.2s; height: 50%; }
+        @keyframes bounce { to { height: 10%; } }
+        .w-actions { display: flex; gap: 10px; }
 
+        /* 2. Ahuzat Dibuk */
+        #w-ahuzat { top: 12%; left: 35%; width: 380px; }
+        .radar-bg {
+            position: absolute; top: 30px; left: 0; right: 0; bottom: 0; z-index: -1;
+            background: radial-gradient(circle at 70% 30%, rgba(239, 68, 68, 0.2) 0%, transparent 40%),
+                        radial-gradient(circle at 30% 80%, rgba(245, 158, 11, 0.2) 0%, transparent 40%);
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(255,255,255,0.05) 20px),
+                              repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(255,255,255,0.05) 20px);
+        }
+        .media-links { display: flex; justify-content: space-around; margin-top: 10px; }
+        .media-icon { font-size: 1.5rem; text-decoration: none; padding: 10px; border-radius: 50%; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); transition: 0.3s;}
+        .media-icon:hover { transform: scale(1.1); background: rgba(255,255,255,0.1); }
+
+        /* 3. 2D Part Orienting */
+        #w-2dpart { top: 50%; left: 8%; width: 360px; }
+        .cad-grid {
+            position: absolute; top: 30px; left: 0; right: 0; bottom: 0; z-index: -1;
+            background-color: rgba(8, 47, 73, 0.4);
+            background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .wireframe-svg { width: 100%; height: 100px; filter: drop-shadow(0 0 5px cyan); }
+
+        /* 4. The Turing Jest */
+        #w-jest { top: 8%; left: 65%; width: 400px; font-family: 'JetBrains Mono', monospace; }
+        .split-screen { display: flex; border: 1px solid var(--glass-border); border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+        .fighter { flex: 1; padding: 10px; text-align: center; font-size: 0.8rem; }
+        .fighter.model-a { background: rgba(239, 68, 68, 0.1); border-right: 1px solid var(--glass-border); color: #fca5a5; }
+        .fighter.model-b { background: rgba(59, 130, 246, 0.1); color: #93c5fd; }
+        .vs { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); background: #000; padding: 2px 5px; border-radius: 4px; font-weight: bold; border: 1px solid #333;}
+        .btn-neon { border-color: #f472b6; color: #f472b6; text-shadow: 0 0 5px #f472b6; box-shadow: inset 0 0 10px rgba(244,114,182,0.2); }
+        .btn-neon:hover { background: #f472b6; color: #000; }
+
+        /* 5. Rhymes of Israel */
+        #w-rhymes { top: 55%; left: 40%; width: 350px; }
+        .store-header { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
+        .ext-icon { font-size: 2.5rem; }
+        .morph-graphic { font-size: 3rem; text-align: center; animation: morphEmoji 4s infinite alternate; }
+        @keyframes morphEmoji { 0%, 40% { content: "📰"; opacity: 1; } 45%, 55% { opacity: 0; } 60%, 100% { content: "🤪"; opacity: 1; } }
+
+        /* 6. Hatul Basak */
+        #w-hatul { top: 45%; left: 70%; width: 320px; font-family: 'JetBrains Mono', monospace; background-color: rgba(20, 20, 20, 0.8); }
+        #w-hatul .window-content { color: #4ade80; text-shadow: 0 0 5px rgba(74, 222, 128, 0.5); }
+        .terminal-header { border-bottom: 1px dashed #4ade80; padding-bottom: 5px; margin-bottom: 10px; }
+
+        /* 7. Meta Portfolio */
+        #w-meta { top: 75%; left: 15%; width: 380px; }
+        .infinite-mirror {
+            border: 1px solid var(--glass-border); padding: 10px; border-radius: 6px;
+            background: rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center;
+        }
+        .mini-os { width: 80%; height: 60px; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; position: relative; }
+        .mini-win { position: absolute; border: 1px solid rgba(255,255,255,0.2); border-radius: 2px; }
+
+        /* 8. Network Settings */
+        #w-network { top: 70%; left: 60%; width: 300px; }
+        .port-list { display: flex; flex-direction: column; gap: 10px; }
+        .port { display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--glass-border); }
+        .port-info { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
+        .status-light { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+
+        /* --- System Dock --- */
+        .sys-dock {
+            height: 40px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-size: 0.8rem;
+            z-index: 9999;
+            border-top: 1px solid var(--glass-border);
+            background: rgba(10, 15, 25, 0.6);
+            backdrop-filter: blur(20px);
+            color: var(--text-muted);
+        }
+        
+        .clock-container { font-family: 'JetBrains Mono', monospace; color: #fff; font-weight: bold; letter-spacing: 1px; }
+
+        /* Responsive constraints */
+        @media (max-width: 768px) {
+            .window { position: relative !important; top: auto !important; left: auto !important; margin: 10px auto; width: 95% !important; max-width: none;}
+            .desktop { overflow-y: auto; display: flex; flex-direction: column; padding: 10px; }
+            .sys-menu-bar { flex-direction: column; height: auto; padding: 10px; gap: 5px; }
+            .marquee-container { margin: 5px 0; width: 100%; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- Parallax Background -->
-    <div id="bg-canvas">
-        <div class="bg-noise"></div>
-    </div>
+    <!-- Top Menu Bar -->
+    <header class="sys-menu-bar">
+        <div class="profile-info">
+            <span>Developer: <strong>Geva Kipper</strong></span>
+            <span class="status-indicator">Currently engineering solutions at Google.</span>
+        </div>
+        <div class="marquee-container">
+            <span class="marquee-text">System UI is dynamically re-designed each day by AI and is thus ever-changing.</span>
+        </div>
+    </header>
 
-    <!-- Fixed Camera HUD -->
-    <div id="hud">
-        <div class="letterbox"></div>
-        
-        <div class="hud-top">
-            <div class="hud-top-left">
-                <div class="title-block">
-                    <span>GEVA KIPPER</span>
-                    <div class="rec-dot"></div>
+    <!-- Main Desktop -->
+    <main class="desktop" id="desktop">
+
+        <!-- Window 1: GlglStats -->
+        <div class="window glass" id="w-glglstats">
+            <div class="title-bar">
+                <div class="window-controls"><div class="dot close"></div><div class="dot min"></div><div class="dot max"></div></div>
+                <div class="window-title">GlglStats.exe</div>
+            </div>
+            <div class="window-content">
+                <p>Hybrid music player & data terminal. Visualizing LZ77 compression patterns over pop-chart data.</p>
+                <div class="visualizer">
+                    <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
                 </div>
-                <div class="subtitle">Currently engineering scalable software solutions at Google.</div>
-            </div>
-            <div class="hud-top-right">
-                <div class="hud-warning">AUTO-GEN MODE ACTIVE</div>
-                <div>This interface is hallucinated and re-designed daily by AI,<br>resulting in an ever-changing digital mutation.</div>
-            </div>
-        </div>
-
-        <div class="rule-of-thirds">
-            <div></div><div></div><div></div>
-            <div></div><div></div><div></div>
-            <div></div><div></div><div></div>
-        </div>
-        
-        <div class="crosshair">[ &nbsp;+&nbsp; ]</div>
-
-        <div class="hud-bottom">
-            <div class="hud-meter">
-                SCROLL KINETICS
-                <div class="meter-bar"><div class="meter-fill" id="meter-fill"></div></div>
-            </div>
-            <div class="timecode-block">
-                <div class="timecode-label">RENDERED BY GPT-4o</div>
-                <div id="timecode">00:00:00:00</div>
-            </div>
-            <div class="hud-battery">
-                SYS_PWR
-                <br>
-                <div class="batt-outline"><div class="batt-level" id="batt-level"></div></div>
-            </div>
-        </div>
-
-        <div class="letterbox"></div>
-    </div>
-
-    <!-- Horizontal Scrolling Filmstrip -->
-    <div id="scroll-container">
-        
-        <!-- Snapshot 1 -->
-        <div class="snapshot">
-            <div class="focus-brackets"></div>
-            <div class="visual vis-glgl"></div>
-            <div class="exif-overlay">
-                <div class="exif-top"><span>SEQ: 01</span><span>ISO-LZ77</span></div>
-                <div>
-                    <div class="exif-title">GlglStats</div>
-                    <div class="exif-desc">Israeli pop-chart repetition analysis utilizing LZ77 compression heuristics.</div>
-                </div>
-                <div class="exif-bottom">
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn">► PLAY CONF VID</a>
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="btn primary">ACCESS SITE</a>
+                <div class="w-actions">
+                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn" style="flex:1">▶ PyData TLV</a>
+                    <a href="https://glglstats.geekip.dev" target="_blank" class="btn" style="flex:1">Launch App</a>
                 </div>
             </div>
         </div>
 
-        <!-- Snapshot 2 -->
-        <div class="snapshot">
-            <div class="focus-brackets"></div>
-            <div class="visual vis-heatmap"></div>
-            <div class="exif-overlay">
-                <div class="exif-top"><span>SEQ: 02</span><span>EXP-TLVMAP</span></div>
-                <div>
-                    <div class="exif-title">Ahuzat Dibuk</div>
-                    <div class="exif-desc">Parking lot scraping data mapped across Tel-Aviv. A computational critique of urban infrastructure.</div>
+        <!-- Window 2: Ahuzat Dibuk -->
+        <div class="window glass" id="w-ahuzat">
+            <div class="radar-bg"></div>
+            <div class="title-bar">
+                <div class="window-controls"><div class="dot close"></div><div class="dot min"></div><div class="dot max"></div></div>
+                <div class="window-title">Ahuzat Dibuk Monitor</div>
+            </div>
+            <div class="window-content">
+                <p style="font-weight: bold; color: #fca5a5;">WARNING: Parking Anomaly Detected</p>
+                <p>Data-scraping statistics map for Tel-Aviv. Tracking real-time systemic issues.</p>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Media Reports Access:</p>
+                <div class="media-links">
+                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="media-icon" title="13TV">📺</a>
+                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="media-icon" title="Mako">📰</a>
+                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" class="media-icon" title="Secret Tel-Aviv">📘</a>
                 </div>
-                <div class="exif-bottom">
-                    <div class="dropdown">
-                        <button class="btn">MEDIA SOURCES ▼</button>
-                        <div class="dropdown-content">
-                            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank">13TV NEWS COVERAGE</a>
-                            <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank">MAKO ARTICLE</a>
-                            <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943" target="_blank">SECRET TEL-AVIV</a>
-                        </div>
+            </div>
+        </div>
+
+        <!-- Window 3: 2D Part Orienting -->
+        <div class="window glass" id="w-2dpart">
+            <div class="cad-grid"></div>
+            <div class="title-bar">
+                <div class="window-controls"><div class="dot close"></div><div class="dot min"></div><div class="dot max"></div></div>
+                <div class="window-title">CAD: 2D Part Orienting</div>
+            </div>
+            <div class="window-content">
+                <svg viewBox="0 0 100 100" class="wireframe-svg">
+                    <polygon points="50,10 90,30 80,80 20,80 10,30" fill="rgba(0, 255, 255, 0.1)" stroke="cyan" stroke-width="1.5" stroke-dasharray="4"/>
+                    <line x1="50" y1="10" x2="50" y2="50" stroke="cyan" stroke-width="0.5"/>
+                    <line x1="10" y1="30" x2="90" y2="30" stroke="cyan" stroke-width="0.5"/>
+                </svg>
+                <p style="font-size: 0.85rem;">Implementation of a C++ push-plan algorithm within the open-source computational geometry library.</p>
+                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn" style="background: rgba(0, 50, 100, 0.6);">View Repository / Paper</a>
+            </div>
+        </div>
+
+        <!-- Window 4: The Turing Jest -->
+        <div class="window glass" id="w-jest">
+            <div class="title-bar">
+                <div class="window-controls"><div class="dot close"></div><div class="dot min"></div><div class="dot max"></div></div>
+                <div class="window-title">The Turing Jest Arena</div>
+            </div>
+            <div class="window-content">
+                <div style="position: relative;">
+                    <div class="split-screen">
+                        <div class="fighter model-a">Model Alpha<br><br>"Why did the AI..."</div>
+                        <div class="fighter model-b">Model Beta<br><br>"I'm trained to..."</div>
+                    </div>
+                    <div class="vs">VS</div>
+                </div>
+                <p style="font-size: 0.85rem;">An LMSYS-style battleground. LLMs generate and explain puns. You decide who wins.</p>
+                <a href="https://jest.geekip.dev" target="_blank" class="btn btn-neon">ENTER ARENA</a>
+            </div>
+        </div>
+
+        <!-- Window 5: Rhymes of Israel -->
+        <div class="window glass" id="w-rhymes">
+            <div class="title-bar">
+                <div class="window-controls"><div class="dot close"></div><div class="dot min"></div><div class="dot max"></div></div>
+                <div class="window-title">Extension Marketplace</div>
+            </div>
+            <div class="window-content">
+                <div class="store-header">
+                    <div class="ext-icon">🇮🇱</div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.1rem;">Rhymes of Israel</h3>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Browser Extension</span>
                     </div>
                 </div>
+                <div class="morph-graphic"></div>
+                <p style="font-size: 0.85rem; text-align: center;">Morphing traditional Hebrew news into a comedic highschool yearbook experience.</p>
+                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn" style="background: #2563eb; border:none;">Install Extension</a>
             </div>
         </div>
 
-        <!-- Snapshot 3 -->
-        <div class="snapshot">
-            <div class="focus-brackets"></div>
-            <div class="visual vis-poly"><div class="poly-shape"></div></div>
-            <div class="exif-overlay">
-                <div class="exif-top"><span>SEQ: 03</span><span>F/CGL-TAU</span></div>
-                <div>
-                    <div class="exif-title">2D Part Orienting</div>
-                    <div class="exif-desc">C++ computational geometry implementation of push-plan algorithms for algorithmic robotics.</div>
-                </div>
-                <div class="exif-bottom">
-                    <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn">SOURCE / PAPER</a>
-                </div>
+        <!-- Window 6: Hatul Basak -->
+        <div class="window glass" id="w-hatul">
+            <div class="title-bar">
+                <div class="window-controls"><div class="dot close"></div><div class="dot min"></div><div class="dot max"></div></div>
+                <div class="window-title">root@hatul-basak:~</div>
             </div>
-        </div>
-
-        <!-- Snapshot 4 -->
-        <div class="snapshot">
-            <div class="focus-brackets"></div>
-            <div class="visual vis-split"></div>
-            <div class="exif-overlay">
-                <div class="exif-top"><span>SEQ: 04</span><span>MODE-ARENA</span></div>
-                <div>
-                    <div class="exif-title">The Turing Jest</div>
-                    <div class="exif-desc">An LMSYS-style battle arena pitting Large Language Models against one another in pun generation.</div>
+            <div class="window-content">
+                <div class="terminal-header">
+                    > INIT HEBREW PORT: catfishing.net<br>
+                    > LOAD AI_CHALLENGES... OK<br>
+                    > LOAD USER_PUZZLES... OK
                 </div>
-                <div class="exif-bottom">
-                    <a href="https://jest.geekip.dev" target="_blank" class="btn primary">ENTER ARENA</a>
+                <p>Welcome to Hatul Basak. A terminal of deception and trivia.</p>
+                <div class="w-actions">
+                    <a href="https://hatulbasak.geekip.dev" target="_blank" class="btn" style="flex:1; border-color: #4ade80; color: #4ade80;">Play Game</a>
+                    <a href="https://hatulbasak.geekip.dev" target="_blank" class="btn" style="flex:1; border-color: #4ade80; color: #4ade80;">Create Puzzle</a>
                 </div>
             </div>
         </div>
 
-        <!-- Snapshot 5 -->
-        <div class="snapshot">
-            <div class="focus-brackets"></div>
-            <div class="visual vis-collage"></div>
-            <div class="exif-overlay">
-                <div class="exif-top"><span>SEQ: 05</span><span>LENS-CHROME</span></div>
-                <div>
-                    <div class="exif-title">Rhymes of Israel</div>
-                    <div class="exif-desc">LLM-powered Chrome extension transforming web text into localized, rhyming cultural artifacts.</div>
+        <!-- Window 7: Meta Portfolio -->
+        <div class="window glass" id="w-meta">
+            <div class="title-bar">
+                <div class="window-controls"><div class="dot close"></div><div class="dot min"></div><div class="dot max"></div></div>
+                <div class="window-title">System Monitor [Self-Ref]</div>
+            </div>
+            <div class="window-content">
+                <div class="infinite-mirror">
+                    <div class="mini-os">
+                        <div class="mini-win" style="top: 10px; left: 10px; width: 30px; height: 20px;"></div>
+                        <div class="mini-win" style="top: 20px; left: 30px; width: 40px; height: 25px;"></div>
+                    </div>
                 </div>
-                <div class="exif-bottom">
-                    <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn">DOWNLOAD EXT</a>
+                <p style="font-size: 0.85rem;">You are currently observing an infinite recursive loop of a portfolio posing as an operating system posing as a portfolio.</p>
+                <a href="https://geekip.dev" class="btn">cd /root (geekip.dev)</a>
+            </div>
+        </div>
+
+        <!-- Window 8: Network Settings -->
+        <div class="window glass" id="w-network">
+            <div class="title-bar">
+                <div class="window-controls"><div class="dot close"></div><div class="dot min"></div><div class="dot max"></div></div>
+                <div class="window-title">Network Connections</div>
+            </div>
+            <div class="window-content">
+                <div class="port-list">
+                    <a href="https://github.com/gevak" target="_blank" class="port">
+                        <div class="port-info"><div class="status-light"></div> GitHub</div>
+                        <span style="font-size: 0.7rem; color: var(--text-muted);">Connected</span>
+                    </a>
+                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="port">
+                        <div class="port-info"><div class="status-light"></div> LinkedIn</div>
+                        <span style="font-size: 0.7rem; color: var(--text-muted);">Connected</span>
+                    </a>
+                    <a href="https://facebook.com/geva.kipper" target="_blank" class="port">
+                        <div class="port-info"><div class="status-light"></div> Facebook</div>
+                        <span style="font-size: 0.7rem; color: var(--text-muted);">Connected</span>
+                    </a>
                 </div>
             </div>
         </div>
 
-        <!-- Snapshot 6 -->
-        <div class="snapshot">
-            <div class="focus-brackets"></div>
-            <div class="visual vis-nodes"></div>
-            <div class="exif-overlay">
-                <div class="exif-top"><span>SEQ: 06</span><span>WIKI-GRAPH</span></div>
-                <div>
-                    <div class="exif-title">Hatul Basak</div>
-                    <div class="exif-desc">Hebrew port of catfishing.net. Interconnected Wikipedia puzzle network, AI & user-generated.</div>
-                </div>
-                <div class="exif-bottom">
-                    <a href="https://hatulbasak.geekip.dev" target="_blank" class="btn primary">PLAY DAILY PUZZLE</a>
-                </div>
-            </div>
-        </div>
+    </main>
 
-        <!-- Snapshot 7 -->
-        <div class="snapshot">
-            <div class="focus-brackets"></div>
-            <div class="visual vis-meta"><div><div><div></div></div></div></div>
-            <div class="exif-overlay">
-                <div class="exif-top"><span>SEQ: 07</span><span>RECURSION-1</span></div>
-                <div>
-                    <div class="exif-title">Meta Portfolio</div>
-                    <div class="exif-desc">You are currently observing the digital camera capturing itself. Ephemeral architecture.</div>
-                </div>
-                <div class="exif-bottom">
-                    <a href="https://geekip.dev" class="btn">RE-INITIALIZE (geekip.dev)</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Snapshot 8 -->
-        <div class="snapshot">
-            <div class="focus-brackets"></div>
-            <div class="visual vis-qr">
-                <div class="qr-block"></div><div class="qr-block"></div><div class="qr-block"></div>
-            </div>
-            <div class="exif-overlay">
-                <div class="exif-top"><span>SEQ: 08</span><span>EXPORT-MENU</span></div>
-                <div>
-                    <div class="exif-title">Social Connections</div>
-                    <div class="exif-desc">External transmission vectors established.</div>
-                </div>
-                <div class="exif-bottom">
-                    <a href="https://github.com/gevak" target="_blank" class="btn">GITHUB</a>
-                    <a href="https://linkedin.com/in/gevakip" target="_blank" class="btn">LINKEDIN</a>
-                    <a href="https://facebook.com/geva.kipper" target="_blank" class="btn">FACEBOOK</a>
-                </div>
-            </div>
-        </div>
-
-    </div>
+    <!-- Bottom Dock -->
+    <footer class="sys-dock">
+        <div>OS Architecture and Design generated by ChatGPT (AI Model)</div>
+        <div class="clock-container" id="sys-clock">00:00:00</div>
+    </footer>
 
     <script>
-        // --- 1. Audio Context for Mechanical Focus Sound ---
-        let audioCtx;
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-        }
-        
-        function playFocusSound() {
-            if (!audioCtx || audioCtx.state === 'suspended') return;
-            // Synthesize a quick "click-whir" mechanical sound
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(2000, audioCtx.currentTime + 0.05);
-            
-            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-            
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.1);
-        }
+        // --- Desktop Window Management ---
+        const windows = document.querySelectorAll('.window');
+        let highestZ = 10;
 
-        // --- 2. Parallax Mouse Movement ---
-        const bgCanvas = document.getElementById('bg-canvas');
-        document.addEventListener('mousemove', (e) => {
-            initAudio(); // Initialize audio on first interaction
-            const x = (e.clientX / window.innerWidth - 0.5) * 20; // -10px to +10px
-            const y = (e.clientY / window.innerHeight - 0.5) * 20;
-            bgCanvas.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-        });
+        // Make elements draggable
+        windows.forEach(win => {
+            const titleBar = win.querySelector('.title-bar');
+            let isDragging = false;
+            let startX, startY, initialLeft, initialTop;
 
-        // --- 3. Autofocus Logic (Intersection Observer) ---
-        const snapshots = document.querySelectorAll('.snapshot');
-        const observerOptions = {
-            root: document.getElementById('scroll-container'),
-            rootMargin: '0px -40% 0px -40%', // Trigger only when element is in the middle 20% of screen
-            threshold: 0
-        };
-
-        const focusObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    if (!entry.target.classList.contains('focused')) {
-                        entry.target.classList.add('focused');
-                        playFocusSound();
-                    }
-                } else {
-                    entry.target.classList.remove('focused');
-                }
+            // Bring to front on mouse down anywhere on the window
+            win.addEventListener('mousedown', () => {
+                highestZ++;
+                win.style.zIndex = highestZ;
             });
-        }, observerOptions);
 
-        snapshots.forEach(snap => focusObserver.observe(snap));
+            titleBar.addEventListener('mousedown', (e) => {
+                // Prevent drag if clicking mobile layout
+                if(window.innerWidth <= 768) return; 
 
-        // --- 4. Dynamic HUD (Bottom Corners) ---
-        const scrollContainer = document.getElementById('scroll-container');
-        const meterFill = document.getElementById('meter-fill');
-        const battLevel = document.getElementById('batt-level');
-        
-        let lastScrollPos = 0;
-        let lastScrollTime = Date.now();
-        
-        scrollContainer.addEventListener('scroll', () => {
-            initAudio();
-            const currentPos = scrollContainer.scrollLeft;
-            const currentTime = Date.now();
-            
-            // Calculate Speed for Meter
-            const timeDiff = currentTime - lastScrollTime;
-            const dist = Math.abs(currentPos - lastScrollPos);
-            let speed = timeDiff > 0 ? (dist / timeDiff) * 10 : 0;
-            
-            // Map speed to 0-100%
-            let fillPct = Math.min(speed * 20, 100);
-            meterFill.style.width = `${fillPct}%`;
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                
+                // Get computed styles for top/left instead of inline styles
+                const rect = win.getBoundingClientRect();
+                const parentRect = win.parentElement.getBoundingClientRect();
+                
+                initialLeft = rect.left - parentRect.left;
+                initialTop = rect.top - parentRect.top;
+                
+                // Convert percentage positioning to pixels for smooth dragging
+                win.style.left = initialLeft + 'px';
+                win.style.top = initialTop + 'px';
+                win.style.transform = 'none'; // remove any transforms
+            });
 
-            // Calculate Scroll Depth for Battery (100% at start, drains as you scroll right)
-            const maxScroll = scrollContainer.scrollWidth - scrollContainer.clientWidth;
-            const scrollPct = maxScroll > 0 ? (currentPos / maxScroll) : 0;
-            const battPct = Math.max(10, 100 - (scrollPct * 100)); // Never totally empty
-            battLevel.style.width = `${battPct}%`;
-            
-            // Change battery color if low
-            battLevel.style.background = battPct < 25 ? '#ff3333' : 'rgba(255, 255, 255, 0.85)';
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                
+                // Basic bounds checking (optional, but keeps things neat)
+                let newLeft = initialLeft + dx;
+                let newTop = initialTop + dy;
+                
+                win.style.left = newLeft + 'px';
+                win.style.top = newTop + 'px';
+            });
 
-            lastScrollPos = currentPos;
-            lastScrollTime = currentTime;
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
         });
-        
-        // Decay the meter if not scrolling
-        setInterval(() => {
-            const currentWidth = parseFloat(meterFill.style.width) || 0;
-            if (currentWidth > 0) {
-                meterFill.style.width = `${Math.max(0, currentWidth - 5)}%`;
-            }
-        }, 100);
 
-        // --- 5. Timecode Logic ---
-        const timecodeEl = document.getElementById('timecode');
-        const targetDate = new Date('2026-08-09T01:09:47Z').getTime();
+        // --- System Uptime Clock ---
+        // Target Anchor: 2026-08-10 01:11:23
+        const anchorDate = new Date("2026-08-10T01:11:23").getTime();
+        const clockEl = document.getElementById('sys-clock');
 
-        function updateTimecode() {
-            const now = Date.now();
-            // Calculate elapsed time from the anchor date (using absolute diff to always tick up)
-            let diff = Math.abs(now - targetDate);
+        // We calculate an initial offset in seconds based on absolute difference.
+        // Then we increment it strictly upward every second to meet the requirement.
+        let uptimeSeconds = Math.abs(Math.floor((Date.now() - anchorDate) / 1000));
+
+        function formatTime(totalSeconds) {
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
             
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            diff -= hours * (1000 * 60 * 60);
-            const mins = Math.floor(diff / (1000 * 60));
-            diff -= mins * (1000 * 60);
-            const secs = Math.floor(diff / 1000);
-            diff -= secs * 1000;
-            const frames = Math.floor(diff / 33.33); // Simulate 30fps frames (1000/30)
-
-            const pad = (num) => num.toString().padStart(2, '0');
-            const padH = (num) => num.toString().padStart(4, '0'); // Allow hours to grow
-
-            timecodeEl.innerText = `${padH(hours)}:${pad(mins)}:${pad(secs)}:${pad(frames)}`;
-            requestAnimationFrame(updateTimecode);
+            return `UPTIME: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
-        
-        // Start Timecode
-        requestAnimationFrame(updateTimecode);
 
-        // Allow horizontal scroll with mouse wheel for better UX
-        scrollContainer.addEventListener('wheel', (evt) => {
-            evt.preventDefault();
-            scrollContainer.scrollLeft += evt.deltaY;
-        });
+        // Initialize clock
+        clockEl.innerText = formatTime(uptimeSeconds);
+
+        // Tick upward
+        setInterval(() => {
+            uptimeSeconds++;
+            clockEl.innerText = formatTime(uptimeSeconds);
+        }, 1000);
+
+        // --- Morphing Emoji Logic (Rhymes Window) ---
+        const morphEl = document.querySelector('.morph-graphic');
+        const emojis = ["📰", "🗞️", "📓", "🤪", "🤡"];
+        let eIndex = 0;
+        // The CSS animation handles the fade, JS swaps the character during the invisible phase
+        setInterval(() => {
+            eIndex = (eIndex + 1) % emojis.length;
+            morphEl.innerText = emojis[eIndex];
+        }, 2000);
+        morphEl.innerText = emojis[0];
 
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260809",
+          pageId: "20260810",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
