@@ -2,672 +2,529 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geva Kipper - Gantt Matrix</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&family=Roboto+Mono:wght@400;700&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+    <title>Geva Kipper | Architectural Blueprint</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap');
+
         :root {
-            --bg-color: #0b0f19;
-            --grid-color: rgba(0, 243, 255, 0.07);
-            --text-main: #e2e8f0;
-            --text-muted: #94a3b8;
+            --bp-bg: #0a1f35;
+            --bp-grid-main: rgba(255, 255, 255, 0.2);
+            --bp-grid-sub: rgba(255, 255, 255, 0.05);
+            --bp-chalk: #e0f2fe;
+            --stamp-red: rgba(220, 38, 38, 0.75);
+            
+            --vault-bg: #0f1115;
+            --metal-dark: #1f2329;
+            --metal-light: #2d333b;
+            --brass: #d4af37;
             --neon-blue: #00f3ff;
-            --neon-purple: #b534ff;
-            --neon-green: #00ff66;
-            --neon-red: #ff3366;
-            --neon-yellow: #ffea00;
-            --glass-bg: rgba(11, 15, 25, 0.6);
-            --glass-border: rgba(0, 243, 255, 0.2);
+            --neon-gold: #ffd700;
+            --glass-bg: rgba(15, 25, 35, 0.85);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            cursor: none; /* Custom cursor used */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: var(--vault-bg); color: white; font-family: 'Rajdhani', sans-serif; perspective: 1200px; }
+
+        /* ================= BLUEPRINT SCENE ================= */
+        #blueprint-scene {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; display: flex; justify-content: center; align-items: center; overflow: hidden; transform-style: preserve-3d;
         }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
-            /* Faint glowing grid */
+        .bp-half {
+            position: absolute; top: 0; width: 50%; height: 100%;
+            background-color: var(--bp-bg);
             background-image: 
-                linear-gradient(var(--grid-color) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-            background-size: 40px 40px;
-            background-position: center top;
-            padding-bottom: 100px;
+                linear-gradient(var(--bp-grid-main) 1px, transparent 1px), linear-gradient(90deg, var(--bp-grid-main) 1px, transparent 1px),
+                linear-gradient(var(--bp-grid-sub) 1px, transparent 1px), linear-gradient(90deg, var(--bp-grid-sub) 1px, transparent 1px);
+            background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+            transition: transform 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 1.5s ease;
+            transform-origin: left center; z-index: 1;
+        }
+        .bp-half.left { left: 0; background-position: 0 0; transform-origin: left center; }
+        .bp-half.right { right: 0; background-position: -50vw 0; transform-origin: right center; }
+
+        .bp-content {
+            position: absolute; z-index: 2; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: none; transition: opacity 0.5s ease;
         }
 
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-color); }
-        ::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 4px; }
+        .title { font-family: 'Share Tech Mono', monospace; font-size: 4rem; color: var(--bp-chalk); text-shadow: 0 0 10px rgba(255,255,255,0.5); margin-bottom: 20px; letter-spacing: 5px; }
+        
+        .annotation { position: absolute; top: 15%; left: 10%; max-width: 300px; font-family: 'Share Tech Mono', monospace; color: var(--bp-chalk); display: flex; gap: 15px; align-items: flex-start; }
+        .annotation svg { width: 40px; height: 40px; stroke: var(--bp-chalk); fill: none; stroke-width: 1.5; }
+        .annotation-text { font-size: 0.9rem; line-height: 1.4; border-left: 2px dashed var(--bp-grid-main); padding-left: 15px; }
 
-        /* Custom Cursor */
-        #crosshair {
-            position: fixed;
-            top: 0; left: 0;
-            width: 24px; height: 24px;
-            border: 1px solid var(--neon-blue);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 9999;
-            transform: translate(-50%, -50%);
-            transition: width 0.2s, height 0.2s, background-color 0.2s;
-            mix-blend-mode: difference;
-        }
-        #crosshair::before, #crosshair::after {
-            content: '';
-            position: absolute;
-            background: var(--neon-blue);
-        }
-        #crosshair::before { top: 50%; left: -5px; right: -5px; height: 1px; }
-        #crosshair::after { left: 50%; top: -5px; bottom: -5px; width: 1px; }
-        #crosshair.hovering {
-            width: 40px; height: 40px;
-            background-color: rgba(0, 243, 255, 0.1);
-            border-color: var(--neon-green);
-        }
-        #crosshair.hovering::before, #crosshair.hovering::after { background: var(--neon-green); }
+        .stamp { position: absolute; bottom: 15%; right: 10%; transform: rotate(-15deg); border: 4px solid var(--stamp-red); padding: 15px; color: var(--stamp-red); font-family: 'Share Tech Mono', monospace; font-size: 1.2rem; font-weight: bold; max-width: 400px; text-align: center; text-transform: uppercase; mix-blend-mode: screen; filter: opacity(0.8) blur(0.5px); }
 
-        /* SVG Overlay for Dependency Arrows */
-        #dependency-layer {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 0;
-        }
-        .dep-arrow {
-            fill: none;
-            stroke: var(--neon-purple);
-            stroke-width: 2;
-            stroke-dasharray: 10;
-            animation: dash 20s linear infinite;
-            filter: drop-shadow(0 0 5px var(--neon-purple));
-        }
-        @keyframes dash { to { stroke-dashoffset: -1000; } }
+        .dial-container { position: relative; width: 400px; height: 400px; pointer-events: auto; cursor: grab; }
+        .dial-container:active { cursor: grabbing; }
+        .dial-outer { position: absolute; width: 100%; height: 100%; border: 2px dashed var(--bp-chalk); border-radius: 50%; opacity: 0.5; animation: spin 60s linear infinite; }
+        .dial { position: absolute; top: 10%; left: 10%; width: 80%; height: 80%; border: 4px solid var(--bp-chalk); border-radius: 50%; display: flex; justify-content: center; align-items: center; }
+        .dial::before { content: ''; position: absolute; width: 20px; height: 20px; background: var(--bp-chalk); border-radius: 50%; top: -12px; box-shadow: 0 0 15px var(--bp-chalk); }
+        .dial-center { width: 50px; height: 50px; border: 2px solid var(--bp-chalk); border-radius: 50%; }
 
-        /* Header / X-Axis */
-        header {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--glass-border);
-            padding: 20px 40px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+        .measurement { position: absolute; font-family: 'Share Tech Mono', monospace; color: var(--bp-chalk); opacity: 0.6; transition: transform 0.3s ease; }
+        .m1 { top: 20%; left: 40%; } .m2 { bottom: 30%; right: 30%; } .m3 { top: 50%; left: 20%; }
 
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-        }
+        /* Animation Classes */
+        .unlocked .bp-half.left { transform: rotateY(90deg) translateZ(100px); opacity: 0; }
+        .unlocked .bp-half.right { transform: rotateY(-90deg) translateZ(100px); opacity: 0; }
+        .unlocked .bp-content { opacity: 0; }
 
-        h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #fff;
-            text-shadow: 0 0 10px var(--neon-blue);
-        }
-
-        .role-desc {
-            font-family: 'Roboto Mono', monospace;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            max-width: 600px;
-        }
-
-        .subtitle-container {
-            font-family: 'Roboto Mono', monospace;
-            font-size: 0.8rem;
-            color: var(--neon-green);
-            text-shadow: 0 0 5px var(--neon-green);
-            min-height: 1.2em;
-        }
-
-        .x-axis-wrapper {
-            margin-top: 15px;
-            overflow: hidden;
-            border-top: 1px dashed var(--glass-border);
-            padding-top: 10px;
-            position: relative;
-        }
-        .x-axis-dates {
-            display: flex;
-            gap: 100px;
-            font-family: 'Roboto Mono', monospace;
-            font-size: 0.75rem;
-            color: rgba(255,255,255,0.3);
-            white-space: nowrap;
-            will-change: transform;
-        }
-
-        /* Gantt Layout */
-        .gantt-container {
-            position: relative;
-            padding: 60px 40px;
-            display: flex;
-            flex-direction: column;
-            gap: 40px;
-            min-height: 150vh;
-        }
-
-        .lane {
-            position: relative;
-            width: 100%;
-            z-index: 10;
-        }
-
-        /* Gantt Bars */
-        .gantt-bar {
-            height: 36px;
-            border-radius: 18px;
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            font-weight: 500;
-            font-size: 0.9rem;
-            color: #fff;
-            width: 0; /* Animated in via JS */
-            opacity: 0;
-            transition: width 1.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s;
-            position: relative;
-            cursor: none;
-            overflow: hidden;
-            box-shadow: 0 0 15px rgba(255,255,255,0.1);
-        }
-        .gantt-bar.visible {
-            opacity: 1;
-        }
-        .gantt-bar:hover {
-            filter: brightness(1.2);
-        }
-        .gantt-bar::after {
-            content: '▼';
-            position: absolute;
-            right: 15px;
-            font-size: 0.7rem;
-            opacity: 0.5;
-            transition: transform 0.3s;
-        }
-        .lane.active .gantt-bar::after { transform: rotate(180deg); }
-
-        /* Expanded Cards */
-        .gantt-card {
-            margin-top: 10px;
-            width: var(--target-width);
-            margin-left: var(--margin-left);
-            background: rgba(11, 15, 25, 0.9);
-            border: 1px solid;
-            border-radius: 12px;
-            max-height: 0;
-            opacity: 0;
-            overflow: hidden;
-            transition: max-height 0.5s cubic-bezier(0, 1, 0, 1), opacity 0.3s, padding 0.3s;
-            backdrop-filter: blur(10px);
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .lane.active .gantt-card {
-            max-height: 600px;
-            opacity: 1;
-            padding: 20px;
-            transition: max-height 0.5s ease-in-out, opacity 0.5s 0.2s, padding 0.3s;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-family: 'Roboto Mono', monospace;
-            font-size: 0.8rem;
-            text-decoration: none;
-            color: #fff;
-            border: 1px solid transparent;
-            transition: all 0.2s;
-            width: fit-content;
-        }
-
-        /* --- Specific Lane Styles --- */
-
-        /* Lane 1: GlglStats */
-        #lane-1 .gantt-bar {
-            background: repeating-linear-gradient(45deg, #0b0f19, #0b0f19 10px, rgba(0, 243, 255, 0.4) 10px, rgba(0, 243, 255, 0.4) 20px);
-            border: 1px solid var(--neon-blue);
-            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
-        }
-        #lane-1 .gantt-card { border-color: var(--neon-blue); }
-        .lz77-viz {
-            font-family: 'Roboto Mono', monospace;
-            font-size: 0.7rem;
-            color: var(--neon-green);
-            background: #000;
-            padding: 10px;
-            border-radius: 4px;
-            overflow-wrap: break-word;
-        }
-        .lz77-hl { background: rgba(0,255,0,0.3); }
-
-        /* Lane 2: Ahuzat Dibuk */
-        #lane-2 .gantt-bar {
-            background: linear-gradient(90deg, #1a0033, #660000, #cc3300, #ffcc00);
-            box-shadow: 0 0 10px rgba(255, 51, 0, 0.3);
-        }
-        #lane-2 .gantt-card { border-color: #ff3300; background: radial-gradient(circle at top right, rgba(255,51,0,0.1), transparent); }
-        .press-grid { display: flex; gap: 10px; flex-wrap: wrap; }
-        .btn-fb { background: #1877F2; }
-        .btn-news { background: #333; border-color: #666; }
-
-        /* Lane 3: 2D Part Orienting */
-        #lane-3 .gantt-bar {
-            background-color: transparent;
-            background-image: linear-gradient(30deg, var(--neon-purple) 12%, transparent 12.5%, transparent 87%, var(--neon-purple) 87.5%, var(--neon-purple)), linear-gradient(150deg, var(--neon-purple) 12%, transparent 12.5%, transparent 87%, var(--neon-purple) 87.5%, var(--neon-purple)), linear-gradient(30deg, var(--neon-purple) 12%, transparent 12.5%, transparent 87%, var(--neon-purple) 87.5%, var(--neon-purple)), linear-gradient(150deg, var(--neon-purple) 12%, transparent 12.5%, transparent 87%, var(--neon-purple) 87.5%, var(--neon-purple)), linear-gradient(60deg, var(--neon-purple) 25%, transparent 25.5%, transparent 75%, var(--neon-purple) 75%, var(--neon-purple)), linear-gradient(60deg, var(--neon-purple) 25%, transparent 25.5%, transparent 75%, var(--neon-purple) 75%, var(--neon-purple));
-            background-size: 20px 35px;
-            background-position: 0 0, 0 0, 10px 18px, 10px 18px, 0 0, 10px 18px;
-            border: 1px solid var(--neon-purple);
-        }
-        #lane-3 .gantt-card { border-color: var(--neon-purple); position: relative; }
-        .poly-bg {
-            position: absolute; right: 20px; top: 20px; width: 100px; height: 100px; opacity: 0.1;
-            animation: spin 10s linear infinite; pointer-events: none;
-        }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* Lane 4: The Turing Jest */
-        #lane-4 .gantt-bar {
-            background: linear-gradient(90deg, rgba(255,0,0,0.7) 50%, rgba(0,102,255,0.7) 50%);
-            border: 1px solid #fff;
+        /* ================= VAULT SCENE ================= */
+        #vault-scene {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 40px;
+            background: radial-gradient(circle at center, #1a1c23 0%, var(--vault-bg) 100%);
+            display: flex; flex-direction: column; opacity: 0; transition: opacity 1s ease 0.5s; z-index: 10;
         }
-        #lane-4 .gantt-card { border-color: #fff; position: relative; overflow: hidden; }
-        .pun-bubble {
-            position: absolute; font-family: 'Comic Sans MS', sans-serif; font-size: 0.8rem;
-            opacity: 0; animation: floatUp 4s ease-in infinite;
-        }
-        @keyframes floatUp { 0% { transform: translateY(50px); opacity: 0; } 50% { opacity: 0.5; } 100% { transform: translateY(-50px); opacity: 0; } }
 
-        /* Lane 5: Rhymes of Israel */
-        #lane-5 .gantt-bar { background: var(--neon-yellow); color: #000; font-weight: 700; box-shadow: 0 0 10px var(--neon-yellow); }
-        #lane-5 .gantt-card {
-            background: #fdf6e3; color: #222; border: none; border-radius: 0;
-            clip-path: polygon(0 0, 100% 0, 98% 10%, 100% 20%, 98% 30%, 100% 40%, 98% 50%, 100% 60%, 98% 70%, 100% 80%, 98% 90%, 100% 100%, 0 100%, 2% 90%, 0 80%, 2% 70%, 0 60%, 2% 50%, 0 40%, 2% 30%, 0 20%, 2% 10%);
-            font-family: 'Courier New', Courier, monospace;
+        .vault-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 20px; flex-grow: 1; margin-bottom: 20px; perspective: 1000px;
         }
-        #lane-5 .btn { background: #4285F4; border-radius: 20px; }
 
-        /* Lane 6: Hatul Basak */
-        #lane-6 .gantt-bar { background: rgba(255,255,255,0.1); border: 1px solid #ccc; font-family: 'Lora', serif; }
-        #lane-6 .gantt-card {
-            border-color: #ccc; font-family: 'Lora', serif;
-            background-image: radial-gradient(circle at center, rgba(255,255,255,0.02) 0%, transparent 70%);
+        .box {
+            position: relative; background: linear-gradient(145deg, var(--metal-light), var(--metal-dark)); border: 2px solid #3a424d; border-radius: 8px; box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 10px 20px rgba(0,0,0,0.5); display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); transform-style: preserve-3d; overflow: hidden;
         }
-        .wiki-title { font-size: 1.5rem; border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom: 10px; }
-        .bg-question { position: absolute; font-size: 10rem; opacity: 0.05; right: -20px; bottom: -40px; pointer-events:none;}
+        .box::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%); pointer-events: none; }
+        .box:hover { transform: translateZ(20px) scale(1.02); box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 15px 30px rgba(0,0,0,0.7), 0 0 15px rgba(0, 243, 255, 0.2); border-color: #4a5462; }
 
-        /* Lane 7: The Meta Portfolio */
-        #lane-7 .gantt-bar {
-            background: #000; border: 1px solid var(--neon-blue);
-            animation: pulse-glow 2s infinite alternate;
-        }
-        @keyframes pulse-glow { from { box-shadow: 0 0 5px var(--neon-blue); } to { box-shadow: 0 0 20px var(--neon-blue), inset 0 0 10px var(--neon-blue); } }
-        #lane-7 .gantt-card { border-color: var(--neon-blue); align-items: center; }
-        .pip-iframe { width: 100%; height: 200px; border: 1px solid var(--glass-border); border-radius: 8px; filter: grayscale(50%) contrast(1.2); }
+        .lock { width: 40px; height: 40px; background: radial-gradient(circle, #e6c86a, var(--brass)); border-radius: 50%; border: 3px solid #222; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); margin-bottom: 20px; transition: box-shadow 0.3s; position: relative; }
+        .lock::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 8px; height: 16px; background: #111; border-radius: 2px; }
+        .box:hover .lock { box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 0 20px var(--neon-gold); }
 
-        /* Lane 8: The Milestone */
-        #lane-8 .gantt-bar {
-            width: 30px !important; height: 30px !important; padding: 0; margin-left: var(--margin-left);
-            background: var(--neon-green); border-radius: 4px;
-            transform: rotate(45deg); box-shadow: 0 0 20px var(--neon-green);
-            display: flex; justify-content: center; align-items: center;
-        }
-        #lane-8 .gantt-bar::after { content: none; } /* Remove arrow */
-        #lane-8.active .gantt-bar { transform: rotate(135deg); }
-        #lane-8 .gantt-card {
-            width: fit-content; align-self: flex-start; flex-direction: row; gap: 20px;
-            border-color: var(--neon-green); background: rgba(0, 255, 102, 0.05);
-            border-radius: 30px; padding: 15px 30px !important;
-        }
-        .social-icon { width: 24px; height: 24px; fill: var(--neon-green); transition: transform 0.2s; }
-        .social-icon:hover { transform: scale(1.2); }
-
-        /* Footer */
-        footer {
-            position: fixed; bottom: 0; width: 100%;
-            background: #050810; border-top: 1px solid var(--neon-green);
-            padding: 5px 20px; z-index: 1000;
-            display: flex; justify-content: space-between; align-items: center;
-            font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--neon-green);
-        }
-        .stopwatch { font-weight: bold; letter-spacing: 1px; }
-
-        /* General Utilities */
-        .muted { color: var(--text-muted); font-size: 0.85rem; }
-        .mb-1 { margin-bottom: 10px; }
-        a.btn:hover { filter: brightness(1.3); box-shadow: 0 0 10px currentColor; }
+        .box-icon { width: 60px; height: 60px; stroke: #666; fill: none; stroke-width: 1.5; transition: stroke 0.3s; }
+        .box:hover .box-icon { stroke: var(--neon-blue); filter: drop-shadow(0 0 5px var(--neon-blue)); }
         
-        /* Inline SVG Icons base class */
-        .icon { width: 16px; height: 16px; fill: currentColor; }
+        .box-title { margin-top: 15px; font-family: 'Share Tech Mono', monospace; color: #888; font-size: 1.1rem; text-transform: uppercase; transition: color 0.3s; }
+        .box:hover .box-title { color: #fff; text-shadow: 0 0 5px var(--neon-blue); }
 
+        .box.master-keys { grid-column: span 2; background: linear-gradient(145deg, #2a2d35, #111317); border: 2px solid #555; }
+        .box.master-keys .lock { width: 60px; height: 60px; }
+
+        /* Terminal Footer */
+        .terminal { background: #0a0e14; border: 2px solid #222; border-top: 4px solid #333; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; font-family: 'Share Tech Mono', monospace; box-shadow: inset 0 0 20px rgba(0,0,0,0.9); border-radius: 4px; }
+        .term-text { color: #0f0; text-shadow: 0 0 5px #0f0; font-size: 1.1rem; }
+        .term-timer { color: #f00; text-shadow: 0 0 5px #f00; font-size: 1.3rem; animation: pulse 1s infinite alternate; }
+
+        @keyframes pulse { from { opacity: 0.8; } to { opacity: 1; text-shadow: 0 0 10px #f00; } }
+
+        /* ================= MODAL / HOLOGRAM PANEL ================= */
+        #hologram-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 100; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+        }
+        #hologram-modal.active { opacity: 1; pointer-events: auto; }
+
+        .hologram-panel {
+            width: 80%; max-width: 900px; height: 70%; background: var(--glass-bg); border: 1px solid var(--neon-blue); box-shadow: 0 0 30px rgba(0, 243, 255, 0.2), inset 0 0 50px rgba(0, 243, 255, 0.05); border-radius: 8px; padding: 40px; position: relative; transform: scale(0.9); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column;
+        }
+        #hologram-modal.active .hologram-panel { transform: scale(1); }
+
+        .close-btn { position: absolute; top: 20px; right: 20px; background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); font-family: 'Share Tech Mono'; padding: 5px 15px; cursor: pointer; transition: 0.2s; }
+        .close-btn:hover { background: var(--neon-blue); color: #000; }
+
+        .modal-content { display: flex; gap: 30px; height: 100%; }
+        .modal-visual { flex: 1; border: 1px dashed rgba(0,243,255,0.3); background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden; }
+        .modal-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        
+        .modal-title { font-family: 'Share Tech Mono', monospace; font-size: 2.5rem; color: var(--neon-blue); text-transform: uppercase; margin-bottom: 20px; text-shadow: 0 0 10px var(--neon-blue); }
+        .modal-desc { font-size: 1.1rem; line-height: 1.6; color: #ccc; margin-bottom: 30px; }
+
+        .btn-group { display: flex; flex-wrap: wrap; gap: 15px; }
+        .holo-btn { background: rgba(0, 243, 255, 0.05); border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 10px 20px; text-decoration: none; font-family: 'Share Tech Mono'; text-transform: uppercase; transition: all 0.3s; position: relative; overflow: hidden; }
+        .holo-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(0,243,255,0.2), transparent); transition: 0.5s; }
+        .holo-btn:hover { background: rgba(0, 243, 255, 0.2); box-shadow: 0 0 15px var(--neon-blue); }
+        .holo-btn:hover::before { left: 100%; }
+
+        /* Specific Visual Animations */
+        .anim-bars { display: flex; align-items: flex-end; gap: 5px; height: 100px; }
+        .anim-bars span { width: 15px; background: var(--neon-blue); animation: barAnim 1s infinite alternate ease-in-out; }
+        .anim-bars span:nth-child(2) { animation-delay: 0.2s; } .anim-bars span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes barAnim { from { height: 10px; } to { height: 100%; box-shadow: 0 0 10px var(--neon-blue); } }
+
+        .anim-heatmap { width: 100%; height: 100%; background: linear-gradient(45deg, #ff0000, #ff8800, #ffff00); background-size: 400% 400%; animation: gradientHeat 3s ease infinite; mix-blend-mode: screen; opacity: 0.7; }
+        @keyframes gradientHeat { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        .anim-poly svg { animation: spinPoly 10s linear infinite; stroke: var(--neon-gold); fill: none; width: 150px; height: 150px; }
+        @keyframes spinPoly { 100% { transform: rotate(360deg); } }
+
+        .anim-arcade { font-family: 'Share Tech Mono'; font-size: 2rem; color: #f0f; text-shadow: 0 0 10px #f0f; animation: blink 0.5s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .anim-type { font-family: 'Share Tech Mono'; border-right: 2px solid var(--neon-blue); white-space: nowrap; overflow: hidden; animation: typing 3s steps(20, end) infinite; color: #fff; }
+        @keyframes typing { 0% { width: 0; } 50%, 100% { width: 100%; } }
+
+        .anim-nodes { position: relative; width: 100%; height: 100%; }
+        .node { position: absolute; width: 8px; height: 8px; background: var(--neon-blue); border-radius: 50%; box-shadow: 0 0 10px var(--neon-blue); }
+        
+        .anim-mirror { width: 100px; height: 100px; border: 2px solid var(--neon-blue); position: relative; animation: mirrorPulse 2s infinite alternate; }
+        .anim-mirror::before, .anim-mirror::after { content:''; position:absolute; border: 2px solid var(--neon-blue); }
+        .anim-mirror::before { top: 10px; left: 10px; right: 10px; bottom: 10px; }
+        .anim-mirror::after { top: 20px; left: 20px; right: 20px; bottom: 20px; }
+        @keyframes mirrorPulse { from { transform: scale(1); } to { transform: scale(1.2); } }
+
+        .keycards { display: flex; gap: 20px; }
+        .card { width: 60px; height: 90px; border: 1px solid var(--brass); background: rgba(212, 175, 55, 0.1); border-radius: 5px; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 10px rgba(212, 175, 55, 0.2); animation: floatCard 3s ease-in-out infinite; color: var(--brass); text-decoration: none; font-size: 2rem; }
+        .card:nth-child(2) { animation-delay: 0.5s; } .card:nth-child(3) { animation-delay: 1s; }
+        .card:hover { background: rgba(212, 175, 55, 0.3); box-shadow: 0 0 20px var(--brass); }
+        @keyframes floatCard { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+        /* Hidden Template Container */
+        template { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="crosshair"></div>
-
-    <header>
-        <div class="header-top">
-            <div>
-                <h1>Geva Kipper</h1>
-                <div class="role-desc">Software Engineer at Google, currently building Next-Gen Cloud Infrastructure & AI Integration.</div>
-            </div>
-        </div>
-        <div class="subtitle-container" id="typewriter"></div>
-        <div class="x-axis-wrapper">
-            <div class="x-axis-dates" id="x-axis-dates">
-                <!-- Populated by JS -->
-            </div>
-        </div>
-    </header>
-
-    <div class="gantt-container" id="gantt-area">
-        <svg id="dependency-layer"></svg>
-
-        <!-- Lane 1: GlglStats -->
-        <div class="lane" id="lane-1">
-            <div class="gantt-bar" style="--target-width: 40%; --margin-left: 5%;" data-id="1">
-                GlglStats
-            </div>
-            <div class="gantt-card" style="--target-width: 60%; --margin-left: 5%;">
-                <h3 style="color: var(--neon-blue)">LZ77 Repetition Analysis</h3>
-                <p class="muted">Data visualization of repetition patterns.</p>
-                <div class="lz77-viz">
-                    10110<span class="lz77-hl">101</span>1100<span class="lz77-hl">101</span>0011<span class="lz77-hl">101</span>1... [Match: dist 8, len 3]
-                </div>
-                <div style="display:flex; gap:10px;">
-                    <a href="https://glglstats.geekip.dev" target="_blank" class="btn" style="border-color: var(--neon-blue); color: var(--neon-blue);">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg> Open Platform
-                    </a>
-                    <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="btn" style="border-color: #ff0000; color: #ff0000;">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> PyData TLV Talk
-                    </a>
+    <!-- BLUEPRINT SCENE -->
+    <div id="blueprint-scene">
+        <div class="bp-half left"></div>
+        <div class="bp-half right"></div>
+        
+        <div class="bp-content">
+            <div class="annotation">
+                <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <div class="annotation-text">
+                    <strong>SOFTWARE ENGINEER</strong><br>
+                    Currently engineering scalable solutions and advancing infrastructure at Google.
                 </div>
             </div>
-        </div>
 
-        <!-- Lane 2: Ahuzat Dibuk -->
-        <div class="lane" id="lane-2">
-            <div class="gantt-bar" style="--target-width: 30%; --margin-left: 25%;" data-id="2">
-                Ahuzat Dibuk
-            </div>
-            <div class="gantt-card" style="--target-width: 50%; --margin-left: 25%;">
-                <h3 style="color: #ff9900">Tel-Aviv Parking Scraper</h3>
-                <p class="muted mb-1">Thermal heatmap analysis of parking density and availability scraping logic.</p>
-                <div class="press-grid">
-                    <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="btn btn-news">Channel 13</a>
-                    <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="btn btn-news">Mako</a>
-                    <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" class="btn btn-fb">
-                        <svg class="icon" viewBox="0 0 24 24" style="fill:white;"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg> Secret Tel-Aviv
-                    </a>
+            <div class="title">GEVA KIPPER</div>
+
+            <div class="dial-container" id="vault-dial">
+                <div class="dial-outer"></div>
+                <div class="dial">
+                    <div class="dial-center"></div>
                 </div>
             </div>
-        </div>
 
-        <!-- Lane 3: 2D Part Orienting -->
-        <div class="lane" id="lane-3">
-            <div class="gantt-bar" style="--target-width: 35%; --margin-left: 15%;" data-id="3">
-                2D Part Orienting
-            </div>
-            <div class="gantt-card" style="--target-width: 60%; --margin-left: 15%;">
-                <svg class="poly-bg" viewBox="0 0 100 100"><polygon points="50,5 95,25 95,75 50,95 5,75 5,25" fill="none" stroke="var(--neon-purple)" stroke-width="2"/></svg>
-                <h3 style="color: var(--neon-purple); font-family: 'Roboto Mono', monospace;">Computational Geometry (C++)</h3>
-                <p class="muted">Algorithmic approach to orienting polygonal parts over a conveyor belt using rigid transformations.</p>
-                <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="btn" style="border-color: var(--neon-purple); color: var(--neon-purple);">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg> View Source
-                </a>
-            </div>
-        </div>
+            <div class="stamp">WARNING: Architectural layout re-designed each day by AI. Subject to continuous mutation.</div>
 
-        <!-- Lane 4: The Turing Jest -->
-        <div class="lane" id="lane-4">
-            <div class="gantt-bar" style="--target-width: 45%; --margin-left: 35%;" data-id="4">
-                The Turing Jest
-            </div>
-            <div class="gantt-card" style="--target-width: 50%; --margin-left: 35%;">
-                <div class="pun-bubble" style="left: 10%; top: 20%; color: #ff3366;">"Knock knock..."</div>
-                <div class="pun-bubble" style="right: 20%; top: 60%; color: #00d4ff; animation-delay: 2s;">"System prompt injected!"</div>
-                <h3>LLM Arena: Comedy Battle</h3>
-                <p class="muted">Red vs Blue head-to-head large language model evaluations based on humor generation.</p>
-                <a href="https://jest.geekip.dev" target="_blank" class="btn" style="background: linear-gradient(90deg, #ff0055, #00d4ff); border: none;">
-                    ⚔️ Enter the Arena
-                </a>
-            </div>
+            <div class="measurement m1">R: 45.912</div>
+            <div class="measurement m2">Θ: 128.4°</div>
+            <div class="measurement m3">ΔX: -12.4</div>
         </div>
-
-        <!-- Lane 5: Rhymes of Israel -->
-        <div class="lane" id="lane-5">
-            <div class="gantt-bar" style="--target-width: 25%; --margin-left: 60%;" data-id="5">
-                Rhymes of Israel
-            </div>
-            <div class="gantt-card" style="--target-width: 35%; --margin-left: 60%;">
-                <h3>Rhymes of Israel</h3>
-                <p style="font-size: 0.9rem;">A quirky linguistic tool for the modern web surfer. Year class of '24.</p>
-                <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="btn" style="color: white; font-family: 'Inter', sans-serif;">
-                    <svg class="icon" viewBox="0 0 24 24" style="fill:white;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 18.25c-3.452 0-6.25-2.798-6.25-6.25s2.798-6.25 6.25-6.25 6.25 2.798 6.25 6.25-2.798 6.25-6.25 6.25zm0-10.5c-2.347 0-4.25 1.903-4.25 4.25s1.903 4.25 4.25 4.25 4.25-1.903 4.25-4.25-1.903-4.25-4.25-4.25z"/></svg> Install Extension
-                </a>
-            </div>
-        </div>
-
-        <!-- Lane 6: Hatul Basak -->
-        <div class="lane" id="lane-6">
-            <div class="gantt-bar" style="--target-width: 40%; --margin-left: 45%;" data-id="6">
-                Hatul Basak
-            </div>
-            <div class="gantt-card" style="--target-width: 50%; --margin-left: 45%;">
-                <div class="bg-question">?</div>
-                <div class="wiki-title">Hatul Basak (Trivia Engine)</div>
-                <p>An encyclopedic approach to user-generated puzzles and trivia validation.</p>
-                <a href="https://hatulbasak.geekip.dev" target="_blank" class="btn" style="border-color: #fff; color: #fff; font-family: 'Lora', serif;">
-                    Play & Create Puzzles
-                </a>
-            </div>
-        </div>
-
-        <!-- Lane 7: The Meta Portfolio -->
-        <div class="lane" id="lane-7">
-            <div class="gantt-bar" style="--target-width: 50%; --margin-left: 20%;" data-id="7">
-                The Meta Portfolio
-            </div>
-            <div class="gantt-card" style="--target-width: 60%; --margin-left: 20%;">
-                <h3 style="color: var(--neon-blue); text-align: center; width: 100%;">Recursive Protocol Initiated</h3>
-                <iframe src="https://geekip.dev" class="pip-iframe" title="Geekip Meta"></iframe>
-                <a href="https://geekip.dev" class="btn" style="border-color: var(--neon-blue); color: var(--neon-blue); margin: 0 auto;">Self-Referential Link</a>
-            </div>
-        </div>
-
-        <!-- Lane 8: The Milestone -->
-        <div class="lane" id="lane-8">
-            <div class="gantt-bar" style="--margin-left: 80%;" data-id="8">
-                <!-- Diamond -->
-            </div>
-            <div class="gantt-card" style="--margin-left: 70%;">
-                <a href="https://github.com/gevak" target="_blank">
-                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                </a>
-                <a href="https://linkedin.com/in/gevakip" target="_blank">
-                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-                </a>
-                <a href="https://facebook.com/geva.kipper" target="_blank">
-                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
-                </a>
-            </div>
-        </div>
-
     </div>
 
-    <footer>
-        <div>> Design generated and actively maintained by Gemini 1.5 Pro.</div>
-        <div class="stopwatch" id="stopwatch">00:00:00</div>
-    </footer>
+    <!-- VAULT SCENE -->
+    <div id="vault-scene">
+        <div class="vault-grid">
+            <!-- Box 1 -->
+            <div class="box" data-target="box1">
+                <div class="lock"></div>
+                <svg class="box-icon" viewBox="0 0 24 24"><path d="M12 2v20M17 5v14M7 9v6M22 9v6M2 11v2"/></svg>
+                <div class="box-title">GlglStats</div>
+                <template id="box1">
+                    <div class="modal-visual"><div class="anim-bars"><span></span><span></span><span></span><span></span><span></span></div></div>
+                    <div class="modal-info">
+                        <h2 class="modal-title">GlglStats</h2>
+                        <p class="modal-desc">A Python-based analytical project measuring the repetitiveness of Israeli pop-chart songs utilizing LZ77 compression algorithms. Data is dynamically visualized in a high-tech interface.</p>
+                        <div class="btn-group">
+                            <a href="https://glglstats.geekip.dev" target="_blank" class="holo-btn">Live Site</a>
+                            <a href="https://www.youtube.com/watch?v=jrKAtOsj1Lo" target="_blank" class="holo-btn">[VHS] PyData TLV Talk</a>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Box 2 -->
+            <div class="box" data-target="box2">
+                <div class="lock"></div>
+                <svg class="box-icon" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <div class="box-title">Ahuzat Dibuk</div>
+                <template id="box2">
+                    <div class="modal-visual"><div class="anim-heatmap"></div></div>
+                    <div class="modal-info">
+                        <h2 class="modal-title">Ahuzat Dibuk</h2>
+                        <p class="modal-desc">Python scraping and data visualization architecture engineered to track Tel-Aviv parking lot occupancy. Gained significant media traction for exposing urban infrastructure patterns.</p>
+                        <div class="btn-group">
+                            <a href="https://13tv.co.il/item/news/domestic/internal/parking-902956407/" target="_blank" class="holo-btn">Ch. 13 News</a>
+                            <a href="https://www.mako.co.il/nexter-news/Article-ae43964b891bf71027.htm" target="_blank" class="holo-btn">Mako</a>
+                            <a href="https://www.facebook.com/groups/secrettelaviv/posts/10159636301195943/" target="_blank" class="holo-btn">Secret Tel-Aviv</a>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Box 3 -->
+            <div class="box" data-target="box3">
+                <div class="lock"></div>
+                <svg class="box-icon" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                <div class="box-title">2D Part Orienting</div>
+                <template id="box3">
+                    <div class="modal-visual"><div class="anim-poly"><svg viewBox="0 0 100 100"><polygon points="50,10 90,90 10,90"/></svg></div></div>
+                    <div class="modal-info">
+                        <h2 class="modal-title">2D Part Orienting</h2>
+                        <p class="modal-desc">Advanced C++ computational geometry implementation featuring a push-plan algorithm designed to physically push and align polygons into specific orientations autonomously.</p>
+                        <div class="btn-group">
+                            <a href="https://www.cgl.cs.tau.ac.il/projects/2d-part-orienting/" target="_blank" class="holo-btn">TAU Archives</a>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Box 4 -->
+            <div class="box" data-target="box4">
+                <div class="lock"></div>
+                <svg class="box-icon" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 10h.01M16 10h.01M8 14h8"/></svg>
+                <div class="box-title">The Turing Jest</div>
+                <template id="box4">
+                    <div class="modal-visual"><div class="anim-arcade">FIGHT!</div></div>
+                    <div class="modal-info">
+                        <h2 class="modal-title">The Turing Jest</h2>
+                        <p class="modal-desc">An LMSYS-inspired arena where Large Language Models battle over comedic superiority. Users act as judges in this generative AI pun-fighting arcade.</p>
+                        <div class="btn-group">
+                            <a href="https://jest.geekip.dev" target="_blank" class="holo-btn">Enter Arena</a>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Box 5 -->
+            <div class="box" data-target="box5">
+                <div class="lock"></div>
+                <svg class="box-icon" viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5zM6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>
+                <div class="box-title">Rhymes of Israel</div>
+                <template id="box5">
+                    <div class="modal-visual"><div class="anim-type">Rewriting Headlines...</div></div>
+                    <div class="modal-info">
+                        <h2 class="modal-title">Rhymes of Israel</h2>
+                        <p class="modal-desc">An LLM-powered Chrome Extension that intercepts digital newspaper headlines and continuously rewrites them into humorous, high school yearbook-style rhymes.</p>
+                        <div class="btn-group">
+                            <a href="https://chromewebstore.google.com/detail/eainginjgdkpgolpjniijdihfbeeeklb" target="_blank" class="holo-btn">Chrome Web Store</a>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Box 6 -->
+            <div class="box" data-target="box6">
+                <div class="lock"></div>
+                <svg class="box-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <div class="box-title">Hatul Basak</div>
+                <template id="box6">
+                    <div class="modal-visual">
+                        <div class="anim-nodes" id="node-container">
+                            <div class="node" style="top:20%; left:30%"></div>
+                            <div class="node" style="top:70%; left:60%"></div>
+                            <div class="node" style="top:40%; left:80%"></div>
+                        </div>
+                    </div>
+                    <div class="modal-info">
+                        <h2 class="modal-title">Hatul Basak</h2>
+                        <p class="modal-desc">The Hebrew port of catfishing.net. Features AI-generated daily challenges and user-created themed puzzles utilizing interconnected Wikipedia nodes to hunt down topics.</p>
+                        <div class="btn-group">
+                            <a href="https://hatulbasak.geekip.dev" target="_blank" class="holo-btn">Play Now</a>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Box 7 -->
+            <div class="box" data-target="box7">
+                <div class="lock"></div>
+                <svg class="box-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>
+                <div class="box-title">The Meta Vault</div>
+                <template id="box7">
+                    <div class="modal-visual"><div class="anim-mirror"></div></div>
+                    <div class="modal-info">
+                        <h2 class="modal-title">The Meta Vault</h2>
+                        <p class="modal-desc">A recursive anomaly. You are currently viewing the vault inside the vault. This highly interactive, AI-generated portfolio layout mutates autonomously.</p>
+                        <div class="btn-group">
+                            <a href="https://geekip.dev" target="_blank" class="holo-btn">Initialize Recursion</a>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Box 8 (Master) -->
+            <div class="box master-keys" data-target="box8">
+                <div class="lock"></div>
+                <svg class="box-icon" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                <div class="box-title">Master Identity Keys</div>
+                <template id="box8">
+                    <div class="modal-visual">
+                        <div class="keycards">
+                            <a href="https://github.com/gevak" target="_blank" class="card" title="GitHub">G</a>
+                            <a href="https://linkedin.com/in/gevakip" target="_blank" class="card" title="LinkedIn">in</a>
+                            <a href="https://facebook.com/geva.kipper" target="_blank" class="card" title="Facebook">f</a>
+                        </div>
+                    </div>
+                    <div class="modal-info">
+                        <h2 class="modal-title">Master Identity Keys</h2>
+                        <p class="modal-desc">Encrypted access to external professional networks and code repositories. These levitating cryptographic keycards verify developer identity across the grid.</p>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <div class="terminal">
+            <div class="term-text">> Vault Architect: Claude 3.5 Sonnet_ | Layout generated autonomously.</div>
+            <div class="term-timer">TIME SINCE LAST SYSTEM RESET: <span id="timer-display">00:00:00</span></div>
+        </div>
+    </div>
+
+    <!-- MODAL OVERLAY -->
+    <div id="hologram-modal">
+        <div class="hologram-panel">
+            <button class="close-btn" id="close-modal">X CLOSE</button>
+            <div class="modal-content" id="modal-container">
+                <!-- Content injected here via JS -->
+            </div>
+        </div>
+    </div>
 
     <script>
-        // Custom Cursor Logic
-        const cursor = document.getElementById('crosshair');
-        document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-        });
-
-        // Interactive Elements Hover State
-        const interactables = document.querySelectorAll('a, .gantt-bar');
-        interactables.forEach(el => {
-            el.addEventListener('mouseenter', () => cursor.classList.add('hovering'));
-            el.addEventListener('mouseleave', () => cursor.classList.remove('hovering'));
-        });
-
-        // Typewriter Effect
-        const text = "This website is re-designed each day by AI and is thus ever-changing.";
-        const twElement = document.getElementById('typewriter');
-        let i = 0;
-        function typeWriter() {
-            if (i < text.length) {
-                twElement.innerHTML += text.charAt(i);
-                i++;
-                setTimeout(typeWriter, 50);
-            } else {
-                // Add blinking cursor at end
-                twElement.innerHTML += '<span style="animation: blink 1s step-end infinite;">_</span>';
-            }
-        }
-        setTimeout(typeWriter, 500);
-
-        // Inject styles for blinking cursor
-        const style = document.createElement('style');
-        style.innerHTML = `@keyframes blink { 50% { opacity: 0; } }`;
-        document.head.appendChild(style);
-
-        // X-Axis Dates Population
-        const xAxis = document.getElementById('x-axis-dates');
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        let dateStr = "";
-        for(let yr = 2020; yr <= 2028; yr++) {
-            for(let m = 0; m < 12; m++) {
-                if(m % 3 === 0) dateStr += `<span>Q${(m/3)+1} ${yr}</span>`;
-            }
-        }
-        xAxis.innerHTML = dateStr;
-
-        // Scroll Sync for X-Axis and Header
-        window.addEventListener('scroll', () => {
-            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-            const scrollPercent = window.scrollY / maxScroll;
-            xAxis.style.transform = `translateX(-${scrollPercent * 60}%)`;
-        });
-
-        // Intersection Observer for Gantt Bars
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const bar = entry.target;
-                    bar.classList.add('visible');
-                    if(!bar.style.width || bar.style.width === '0px') {
-                        bar.style.width = bar.style.getPropertyValue('--target-width') || '100%';
-                    }
-                }
+        // --- Measurement Hover Effect ---
+        const scene = document.getElementById('blueprint-scene');
+        const measures = document.querySelectorAll('.measurement');
+        scene.addEventListener('mousemove', () => {
+            measures.forEach(m => {
+                const rx = (Math.random() - 0.5) * 10;
+                const ry = (Math.random() - 0.5) * 10;
+                m.style.transform = `translate(${rx}px, ${ry}px)`;
             });
-        }, { threshold: 0.1 });
-
-        document.querySelectorAll('.gantt-bar').forEach(bar => {
-            observer.observe(bar);
         });
 
-        // Gantt Card Expansion Toggle & Dependency Arrows
-        const svgLayer = document.getElementById('dependency-layer');
-        let lastHoveredBarRect = null;
+        // --- Audio Synthesizer for mechanical unlock ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
 
-        document.querySelectorAll('.gantt-bar').forEach(bar => {
-            // Click to toggle
-            bar.addEventListener('click', (e) => {
-                const lane = e.target.closest('.lane');
-                lane.classList.toggle('active');
-            });
+        function playUnlockSound() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
 
-            // Hover to draw dependency arrows
-            bar.addEventListener('mouseenter', (e) => {
-                const currentRect = bar.getBoundingClientRect();
-                const scrollY = window.scrollY;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.6);
+            
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.6);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.6);
+
+            // Metallic Clank
+            setTimeout(() => {
+                const clank = audioCtx.createOscillator();
+                const clankGain = audioCtx.createGain();
+                clank.connect(clankGain);
+                clankGain.connect(audioCtx.destination);
+                clank.type = 'square';
+                clank.frequency.setValueAtTime(600, audioCtx.currentTime);
+                clankGain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                clankGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                clank.start();
+                clank.stop(audioCtx.currentTime + 0.1);
+            }, 500);
+        }
+
+        // --- Dial Drag Logic ---
+        const dial = document.getElementById('vault-dial');
+        const dialInner = document.querySelector('.dial');
+        let isDragging = false;
+        let startAngle = 0;
+        let currentRotation = 0;
+        let unlocked = false;
+
+        dial.addEventListener('mousedown', (e) => {
+            if(unlocked) return;
+            isDragging = true;
+            const rect = dial.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            startAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * 180 / Math.PI - currentRotation;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging || unlocked) return;
+            const rect = dial.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * 180 / Math.PI;
+            currentRotation = angle - startAngle;
+            dialInner.style.transform = `rotate(${currentRotation}deg)`;
+
+            // Unlock Threshold (Approx half rotation)
+            if (Math.abs(currentRotation) > 180) triggerUnlock();
+        });
+
+        window.addEventListener('mouseup', () => isDragging = false);
+
+        function triggerUnlock() {
+            unlocked = true;
+            playUnlockSound();
+            
+            // Trigger CSS Animations
+            setTimeout(() => {
+                document.getElementById('blueprint-scene').classList.add('unlocked');
+                document.getElementById('vault-scene').style.opacity = '1';
                 
-                // Calculate absolute positions relative to the document
-                const currentCenter = {
-                    x: currentRect.left + (bar.offsetWidth / 2),
-                    y: currentRect.top + scrollY + (currentRect.height / 2)
-                };
+                // Remove blueprint from DOM flow after animation
+                setTimeout(() => {
+                    document.getElementById('blueprint-scene').style.display = 'none';
+                }, 1500);
+            }, 600);
+        }
 
-                if (lastHoveredBarRect && bar.dataset.id !== lastHoveredBarRect.id) {
-                    drawDependencyArrow(lastHoveredBarRect.center, currentCenter);
+        // --- Box Expansion Logic ---
+        const boxes = document.querySelectorAll('.box');
+        const modal = document.getElementById('hologram-modal');
+        const modalContainer = document.getElementById('modal-container');
+        const closeBtn = document.getElementById('close-modal');
+
+        boxes.forEach(box => {
+            box.addEventListener('click', () => {
+                const targetId = box.getAttribute('data-target');
+                const template = document.getElementById(targetId);
+                
+                // Small click sound (optional UI feedback)
+                if (audioCtx && audioCtx.state === 'running') {
+                    const blip = audioCtx.createOscillator();
+                    blip.type = 'sine'; blip.frequency.value = 1200;
+                    const blipGain = audioCtx.createGain(); blipGain.gain.value = 0.1;
+                    blip.connect(blipGain); blipGain.connect(audioCtx.destination);
+                    blipGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                    blip.start(); blip.stop(audioCtx.currentTime + 0.1);
                 }
 
-                lastHoveredBarRect = {
-                    id: bar.dataset.id,
-                    center: currentCenter
-                };
+                modalContainer.innerHTML = template.innerHTML;
+                modal.classList.add('active');
             });
         });
 
-        function drawDependencyArrow(start, end) {
-            // Clear existing lines to prevent clutter
-            svgLayer.innerHTML = '';
+        closeBtn.addEventListener('click', () => modal.classList.remove('active'));
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.classList.remove('active');
+        });
+
+        // --- Dynamic Time-Lock Timer ---
+        // Base reset date: 2026-08-13 01:19:37
+        const resetDate = new Date("2026-08-13T01:19:37Z").getTime();
+        const timerDisplay = document.getElementById('timer-display');
+
+        setInterval(() => {
+            // Calculates absolute difference to continuously tick UPWARDS
+            const diff = Math.abs(Date.now() - resetDate);
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const secs = Math.floor((diff % (1000 * 60)) / 1000);
             
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            
-            // Draw a bezier curve connecting the two nodes
-            const controlPointY = (start.y + end.y) / 2;
-            const d = `M ${start.x} ${start.y} C ${start.x} ${controlPointY}, ${end.x} ${controlPointY}, ${end.x} ${end.y}`;
-            
-            path.setAttribute('d', d);
-            path.setAttribute('class', 'dep-arrow');
-            
-            svgLayer.appendChild(path);
+            timerDisplay.textContent = 
+                `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }, 1000);
 
-            // Set svg size to document size
-            svgLayer.style.height = document.documentElement.scrollHeight + 'px';
-        }
-
-        // Live Stopwatch Footer
-        const targetDate = new Date('2026-08-12T01:17:45Z').getTime();
-        const stopwatchEl = document.getElementById('stopwatch');
-
-        function updateStopwatch() {
-            const now = new Date().getTime();
-            const diff = Math.abs(now - targetDate);
-
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-            stopwatchEl.textContent = 
-                String(hours).padStart(2, '0') + ':' + 
-                String(minutes).padStart(2, '0') + ':' + 
-                String(seconds).padStart(2, '0');
-        }
-        setInterval(updateStopwatch, 1000);
-        updateStopwatch(); // init immediately
     </script>
 <!-- Add this block to embed the like button -->
     <script src="/static/js/like_button.js"></script>
     <script>
         LikeButton.init({
-          pageId: "20260812",
+          pageId: "20260813",
           position: "bottom-right", // Options: bottom-right, bottom-left, top-right, top-left
         });
     </script>
